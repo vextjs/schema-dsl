@@ -1,0 +1,34 @@
+{
+  "name": "schemoio",
+  "version": "0.1.0",
+  "description": "一个简洁优雅的Schema定义库，支持多种风格的Schema定义，并可转换为各种数据库格式",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "example": "node example.js"
+  },
+  "keywords": [
+    "schema",
+    "validation",
+    "database",
+    "mongodb",
+    "mysql",
+    "postgresql",
+    "dsl"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/schemoio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/schemoio/issues"
+  },
+  "homepage": "https://github.com/yourusername/schemoio#readme",
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
