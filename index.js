@@ -1,436 +1,294 @@
 /**
- * SchemoIO - 简洁优雅的Schema定义库
- * 支持多种风格的Schema定义，并可转换为各种数据库格式
+ * SchemaIO 2.0 - 主入口文件
+ *
+ * 统一导出所有API风格和核心功能
+ *
+ * @module schemaio
+ * @version 2.0.0
  */
 
-const { DSL, s, $, _, processSchema } = require('./lib/dsl');
+const CONSTANTS = require('./lib/config/constants');
 
-// 数据验证函数
-function validate(schema, data) {
-  // 这里只是一个简单的实现，实际应用中需要更复杂的验证逻辑
-  const errors = [];
-  const isValid = validateObject(schema, data, '', errors);
+// ========== 核心类（懒加载） ==========
+let SchemaBuilder, Validator, TypeSystem, ErrorFormatter, CacheManager;
 
-  return {
-    isValid,
-    errors
-  };
-}
-
-// 递归验证对象
-function validateObject(schema, data, path, errors) {
-  let isValid = true;
-
-  // 检查每个字段
-  for (const [key, schemaValue] of Object.entries(schema)) {
-    const currentPath = path ? `${path}.${key}` : key;
-    const dataValue = data[key];
-
-    // 检查必填字段
-    if (schemaValue.required && (dataValue === undefined || dataValue === null)) {
-      errors.push({
-        path: currentPath,
-        message: `字段是必填的`
-      });
-      isValid = false;
-      continue;
-    }
-
-    // 如果值不存在且不是必填，则跳过
-    if (dataValue === undefined || dataValue === null) {
-      continue;
-    }
-
-    // 根据类型验证
-    switch (schemaValue.type) {
-      case 'string':
-        if (typeof dataValue !== 'string') {
-          errors.push({
-            path: currentPath,
-            message: `应该是字符串类型，但得到了 ${typeof dataValue}`
-          });
-          isValid = false;
-        } else {
-          // 验证长度
-          if (schemaValue.min !== undefined && dataValue.length < schemaValue.min) {
-            errors.push({
-              path: currentPath,
-              message: `长度应该至少为 ${schemaValue.min}，但得到了 ${dataValue.length}`
-            });
-            isValid = false;
-          }
-          if (schemaValue.max !== undefined && dataValue.length > schemaValue.max) {
-            errors.push({
-              path: currentPath,
-              message: `长度应该最多为 ${schemaValue.max}，但得到了 ${dataValue.length}`
-            });
-            isValid = false;
-          }
-        }
-        break;
-
-      case 'number':
-        if (typeof dataValue !== 'number') {
-          errors.push({
-            path: currentPath,
-            message: `应该是数字类型，但得到了 ${typeof dataValue}`
-          });
-          isValid = false;
-        } else {
-          // 验证范围
-          if (schemaValue.min !== undefined && dataValue < schemaValue.min) {
-            errors.push({
-              path: currentPath,
-              message: `值应该至少为 ${schemaValue.min}，但得到了 ${dataValue}`
-            });
-            isValid = false;
-          }
-          if (schemaValue.max !== undefined && dataValue > schemaValue.max) {
-            errors.push({
-              path: currentPath,
-              message: `值应该最多为 ${schemaValue.max}，但得到了 ${dataValue}`
-            });
-            isValid = false;
-          }
-        }
-        break;
-
-      case 'boolean':
-        if (typeof dataValue !== 'boolean') {
-          errors.push({
-            path: currentPath,
-            message: `应该是布尔类型，但得到了 ${typeof dataValue}`
-          });
-          isValid = false;
-        }
-        break;
-
-      case 'date':
-        if (!(dataValue instanceof Date) && !(typeof dataValue === 'string' && !isNaN(Date.parse(dataValue)))) {
-          errors.push({
-            path: currentPath,
-            message: `应该是日期类型，但得到了 ${typeof dataValue}`
-          });
-          isValid = false;
-        }
-        break;
-
-      case 'array':
-        if (!Array.isArray(dataValue)) {
-          errors.push({
-            path: currentPath,
-            message: `应该是数组类型，但得到了 ${typeof dataValue}`
-          });
-          isValid = false;
-        } else if (schemaValue.items) {
-          // 验证数组中的每个元素
-          for (let i = 0; i < dataValue.length; i++) {
-            const itemPath = `${currentPath}[${i}]`;
-            const itemValid = validateValue(schemaValue.items, dataValue[i], itemPath, errors);
-            isValid = isValid && itemValid;
-          }
-        }
-        break;
-
-      case 'object':
-        if (typeof dataValue !== 'object' || dataValue === null || Array.isArray(dataValue)) {
-          errors.push({
-            path: currentPath,
-            message: `应该是对象类型，但得到了 ${typeof dataValue}`
-          });
-          isValid = false;
-        } else if (schemaValue.properties) {
-          // 递归验证嵌套对象
-          const objectValid = validateObject(schemaValue.properties, dataValue, currentPath, errors);
-          isValid = isValid && objectValid;
-        }
-        break;
-    }
+function loadCore() {
+  if (!SchemaBuilder) {
+    SchemaBuilder = require('./lib/core/SchemaBuilder');
+    Validator = require('./lib/core/Validator');
+    TypeSystem = require('./lib/core/TypeSystem');
+    ErrorFormatter = require('./lib/core/ErrorFormatter');
+    CacheManager = require('./lib/core/CacheManager');
   }
-
-  return isValid;
+  return { SchemaBuilder, Validator, TypeSystem, ErrorFormatter, CacheManager };
 }
 
-// 验证单个值
-function validateValue(schema, value, path, errors) {
-  // 创建一个临时对象来复用validateObject
-  const tempSchema = { value: schema };
-  const tempData = { value };
-  return validateObject(tempSchema, tempData, '', errors);
-}
+// ========== API层（懒加载） ==========
+let joiAPI, dslAPI, jsonSchemaAPI, functionalAPI;
 
-// 转换为MongoDB Schema
-function toMongoDB(schema) {
-  const result = {
-    validator: {
-      $jsonSchema: {
-        bsonType: "object",
-        required: [],
-        properties: {}
-      }
-    },
-    indexes: []
-  };
-
-  // 处理每个字段
-  for (const [key, value] of Object.entries(schema)) {
-    // 如果是必填字段，添加到required数组
-    if (value.required) {
-      result.validator.$jsonSchema.required.push(key);
-    }
-
-    // 根据类型转换
-    const property = {};
-
-    switch (value.type) {
-      case 'string':
-        property.bsonType = 'string';
-        if (value.min !== undefined) property.minLength = value.min;
-        if (value.max !== undefined) property.maxLength = value.max;
-        break;
-
-      case 'number':
-        property.bsonType = 'number';
-        if (value.min !== undefined) property.minimum = value.min;
-        if (value.max !== undefined) property.maximum = value.max;
-        break;
-
-      case 'boolean':
-        property.bsonType = 'bool';
-        break;
-
-      case 'date':
-        property.bsonType = 'date';
-        break;
-
-      case 'array':
-        property.bsonType = 'array';
-        if (value.items) {
-          property.items = toMongoDBProperty(value.items);
-        }
-        break;
-
-      case 'object':
-        property.bsonType = 'object';
-        if (value.properties) {
-          property.properties = {};
-          for (const [propKey, propValue] of Object.entries(value.properties)) {
-            property.properties[propKey] = toMongoDBProperty(propValue);
-          }
-        }
-        break;
-    }
-
-    result.validator.$jsonSchema.properties[key] = property;
+function loadJoiAPI() {
+  if (!joiAPI) {
+    joiAPI = require('./lib/api/joi-style');
   }
-
-  return result;
+  return joiAPI;
 }
 
-// 辅助函数：转换单个属性为MongoDB格式
-function toMongoDBProperty(value) {
-  const property = {};
-
-  switch (value.type) {
-    case 'string':
-      property.bsonType = 'string';
-      if (value.min !== undefined) property.minLength = value.min;
-      if (value.max !== undefined) property.maxLength = value.max;
-      break;
-
-    case 'number':
-      property.bsonType = 'number';
-      if (value.min !== undefined) property.minimum = value.min;
-      if (value.max !== undefined) property.maximum = value.max;
-      break;
-
-    case 'boolean':
-      property.bsonType = 'bool';
-      break;
-
-    case 'date':
-      property.bsonType = 'date';
-      break;
-
-    case 'array':
-      property.bsonType = 'array';
-      if (value.items) {
-        property.items = toMongoDBProperty(value.items);
-      }
-      break;
-
-    case 'object':
-      property.bsonType = 'object';
-      if (value.properties) {
-        property.properties = {};
-        for (const [propKey, propValue] of Object.entries(value.properties)) {
-          property.properties[propKey] = toMongoDBProperty(propValue);
-        }
-      }
-      break;
+function loadDslAPI() {
+  if (!dslAPI) {
+    dslAPI = require('./lib/api/dsl-style');
   }
-
-  return property;
+  return dslAPI;
 }
 
-// 转换为MySQL Schema
-function toMySQL(schema) {
-  let sql = '';
-  const columns = [];
-
-  // 处理每个字段
-  for (const [key, value] of Object.entries(schema)) {
-    let column = `\`${key}\` `;
-
-    // 根据类型转换
-    switch (value.type) {
-      case 'string':
-        const maxLength = value.max || 255;
-        column += `VARCHAR(${maxLength})`;
-        break;
-
-      case 'number':
-        if (Number.isInteger(value.min) && Number.isInteger(value.max)) {
-          column += 'INT';
-        } else {
-          column += 'FLOAT';
-        }
-        break;
-
-      case 'boolean':
-        column += 'BOOLEAN';
-        break;
-
-      case 'date':
-        column += 'DATETIME';
-        break;
-
-      case 'array':
-      case 'object':
-        column += 'JSON';
-        break;
-    }
-
-    // 添加约束
-    if (value.required) {
-      column += ' NOT NULL';
-    }
-
-    // 添加范围约束
-    if (value.type === 'number' && (value.min !== undefined || value.max !== undefined)) {
-      const checks = [];
-      if (value.min !== undefined) {
-        checks.push(`\`${key}\` >= ${value.min}`);
-      }
-      if (value.max !== undefined) {
-        checks.push(`\`${key}\` <= ${value.max}`);
-      }
-      if (checks.length > 0) {
-        column += ` CHECK (${checks.join(' AND ')})`;
-      }
-    }
-
-    columns.push(column);
+function loadJSONSchemaAPI() {
+  if (!jsonSchemaAPI) {
+    jsonSchemaAPI = require('./lib/api/json-schema');
   }
-
-  // 生成CREATE TABLE语句
-  sql = `CREATE TABLE \`table_name\` (\n  ${columns.join(',\n  ')}\n);`;
-
-  return sql;
+  return jsonSchemaAPI;
 }
 
-// 转换为PostgreSQL Schema
-function toPostgreSQL(schema) {
-  let sql = '';
-  const columns = [];
-
-  // 处理每个字段
-  for (const [key, value] of Object.entries(schema)) {
-    let column = `"${key}" `;
-
-    // 根据类型转换
-    switch (value.type) {
-      case 'string':
-        const maxLength = value.max || 255;
-        column += `VARCHAR(${maxLength})`;
-        break;
-
-      case 'number':
-        if (Number.isInteger(value.min) && Number.isInteger(value.max)) {
-          column += 'INTEGER';
-        } else {
-          column += 'FLOAT';
-        }
-        break;
-
-      case 'boolean':
-        column += 'BOOLEAN';
-        break;
-
-      case 'date':
-        column += 'TIMESTAMP';
-        break;
-
-      case 'array':
-        if (value.items && value.items.type === 'string') {
-          column += 'TEXT[]';
-        } else {
-          column += 'JSONB';
-        }
-        break;
-
-      case 'object':
-        column += 'JSONB';
-        break;
-    }
-
-    // 添加约束
-    if (value.required) {
-      column += ' NOT NULL';
-    }
-
-    // 添加范围约束
-    if (value.type === 'number' && (value.min !== undefined || value.max !== undefined)) {
-      const checks = [];
-      if (value.min !== undefined) {
-        checks.push(`"${key}" >= ${value.min}`);
-      }
-      if (value.max !== undefined) {
-        checks.push(`"${key}" <= ${value.max}`);
-      }
-      if (checks.length > 0) {
-        column += ` CHECK (${checks.join(' AND ')})`;
-      }
-    }
-
-    columns.push(column);
+function loadFunctionalAPI() {
+  if (!functionalAPI) {
+    functionalAPI = require('./lib/api/functional');
   }
-
-  // 生成CREATE TABLE语句
-  sql = `CREATE TABLE "table_name" (\n  ${columns.join(',\n  ')}\n);`;
-
-  return sql;
+  return functionalAPI;
 }
 
-// 导出所有功能
+// ========== 导出器（懒加载） ==========
+let exporters;
+
+function loadExporters() {
+  if (!exporters) {
+    exporters = {
+      jsonSchema: require('./lib/exporters/json-schema'),
+      mongodb: require('./lib/exporters/mongodb'),
+      mysql: require('./lib/exporters/mysql'),
+      postgresql: require('./lib/exporters/postgresql')
+    };
+  }
+  return exporters;
+}
+
+// ========== 主导出对象 ==========
+
+/**
+ * Joi风格Schema构建器（默认API）
+ * @example
+ * const { schema } = require('schemaio');
+ * const userSchema = schema.object({
+ *   username: schema.string().min(3).max(32).required(),
+ *   email: schema.string().email().required()
+ * });
+ */
+const schema = new Proxy({}, {
+  get(target, prop) {
+    const api = loadJoiAPI();
+    return api[prop];
+  }
+});
+
+/**
+ * DSL风格API
+ * @example
+ * const { _, $, s } = require('schemaio');
+ * const userSchema = _({ username: 's:3-32!', email: 's:email!' });
+ */
+const _ = new Proxy(function() {}, {
+  apply(target, thisArg, args) {
+    const api = loadDslAPI();
+    return api._(args[0]);
+  }
+});
+
+const $ = new Proxy({}, {
+  get(target, prop) {
+    const api = loadDslAPI();
+    return api.$[prop];
+  }
+});
+
+const s = new Proxy(function() {}, {
+  apply(target, thisArg, args) {
+    const api = loadDslAPI();
+    return api.s(args[0]);
+  }
+});
+
+/**
+ * JSON Schema API
+ * @example
+ * const { fromJSONSchema, toJSONSchema } = require('schemaio');
+ * const schema = fromJSONSchema({ type: 'object', properties: { ... } });
+ */
+function fromJSONSchema(jsonSchema) {
+  const api = loadJSONSchemaAPI();
+  return api.fromJSONSchema(jsonSchema);
+}
+
+function toJSONSchema(schema) {
+  const api = loadJSONSchemaAPI();
+  return api.toJSONSchema(schema);
+}
+
+/**
+ * 函数式API
+ * @example
+ * const { pipe, required, min, max } = require('schemaio');
+ * const validator = pipe(required, min(3), max(32));
+ */
+const pipe = new Proxy(function() {}, {
+  apply(target, thisArg, args) {
+    const api = loadFunctionalAPI();
+    return api.pipe(...args);
+  }
+});
+
+// ========== 导出器函数 ==========
+
+/**
+ * 导出为JSON Schema
+ * @param {Object} schema - SchemaIO Schema
+ * @returns {Object} JSON Schema对象
+ */
+function exportToJSONSchema(schema) {
+  const exp = loadExporters();
+  return exp.jsonSchema.export(schema);
+}
+
+/**
+ * 导出为MongoDB Schema
+ * @param {Object} schema - SchemaIO Schema
+ * @param {Object} [options] - 导出选项
+ * @returns {Object} Mongoose Schema定义
+ */
+function exportToMongoDB(schema, options) {
+  const exp = loadExporters();
+  return exp.mongodb.export(schema, options);
+}
+
+/**
+ * 导出为MySQL DDL
+ * @param {Object} schema - SchemaIO Schema
+ * @param {string} tableName - 表名
+ * @param {Object} [options] - 导出选项
+ * @returns {string} CREATE TABLE语句
+ */
+function exportToMySQL(schema, tableName, options) {
+  const exp = loadExporters();
+  return exp.mysql.export(schema, tableName, options);
+}
+
+/**
+ * 导出为PostgreSQL DDL
+ * @param {Object} schema - SchemaIO Schema
+ * @param {string} tableName - 表名
+ * @param {Object} [options] - 导出选项
+ * @returns {string} CREATE TABLE语句
+ */
+function exportToPostgreSQL(schema, tableName, options) {
+  const exp = loadExporters();
+  return exp.postgresql.export(schema, tableName, options);
+}
+
+// ========== 工具函数 ==========
+
+/**
+ * 创建验证器实例
+ * @param {Object} [options] - 验证器选项
+ * @returns {Validator} 验证器实例
+ */
+function createValidator(options) {
+  const { Validator } = loadCore();
+  return new Validator(options);
+}
+
+/**
+ * 创建类型系统实例
+ * @param {Object} [options] - 类型系统选项
+ * @returns {TypeSystem} 类型系统实例
+ */
+function createTypeSystem(options) {
+  const { TypeSystem } = loadCore();
+  return new TypeSystem(options);
+}
+
+/**
+ * 创建缓存管理器实例
+ * @param {Object} [options] - 缓存选项
+ * @returns {CacheManager} 缓存管理器实例
+ */
+function createCacheManager(options) {
+  const { CacheManager } = loadCore();
+  return new CacheManager(options);
+}
+
+/**
+ * 快速验证（使用默认验证器）
+ * @param {Object} schema - Schema定义
+ * @param {*} data - 待验证数据
+ * @param {Object} [options] - 验证选项
+ * @returns {Promise<Object>} 验证结果
+ */
+async function validate(schema, data, options) {
+  const validator = createValidator(options);
+  return await validator.validate(schema, data);
+}
+
+// ========== 主导出 ==========
+
 module.exports = {
-  // 传统DSL风格
-  DSL,
-  s,
-  $,
+  // ===== Joi风格API（默认）=====
+  schema,
+
+  // ===== DSL风格API =====
   _,
+  $,
+  s,
 
-  // Schema处理
-  processSchema,
+  // ===== JSON Schema API =====
+  fromJSONSchema,
+  toJSONSchema,
 
-  // 验证
+  // ===== 函数式API =====
+  pipe,
+
+  // ===== 导出器 =====
+  exportToJSONSchema,
+  exportToMongoDB,
+  exportToMySQL,
+  exportToPostgreSQL,
+
+  // ===== 工具函数 =====
   validate,
+  createValidator,
+  createTypeSystem,
+  createCacheManager,
 
-  // 数据库转换
-  toMongoDB,
-  toMySQL,
-  toPostgreSQL
+  // ===== 核心类（高级用户）=====
+  get SchemaBuilder() {
+    return loadCore().SchemaBuilder;
+  },
+  get Validator() {
+    return loadCore().Validator;
+  },
+  get TypeSystem() {
+    return loadCore().TypeSystem;
+  },
+  get ErrorFormatter() {
+    return loadCore().ErrorFormatter;
+  },
+  get CacheManager() {
+    return loadCore().CacheManager;
+  },
+
+  // ===== 常量 =====
+  CONSTANTS,
+
+  // ===== 版本信息 =====
+  VERSION: CONSTANTS.VERSION.FULL,
+  version: CONSTANTS.VERSION.FULL
 };
 
-// 导出现代风格API
-module.exports.modern = require('./lib/modern');
+// ===== CommonJS默认导出（兼容require('schemaio').default）=====
+module.exports.default = module.exports;
+
