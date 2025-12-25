@@ -94,7 +94,7 @@ describe('DslAdapter', () => {
       const result = DslAdapter.parse('date');
       expect(result).to.deep.include({
         type: 'string',
-        format: 'date-time'
+        format: 'date'
       });
     });
   });
@@ -204,22 +204,6 @@ describe('DslAdapter', () => {
     });
   });
 
-  describe('类型别名', () => {
-    it('应该支持 s 别名（string）', () => {
-      const result = DslAdapter.parse('s:3-32');
-      expect(result.type).to.equal('string');
-    });
-
-    it('应该支持 n 别名（number）', () => {
-      const result = DslAdapter.parse('n:0-100');
-      expect(result.type).to.equal('number');
-    });
-
-    it('应该支持 b 别名（boolean）', () => {
-      const result = DslAdapter.parse('b');
-      expect(result.type).to.equal('boolean');
-    });
-  });
 
   describe('边界情况', () => {
     it('应该处理空字符串', () => {

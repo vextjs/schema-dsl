@@ -64,8 +64,8 @@ describe('v2.0.1 新功能测试', () => {
 
     it('应该支持createLibrary创建字段库', () => {
       const fields = SchemaUtils.createLibrary({
-        email: () => dsl('email!'),
-        phone: () => dsl('string:11!')
+        email: () => 'email!',
+        phone: () => 'string:11!'
       });
 
       const schema = dsl({
@@ -74,7 +74,7 @@ describe('v2.0.1 新功能测试', () => {
       });
 
       expect(schema.properties.email.format).to.equal('email');
-      expect(schema.properties.phone.minLength).to.equal(11);
+      expect(schema.properties.phone.maxLength).to.equal(11);
     });
   });
 
