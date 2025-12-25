@@ -22,35 +22,31 @@ examples/password-reset/
 ## Schema定义
 
 ```javascript
-const { types } = require('schemaio');
-const { ref } = require('schemaio/lib/core/Ref');
+const { dsl } = require('schemaio');
 const Locale = require('schemaio/lib/core/Locale');
 
 // 设置中文
 Locale.setLocale('zh-CN');
 
-const passwordResetSchema = types.object({
+const passwordResetSchema = dsl({
   // 新密码：8-64字符，必须包含大小写字母和数字
-  newPassword: types.string()
-    .min(8)
-    .max(64)
+  newPassword: 'string:8-64!'
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
     .label('新密码')
     .messages({
-      'string.min': '{{#label}}长度不能少于{{#limit}}位',
-      'string.max': '{{#label}}长度不能超过{{#limit}}位',
-      'string.pattern': '{{#label}}必须包含大小写字母和数字'
-    })
-    .required(),
+      'minLength': '{{#label}}长度不能少于8位',
+      'maxLength': '{{#label}}长度不能超过64位',
+      'pattern': '{{#label}}必须包含大小写字母和数字'
+    }),
   
-  // 确认密码：必须与新密码一致
-  confirmPassword: types.string()
-    .valid(ref('newPassword'))
+  // 确认密码：必填
+  confirmPassword: 'string:8-64!'
     .label('确认密码')
-    .messages({
-      'string.enum': '两次输入的密码不一致'
+    .custom((value, helpers, { parent }) => {
+      if (value !== parent.newPassword) {
+        return '两次输入的密码不一致';
+      }
     })
-    .required()
 });
 
 module.exports = passwordResetSchema;

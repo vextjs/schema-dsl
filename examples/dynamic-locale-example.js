@@ -35,12 +35,31 @@ console.log('✅ 语言包已加载: zh-CN, en-US\n');
 console.log('📋 定义Schema...\n');
 
 const userSchema = dsl({
-  username: 'string:3-32!'.label('用户名'),
-  email: 'email!'.label('邮箱地址'),
+  username: 'string:3-32!'
+    .label('用户名')
+    .messages({
+      'required': '{{#label}}不能为空',
+      'min': '{{#label}}至少{{#limit}}个字符'
+    }),
+  email: 'email!'
+    .label('邮箱地址')
+    .messages({
+      'required': '{{#label}}不能为空',
+      'format': '请输入有效的{{#label}}'
+    }),
   password: 'string:8-64!'
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
-    .label('密码'),
-  age: 'number:18-120'.label('年龄')
+    .label('密码')
+    .messages({
+      'required': '{{#label}}不能为空',
+      'min': '{{#label}}至少{{#limit}}个字符',
+      'pattern': '{{#label}}必须包含大小写字母和数字'
+    }),
+  age: 'number:18-120'
+    .label('年龄')
+    .messages({
+      'min': '{{#label}}必须至少{{#limit}}岁'
+    })
 });
 
 console.log('✅ Schema定义完成\n');
