@@ -34,6 +34,25 @@ age: 'number:18-120'
 - ✅ 减少代码量
 - ✅ 100%向后兼容
 
+## 替代方案（非侵入式）
+
+如果你介意修改 `String.prototype`，可以直接使用 `dsl()` 包裹字符串：
+
+```javascript
+const { dsl } = require('schemaio');
+
+// 禁用 String 扩展
+require('schemaio').uninstallStringExtensions();
+
+const schema = dsl({
+  // 使用 dsl() 包裹字符串
+  email: dsl('email!').pattern(/custom/).label('邮箱'),
+  
+  // 纯DSL不受影响
+  age: 'number:18-120'
+});
+```
+
 ---
 
 ## 可用方法
@@ -45,7 +64,6 @@ age: 'number:18-120'
 | `.messages(obj)` | 自定义消息 | `'string!'.messages({...})` |
 | `.description(text)` | 描述 | `'url'.description('主页')` |
 | `.custom(fn)` | 自定义验证 | `'string!'.custom(async...)` |
-| `.when(field, opts)` | 条件验证 | `'string'.when('type',{...})` |
 | `.default(value)` | 默认值 | `'string'.default('guest')` |
 | `.username(range?)` | 用户名验证 | `'string!'.username('5-20')` |
 | `.phone(country)` | 手机号验证 | `'string!'.phone('cn')` |
@@ -185,23 +203,6 @@ const schema = dsl({
 - 异步验证器（async）需要使用 `validator.validateAsync()`（计划中）或在外部处理。
 - 目前 `validator.validate()` 是同步的，如果 `.custom()` 返回 Promise，会抛出错误提示。
 
----
-
-### 4. 条件验证
-
-```javascript
-const schema = dsl({
-  contactType: 'email|phone',
-  
-  contact: 'string'
-    .when('contactType', {
-      is: 'email',
-      then: 'email!',
-      otherwise: 'string!'.pattern(/^\d{11}$/)
-    })
-    .label('联系方式')
-});
-```
 
 ---
 
@@ -279,8 +280,8 @@ const formSchema = dsl({
 });
 
 // 验证
-const validator = new Validator();
-const result = validator.validate(formSchema, {
+const { validate } = require('schemaio');
+const result = validate(formSchema, {
   email: 'user@example.com',
   username: 'john_doe',
   password: 'Password123!',

@@ -305,19 +305,24 @@ console.log(result.errors);  // 错误列表
 console.log(result.data);    // 验证后的数据
 ```
 
-### 使用 Validator 类
+### 使用 Validator 类（高级用法）
+
+当需要自定义配置（如关闭默认值、启用类型转换）时，使用 `Validator` 类：
 
 ```javascript
 const { Validator } = require('schemaio');
 
+// 1. 创建实例（支持自定义配置）
 const validator = new Validator({
   allErrors: true,      // 返回所有错误
   useDefaults: true,    // 应用默认值
-  coerceTypes: false    // 类型转换
+  coerceTypes: true     // ✨ 启用类型转换（如字符串转数字）
 });
 
 const result = validator.validate(schema, data);
 ```
+
+**💡 提示**: 对于大多数场景，直接使用 `validate(schema, data)` 即可（它使用默认配置的单例）。
 
 **📖 详细文档**: [validate 方法](docs/validate.md)
 
@@ -392,6 +397,27 @@ const ddl = pgExporter.export('users', jsonSchema);
 
 ## 🌍 多语言支持
 
+### 全局配置 (v2.1.0 新增)
+
+```javascript
+const { dsl } = require('schemaio');
+
+// 配置多语言目录
+dsl.config({
+  locales: './locales' // 目录路径，包含 zh-CN.js, en-US.js 等
+});
+
+// 或者直接传入对象
+dsl.config({
+  locales: {
+    'fr-FR': {
+      'required': '{{#label}} est requis',
+      'pattern.phone.cn': 'Numéro de téléphone invalide'
+    }
+  }
+});
+```
+
 ### 切换语言
 
 ```javascript
@@ -421,6 +447,29 @@ Locale.setMessages({
   'minLength': '长度不能少于{{#limit}}个字符'
 });
 ```
+
+### 动态切换与 Label 翻译 (v2.1.0)
+
+支持在验证时动态指定语言，并自动翻译字段标签。
+
+```javascript
+// 1. 定义 Schema (使用 Label Key)
+const schema = dsl({
+  username: 'string!'.label('label.username')
+});
+
+// 2. 配置语言包 (包含 Label 翻译)
+Locale.addLocale('zh-CN', {
+  'label.username': '用户名',
+  'required': '{{#label}}不能为空'
+});
+
+// 3. 验证时指定语言
+validator.validate(schema, data, { locale: 'zh-CN' });
+// 错误消息: "用户名不能为空"
+```
+
+**📖 详细文档**: [动态多语言配置](docs/dynamic-locale.md)
 
 **📖 详细文档**: [错误处理指南](docs/error-handling.md)
 

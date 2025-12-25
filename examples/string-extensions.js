@@ -38,9 +38,9 @@ const regexSchema = dsl({
   username: 'string:3-32!'
     .pattern(/^[a-zA-Z0-9_]+$/)
     .messages({
-      'string.pattern': '只能包含字母、数字和下划线',
-      'string.min': '用户名至少3个字符',
-      'string.max': '用户名最多32个字符'
+      'pattern': '只能包含字母、数字和下划线',
+      'min': '用户名至少3个字符',
+      'max': '用户名最多32个字符'
     })
     .label('用户名'),
 
@@ -48,7 +48,7 @@ const regexSchema = dsl({
   password: 'string:8-64!'
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$/)
     .messages({
-      'string.pattern': '密码必须包含大小写字母、数字和特殊字符'
+      'pattern': '密码必须包含大小写字母、数字和特殊字符'
     })
     .label('密码'),
 
@@ -56,7 +56,7 @@ const regexSchema = dsl({
   phone: 'string:11!'
     .pattern(/^1[3-9]\d{9}$/)
     .messages({
-      'string.pattern': '请输入有效的中国手机号'
+      'pattern': '请输入有效的中国手机号'
     })
     .label('手机号')
 });
@@ -73,7 +73,7 @@ const formSchema = dsl({
     .label('邮箱地址')
     .description('用于登录和接收通知')
     .messages({
-      'string.email': '请输入有效的邮箱地址'
+      'format': '请输入有效的邮箱地址'
     }),
 
   // ✨ 昵称
@@ -91,14 +91,14 @@ const formSchema = dsl({
     .pattern(/^https?:\/\/(www\.)?twitter\.com\//)
     .label('Twitter链接')
     .messages({
-      'string.pattern': '请输入有效的Twitter链接'
+      'pattern': '请输入有效的Twitter链接'
     }),
 
   github: 'url'
     .pattern(/^https?:\/\/(www\.)?github\.com\//)
     .label('GitHub链接')
     .messages({
-      'string.pattern': '请输入有效的GitHub链接'
+      'pattern': '请输入有效的GitHub链接'
     }),
 
   // 简单字段（无需链式）
@@ -113,7 +113,7 @@ console.log('表单Schema字段数:', Object.keys(formSchema.properties).length)
 
 console.log('\n4️⃣  数据验证');
 
-const validator = new Validator();
+const { validate } = require('../index');
 
 const testData = {
   email: 'user@example.com',
@@ -126,7 +126,7 @@ const testData = {
   country: '中国'
 };
 
-const result = validator.validate(formSchema, testData);
+const result = validate(formSchema, testData);
 console.log('验证结果:', result.valid ? '✅ 通过' : '❌ 失败');
 if (!result.valid) {
   console.log('错误:', result.errors);

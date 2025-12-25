@@ -188,6 +188,16 @@ try {
 
 ## 提交规范
 
+### Git 忽略规则
+
+以下目录包含 AI 生成的临时文件或本地报告，**不应提交到 Git**：
+
+- `plans/`: 需求分析、设计方案、技术规划文档
+- `reports/`: 执行报告、分析报告、审计日志
+- `.temp/`: 临时状态文件
+
+请确保您的 `.gitignore` 文件包含以上目录。
+
 使用 [Conventional Commits](https://www.conventionalcommits.org/) 规范。
 
 ### 提交类型

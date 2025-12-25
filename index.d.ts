@@ -50,6 +50,8 @@ declare module 'schemaio' {
     min?: string;
     max?: string;
     pattern?: string;
+    format?: string;
+    enum?: string;
     email?: string;
     url?: string;
     required?: string;
@@ -198,6 +200,35 @@ declare module 'schemaio' {
   export function dsl(definition: Record<string, DslDefinition>): JSONSchema;
   export function dsl(definition: string | Record<string, DslDefinition>): DslBuilder | JSONSchema;
 
+  /**
+   * 全局配置
+   */
+  export namespace dsl {
+    /**
+     * 全局配置
+     */
+    export function config(options: {
+      patterns?: {
+        phone?: Record<string, { pattern: RegExp; min?: number; max?: number; key?: string }>;
+        idCard?: Record<string, { pattern: RegExp; min?: number; max?: number; key?: string }>;
+        creditCard?: Record<string, { pattern: RegExp; msg?: string }>;
+      };
+      phone?: Record<string, { pattern: RegExp; min?: number; max?: number; key?: string }>; // 兼容旧版
+      locales?: Record<string, ErrorMessages> | string;
+    }): void;
+
+    /**
+     * 匹配规则
+     */
+    export function match(value: any, cases: Record<string, any>): any;
+
+    /**
+     * 条件规则
+     * (Note: exposed as dsl.if in JavaScript)
+     */
+    export const _if: (condition: any, thenSchema: any, elseSchema?: any) => any;
+  }
+
   // ========== Validator 类 ==========
 
   /**
@@ -290,7 +321,14 @@ declare module 'schemaio' {
    * 类型转换工具
    */
   export class TypeConverter {
-    static toJSONSchema(schema: any): JSONSchema;
+    static toJSONSchemaType(simpleType: string): JSONSchema;
+    static toMongoDBType(jsonSchemaType: string): string;
+    static toMySQLType(jsonSchemaType: string, constraints?: Record<string, any>): string;
+    static toPostgreSQLType(jsonSchemaType: string, constraints?: Record<string, any>): string;
+    static normalizePropertyName(name: string, style?: 'snake_case' | 'camelCase'): string;
+    static formatToRegex(format: string): string | null;
+    static mergeSchemas(base: JSONSchema, override: JSONSchema): JSONSchema;
+    static extractConstraints(schema: JSONSchema): Record<string, any>;
   }
 
   /**
@@ -359,8 +397,12 @@ declare module 'schemaio' {
    * 多语言支持
    */
   export class Locale {
-    static setLocale(lang: 'en-US' | 'zh-CN'): void;
+    static setLocale(lang: 'en-US' | 'zh-CN' | string): void;
     static getLocale(): string;
+    static addLocale(locale: string, messages: ErrorMessages): void;
+    static setMessages(messages: ErrorMessages): void;
+    static getMessage(type: string, customMessages?: ErrorMessages): string;
+    static getAvailableLocales(): string[];
   }
 
   // ========== String 扩展控制 ==========

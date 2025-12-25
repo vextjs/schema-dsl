@@ -40,7 +40,7 @@ const schema = dsl({
     .label('用户邮箱')
     .messages({
       'required': '{{#label}}不能为空',  // 使用label值
-      'email': '{{#label}}格式不正确'
+      'format': '{{#label}}格式不正确'
     })
 });
 
@@ -141,7 +141,7 @@ const userSchema = dsl({
     .description('用于登录和接收通知')    // 表单提示/文档
     .messages({
       'required': '{{#label}}不能为空',
-      'email': '请输入有效的{{#label}}'
+      'format': '请输入有效的{{#label}}'
     }),
   
   // 简单字段
@@ -184,7 +184,7 @@ const schema = dsl({
     .label('邮箱地址')
     .messages({
       'required': '{{#label}}不能为空',
-      'email': '{{#label}}格式不正确'
+      'format': '{{#label}}格式不正确'
     })
 });
 
@@ -242,7 +242,7 @@ name: 'string:1-50!'.label('姓名')
 // 标准配置（常规字段）
 email: 'email!'
   .label('邮箱地址')
-  .messages({ 'email': '请输入有效的{{#label}}' })
+  .messages({ 'format': '请输入有效的{{#label}}' })
 
 // 完整配置（复杂字段）
 apiKey: 'string:32!'

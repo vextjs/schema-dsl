@@ -127,7 +127,8 @@ console.log('');
 // ========== 8. 性能监控 ==========
 console.log('✨ 8. 性能监控');
 
-const validator = new Validator();
+const { Validator } = require('../index');
+const validator = new Validator(); // 高级用法：创建实例以增强功能
 
 // ✨ 新特性：性能监控
 const enhancedValidator = SchemaUtils.withPerformance(validator);

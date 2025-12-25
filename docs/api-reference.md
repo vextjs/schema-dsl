@@ -121,6 +121,288 @@ dsl('email!').label('邮箱地址')
 ```javascript
 dsl('string:3-32!')
   .messages({
+    'min': '至少{{#limit}}个字符',
+    'max': '最多{{#limit}}个字符'
+  })
+```
+
+---
+
+#### `.description(text)`
+
+设置字段描述。
+
+**参数**:
+- `text` (**string**) - 描述文本
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('url').description('个人主页链接')
+```
+
+---
+
+#### `.custom(validator)`
+
+添加自定义验证器。
+
+**参数**:
+- `validator` (**Function**) - 验证函数
+  - 签名：`(value) => boolean | Promise<boolean> | { error, message }`
+  - 返回 `true` 表示通过
+  - 返回 `false` 或错误对象表示失败
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string:3-32!')
+  .custom(async (value) => {
+    const exists = await checkUsernameExists(value);
+    if (exists) {
+      return { error: 'username.exists', message: '用户名已存在' };
+    }
+    return true;
+  })
+```
+
+
+---
+
+#### `.default(value)`
+
+设置默认值。
+
+**参数**:
+- `value` (**any**) - 默认值
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string').default('guest')
+```
+
+---
+
+#### `.username(preset?)`
+
+用户名验证（自动设置长度和正则）。
+
+**参数**:
+- `preset` (**string** | **Object**, 可选) - 预设配置
+  - 字符串：`'short'` | `'medium'` | `'long'` | `'5-20'`
+  - 对象：`{ minLength, maxLength, allowUnderscore, allowNumber }`
+  - 默认值：`'medium'` (3-32位)
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+// 默认 medium (3-32位)
+dsl('string!').username()
+
+// 自定义范围
+dsl('string!').username('5-20')
+
+// 使用预设
+dsl('string!').username('short')  // 3-16位
+```
+
+---
+
+#### `.password(strength?)`
+
+密码强度验证（自动设置长度和正则）。
+
+**参数**:
+- `strength` (**string**, 可选) - 强度级别
+  - `'weak'` - 最少6位
+  - `'medium'` - 8位，字母+数字（默认）
+  - `'strong'` - 8位，大小写+数字
+  - `'veryStrong'` - 10位，大小写+数字+特殊字符
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string!').password('strong')
+```
+
+---
+
+#### `.phone(country?)`
+
+手机号验证（自动设置长度和正则）。
+
+**参数**:
+- `country` (**string**, 可选) - 国家代码
+  - `'cn'` - 中国（默认）
+  - `'us'` - 美国
+  - `'uk'` - 英国
+  - `'hk'` - 香港
+  - `'tw'` - 台湾
+  - `'international'` - 国际格式
+
+**返回**: **DslBuilder**
+
+**注意**: 自动将类型纠正为 `string`（即使写成 `number` 也会自动修正）
+
+**示例**:
+```javascript
+// 推荐写法
+dsl('string!').phone('cn')
+
+// 自动纠正：number → string
+dsl('number!').phone('cn')  // 自动纠正为 string
+```
+
+---
+
+#### `.toSchema()`
+
+转换为 JSON Schema 对象。
+
+**返回**: **Object** - JSON Schema对象
+
+**示例**:
+```javascript
+const schema = dsl('email!').label('邮箱').toSchema();
+// { type: 'string', format: 'email', _label: '邮箱', _required: true }
+```
+
+---
+
+#### `.validate(data, context?)`
+
+验证数据（便捷方法）。
+
+**参数**:
+- `data` (**any**) - 待验证数据
+- `context` (**Object**, 可选) - 验证上下文
+
+**返回**: **Promise<Object>** - 验证结果
+  - `valid` (**boolean**) - 是否通过
+  - `errors` (**Array**, 可选) - 错误列表
+  - `data` (**any**, 可选) - 验证通过的数据
+
+**示例**:
+```javascript
+const result = await dsl('email!').validate('user@example.com');
+console.log(result.valid); // true
+```
+
+---
+
+### 静态方法 (v2.1.0)
+
+#### `dsl.match(field, map)```
+
+创建条件验证规则（类似 switch-case）。
+
+**参数**:
+- `field` (**string**) - 依赖的字段名
+- `map` (**Object**) - 值与Schema的映射
+  - `[value: string]`: 对应的Schema
+  - `_default` (**optional**): 默认Schema
+
+**返回**: **Object** - 内部Match结构
+
+**示例**:
+```javascript
+dsl.match('type', {
+  email: 'email!',
+  phone: 'string:11!',
+  _default: 'string'
+})
+```
+
+#### `dsl.if(condition, thenSchema, elseSchema)`
+
+创建简单的条件验证规则。
+
+**参数**:
+- `condition` (**string**) - 条件字段名
+- `thenSchema` (**string|Object**) - 满足条件时的Schema
+- `elseSchema` (**string|Object**, 可选) - 不满足条件时的Schema
+
+**返回**: **Object** - 内部If结构
+
+**示例**:
+```javascript
+dsl.if('isVip', 'number:0-50', 'number:0-10')
+```
+
+---
+
+## DslBuilder 类
+
+### 描述
+
+Schema 构建器类，支持链式调用添加验证规则。
+
+### 构造函数
+
+```javascript
+new DslBuilder(dslString: string)
+```
+
+**参数**:
+- `dslString` (**string**) - DSL字符串，如 `'string:3-32!'`
+
+### 方法
+
+#### `.pattern(regex, message?)`
+
+添加正则表达式验证。
+
+**参数**:
+- `regex` (**RegExp** | **string**) - 正则表达式
+- `message` (**string**, 可选) - 自定义错误消息
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string:3-32!')
+  .pattern(/^[a-zA-Z0-9_]+$/, '只能包含字母、数字和下划线')
+```
+
+---
+
+#### `.label(text)`
+
+设置字段标签（用于错误消息）。
+
+**参数**:
+- `text` (**string**) - 标签文本
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('email!').label('邮箱地址')
+```
+
+---
+
+#### `.messages(messages)`
+
+自定义错误消息。
+
+**参数**:
+- `messages` (**Object**) - 错误消息对象
+  - 键：错误代码（如 `'string.min'`）
+  - 值：错误消息模板
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string:3-32!')
+  .messages({
     'string.min': '至少{{#limit}}个字符',
     'string.max': '最多{{#limit}}个字符'
   })
@@ -320,91 +602,349 @@ console.log(result.valid); // true
 
 ---
 
-## String 扩展
+### 静态方法 (v2.1.0)
 
-### 描述
+#### `dsl.match(field, map)```
 
-通过扩展 `String.prototype`，让字符串直接支持链式调用。
+创建条件验证规则（类似 switch-case）。
 
-### 可用方法
+**参数**:
+- `field` (**string**) - 依赖的字段名
+- `map` (**Object**) - 值与Schema的映射
+  - `[value: string]`: 对应的Schema
+  - `_default` (**optional**): 默认Schema
 
-所有 DslBuilder 的方法都可以直接在字符串上调用：
+**返回**: **Object** - 内部Match结构
 
+**示例**:
 ```javascript
-String.prototype.pattern(regex, message?)
-String.prototype.label(text)
-String.prototype.messages(obj)
-String.prototype.description(text)
-String.prototype.custom(validator)
-String.prototype.when(refField, options)
-String.prototype.default(value)
-String.prototype.toSchema()
+dsl.match('type', {
+  email: 'email!',
+  phone: 'string:11!',
+  _default: 'string'
+})
 ```
 
-### 示例
+#### `dsl.if(condition, thenSchema, elseSchema)`
 
+创建简单的条件验证规则。
+
+**参数**:
+- `condition` (**string**) - 条件字段名
+- `thenSchema` (**string|Object**) - 满足条件时的Schema
+- `elseSchema` (**string|Object**, 可选) - 不满足条件时的Schema
+
+**返回**: **Object** - 内部If结构
+
+**示例**:
 ```javascript
-// ✨ 字符串直接链式调用
-const schema = dsl({
-  email: 'email!'
-    .pattern(/custom/)
-    .messages({ 'string.pattern': '格式不正确' })
-    .label('邮箱地址')
-});
-```
-
-### 禁用/启用
-
-```javascript
-const { uninstallStringExtensions, installStringExtensions } = require('schemaio');
-
-// 禁用
-uninstallStringExtensions();
-
-// 重新启用
-installStringExtensions();
+dsl.if('isVip', 'number:0-50', 'number:0-10')
 ```
 
 ---
 
-## Validator 类
+## DslBuilder 类
 
 ### 描述
 
-JSON Schema 验证器，基于 Ajv。
+Schema 构建器类，支持链式调用添加验证规则。
 
 ### 构造函数
 
 ```javascript
-new Validator(options?)
+new DslBuilder(dslString: string)
 ```
 
 **参数**:
-- `options` (**Object**, 可选) - Ajv选项
+- `dslString` (**string**) - DSL字符串，如 `'string:3-32!'`
 
 ### 方法
 
-#### `.validate(schema, data)`
+#### `.pattern(regex, message?)`
 
-验证数据。
+添加正则表达式验证。
 
 **参数**:
-- `schema` (**Object**) - JSON Schema对象
-- `data` (**any**) - 待验证数据
+- `regex` (**RegExp** | **string**) - 正则表达式
+- `message` (**string**, 可选) - 自定义错误消息
 
-**返回**: **Object** - 验证结果
-  - `valid` (**boolean**) - 是否通过
-  - `errors` (**Array**, 可选) - 错误列表
+**返回**: **DslBuilder**
 
 **示例**:
 ```javascript
-const { Validator } = require('schemaio');
-const validator = new Validator();
+dsl('string:3-32!')
+  .pattern(/^[a-zA-Z0-9_]+$/, '只能包含字母、数字和下划线')
+```
 
-const schema = dsl({ email: 'email!' });
-const result = validator.validate(schema, { email: 'test@example.com' });
+---
 
+#### `.label(text)`
+
+设置字段标签（用于错误消息）。
+
+**参数**:
+- `text` (**string**) - 标签文本
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('email!').label('邮箱地址')
+```
+
+---
+
+#### `.messages(messages)`
+
+自定义错误消息。
+
+**参数**:
+- `messages` (**Object**) - 错误消息对象
+  - 键：错误代码（如 `'string.min'`）
+  - 值：错误消息模板
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string:3-32!')
+  .messages({
+    'string.min': '至少{{#limit}}个字符',
+    'string.max': '最多{{#limit}}个字符'
+  })
+```
+
+---
+
+#### `.description(text)`
+
+设置字段描述。
+
+**参数**:
+- `text` (**string**) - 描述文本
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('url').description('个人主页链接')
+```
+
+---
+
+#### `.custom(validator)`
+
+添加自定义验证器。
+
+**参数**:
+- `validator` (**Function**) - 验证函数
+  - 签名：`(value) => boolean | Promise<boolean> | { error, message }`
+  - 返回 `true` 表示通过
+  - 返回 `false` 或错误对象表示失败
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string:3-32!')
+  .custom(async (value) => {
+    const exists = await checkUsernameExists(value);
+    if (exists) {
+      return { error: 'username.exists', message: '用户名已存在' };
+    }
+    return true;
+  })
+```
+
+---
+
+#### `.when(refField, options)`
+
+条件验证（根据其他字段值动态验证）。
+
+**参数**:
+- `refField` (**string**) - 引用字段名
+- `options` (**Object**) - 条件选项
+  - `is` (**any**) - 期望值
+  - `then` (**DslBuilder** | **Object**) - 满足条件时的Schema
+  - `otherwise` (**DslBuilder** | **Object**, 可选) - 不满足时的Schema
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string')
+  .when('contactType', {
+    is: 'email',
+    then: dsl('email!'),
+    otherwise: dsl('string').pattern(/^\d{11}$/)
+  })
+```
+
+---
+
+#### `.default(value)`
+
+设置默认值。
+
+**参数**:
+- `value` (**any**) - 默认值
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string').default('guest')
+```
+
+---
+
+#### `.username(preset?)`
+
+用户名验证（自动设置长度和正则）。
+
+**参数**:
+- `preset` (**string** | **Object**, 可选) - 预设配置
+  - 字符串：`'short'` | `'medium'` | `'long'` | `'5-20'`
+  - 对象：`{ minLength, maxLength, allowUnderscore, allowNumber }`
+  - 默认值：`'medium'` (3-32位)
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+// 默认 medium (3-32位)
+dsl('string!').username()
+
+// 自定义范围
+dsl('string!').username('5-20')
+
+// 使用预设
+dsl('string!').username('short')  // 3-16位
+```
+
+---
+
+#### `.password(strength?)`
+
+密码强度验证（自动设置长度和正则）。
+
+**参数**:
+- `strength` (**string**, 可选) - 强度级别
+  - `'weak'` - 最少6位
+  - `'medium'` - 8位，字母+数字（默认）
+  - `'strong'` - 8位，大小写+数字
+  - `'veryStrong'` - 10位，大小写+数字+特殊字符
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string!').password('strong')
+```
+
+---
+
+#### `.phone(country?)`
+
+手机号验证（自动设置长度和正则）。
+
+**参数**:
+- `country` (**string**, 可选) - 国家代码
+  - `'cn'` - 中国（默认）
+  - `'us'` - 美国
+  - `'uk'` - 英国
+  - `'hk'` - 香港
+  - `'tw'` - 台湾
+  - `'international'` - 国际格式
+
+**返回**: **DslBuilder**
+
+**注意**: 自动将类型纠正为 `string`（即使写成 `number` 也会自动修正）
+
+**示例**:
+```javascript
+// 推荐写法
+dsl('string!').phone('cn')
+
+// 自动纠正：number → string
+dsl('number!').phone('cn')  // 自动纠正为 string
+```
+
+---
+
+#### `.toSchema()`
+
+转换为 JSON Schema 对象。
+
+**返回**: **Object** - JSON Schema对象
+
+**示例**:
+```javascript
+const schema = dsl('email!').label('邮箱').toSchema();
+// { type: 'string', format: 'email', _label: '邮箱', _required: true }
+```
+
+---
+
+#### `.validate(data, context?)`
+
+验证数据（便捷方法）。
+
+**参数**:
+- `data` (**any**) - 待验证数据
+- `context` (**Object**, 可选) - 验证上下文
+
+**返回**: **Promise<Object>** - 验证结果
+  - `valid` (**boolean**) - 是否通过
+  - `errors` (**Array**, 可选) - 错误列表
+  - `data` (**any**, 可选) - 验证通过的数据
+
+**示例**:
+```javascript
+const result = await dsl('email!').validate('user@example.com');
 console.log(result.valid); // true
+```
+
+---
+
+### 静态方法 (v2.1.0)
+
+#### `dsl.match(field, map)```
+
+创建条件验证规则（类似 switch-case）。
+
+**参数**:
+- `field` (**string**) - 依赖的字段名
+- `map` (**Object**) - 值与Schema的映射
+  - `[value: string]`: 对应的Schema
+  - `_default` (**optional**): 默认Schema
+
+**返回**: **Object** - 内部Match结构
+
+**示例**:
+```javascript
+dsl.match('type', {
+  email: 'email!',
+  phone: 'string:11!',
+  _default: 'string'
+})
+```
+
+#### `dsl.if(condition, thenSchema, elseSchema)`
+
+创建简单的条件验证规则。
+
+**参数**:
+- `condition` (**string**) - 条件字段名
+- `thenSchema` (**string|Object**) - 满足条件时的Schema
+- `elseSchema` (**string|Object**, 可选) - 不满足条件时的Schema
+
+**返回**: **Object** - 内部If结构
+
+**示例**:
+```javascript
+dsl.if('isVip', 'number:0-50', 'number:0-10')
 ```
 
 ---

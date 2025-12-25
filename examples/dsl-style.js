@@ -28,7 +28,7 @@ const complexSchema = dsl({
   username: 'string:3-32!'
     .pattern(/^[a-zA-Z0-9_]+$/)
     .messages({
-      'string.pattern': '只能包含字母、数字和下划线'
+      'pattern': '只能包含字母、数字和下划线'
     })
     .label('用户名')
     .description('用户登录名'),
@@ -37,15 +37,15 @@ const complexSchema = dsl({
   email: 'email!'
     .label('邮箱地址')
     .messages({
-      'string.email': '请输入有效的邮箱地址'
+      'format': '请输入有效的邮箱地址'
     }),
 
   // ✨ 密码：复杂正则 + 自定义消息
   password: 'string:8-64!'
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
     .messages({
-      'string.min': '密码长度不能少于8位',
-      'string.pattern': '密码必须包含大小写字母和数字'
+      'min': '密码长度不能少于8位',
+      'pattern': '密码必须包含大小写字母和数字'
     })
     .label('密码'),
 
@@ -70,7 +70,7 @@ console.log(JSON.stringify(complexSchema, null, 2));
 
 // ========== 3. 验证数据 ==========
 
-const validator = new Validator();
+const { validate } = require('../index');
 
 const testData = {
   username: 'john_doe',
@@ -86,7 +86,7 @@ const testData = {
 };
 
 console.log('\n========== 验证数据 ==========');
-const result = validator.validate(complexSchema, testData);
+const result = validate(complexSchema, testData);
 console.log('验证结果:', result.valid ? '✅ 通过' : '❌ 失败');
 if (!result.valid) {
   console.log('错误:', result.errors);
@@ -100,14 +100,14 @@ console.log('\n========== API对比 ==========');
 console.log('❌ v1.0（需要 dsl()）:');
 console.log(`  email: dsl('email!')
     .pattern(/custom/)
-    .messages({ 'string.pattern': '格式不正确' })
+    .messages({ 'pattern': '格式不正确' })
     .label('邮箱地址')`);
 
 // v2.0: 字符串直接链式
 console.log('\n✅ v2.0（字符串直接链式）:');
 console.log(`  email: 'email!'
     .pattern(/custom/)
-    .messages({ 'string.pattern': '格式不正确' })
+    .messages({ 'pattern': '格式不正确' })
     .label('邮箱地址')`);
 
 console.log('\n✅ DSL v2.0 示例运行完成！');

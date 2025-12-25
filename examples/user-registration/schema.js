@@ -84,7 +84,7 @@ function createRegisterSchema(lang = 'zh-CN') {
     email: 'email!'
       .label('邮箱地址')
       .messages({
-        'email': '请输入有效的{{#label}}'
+        'format.email': '请输入有效的{{#label}}'
       })
       .custom(async (value) => {
         const exists = await checkEmailExists(value);
@@ -108,7 +108,7 @@ function createRegisterSchema(lang = 'zh-CN') {
     confirmPassword: 'string!'
       .label('确认密码')
       .messages({
-        'any.only': '两次输入的密码不一致'
+        'password.mismatch': '两次输入的密码不一致'
       })
       .custom((value, context) => {
         // 临时实现：手动检查password字段

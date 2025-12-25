@@ -12,6 +12,7 @@
 - [约束语法](#约束语法)
 - [数组语法](#数组语法)
 - [对象语法](#对象语法)
+- [条件验证 (Match)](#条件验证-match)
 - [高级用法](#高级用法)
 - [实现方案对比](#实现方案对比)
 - [完整示例](#完整示例)
@@ -279,6 +280,69 @@ const schema = dsl({
 
 ---
 
+## 条件验证 (Match)
+
+v2.1.0 引入了更优雅的条件验证语法 `dsl.match` 和 `dsl.if`。
+
+### 1. dsl.match (推荐)
+
+类似于 `switch-case`，根据某个字段的值决定当前字段的验证规则。
+
+**语法**:
+```javascript
+dsl.match(field, {
+  value1: 'schema1',
+  value2: 'schema2',
+  _default: 'defaultSchema' // 可选
+})
+```
+
+**示例**:
+```javascript
+const schema = dsl({
+  contactType: 'email|phone',
+  
+  // 根据 contactType 的值决定 contact 的规则
+  contact: dsl.match('contactType', {
+    email: 'email!',      // contactType=email 时
+    phone: 'string:11!',  // contactType=phone 时
+    _default: 'string'    // 其他情况
+  })
+});
+```
+
+**处理非英文值**:
+如果条件值包含中文、数字或特殊字符，给键名加上引号即可：
+
+```javascript
+discount: dsl.match('level', {
+  '普通用户': 'number:0-5',
+  'VIP-1':   'number:0-20',
+  '100':     'number:0-50'
+})
+```
+
+### 2. dsl.if (简单条件)
+
+适用于简单的二选一场景。
+
+**语法**:
+```javascript
+dsl.if(conditionField, thenSchema, elseSchema)
+```
+
+**示例**:
+```javascript
+const schema = dsl({
+  isVip: 'boolean',
+  
+  // 如果是VIP，折扣0-50，否则0-10
+  discount: dsl.if('isVip', 'number:0-50', 'number:0-10')
+});
+```
+
+---
+
 ## 高级用法
 
 ### 1. 链式调用
@@ -324,14 +388,16 @@ const schema = dsl({
 'string | number'  // ❌ 不支持
 ```
 
-**解决方案**: 使用 `.when()` 方法
+**解决方案**: 使用 `dsl.match` (推荐)
+
 ```javascript
+// ✅ 推荐：使用 dsl.match (v2.1+)
 const schema = dsl({
-  contactType: 'email|phone',
-  contact: 'string!'.when('contactType', {
-    is: 'email',
-    then: 'email!',
-    otherwise: 'string:11!'
+  vipLevel: 'string',
+  discount: dsl.match('vipLevel', {
+    gold:   'number:0-50',
+    silver: 'number:0-20',
+    normal: 'number:0-5'
   })
 });
 ```
@@ -538,9 +604,9 @@ const schema = dsl({
 
 ### Q4: 不支持条件验证吗？
 
-**A**: 支持，但不能直接在DSL字符串中写，使用 `.when()` 方法：
+**A**: 支持。推荐使用 `dsl.match` (v2.1+)：
 ```javascript
-'string!'.when('type', { is: 'email', then: 'email!' })
+dsl.match('vipLevel', { gold: 'number:0-50', silver: 'number:0-20' })
 ```
 
 ### Q5: 能用正则验证吗？
@@ -563,4 +629,3 @@ const schema = dsl({
 **最后更新**: 2025-12-25  
 **文档版本**: v2.0.1  
 **作者**: SchemaIO Team
-

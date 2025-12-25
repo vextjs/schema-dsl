@@ -34,28 +34,33 @@ validator.validate(schema, data, {
 
 这是**最推荐**的方案，无需修改全局状态，支持并发请求。
 
-### 1.1 基础用法
+### 1.1 全局配置（v2.1.0 新增）
+
+使用 `dsl.config` 可以方便地加载自定义语言包。
 
 ```javascript
-const { dsl, Validator, Locale } = require('schemaio');
+const { dsl, Validator } = require('schemaio');
 
-// 初始化：添加语言包
-Locale.addLocale('zh-CN', {
-  'required': '{{#label}}不能为空',
-  'min': '{{#label}}至少{{#limit}}个字符',
-  'max': '{{#label}}最多{{#limit}}个字符',
-  'pattern': '{{#label}}格式不正确',
-  'format': '请输入有效的{{#label}}'
+// 方式一：直接传入对象
+dsl.config({
+  locales: {
+    'fr-FR': {
+      'required': '{{#label}} est requis',
+      'pattern.phone.cn': 'Numéro de téléphone invalide'
+    }
+  }
 });
 
-Locale.addLocale('en-US', {
-  'required': '{{#label}} is required',
-  'min': '{{#label}} must be at least {{#limit}} characters',
-  'max': '{{#label}} must be at most {{#limit}} characters',
-  'pattern': '{{#label}} format is invalid',
-  'format': 'Please enter a valid {{#label}}'
+// 方式二：传入目录路径
+// 目录下应包含 zh-CN.js, en-US.js 等文件
+dsl.config({
+  locales: './locales'
 });
+```
 
+### 1.2 基础用法
+
+```javascript
 // 定义Schema
 const schema = dsl({
   username: 'string:3-32!'.label('用户名'),
@@ -67,10 +72,10 @@ const validator = new Validator();
 
 // 验证时动态指定语言
 const result1 = validator.validate(schema, data, { locale: 'zh-CN' });
-const result2 = validator.validate(schema, data, { locale: 'en-US' });
+const result2 = validator.validate(schema, data, { locale: 'fr-FR' });
 ```
 
-### 1.2 从请求头获取语言
+### 1.3 从请求头获取语言
 
 ```javascript
 // Express 示例
@@ -175,37 +180,36 @@ app.post('/api/user/register', (req, res) => {
 
 封装为中间件，自动处理语言切换。
 
-### 3.1 Express 中间件
+### 3.1 Express 中间件 (推荐)
+
+通过中间件一次性配置，后续业务代码无需关心语言参数。
 
 ```javascript
-const { Locale } = require('schemaio');
+const { Validator } = require('schemaio');
+const validator = new Validator();
 
-/**
- * 语言中间件
- */
-function localeMiddleware(req, res, next) {
-  // 解析语言
-  const locale = parseAcceptLanguage(req.headers['accept-language']);
-  
-  // 保存到请求对象
-  req.locale = locale;
-  
-  // 创建验证辅助函数
-  req.validate = function(schema, data) {
-    const { Validator } = require('schemaio');
-    const validator = new Validator();
-    return validator.validate(schema, data, { locale: req.locale });
+const schemaIoMiddleware = (req, res, next) => {
+  // 1. 自动获取语言
+  const lang = req.headers['accept-language'] || 'en-US';
+  // 简单匹配逻辑 (实际可使用 accept-language-parser)
+  const locale = lang.includes('zh') ? 'zh-CN' : 
+                 lang.includes('ja') ? 'ja-JP' : 
+                 lang.includes('es') ? 'es-ES' : 
+                 lang.includes('fr') ? 'fr-FR' : 'en-US';
+
+  // 2. 挂载绑定了语言的验证方法
+  req.validate = (schema, data) => {
+    return validator.validate(schema, data, { locale });
   };
-  
+
   next();
-}
+};
 
-// 应用中间件
-app.use(localeMiddleware);
+app.use(schemaIoMiddleware);
 
-// 使用
-app.post('/api/user/register', (req, res) => {
-  // 自动使用请求的语言
+// 业务中使用
+app.post('/users', (req, res) => {
+  // 直接调用，自动使用中间件解析的语言
   const result = req.validate(userSchema, req.body);
   
   if (!result.valid) {
@@ -215,6 +219,8 @@ app.post('/api/user/register', (req, res) => {
   // ...
 });
 ```
+
+完整示例请参考 `examples/middleware-usage.js`。
 
 ### 3.2 Koa 中间件
 

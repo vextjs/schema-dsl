@@ -16,7 +16,13 @@ Locale.addLocale('zh-CN', {
   'min': '{{#label}}至少{{#limit}}个字符',
   'max': '{{#label}}最多{{#limit}}个字符',
   'pattern': '{{#label}}格式不正确',
-  'format': '请输入有效的{{#label}}'
+  'format': '请输入有效的{{#label}}',
+
+  // Labels
+  'label.username': '用户名',
+  'label.email': '邮箱地址',
+  'label.password': '密码',
+  'label.age': '年龄'
 });
 
 // 英文语言包
@@ -25,7 +31,13 @@ Locale.addLocale('en-US', {
   'min': '{{#label}} must be at least {{#limit}} characters',
   'max': '{{#label}} must be at most {{#limit}} characters',
   'pattern': '{{#label}} format is invalid',
-  'format': 'Please enter a valid {{#label}}'
+  'format': 'Please enter a valid {{#label}}',
+
+  // Labels
+  'label.username': 'Username',
+  'label.email': 'Email',
+  'label.password': 'Password',
+  'label.age': 'Age'
 });
 
 console.log('✅ 语言包已加载: zh-CN, en-US\n');
@@ -35,31 +47,12 @@ console.log('✅ 语言包已加载: zh-CN, en-US\n');
 console.log('📋 定义Schema...\n');
 
 const userSchema = dsl({
-  username: 'string:3-32!'
-    .label('用户名')
-    .messages({
-      'required': '{{#label}}不能为空',
-      'min': '{{#label}}至少{{#limit}}个字符'
-    }),
-  email: 'email!'
-    .label('邮箱地址')
-    .messages({
-      'required': '{{#label}}不能为空',
-      'format': '请输入有效的{{#label}}'
-    }),
+  username: 'string:3-32!'.label('label.username'),
+  email: 'email!'.label('label.email'),
   password: 'string:8-64!'
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
-    .label('密码')
-    .messages({
-      'required': '{{#label}}不能为空',
-      'min': '{{#label}}至少{{#limit}}个字符',
-      'pattern': '{{#label}}必须包含大小写字母和数字'
-    }),
-  age: 'number:18-120'
-    .label('年龄')
-    .messages({
-      'min': '{{#label}}必须至少{{#limit}}岁'
-    })
+    .label('label.password'),
+  age: 'number:18-120'.label('label.age')
 });
 
 console.log('✅ Schema定义完成\n');
@@ -174,6 +167,33 @@ handleRequest('en-US,en;q=0.9', testData);
 handleRequest('zh-CN', testData);
 handleRequest('en-US', testData);
 handleRequest('ja-JP,en-US;q=0.8', testData);  // 不支持的语言，回退到英文
+
+// ========== 6.1 格式化类型测试 (v2.1.0 新增) ==========
+
+console.log('\n\n🌐 格式化类型测试 (v2.1.0)');
+console.log('=' .repeat(60));
+
+const formatSchema = dsl({
+  email: 'email!',
+  url: 'url!',
+  ipv4: 'ipv4!'
+});
+
+const formatData = {
+  email: 'invalid-email',
+  url: 'invalid-url',
+  ipv4: '999.999.999.999'
+};
+
+function testFormat(locale) {
+  console.log(`\nTesting format with locale: ${locale}`);
+  const result = validator.validate(formatSchema, formatData, { locale });
+  result.errors.forEach(e => console.log(`   ${e.path}: ${e.message}`));
+}
+
+testFormat('zh-CN');
+testFormat('en-US');
+testFormat('ja-JP'); // 如果已加载 ja-JP
 
 // ========== 7. 并发测试 ==========
 

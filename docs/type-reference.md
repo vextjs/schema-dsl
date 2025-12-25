@@ -4,43 +4,47 @@
 
 ---
 
-## 📊 支持的类型（与 joi 对比）
+## 📊 支持的类型
 
 ### 基本类型
 
-| 类型 | SchemaIO | joi | JSON Schema | 说明 |
-|------|----------|-----|-------------|------|
-| 字符串 | `string` | `Joi.string()` | `{ type: 'string' }` | 文本类型 |
-| 数字 | `number` | `Joi.number()` | `{ type: 'number' }` | 浮点数 |
-| 整数 | `integer` | - | `{ type: 'integer' }` | 整数 |
-| 布尔 | `boolean` | `Joi.boolean()` | `{ type: 'boolean' }` | true/false |
-| 对象 | `object` | `Joi.object()` | `{ type: 'object' }` | 嵌套对象 |
-| 数组 | `array` | `Joi.array()` | `{ type: 'array' }` | 数组 |
-| 空值 | `null` | - | `{ type: 'null' }` | null值 |
-| 任意 | `any` | `Joi.any()` | `{}` | 任意类型 |
+| 类型 | SchemaIO | JSON Schema | 说明 |
+|------|----------|-------------|------|
+| 字符串 | `string` | `{ type: 'string' }` | 文本类型 |
+| 数字 | `number` | `{ type: 'number' }` | 浮点数 |
+| 整数 | `integer` | `{ type: 'integer' }` | 整数 |
+| 布尔 | `boolean` | `{ type: 'boolean' }` | true/false |
+| 对象 | `object` | `{ type: 'object' }` | 嵌套对象 |
+| 数组 | `array` | `{ type: 'array' }` | 数组 |
+| 空值 | `null` | `{ type: 'null' }` | null值 |
+| 任意 | `any` | `{}` | 任意类型 |
 
 ---
 
 ### 格式类型（基于 string）
 
-| 类型 | SchemaIO | joi | JSON Schema format | 说明 |
-|------|----------|-----|-------------------|------|
-| 邮箱 | `email` | `Joi.string().email()` | `email` | 邮箱地址 |
-| URL | `url` | `Joi.string().uri()` | `uri` | 网址 |
-| UUID | `uuid` | `Joi.string().uuid()` | `uuid` | UUID格式 |
-| 日期 | `date` | `Joi.date()` | `date` | YYYY-MM-DD |
-| 日期时间 | `datetime` | `Joi.date()` | `date-time` | ISO 8601 |
-| 时间 | `time` | - | `time` | HH:mm:ss |
-| IPv4 | `ipv4` | `Joi.string().ip()` | `ipv4` | IPv4地址 |
-| IPv6 | `ipv6` | `Joi.string().ip()` | `ipv6` | IPv6地址 |
+| 类型 | SchemaIO | JSON Schema format | 说明 |
+|------|----------|-------------------|------|
+| 邮箱 | `email` | `email` | 邮箱地址 |
+| URL | `url` | `uri` | 网址 |
+| UUID | `uuid` | `uuid` | UUID格式 |
+| 日期 | `date` | `date` | YYYY-MM-DD |
+| 日期时间 | `datetime` | `date-time` | ISO 8601 |
+| 时间 | `time` | `time` | HH:mm:ss |
+| IPv4 | `ipv4` | `ipv4` | IPv4地址 |
+| IPv6 | `ipv6` | `ipv6` | IPv6地址 |
 
 ---
 
 ### 特殊类型
 
-| 类型 | SchemaIO | joi | JSON Schema | 说明 |
-|------|----------|-----|-------------|------|
-| 二进制 | `binary` | `Joi.binary()` | `contentEncoding: base64` | Base64编码 |
+| 类型 | SchemaIO | JSON Schema | 说明 |
+|------|----------|-------------|------|
+| 二进制 | `binary` | `contentEncoding: base64` | Base64编码 |
+| ObjectId | `objectId` | `pattern: ^[0-9a-fA-F]{24}$` | MongoDB ObjectId |
+| HexColor | `hexColor` | `pattern: ^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$` | CSS 16进制颜色 |
+| MAC地址 | `macAddress` | `pattern: ^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$` | MAC地址 |
+| Cron | `cron` | `pattern: ...` | Cron表达式 |
 
 ---
 
@@ -79,6 +83,30 @@ const schema7 = dsl({ value: 'null' });
 
 // 任意类型
 const schema8 = dsl({ data: 'any' });
+```
+
+---
+
+### 扩展验证类型
+
+```javascript
+// 手机号
+const schema1 = dsl({ mobile: 'phone:cn!' });
+
+// 身份证
+const schema2 = dsl({ id_card: 'idCard:cn!' });
+
+// 信用卡
+const schema3 = dsl({ card: 'creditCard:visa!' });
+
+// 车牌号
+const schema4 = dsl({ plate: 'licensePlate:cn!' });
+
+// 邮政编码
+const schema5 = dsl({ zip: 'postalCode:cn!' });
+
+// 护照
+const schema6 = dsl({ passport: 'passport:cn!' });
 ```
 
 ---

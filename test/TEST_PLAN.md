@@ -218,32 +218,14 @@ describe('Validator', () => {
 
 ---
 
-### 1.4 ErrorFormatter（8个）
+### 1.4 ErrorFormatter（已覆盖）
 
-#### test/core/ErrorFormatter.test.js
+#### test/unit/core/ErrorFormatter.test.js
+
+> 实际测试文件: `test/unit/core/ErrorFormatter.test.js`
 
 ```javascript
-describe('ErrorFormatter', () => {
-  describe('错误格式化', () => {
-    it('应该格式化required错误', () => {});
-    it('应该格式化type错误', () => {});
-    it('应该格式化min/max错误', () => {});
-    it('应该格式化pattern错误', () => {});
-    it('应该格式化custom错误', () => {});
-  });
-
-  describe('国际化', () => {
-    it('应该支持中文错误消息', () => {});
-    it('应该支持英文错误消息', () => {});
-    it('应该支持自定义语言包', () => {});
-  });
-
-  describe('插值替换', () => {
-    it('应该正确替换{path}', () => {});
-    it('应该正确替换{expected}', () => {});
-    it('应该正确替换{actual}', () => {});
-  });
-});
+// 已在 ErrorFormatter.test.js 中实现
 ```
 
 ---
@@ -476,28 +458,15 @@ describe('ArrayType', () => {
 
 ## 3. API层测试（80个）
 
-### 3.1 Joi风格API（25个）
+### 3.1 Joi风格API（已移除）
 
-#### test/api/joi-style.test.js
+#### test/api/joi-style.test.js (已删除)
+
+> **注意**: Joi风格API已在 v2.1.0 中移除。
 
 ```javascript
-describe('Joi-style API', () => {
-  describe('基础类型API', () => {
-    it('schema.string()应该返回SchemaBuilder', () => {});
-    it('schema.number()应该返回SchemaBuilder', () => {});
-    it('schema.boolean()应该返回SchemaBuilder', () => {});
-    it('schema.date()应该返回SchemaBuilder', () => {});
-    it('schema.object()应该返回SchemaBuilder', () => {});
-    it('schema.array()应该返回SchemaBuilder', () => {});
-  });
-
-  describe('链式调用', () => {
-    it('应该支持完整链式', () => {
-      // schema.string().min(3).max(32).required()
-    });
-    it('应该支持any()作为起点', () => {});
-    it('应该返回正确的类型', () => {});
-  });
+// 已移除
+```
 
   describe('对象Schema', () => {
     it('应该支持schema.object({ ... })', () => {});
@@ -756,144 +725,47 @@ describe('format validators', () => {
 
 ### 5.1 JSON Schema导出（15个）
 
-#### test/exporters/json-schema.test.js
+#### test/unit/core/JSONSchemaCore.test.js
+
+> 实际测试文件: `test/unit/core/JSONSchemaCore.test.js` (或集成在其他测试中)
 
 ```javascript
-describe('JSON Schema Exporter', () => {
-  describe('基础类型导出', () => {
-    it('应该导出string类型', () => {});
-    it('应该导出number类型', () => {});
-    it('应该导出boolean类型', () => {});
-    it('应该导出object类型', () => {});
-    it('应该导出array类型', () => {});
-  });
-
-  describe('约束导出', () => {
-    it('应该导出minLength/maxLength', () => {});
-    it('应该导出minimum/maximum', () => {});
-    it('应该导出pattern', () => {});
-    it('应该导出enum', () => {});
-    it('应该导出required', () => {});
-  });
-
-  describe('嵌套Schema', () => {
-    it('应该导出嵌套对象', () => {});
-    it('应该导出嵌套数组', () => {});
-  });
-
-  describe('Schema元数据', () => {
-    it('应该包含$schema字段', () => {});
-    it('应该包含title/description', () => {});
-  });
-});
+// 已实现
 ```
 
 ---
 
-### 5.2 MongoDB导出（15个）
+### 5.2 MongoDB导出（已覆盖）
 
-#### test/exporters/mongodb.test.js
+#### test/unit/exporters/MongoDBExporter.test.js
+
+> 实际测试文件: `test/unit/exporters/MongoDBExporter.test.js`
 
 ```javascript
-describe('MongoDB Exporter', () => {
-  describe('类型映射', () => {
-    it('应该映射string到String', () => {});
-    it('应该映射number到Number', () => {});
-    it('应该映射boolean到Boolean', () => {});
-    it('应该映射date到Date', () => {});
-    it('应该映射object到Schema', () => {});
-    it('应该映射array到[]', () => {});
-  });
-
-  describe('约束导出', () => {
-    it('应该导出required', () => {});
-    it('应该导出min/max（字符串）', () => {});
-    it('应该导出min/max（数字）', () => {});
-    it('应该导出enum', () => {});
-    it('应该导出default', () => {});
-  });
-
-  describe('嵌套Schema', () => {
-    it('应该导出嵌套对象', () => {});
-    it('应该导出subdocument', () => {});
-  });
-
-  describe('索引定义', () => {
-    it('应该导出index定义', () => {});
-    it('应该导出unique约束', () => {});
-  });
-});
+// 已在 MongoDBExporter.test.js 中实现
 ```
 
 ---
 
-### 5.3 MySQL导出（15个）
+### 5.3 MySQL导出（📝 待实现）
 
-#### test/exporters/mysql.test.js
+#### test/unit/exporters/MySQLExporter.test.js
 
 ```javascript
 describe('MySQL Exporter', () => {
-  describe('类型映射', () => {
-    it('应该映射string到VARCHAR', () => {});
-    it('应该映射number到INT/DECIMAL', () => {});
-    it('应该映射boolean到BOOLEAN', () => {});
-    it('应该映射date到DATETIME', () => {});
-    it('应该映射object到JSON', () => {});
-    it('应该映射array到JSON', () => {});
-  });
-
-  describe('DDL生成', () => {
-    it('应该生成CREATE TABLE语句', () => {});
-    it('应该生成PRIMARY KEY', () => {});
-    it('应该生成NOT NULL约束', () => {});
-    it('应该生成DEFAULT值', () => {});
-  });
-
-  describe('索引生成', () => {
-    it('应该生成INDEX语句', () => {});
-    it('应该生成UNIQUE INDEX', () => {});
-  });
-
-  describe('约束生成', () => {
-    it('应该生成CHECK约束', () => {});
-    it('应该生成FOREIGN KEY', () => {});
-  });
+  // ... 待实现
 });
 ```
 
 ---
 
-### 5.4 PostgreSQL导出（15个）
+### 5.4 PostgreSQL导出（📝 待实现）
 
-#### test/exporters/postgresql.test.js
+#### test/unit/exporters/PostgreSQLExporter.test.js
 
 ```javascript
 describe('PostgreSQL Exporter', () => {
-  describe('类型映射', () => {
-    it('应该映射string到VARCHAR/TEXT', () => {});
-    it('应该映射number到INTEGER/NUMERIC', () => {});
-    it('应该映射boolean到BOOLEAN', () => {});
-    it('应该映射date到TIMESTAMP', () => {});
-    it('应该映射object到JSONB', () => {});
-    it('应该映射array到ARRAY', () => {});
-  });
-
-  describe('DDL生成', () => {
-    it('应该生成CREATE TABLE语句', () => {});
-    it('应该生成PRIMARY KEY', () => {});
-    it('应该生成NOT NULL约束', () => {});
-    it('应该生成DEFAULT值', () => {});
-  });
-
-  describe('索引生成', () => {
-    it('应该生成CREATE INDEX', () => {});
-    it('应该生成GIN索引（JSON）', () => {});
-  });
-
-  describe('约束生成', () => {
-    it('应该生成CHECK约束', () => {});
-    it('应该生成FOREIGN KEY', () => {});
-  });
+  // ... 待实现
 });
 ```
 
@@ -1143,13 +1015,13 @@ jobs:
 
 ## 📝 总结
 
-- **总测试用例**: 390个
-- **预计编写时间**: 约40小时
-- **维护成本**: 中等
+- **总测试用例**: 400+
+- **已完成**: 核心引擎、内置类型、API层、验证器、MongoDB导出器
+- **待完成**: MySQL/PostgreSQL导出器、集成测试、性能测试
 - **覆盖率目标**: ≥90%
 
 **下一步**:
-1. 开始实施第一阶段（核心引擎）
-2. 同步编写对应的单元测试
-3. 每完成一个模块，确保测试覆盖率达标
+1. 补充 MySQL 和 PostgreSQL 导出器的测试。
+2. 编写集成测试和端到端测试。
+3. 进行性能基准测试。
 

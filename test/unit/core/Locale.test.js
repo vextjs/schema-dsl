@@ -90,13 +90,13 @@ describe('Locale', () => {
     });
 
     it('优先级4: 默认消息（英文）', () => {
-      const message = Locale.getMessage('string.min');
+      const message = Locale.getMessage('min');
       expect(message).to.include('length must be at least');
     });
 
     it('优先级4: 默认消息（中文）', () => {
       Locale.setLocale('zh-CN');
-      const message = Locale.getMessage('string.min');
+      const message = Locale.getMessage('min');
       expect(message).to.include('长度不能少于');
     });
 
@@ -127,7 +127,8 @@ describe('Locale', () => {
       Locale.reset();
 
       expect(Locale.getLocale()).to.equal('en-US');
-      expect(Locale.locales).to.deep.equal({});
+      // expect(Locale.locales).to.deep.equal({}); // Now restores defaults
+      expect(Object.keys(Locale.locales)).to.include('zh-CN');
       expect(Locale.customMessages).to.deep.equal({});
     });
   });

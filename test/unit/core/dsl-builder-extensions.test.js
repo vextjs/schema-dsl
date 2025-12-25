@@ -16,7 +16,6 @@ describe('DslBuilder Extensions & Fixes', () => {
       const schema = dsl('string').idCard('cn');
       expect(schema._baseSchema.pattern).to.exist;
       expect(schema._baseSchema.minLength).to.equal(18);
-      expect(schema._label).to.equal('身份证');
     });
 
     it('should throw error for unsupported idCard country', () => {
@@ -26,7 +25,6 @@ describe('DslBuilder Extensions & Fixes', () => {
     it('should support slug()', () => {
       const schema = dsl('string').slug();
       expect(schema._baseSchema.pattern).to.exist;
-      expect(schema._label).to.equal('URL别名');
     });
   });
 

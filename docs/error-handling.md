@@ -26,14 +26,13 @@
 SchemaIO 验证返回的错误对象结构：
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, validate } = require('schemaio');
 
 const schema = dsl({
   username: 'string:3-32!'.label('用户名')
 });
 
-const validator = new Validator();
-const result = validator.validate(schema, { username: 'ab' });
+const result = validate(schema, { username: 'ab' });
 
 // 返回结构
 {
@@ -53,7 +52,7 @@ const result = validator.validate(schema, { username: 'ab' });
 ### 嵌套对象错误
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, validate } = require('schemaio');
 
 const schema = dsl({
   user: {
@@ -63,8 +62,7 @@ const schema = dsl({
   }
 });
 
-const validator = new Validator();
-const result = validator.validate(schema, {
+const result = validate(schema, {
   user: {
     profile: {
       email: 'invalid'
@@ -80,14 +78,13 @@ console.log(result.errors[0].message);      // 'must match format "email"'
 ### 数组项错误
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, validate } = require('schemaio');
 
 const schema = dsl({
   items: 'array<string:3->!'
 });
 
-const validator = new Validator();
-const result = validator.validate(schema, {
+const result = validate(schema, {
   items: ['ab', 'valid']
 });
 
@@ -109,7 +106,7 @@ const schema = dsl({
   username: 'string:3-32!'
     .label('用户名')
     .messages({
-      'string.pattern': '太短了！至少要3个字符'
+      'min': '太短了！至少要3个字符'
     })
 });
 ```
@@ -123,8 +120,8 @@ const schema = dsl({
   email: 'email!'
     .label('邮箱地址')
     .messages({
-      'string.format': '邮箱格式不对哦',
-      'string.required': '邮箱不能为空'
+      'format': '邮箱格式不对哦',
+      'required': '邮箱不能为空'
     })
 });
 ```
@@ -138,14 +135,14 @@ const schema = dsl({
   username: 'string:3-32!'
     .label('用户名')
     .messages({
-      'string.minLength': '{{#label}}至少{{#limit}}个字符',
-      'string.maxLength': '{{#label}}最多{{#limit}}个字符'
+      'min': '{{#label}}至少{{#limit}}个字符',
+      'max': '{{#label}}最多{{#limit}}个字符'
     }),
   
   email: 'email!'
     .label('邮箱')
     .messages({
-      'string.format': '{{#label}}格式无效'
+      'format': '{{#label}}格式无效'
     })
 });
 ```
@@ -157,8 +154,8 @@ const { Locale } = require('schemaio');
 
 // 设置全局消息
 Locale.setMessages({
-  'string.minLength': '输入太短，要{{#limit}}个字符',
-  'string.format': '格式不正确'
+  'min': '输入太短，要{{#limit}}个字符',
+  'format': '格式不正确'
 });
 ```
 
@@ -166,36 +163,54 @@ Locale.setMessages({
 
 ## 错误码系统
 
-### 内置错误码（基于 ajv）
+### 内置错误码（简化版）
 
-SchemaIO 基于 ajv 验证器，使用 ajv 的错误关键字：
+SchemaIO 对 ajv 的错误关键字进行了简化映射，使其更易用：
 
 #### 字符串错误码
 
-| 关键字 | 说明 | params |
-|--------|------|--------|
-| `type` | 类型不是字符串 | { type: 'string' } |
-| `minLength` | 长度小于最小值 | { limit: number } |
-| `maxLength` | 长度大于最大值 | { limit: number } |
-| `format` | 格式验证失败 | { format: 'email'/'uri'/etc } |
-| `pattern` | 正则不匹配 | { pattern: string } |
-| `enum` | 不在枚举值中 | { allowedValues: array } |
+| 关键字 | 原始关键字 | 说明 | params |
+|--------|-----------|------|--------|
+| `min` | `minLength` | 长度小于最小值 | { limit: number } |
+| `max` | `maxLength` | 长度大于最大值 | { limit: number } |
+| `format` | `format` | 格式验证失败 | { format: 'email'/'uri'/etc } |
+| `pattern` | `pattern` | 正则不匹配 | { pattern: string } |
+| `enum` | `enum` | 不在枚举值中 | { allowedValues: array } |
 
 #### 数字错误码
 
-| 关键字 | 说明 | params |
-|--------|------|--------|
-| `type` | 类型不是数字 | { type: 'number' } |
-| `minimum` | 小于最小值 | { limit: number } |
-| `maximum` | 大于最大值 | { limit: number } |
-| `type` | 不是整数 | { type: 'integer' } |
+| 关键字 | 原始关键字 | 说明 | params |
+|--------|-----------|------|--------|
+| `min` | `minimum` | 小于最小值 | { limit: number } |
+| `max` | `maximum` | 大于最大值 | { limit: number } |
 
 #### 通用错误码
 
 | 关键字 | 说明 | params |
 |--------|------|--------|
 | `required` | 必填字段缺失 | { missingProperty: string } |
-| `additionalProperties` | 额外属性 | { additionalProperty: string } |
+| `type` | 类型不匹配 | { type: string } |
+
+**💡 提示**: 您可以使用简化关键字（如 `min`）或原始关键字（如 `minLength`）来定制错误消息，系统会自动处理映射。
+
+### 自动 Label 翻译 (v2.1.0)
+
+如果您在语言包中定义了 `label.{fieldName}`，系统会自动将其作为 Label 使用，无需显式调用 `.label()`。
+
+```javascript
+// 语言包
+Locale.addLocale('zh-CN', {
+  'label.username': '用户名',
+  'required': '{{#label}}不能为空'
+});
+
+// Schema
+const schema = dsl({
+  username: 'string!' // 自动查找 label.username
+});
+
+// 错误消息: "用户名不能为空"
+```
 
 ### 自定义验证错误
 
@@ -221,7 +236,7 @@ const schema = dsl({
 ### 嵌套对象验证
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, validate } = require('schemaio');
 
 const schema = dsl({
   user: {
@@ -234,8 +249,7 @@ const schema = dsl({
   }
 });
 
-const validator = new Validator();
-const result = validator.validate(schema, {
+const result = validate(schema, {
   user: {
     name: 'John',
     address: {
@@ -253,15 +267,14 @@ const result = validator.validate(schema, {
 ### 数组验证
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, validate } = require('schemaio');
 
 const schema = dsl({
   items: 'array:1-<string:3->!'
     .label('商品列表')
 });
 
-const validator = new Validator();
-const result = validator.validate(schema, {
+const result = validate(schema, {
   items: ['ab', 'valid']  // 第一项太短
 });
 

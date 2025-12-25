@@ -26,6 +26,59 @@ const { installStringExtensions, uninstallStringExtensions } = require('./lib/co
 // ========== 适配器层 ==========
 const dsl = require('./lib/adapters/DslAdapter');
 
+// 挂载静态方法 (v2.1.0)
+dsl.match = dsl.DslAdapter.match;
+dsl.if = dsl.DslAdapter.if;
+
+/**
+ * 全局配置
+ * @param {Object} options - 配置选项
+ * @param {Object} options.patterns - 验证规则扩展 (phone, idCard, creditCard)
+ * @param {Object} options.phone - 手机号验证规则扩展 (兼容旧版)
+ */
+dsl.config = function(options = {}) {
+  const patterns = require('./lib/config/patterns');
+
+  // 兼容旧版 options.phone
+  if (options.phone) {
+    Object.assign(patterns.phone, options.phone);
+  }
+
+  // 新版 options.patterns
+  if (options.patterns) {
+    if (options.patterns.phone) Object.assign(patterns.phone, options.patterns.phone);
+    if (options.patterns.idCard) Object.assign(patterns.idCard, options.patterns.idCard);
+    if (options.patterns.creditCard) Object.assign(patterns.creditCard, options.patterns.creditCard);
+  }
+
+  // 多语言支持 (v2.1.0)
+  if (options.locales) {
+    if (typeof options.locales === 'object') {
+      Object.keys(options.locales).forEach(locale => {
+        Locale.addLocale(locale, options.locales[locale]);
+      });
+    } else if (typeof options.locales === 'string') {
+      // 支持传入目录路径
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        if (fs.existsSync(options.locales) && fs.statSync(options.locales).isDirectory()) {
+          const files = fs.readdirSync(options.locales);
+          files.forEach(file => {
+            if (file.endsWith('.js') || file.endsWith('.json')) {
+              const localeName = path.basename(file, path.extname(file));
+              const messages = require(path.resolve(options.locales, file));
+              Locale.addLocale(localeName, messages);
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('[SchemaIO] Failed to load locales from path:', e.message);
+      }
+    }
+  }
+};
+
 // ========== 导出器层 ==========
 const exporters = require('./lib/exporters');
 
@@ -122,6 +175,5 @@ module.exports = {
   CONSTANTS,
 
   // 版本信息
-  VERSION: '2.0.1'              // 更新版本号
+  VERSION: '2.1.0'              // 更新版本号
 };
-

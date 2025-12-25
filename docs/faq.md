@@ -137,7 +137,7 @@ const schema = dsl({
     .label('邮箱地址')
     .messages({
       'required': '{{#label}}不能为空',
-      'email': '请输入有效的{{#label}}'
+      'format': '请输入有效的{{#label}}'
     }),
 
   username: 'string:3-32!'

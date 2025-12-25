@@ -107,7 +107,7 @@ const schema = dsl({
   // ✨ 复杂字段：String扩展链式
   email: 'email!'
     .pattern(/custom/)
-    .messages({ 'email': '邮箱格式不正确' })
+    .messages({ 'format': '邮箱格式不正确' })
     .label('邮箱地址'),
   
   username: 'string:3-32!'

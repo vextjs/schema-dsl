@@ -167,8 +167,6 @@ const registerSchema = dsl({
 });
 
 // 验证数据
-const validator = new Validator();
-
 const testData = {
   username: 'john_doe',
   email: 'john@example.com',
@@ -177,7 +175,7 @@ const testData = {
   gender: 'male'
 };
 
-const result = validator.validate(registerSchema, testData);
+const result = validate(registerSchema, testData);
 
 if (result.valid) {
   console.log('✅ 验证通过！');
@@ -461,7 +459,7 @@ const schema = dsl({
 ### 4. 完整示例（2分钟）
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, validate } = require('schemaio');
 
 // 定义用户注册Schema
 const registerSchema = dsl({
@@ -470,9 +468,9 @@ const registerSchema = dsl({
     .pattern(/^[a-zA-Z0-9_]+$/)
     .label('用户名')
     .messages({
-      'string.pattern': '只能包含字母、数字和下划线',
-      'string.min': '至少3个字符',
-      'string.max': '最多32个字符'
+      'pattern': '只能包含字母、数字和下划线',
+      'min': '至少3个字符',
+      'max': '最多32个字符'
     }),
   
   // 邮箱：标签
@@ -483,7 +481,7 @@ const registerSchema = dsl({
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
     .label('密码')
     .messages({
-      'string.pattern': '必须包含大小写字母和数字'
+      'pattern': '必须包含大小写字母和数字'
     }),
   
   // 简单字段
@@ -492,8 +490,6 @@ const registerSchema = dsl({
 });
 
 // 验证数据
-const validator = new Validator();
-
 const testData = {
   username: 'john_doe',
   email: 'john@example.com',
@@ -502,7 +498,7 @@ const testData = {
   gender: 'male'
 };
 
-const result = validator.validate(registerSchema, testData);
+const result = validate(registerSchema, testData);
 
 if (result.valid) {
   console.log('✅ 验证通过！');

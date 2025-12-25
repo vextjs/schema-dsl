@@ -108,21 +108,24 @@ const { dsl, validate } = require('schemaio');
 const result = validate(schema, data);
 ```
 
-### 2. Validator 实例验证
+### 2. Validator 实例验证（高级）
 
-需要自定义配置时使用：
+需要自定义配置（如类型转换、自定义关键字）时使用：
 
 ```javascript
 const { dsl, Validator } = require('schemaio');
 
+// 创建自定义配置的 Validator
 const validator = new Validator({
   allErrors: true,      // 返回所有错误
   useDefaults: true,    // 使用默认值
-  coerceTypes: false    // 不自动类型转换
+  coerceTypes: true     // ✨ 启用类型转换
 });
 
 const result = validator.validate(schema, data);
 ```
+
+> **注意**: `new Validator()` 会创建一个新的 Ajv 实例，有一定的初始化开销。建议在应用启动时创建并复用，避免在每次请求中创建。
 
 ### 3. 预编译验证（高性能）
 

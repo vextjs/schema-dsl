@@ -4,7 +4,7 @@
  * 验证SchemaIO的性能指标，确保满足企业级标准
  */
 
-const { Validator, dsl, joi } = require('../../index');
+const { Validator, dsl } = require('../../index');
 
 describe('性能基准测试', function() {
   // 设置较长的超时时间
@@ -113,10 +113,12 @@ describe('性能基准测试', function() {
   });
 
   describe('批量验证性能', () => {
-    const schema = joi.compile({
-      name: joi.string().required(),
-      age: joi.number().min(0).max(150)
+    const schema = dsl({
+      name: 'string!',
+      age: 'number:0-150'
     });
+
+    // console.log('Debug Schema:', JSON.stringify(schema, null, 2));
 
     it('validateBatch应该比循环调用更快', () => {
       const dataArray = Array.from({ length: 1000 }, (_, i) => ({
@@ -242,4 +244,3 @@ describe('性能基准测试', function() {
     });
   });
 });
-

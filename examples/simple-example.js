@@ -23,13 +23,32 @@ console.log('验证文章:', validate(articleSchema, {
 console.log('');
 
 // ========== 2. when条件 - 超直观 ==========
-console.log('✨ 2. 条件验证（计划中）');
-console.log('when条件验证将在后续版本提供');
+console.log('✨ 2. 条件验证');
+
+const contactSchema = dsl({
+  type: 'email|phone',
+  contact: dsl.match('type', {
+    email: 'email!',
+    phone: 'phone:cn!'
+  })
+});
+
+console.log('验证邮箱:', validate(contactSchema, { type: 'email', contact: 'test@example.com' }).valid);
+console.log('验证手机:', validate(contactSchema, { type: 'phone', contact: '13800138000' }).valid);
 console.log('');
 
 // ========== 3. 快捷方法 - 不用找正则 ==========
-console.log('✨ 3. 快捷方法（计划中）');
-console.log('phoneNumber/idCard等快捷方法将在后续版本提供');
+console.log('✨ 3. 快捷方法');
+
+const userSchema = dsl({
+  mobile: 'string!'.phoneNumber('cn'),
+  id: 'string!'.idCard('cn')
+});
+
+console.log('验证快捷方法:', validate(userSchema, {
+  mobile: '13800138000',
+  id: '110101199003071234'
+}).valid);
 console.log('');
 
 // ========== 4. Schema复用 - 不重复代码 ==========
@@ -68,7 +87,7 @@ const { Validator } = require('../index');
 const batchResult = SchemaUtils.validateBatch(
   dsl({ email: 'email!' }),
   users,
-  new Validator()
+  new Validator() // 批量验证需要 Validator 实例以复用编译结果
 );
 
 console.log('批量验证:', {
@@ -89,7 +108,7 @@ console.log(`
    .phoneNumber('cn')     // 不用找正则
 
 2. 直观
-   .when('type', {        // 清晰的条件映射
+   dsl.match('type', {    // 清晰的条件映射
      email: 'email!',
      phone: 'string:11!'
    })
@@ -100,4 +119,3 @@ console.log(`
 
 🎉 简洁 + 直观 + 强大 = 完美验证库！
 `);
-
