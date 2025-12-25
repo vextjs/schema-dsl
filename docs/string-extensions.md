@@ -178,6 +178,10 @@ const schema = dsl({
 - 返回 `true` → 验证通过
 - 返回 `false` → 验证失败（默认消息）
 
+**注意**: 
+- 异步验证器（async）需要使用 `validator.validateAsync()`（计划中）或在外部处理。
+- 目前 `validator.validate()` 是同步的，如果 `.custom()` 返回 Promise，会抛出错误提示。
+
 ---
 
 ### 4. 条件验证

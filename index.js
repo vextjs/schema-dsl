@@ -29,6 +29,12 @@ const dsl = require('./lib/adapters/DslAdapter');
 // ========== 导出器层 ==========
 const exporters = require('./lib/exporters');
 
+// ========== 初始化默认语言包 ==========
+const defaultLocales = require('./lib/locales');
+Object.entries(defaultLocales).forEach(([locale, messages]) => {
+  Locale.addLocale(locale, messages);
+});
+
 // ========== 单例Validator ==========
 let _defaultValidator = null;
 
