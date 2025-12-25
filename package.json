@@ -1,5 +1,5 @@
 {
-  "name": "schemoio",
+  "name": "schemaio",
   "version": "2.0.1",
   "description": "简洁强大的JSON Schema验证库 - DSL语法 + String扩展 + 便捷validate",
   "main": "index.js",
@@ -26,12 +26,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/schemoio.git"
+    "url": "https://github.com/schemaio/schemaio.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/schemoio/issues"
+    "url": "https://github.com/schemaio/schemaio/issues"
   },
-  "homepage": "https://github.com/yourusername/schemoio#readme",
+  "homepage": "https://github.com/schemaio/schemaio#readme",
   "engines": {
     "node": ">=12.0.0"
   },

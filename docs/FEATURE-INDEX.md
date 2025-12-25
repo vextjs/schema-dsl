@@ -63,12 +63,25 @@ const schema = dsl({
 - ✅ `validate(data)` - 验证数据
 - ✅ `validateNestingDepth(schema, maxDepth)` - 检测嵌套深度（静态方法）
 
+**默认验证器方法**（v2.0.1 新增）:
+- ✅ `username(preset?)` - 用户名验证（preset: 'short'|'medium'|'long'|'5-20'）
+- ✅ `password(strength?)` - 密码强度验证（strength: 'weak'|'medium'|'strong'|'veryStrong'）
+- ✅ `phone(country?)` - 手机号验证（country: 'cn'|'us'|'uk'|'hk'|'tw'|'international'）
+
 **使用示例**:
 ```javascript
+// 基础链式调用
 const schema = dsl('string:3-32!')
   .pattern(/^[a-zA-Z0-9_]+$/)
   .label('用户名')
   .messages({ 'pattern': '只能包含字母、数字和下划线' });
+
+// 使用默认验证器
+const userSchema = dsl({
+  username: dsl('string!').username(),           // 自动设置3-32长度+正则
+  password: dsl('string!').password('strong'),   // 强密码验证
+  phone: dsl('string!').phone('cn')              // 中国手机号验证
+});
 ```
 
 **文档位置**:

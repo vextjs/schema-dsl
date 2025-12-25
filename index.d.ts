@@ -1,5 +1,5 @@
 // Type definitions for SchemaIO v2.0.1
-// Project: https://github.com/yourname/schemaio
+// Project: https://github.com/schemaio/schemaio
 // Definitions by: SchemaIO Team
 
 
@@ -118,6 +118,24 @@ declare module 'schemaio' {
      * 验证数据
      */
     validate(data: any, context?: any): Promise<ValidationResult>;
+
+    /**
+     * 用户名验证（自动设置合理约束）
+     * @param preset - 预设: 'short'(3-16) | 'medium'(3-32) | 'long'(3-64) | '5-20'等范围字符串
+     */
+    username(preset?: 'short' | 'medium' | 'long' | string | { minLength?: number; maxLength?: number; allowUnderscore?: boolean; allowNumber?: boolean }): this;
+
+    /**
+     * 密码强度验证
+     * @param strength - 强度: 'weak' | 'medium' | 'strong' | 'veryStrong'
+     */
+    password(strength?: 'weak' | 'medium' | 'strong' | 'veryStrong'): this;
+
+    /**
+     * 手机号验证
+     * @param country - 国家代码: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'
+     */
+    phone(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): this;
   }
 
   // ========== String 扩展 ==========
@@ -143,6 +161,12 @@ declare module 'schemaio' {
       when(refField: string, options: { is: any; then: DslBuilder | JSONSchema; otherwise?: DslBuilder | JSONSchema }): DslBuilder;
       default(value: any): DslBuilder;
       toSchema(): JSONSchema;
+      /** 用户名验证 */
+      username(preset?: 'short' | 'medium' | 'long' | string): DslBuilder;
+      /** 密码强度验证 */
+      password(strength?: 'weak' | 'medium' | 'strong' | 'veryStrong'): DslBuilder;
+      /** 手机号验证 */
+      phone(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): DslBuilder;
     }
   }
 
@@ -274,6 +298,44 @@ declare module 'schemaio' {
    */
   export class SchemaHelper {
     static merge(schema1: JSONSchema, schema2: JSONSchema): JSONSchema;
+    static clone(schema: JSONSchema): JSONSchema;
+  }
+
+  /**
+   * Schema 工具类 (v2.0.1)
+   */
+  export class SchemaUtils {
+    /** 创建可复用的Schema片段 */
+    static reusable<T>(factory: () => T): () => T;
+    /** 创建Schema片段库 */
+    static createLibrary<T extends Record<string, () => any>>(fragments: T): T;
+    /** 合并多个Schema */
+    static merge(...schemas: JSONSchema[]): JSONSchema;
+    /** 扩展Schema */
+    static extend(baseSchema: JSONSchema, extensions: Record<string, any>): JSONSchema;
+    /** 挑选Schema的部分字段 */
+    static pick(schema: JSONSchema, fields: string[]): JSONSchema;
+    /** 排除Schema的部分字段 */
+    static omit(schema: JSONSchema, fields: string[]): JSONSchema;
+    /** 创建带性能监控的Validator */
+    static withPerformance(validator: Validator): Validator;
+    /** 批量验证 */
+    static validateBatch(schema: JSONSchema, dataArray: any[], validator: Validator): {
+      results: Array<{ index: number; valid: boolean; errors: any; data: any }>;
+      summary: { total: number; valid: number; invalid: number; duration: number; averageTime: number };
+    };
+    /** 检查嵌套深度 */
+    static validateNestingDepth(schema: JSONSchema, maxDepth?: number): {
+      valid: boolean;
+      depth: number;
+      path: string;
+      message: string;
+    };
+    /** 导出为Markdown */
+    static toMarkdown(schema: JSONSchema, options?: { title?: string; locale?: string }): string;
+    /** 导出为HTML */
+    static toHTML(schema: JSONSchema, options?: { title?: string }): string;
+    /** 克隆Schema */
     static clone(schema: JSONSchema): JSONSchema;
   }
 
