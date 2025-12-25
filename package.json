@@ -1,20 +1,26 @@
 {
   "name": "schemoio",
-  "version": "0.1.0",
-  "description": "一个简洁优雅的Schema定义库，支持多种风格的Schema定义，并可转换为各种数据库格式",
+  "version": "2.0.1",
+  "description": "简洁强大的JSON Schema验证库 - DSL语法 + String扩展 + 便捷validate",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "example": "node example.js"
+    "test": "mocha test/unit/**/*.test.js",
+    "test:integration": "mocha test/integration/**/*.test.js",
+    "test:all": "mocha test/**/*.test.js",
+    "coverage": "nyc npm test",
+    "lint": "eslint lib/**/*.js",
+    "example": "node examples/dsl-style.js"
   },
   "keywords": [
     "schema",
     "validation",
-    "database",
+    "dsl",
+    "string-extensions",
+    "json-schema",
     "mongodb",
     "mysql",
     "postgresql",
-    "dsl"
+    "typescript"
   ],
   "author": "",
   "license": "MIT",
@@ -29,6 +35,16 @@
   "engines": {
     "node": ">=12.0.0"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^2.1.1"
+  },
+  "devDependencies": {
+    "chai": "^4.5.0",
+    "eslint": "^8.57.1",
+    "mocha": "^10.8.2",
+    "monsqlize": "^1.0.1",
+    "nyc": "^15.1.0",
+    "sinon": "^17.0.1"
+  }
 }

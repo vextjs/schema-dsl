@@ -1,153 +1,177 @@
-# SchemaIO 2.0 文档索引
+# SchemaIO 文档索引
 
-> **版本**: v2.0.0  
-> **更新日期**: 2025-12-24  
+**快速导航**: 所有 API 文档和使用指南的完整列表
 
-快速导航：所有 API 文档和使用指南的完整列表
+---
+
+## 🌟 类型系统（核心功能）⭐
+
+SchemaIO 提供了**6种强大的类型类**和**72个方法**，支持链式调用。
+
+| 类型 | 方法数 | 亮点功能 | 文档 |
+|------|--------|---------|------|
+| **StringType** | **18个** | IPv4/IPv6/Hostname/Trim/Lowercase | [📖 详细文档](types/string-type.md) ⭐ |
+| **NumberType** | 12个 | Integer/Port/Precision/Multiple | [📖 详细文档](types/number-type.md) |
+| **BooleanType** | 5个 | Truthy/Falsy/Strict | [📖 详细文档](types/boolean-type.md) |
+| **ObjectType** | 15个 | 嵌套/动态键/Unknown | [📖 详细文档](types/object-type.md) |
+| **ArrayType** | 12个 | Unique/Ordered/Sparse | [📖 详细文档](types/array-type.md) |
+| **DateType** | 10个 | ISO/Timestamp/Range | [📖 详细文档](types/date-type.md) |
+
+**类型系统总览**: [TYPES.md - 完整指南](TYPES.md) 🔥
+
+---
+
+## 🚀 快速开始
+
+| 文档 | 说明 |
+|------|------|
+| [README.md](../README.md) | 项目介绍、安装和快速开始 |
+| [quick-start.md](quick-start.md) | 5分钟快速上手教程 |
 
 ---
 
 ## 📚 核心概念
 
-| 文档 | 说明 | 状态 |
+| 文档 | 说明 |
+|------|------|
+| [adapter-pattern.md](adapter-pattern.md) | 适配器模式架构说明 |
+| [json-schema-basics.md](json-schema-basics.md) | JSON Schema 基础知识 |
+
+---
+
+## 🎯 适配器 API（Adapters）
+
+### Joi 风格 API
+
+| 文档 | 方法 | 说明 |
 |------|------|------|
-| [getting-started.md](getting-started.md) | 快速入门指南 | 🔄 待编写 |
-| [core-concepts.md](core-concepts.md) | 核心概念和设计理念 | 🔄 待编写 |
-| [type-system.md](type-system.md) | 类型系统详解 | 🔄 待编写 |
-| [validation-flow.md](validation-flow.md) | 验证流程详解 | 🔄 待编写 |
+| [joi-string.md](joi-string.md) | `joi.string()` | 创建字符串类型 Schema |
+| [joi-number.md](joi-number.md) | `joi.number()` | 创建数字类型 Schema |
+| [joi-integer.md](joi-integer.md) | `joi.integer()` | 创建整数类型 Schema |
+| [joi-boolean.md](joi-boolean.md) | `joi.boolean()` | 创建布尔类型 Schema |
+| [joi-object.md](joi-object.md) | `joi.object()` | 创建对象类型 Schema |
+| [joi-array.md](joi-array.md) | `joi.array()` | 创建数组类型 Schema |
+| [joi-compile.md](joi-compile.md) | `joi.compile()` | 编译对象 Schema |
+
+### DSL 风格 API
+
+| 文档 | 说明 |
+|------|------|
+| [dsl-syntax.md](dsl-syntax.md) | **DSL 语法完整指南** ⭐ |
+| [dsl-basic-types.md](dsl-basic-types.md) | 基本类型定义 |
+| [dsl-constraints.md](dsl-constraints.md) | 约束条件语法 |
+| [dsl-nested-objects.md](dsl-nested-objects.md) | 嵌套对象支持 |
+| [dsl-arrays.md](dsl-arrays.md) | 数组类型语法 |
 
 ---
 
-## 🎨 API风格
+## ✅ 核心类（Core Classes）
 
-| 文档 | 说明 | 状态 |
+### JSONSchemaCore
+
+| 文档 | 方法 | 说明 |
 |------|------|------|
-| [joi-style-api.md](joi-style-api.md) | Joi风格链式调用API | 🔄 待编写 |
-| [dsl-style-api.md](dsl-style-api.md) | DSL风格简洁API | 🔄 待编写 |
-| [json-schema-api.md](json-schema-api.md) | JSON Schema标准API | 🔄 待编写 |
-| [functional-api.md](functional-api.md) | 函数式组合API | 🔄 待编写 |
+| [jsonschemacore.md](jsonschemacore.md) | 类概述 | JSONSchemaCore 类完整说明 |
+| [set-type.md](set-type.md) | `setType()` | 设置 Schema 类型 |
+| [set-required.md](set-required.md) | `setRequired()` | 设置必填字段 |
+| [set-property.md](set-property.md) | `setProperty()` | 设置单个属性 |
+| [set-properties.md](set-properties.md) | `setProperties()` | 设置多个属性 |
+| [get-schema.md](get-schema.md) | `getSchema()` | 获取 Schema 对象 |
 
----
+### Validator
 
-## 🔧 核心API
-
-### Schema构建
-
-| 文档 | API | 说明 | 状态 |
-|------|-----|------|------|
-| [schema-builder.md](api/schema-builder.md) | `SchemaBuilder` | Schema构建器 | 🔄 待编写 |
-| [type-system.md](api/type-system.md) | `TypeSystem` | 类型系统 | 🔄 待编写 |
-
-### 验证
-
-| 文档 | API | 说明 | 状态 |
-|------|-----|------|------|
-| [validator.md](api/validator.md) | `Validator` | 验证引擎 | 🔄 待编写 |
-| [error-formatter.md](api/error-formatter.md) | `ErrorFormatter` | 错误格式化 | 🔄 待编写 |
-
-### 缓存
-
-| 文档 | API | 说明 | 状态 |
-|------|-----|------|------|
-| [cache-manager.md](api/cache-manager.md) | `CacheManager` | 缓存管理器 | 🔄 待编写 |
-
----
-
-## 📦 内置类型
-
-| 文档 | 类型 | 说明 | 状态 |
-|------|------|------|------|
-| [string-type.md](types/string-type.md) | `string` | 字符串类型 | 🔄 待编写 |
-| [number-type.md](types/number-type.md) | `number` | 数字类型 | 🔄 待编写 |
-| [boolean-type.md](types/boolean-type.md) | `boolean` | 布尔类型 | 🔄 待编写 |
-| [date-type.md](types/date-type.md) | `date` | 日期类型 | 🔄 待编写 |
-| [object-type.md](types/object-type.md) | `object` | 对象类型 | 🔄 待编写 |
-| [array-type.md](types/array-type.md) | `array` | 数组类型 | 🔄 待编写 |
-| [custom-types.md](types/custom-types.md) | 自定义类型 | 如何创建自定义类型 | 🔄 待编写 |
-
----
-
-## 🔍 验证器
-
-| 文档 | 验证器 | 说明 | 状态 |
-|------|--------|------|------|
-| [built-in-validators.md](validators/built-in-validators.md) | 内置验证器 | min/max/pattern等 | 🔄 待编写 |
-| [format-validators.md](validators/format-validators.md) | 格式验证器 | email/url/uuid等 | 🔄 待编写 |
-| [custom-validators.md](validators/custom-validators.md) | 自定义验证器 | 如何创建自定义验证器 | 🔄 待编写 |
-
----
-
-## 📤 导出器
-
-| 文档 | 导出器 | 说明 | 状态 |
-|------|--------|------|------|
-| [json-schema-export.md](exporters/json-schema-export.md) | JSON Schema | 导出为JSON Schema | 🔄 待编写 |
-| [mongodb-export.md](exporters/mongodb-export.md) | MongoDB | 导出为Mongoose Schema | 🔄 待编写 |
-| [mysql-export.md](exporters/mysql-export.md) | MySQL | 导出为MySQL DDL | 🔄 待编写 |
-| [postgresql-export.md](exporters/postgresql-export.md) | PostgreSQL | 导出为PostgreSQL DDL | 🔄 待编写 |
-
----
-
-## 🔌 插件系统
-
-| 文档 | 说明 | 状态 |
+| 文档 | 方法 | 说明 |
 |------|------|------|
-| [plugin-system.md](plugins/plugin-system.md) | 插件系统架构 | 🔄 待编写 |
-| [creating-plugins.md](plugins/creating-plugins.md) | 如何创建插件 | 🔄 待编写 |
-| [plugin-examples.md](plugins/plugin-examples.md) | 插件示例 | 🔄 待编写 |
+| [validator.md](validator.md) | 类概述 | Validator 类完整说明 |
+| [validate.md](validate.md) | `validate()` | 验证数据 |
+| [compile.md](compile.md) | `compile()` | 编译 Schema |
+| [validate-batch.md](validate-batch.md) | `validateBatch()` | 批量验证 |
+| [add-keyword.md](add-keyword.md) | `addKeyword()` | 添加自定义关键字 |
+| [add-format.md](add-format.md) | `addFormat()` | 添加自定义格式 |
 
 ---
 
-## 📖 使用指南
+## 🗄️ 导出器（Exporters）
 
-| 文档 | 说明 | 状态 |
+### MongoDB 导出器
+
+| 文档 | 方法 | 说明 |
 |------|------|------|
-| [validation-guide.md](guides/validation-guide.md) | 验证完整指南 | 🔄 待编写 |
-| [nested-objects.md](guides/nested-objects.md) | 嵌套对象验证 | 🔄 待编写 |
-| [async-validation.md](guides/async-validation.md) | 异步验证 | 🔄 待编写 |
-| [error-handling.md](guides/error-handling.md) | 错误处理最佳实践 | 🔄 待编写 |
-| [performance-optimization.md](guides/performance-optimization.md) | 性能优化指南 | 🔄 待编写 |
-| [migration-from-v1.md](guides/migration-from-v1.md) | 从v1.0迁移指南 | 🔄 待编写 |
+| [mongodb-exporter.md](mongodb-exporter.md) | 类概述 | MongoDB 导出器完整说明 |
+| [mongodb-export.md](mongodb-export.md) | `export()` | 导出 MongoDB Schema |
+| [mongodb-generate-command.md](mongodb-generate-command.md) | `generateCommand()` | 生成创建集合命令 |
 
----
+### MySQL 导出器
 
-## 💡 示例
-
-| 文档 | 说明 | 状态 |
+| 文档 | 方法 | 说明 |
 |------|------|------|
-| [examples/user-registration.md](examples/user-registration.md) | 用户注册表单验证 | 🔄 待编写 |
-| [examples/api-validation.md](examples/api-validation.md) | API请求验证 | 🔄 待编写 |
-| [examples/config-validation.md](examples/config-validation.md) | 配置文件验证 | 🔄 待编写 |
-| [examples/database-schema.md](examples/database-schema.md) | 数据库Schema生成 | 🔄 待编写 |
+| [mysql-exporter.md](mysql-exporter.md) | 类概述 | MySQL 导出器完整说明 |
+| [mysql-export.md](mysql-export.md) | `export()` | 导出 MySQL DDL |
+| [mysql-generate-index.md](mysql-generate-index.md) | `generateIndex()` | 生成索引 DDL |
 
----
+### PostgreSQL 导出器
 
-## 🔧 开发者文档
-
-| 文档 | 说明 | 状态 |
+| 文档 | 方法 | 说明 |
 |------|------|------|
-| [contributing.md](../CONTRIBUTING.md) | 贡献指南 | 🔄 待编写 |
-| [architecture.md](architecture.md) | 架构设计文档 | 🔄 待编写 |
-| [testing-guide.md](testing-guide.md) | 测试指南 | 🔄 待编写 |
+| [postgresql-exporter.md](postgresql-exporter.md) | 类概述 | PostgreSQL 导出器完整说明 |
+| [postgresql-export.md](postgresql-export.md) | `export()` | 导出 PostgreSQL DDL |
+| [postgresql-generate-index.md](postgresql-generate-index.md) | `generateIndex()` | 生成索引 DDL |
 
 ---
 
-## 📝 更新日志
+## 🛠️ 工具类（Utilities）
 
-- **v2.0.0** (2025-12-24)
-  - 初始文档结构创建
-  - 核心引擎实现完成
-
----
-
-## 🔗 外部资源
-
-- [GitHub仓库](https://github.com/yourusername/schemaio)
-- [NPM包](https://www.npmjs.com/package/schemaio)
-- [问题反馈](https://github.com/yourusername/schemaio/issues)
+| 文档 | 说明 |
+|------|------|
+| [type-converter.md](type-converter.md) | TypeConverter - 类型转换工具 |
+| [schema-helper.md](schema-helper.md) | SchemaHelper - Schema 辅助工具 |
 
 ---
 
-**文档编写进度**: 0/50+ (0%)  
-**下一步**: 实现内置类型后，开始编写API文档
+## 📖 使用指南（Guides）
+
+| 文档 | 说明 |
+|------|------|
+| [validation-guide.md](validation-guide.md) | 数据验证完整指南 |
+| [export-guide.md](export-guide.md) | 数据库导出完整指南 |
+| [custom-validation.md](custom-validation.md) | 自定义验证扩展 |
+| [performance-tips.md](performance-tips.md) | 性能优化建议 |
+| [best-practices.md](best-practices.md) | 最佳实践 |
+
+---
+
+## 📝 示例代码（Examples）
+
+| 文件 | 说明 |
+|------|------|
+| [joi-style.js](../examples/joi-style.js) | Joi 风格完整示例 |
+| [dsl-style.js](../examples/dsl-style.js) | DSL 风格完整示例 |
+| [export-demo.js](../examples/export-demo.js) | 数据库导出示例 |
+
+---
+
+## 🔧 开发指南
+
+| 文档 | 说明 |
+|------|------|
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | 贡献指南 |
+| [architecture.md](architecture.md) | 架构设计说明 |
+
+---
+
+## 📊 版本信息
+
+| 文档 | 说明 |
+|------|------|
+| [STATUS.md](../STATUS.md) | 项目状态 |
+| [CHANGELOG.md](../CHANGELOG.md) | 更新日志 |
+
+---
+
+**图例说明**:
+- ⭐ 重点推荐文档
+- 🆕 新增功能
+
+**文档版本**: v1.0.0  
+**最后更新**: 2025-12-24
 

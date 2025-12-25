@@ -1,0 +1,10 @@
+node_modules/
+coverage/
+.nyc_output/
+dist/
+build/
+*.log
+.DS_Store
+.temp/
+reports/
+
