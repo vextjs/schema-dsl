@@ -314,18 +314,17 @@ const schema = dsl({
 
 ---
 
-## 实现方案对比
+## 注意事项
 
-### ❌ 不能这样 vs ✅ 只能这样
+### 1. 条件验证
 
-#### 1. 条件验证
+⚠️ **注意**: DSL 字符串不支持直接写条件逻辑
 
-❌ **不能**: 直接在DSL字符串中写条件
 ```javascript
 'string | number'  // ❌ 不支持
 ```
 
-✅ **只能**: 使用 `.when()` 方法
+**解决方案**: 使用 `.when()` 方法
 ```javascript
 const schema = dsl({
   contactType: 'email|phone',
@@ -337,43 +336,51 @@ const schema = dsl({
 });
 ```
 
-#### 2. 数组长度 + 元素约束
+---
 
-✅ **最佳方式**: 使用新语法（v2.0+）
+### 2. 数组约束
+
+✅ **推荐**: 使用简洁的 DSL 语法
 ```javascript
-'array!1-10<string:1-20>'  // ✅ 推荐
+'array!1-10<string:1-20>'  // 1-10个元素，每个1-20字符
 ```
 
-❌ **旧方式**: 分步定义（仍然支持）
+⚠️ **也可以**: 使用完整 JSON Schema 格式（不推荐，太繁琐）
 ```javascript
 {
   type: 'array',
-  items: { type: 'string', minLength: 1, maxLength: 20 },
+  items: { type: 'string' },
   minItems: 1,
   maxItems: 10
 }
 ```
 
-#### 3. 复杂正则验证
+---
 
-❌ **不能**: 直接在DSL中写正则
+### 3. 正则验证
+
+⚠️ **注意**: DSL 字符串不支持直接写正则
+
 ```javascript
 'string:/^[a-z]+$/'  // ❌ 不支持
 ```
 
-✅ **只能**: 使用 `.pattern()` 方法
+**解决方案**: 使用 `.pattern()` 方法
 ```javascript
-'string!'.pattern(/^[a-z]+$/)  // ✅
+'string!'.pattern(/^[a-z]+$/)  // ✅ 推荐
 ```
 
-#### 4. 自定义验证
+---
 
-❌ **不能**: DSL中写逻辑
+### 4. 自定义验证
+
+⚠️ **注意**: DSL 字符串不支持自定义逻辑
+
 ```javascript
 'string!@custom'  // ❌ 不支持
 ```
 
-✅ **只能**: 使用 `.custom()` 方法
+**解决方案**: 使用 `.custom()` 方法
 ```javascript
 'string!'.custom(async (value) => {
   // 自定义逻辑
@@ -383,14 +390,17 @@ const schema = dsl({
 })
 ```
 
-#### 5. 对象数组详细定义
+---
 
-❌ **不推荐**: 复杂嵌套
+### 5. 对象数组详细定义
+
+⚠️ **注意**: DSL 简写不支持对象数组的详细定义
+
 ```javascript
 'array<object{name:string,age:number}>'  // ❌ 不支持
 ```
 
-✅ **只能**: 使用完整对象定义
+**解决方案**: 使用完整对象定义
 ```javascript
 const schema = dsl({
   users: {
@@ -400,13 +410,6 @@ const schema = dsl({
       age: 'number:18-'
     }
   }
-});
-
-// 或使用 DslAdapter
-const { DslAdapter } = require('schemaio');
-const itemSchema = DslAdapter.parseObject({
-  name: 'string!',
-  age: 'number:18-'
 });
 ```
 
