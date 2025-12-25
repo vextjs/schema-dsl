@@ -49,6 +49,9 @@ age: 'number:18-120'
 | `.default(value)` | 默认值 | `'string'.default('guest')` |
 | `.username(range?)` | 用户名验证 | `'string!'.username('5-20')` |
 | `.phone(country)` | 手机号验证 | `'string!'.phone('cn')` |
+| `.phoneNumber(country)` | 手机号验证(别名) | `'string!'.phoneNumber('cn')` |
+| `.idCard(country)` | 身份证验证 | `'string!'.idCard('cn')` |
+| `.slug()` | URL别名验证 | `'string!'.slug()` |
 | `.password(strength)` | 密码验证 | `'string!'.password('strong')` |
 
 ---
@@ -213,7 +216,13 @@ const schema = dsl({
   phone: 'string!'.phone('cn'),  // 中国手机号
   
   // 密码强度
-  password: 'string!'.password('strong')  // 强密码
+  password: 'string!'.password('strong'),  // 强密码
+
+  // 身份证验证 (v2.0.1)
+  idCard: 'string!'.idCard('cn'),
+
+  // URL别名验证 (v2.0.1)
+  slug: 'string!'.slug()
 });
 ```
 
