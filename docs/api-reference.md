@@ -211,6 +211,80 @@ dsl('string').default('guest')
 
 ---
 
+#### `.username(preset?)`
+
+用户名验证（自动设置长度和正则）。
+
+**参数**:
+- `preset` (**string** | **Object**, 可选) - 预设配置
+  - 字符串：`'short'` | `'medium'` | `'long'` | `'5-20'`
+  - 对象：`{ minLength, maxLength, allowUnderscore, allowNumber }`
+  - 默认值：`'medium'` (3-32位)
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+// 默认 medium (3-32位)
+dsl('string!').username()
+
+// 自定义范围
+dsl('string!').username('5-20')
+
+// 使用预设
+dsl('string!').username('short')  // 3-16位
+```
+
+---
+
+#### `.password(strength?)`
+
+密码强度验证（自动设置长度和正则）。
+
+**参数**:
+- `strength` (**string**, 可选) - 强度级别
+  - `'weak'` - 最少6位
+  - `'medium'` - 8位，字母+数字（默认）
+  - `'strong'` - 8位，大小写+数字
+  - `'veryStrong'` - 10位，大小写+数字+特殊字符
+
+**返回**: **DslBuilder**
+
+**示例**:
+```javascript
+dsl('string!').password('strong')
+```
+
+---
+
+#### `.phone(country?)`
+
+手机号验证（自动设置长度和正则）。
+
+**参数**:
+- `country` (**string**, 可选) - 国家代码
+  - `'cn'` - 中国（默认）
+  - `'us'` - 美国
+  - `'uk'` - 英国
+  - `'hk'` - 香港
+  - `'tw'` - 台湾
+  - `'international'` - 国际格式
+
+**返回**: **DslBuilder**
+
+**注意**: 自动将类型纠正为 `string`（即使写成 `number` 也会自动修正）
+
+**示例**:
+```javascript
+// 推荐写法
+dsl('string!').phone('cn')
+
+// 自动纠正：number → string
+dsl('number!').phone('cn')  // 自动纠正为 string
+```
+
+---
+
 #### `.toSchema()`
 
 转换为 JSON Schema 对象。
