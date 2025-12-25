@@ -1,53 +1,30 @@
 # SchemaIO
 
-> **简洁 + 强大 = 完美平衡**  
-> v2.0.1 新特性：字符串直接链式调用，无需 `dsl()` 包裹！
-
-基于统一DSL Pattern的JSON Schema验证库，支持字符串链式调用和数据库Schema导出。
+> **简洁而强大的 JSON Schema 验证库**  
+> 基于 DSL 语法，支持字符串链式调用和数据库 Schema 导出
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg)](https://nodejs.org)
-[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/yourname/schemaio)
+[![Tests](https://img.shields.io/badge/tests-97%20passing-success.svg)](#)
 
-## ✨ 核心特性
+---
 
-- ✨ **String扩展（v2.0.1）**: 字符串直接链式调用，语法更简洁
-- 🎯 **DSL语法**: 简洁的DSL定义Schema，一行搞定基础验证
-- ✅ **标准验证**: 基于JSON Schema Draft 7，使用ajv验证器
-- 🗄️ **数据库导出**: 导出MongoDB、MySQL、PostgreSQL Schema
-- 🔧 **自定义验证**: 支持正则、自定义函数、异步验证
-- 🚀 **高性能**: 性能开销<5%，100%向后兼容
-- 📦 **轻量级**: 核心代码精简，无冗余依赖
+## 📑 目录
 
-## 🆕 v2.0.1 新特性
+- [安装](#-安装)
+- [快速开始](#-快速开始)
+- [核心特性](#-核心特性)
+- [DSL 语法](#-dsl-语法)
+- [String 扩展](#-string-扩展)
+- [默认验证器](#-默认验证器)
+- [验证功能](#-验证功能)
+- [数据库导出](#-数据库导出)
+- [多语言支持](#-多语言支持)
+- [错误处理](#-错误处理)
+- [工具函数](#-工具函数)
+- [完整文档](#-完整文档)
 
-### String 扩展 - 字符串直接链式调用
-
-```javascript
-const { dsl } = require('schemaio');
-
-// ✨ v2.0.1：字符串直接链式调用
-const schema = dsl({
-  email: 'email!'
-    .pattern(/custom/)
-    .messages({ 'pattern': '格式不正确' })
-    .label('邮箱地址'),
-  
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
-    .label('用户名'),
-  
-  // 简单字段仍然可以用纯DSL
-  age: 'number:18-120',
-  role: 'user|admin'
-});
-```
-
-**核心优势**:
-- ✅ 减少 `dsl()` 包裹，代码更简洁
-- ✅ 字符串直接调用方法，更直观自然
-- ✅ 支持所有DslBuilder方法
-- ✅ 100%向后兼容
+---
 
 ## 📦 安装
 
@@ -55,121 +32,127 @@ const schema = dsl({
 npm install schemaio
 ```
 
-## 🚀 快速开始（5分钟）
+---
 
-### 基础用法（推荐）
+## 🚀 快速开始
 
 ```javascript
 const { dsl, validate } = require('schemaio');
 
 // 定义Schema
-const userSchema = dsl({
-  username: 'string:3-32!',      // 必填字符串，长度3-32
-  email: 'email!',                // 必填邮箱
-  age: 'number:18-120'            // 可选数字，范围18-120
+const schema = dsl({
+  username: 'string:3-32!',
+  email: 'email!',
+  age: 'number:18-120'
 });
 
-// 验证数据（使用便捷方法，无需new）
-const result = validate(userSchema, {
+// 验证数据
+const result = validate(schema, {
   username: 'john_doe',
   email: 'john@example.com',
   age: 25
 });
 
-console.log(result.valid); // true
+console.log(result.valid);  // true
 ```
 
-### 完整用法（需要自定义配置时）
+**📖 详细教程**: [快速开始](docs/quick-start.md)
 
-```javascript
-const { dsl, Validator } = require('schemaio');
+---
 
-// 创建自定义Validator
-const validator = new Validator({
-  allErrors: true,  // 返回所有错误
-  verbose: true     // 详细错误信息
-});
+## ✨ 核心特性
 
-const schema = dsl({ email: 'email!' });
-const result = validator.validate(schema, { email: 'test@example.com' });
-```
+- **简洁语法**: 一行代码定义验证规则
+- **String扩展**: 字符串直接链式调用方法
+- **默认验证器**: 内置用户名、手机号、密码验证
+- **数据库导出**: 导出MongoDB/MySQL/PostgreSQL Schema
+- **多语言支持**: 内置中英文，可自定义语言包
+- **高性能**: 基于ajv，支持编译缓存
+- **轻量级**: 无冗余依赖
 
-### String 扩展高级用法
+---
 
-```javascript
-const schema = dsl({
-  // 正则验证 + 自定义消息
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
-    .messages({
-      'pattern': '只能包含字母、数字和下划线'
-    })
-    .label('用户名'),
-  
-  // 邮箱验证 + 标签
-  email: 'email!'.label('邮箱地址'),
-  
-  // 密码复杂度
-  password: 'string:8-64!'
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
-    .label('密码'),
-  
-  // 枚举 + 默认值
-  language: 'en|zh|ja'.default('zh')
-});
-```
-
-## 📚 DSL 语法速查
+## 📚 DSL 语法
 
 ### 基本类型
 
 ```javascript
-'string'      // 字符串
-'number'      // 数字
-'integer'     // 整数
-'boolean'     // 布尔值
-'email'       // 邮箱
-'url'         // URL
-'date'        // 日期
+const schema = dsl({
+  name: 'string',       // 字符串
+  age: 'number',        // 数字
+  count: 'integer',     // 整数
+  active: 'boolean',    // 布尔值
+  email: 'email',       // 邮箱
+  website: 'url',       // URL
+  id: 'uuid',           // UUID
+  created: 'date'       // 日期
+});
 ```
 
 ### 约束条件
 
 ```javascript
-'string:3-32'         // 字符串长度 3-32
-'number:0-100'        // 数字范围 0-100
-'string:100'          // 字符串最大长度 100
+const schema = dsl({
+  // 范围约束
+  username: 'string:3-32',    // 长度3-32（最小3，最大32）
+  age: 'number:18-120',       // 范围18-120
+  
+  // 单边约束
+  bio: 'string:500',          // 最大长度500（简写）
+  bio: 'string:-500',         // 最大长度500（明确写法，与上面等价）
+  content: 'string:10-',      // 最小长度10（无最大限制）
+  
+  // 数组约束
+  tags: 'array:1-10',         // 数组长度1-10
+  items: 'array:1-',          // 数组最少1个
+  options: 'array:-20'        // 数组最多20个
+});
 ```
+
+**语法规则**：
+- `type:max` → 最大值（简写，常用）
+- `type:min-max` → 范围（最小-最大）
+- `type:min-` → 只限制最小值
+- `type:-max` → 只限制最大值（与简写等价）
 
 ### 必填标记
 
 ```javascript
-'string:3-32!'        // 必填字符串
-'email!'              // 必填邮箱
-```
-
-### 格式类型
-
-```javascript
-'email'               // 邮箱格式
-'url'                 // URL格式
-'uuid'                // UUID格式
-'date'                // 日期格式
+const schema = dsl({
+  username: 'string:3-32!',   // 必填
+  email: 'email!',            // 必填
+  age: 'number:18-120'        // 可选
+});
 ```
 
 ### 枚举值
 
 ```javascript
-'active|inactive|pending'   // 枚举值
+const schema = dsl({
+  status: 'active|inactive|pending',   // 三选一
+  role: 'admin|user|guest'             // 三选一
+});
 ```
 
 ### 数组类型
 
 ```javascript
-'array<string>'             // 字符串数组
-'array<string:1-20>'        // 字符串数组，每项长度1-20
-'array<number:0-100>'       // 数字数组，范围0-100
+const schema = dsl({
+  // 基础数组
+  tags: 'array<string>',
+  scores: 'array<number>',
+  
+  // 带长度约束
+  images: 'array:1-5<url>',           // 1-5个URL
+  items: 'array:1-<string>',          // 至少1个
+  
+  // 元素带约束
+  tags: 'array<string:1-20>',         // 每项1-20字符
+  scores: 'array:1-5<number:0-100>'   // 1-5个，每个0-100
+});
 ```
+
+**📖 完整语法**: [DSL 语法指南](docs/dsl-syntax.md)
 
 ### 嵌套对象
 
@@ -177,38 +160,213 @@ const schema = dsl({
 const schema = dsl({
   user: {
     name: 'string:1-100!',
+    email: 'email!',
     profile: {
       bio: 'string:500',
-      website: 'url'
+      website: 'url',
+      social: {
+        twitter: 'url',
+        github: 'url'
+      }
     }
   }
 });
 ```
+
+---
+
+## 🆕 String 扩展
+
+字符串可以直接调用方法，无需 `dsl()` 包裹：
+
+```javascript
+const schema = dsl({
+  // 正则验证
+  username: 'string:3-32!'
+    .pattern(/^[a-zA-Z0-9_]+$/)
+    .messages({ 'pattern': '只能包含字母、数字和下划线' })
+    .label('用户名'),
+  
+  // 自定义验证（优雅方式：只在失败时返回）
+  email: 'email!'
+    .custom(async (value) => {
+      const exists = await checkEmailExists(value);
+      if (exists) return '邮箱已被占用';  // 失败时返回错误消息
+      // 成功时无需返回
+    })
+    .label('邮箱'),
+  
+  // 条件验证
+  contact: 'string'
+    .when('contactType', {
+      is: 'email',
+      then: 'email!',
+      otherwise: 'string'.pattern(/^\d{11}$/)
+    })
+});
+```
+
+**可用方法**:
+- `.pattern(regex, msg)` - 正则验证
+- `.label(text)` - 字段标签
+- `.messages(obj)` - 自定义消息
+- `.description(text)` - 字段描述
+- `.custom(fn)` - 自定义验证（支持多种返回方式）
+- `.when(field, opts)` - 条件验证
+- `.default(value)` - 默认值
+
+**📖 详细文档**: [String 扩展](docs/string-extensions.md)
+
+---
+
+## 🎯 默认验证器
+
+### 用户名验证
+
+```javascript
+const schema = dsl({
+  // ✨ 简洁写法
+  username: 'string!'.username(),              // 自动3-32（默认 medium）
+  
+  // 自定义长度（多种方式）
+  username: 'string!'.username('5-20'),        // 字符串范围
+  username: 'string!'.username('short'),       // 短用户名(3-16)
+  username: 'string!'.username('medium'),      // 中等(3-32)
+  username: 'string!'.username('long'),        // 长用户名(3-64)
+});
+```
+
+**预设选项**:
+- 默认（不传参） - 3-32位
+- `'short'` - 3-16位（短用户名）
+- `'medium'` - 3-32位（中等，默认值）
+- `'long'` - 3-64位（长用户名）
+- `'5-20'` - 自定义范围（字符串格式）
+
+### 手机号验证
+
+```javascript
+const schema = dsl({
+  // ✨ 简洁优雅
+  phone: 'string!'.phone('cn'),          // 推荐 ✅
+  
+  // 自动纠正：即使写成 number 也能自动纠正为 string
+  phone: 'number!'.phone('cn'),          // 自动纠正 ✅
+});
+```
+
+**💡 为什么用 string 不用 number？**
+- 手机号可能有前导0
+- 国际手机号有 + 号前缀
+- 不用于数学计算
+- phone() 会自动纠正类型
+
+**支持国家**: `cn`, `us`, `uk`, `hk`, `tw`, `international`
+
+### 密码强度验证
+
+```javascript
+const schema = dsl({
+  password: 'string!'.password('strong')       // 自动8-64长度
+});
+```
+
+**强度级别**:
+- `weak` - 最少6位
+- `medium` - 8位，字母+数字
+- `strong` - 8位，大小写+数字
+- `veryStrong` - 10位，大小写+数字+特殊字符
+
+### 完整示例
+
+```javascript
+// ✨ 极简写法
+const registrationSchema = dsl({
+  username: 'string!'.username('5-20'),                // 5-20位
+  phone: 'string!'.phone('cn').label('手机号'),        // 简洁 ✅
+  password: 'string!'.password('strong').label('密码'), // 自动8-64
+  email: 'email!'.label('邮箱')
+});
+```
+
+---
+
+## ✅ 验证功能
+
+### 基础验证
+
+```javascript
+const { validate } = require('schemaio');
+
+const result = validate(schema, data);
+
+console.log(result.valid);   // true/false
+console.log(result.errors);  // 错误列表
+console.log(result.data);    // 验证后的数据
+```
+
+### 使用 Validator 类
+
+```javascript
+const { Validator } = require('schemaio');
+
+const validator = new Validator({
+  allErrors: true,      // 返回所有错误
+  useDefaults: true,    // 应用默认值
+  coerceTypes: false    // 类型转换
+});
+
+const result = validator.validate(schema, data);
+```
+
+**📖 详细文档**: [validate 方法](docs/validate.md)
+
+### 批量验证
+
+```javascript
+const dataArray = [
+  { username: 'user1', email: 'user1@example.com' },
+  { username: 'user2', email: 'user2@example.com' }
+];
+
+const results = validator.validateBatch(schema, dataArray);
+
+console.log(results.performance);  // 性能统计
+```
+
+### 编译缓存
+
+```javascript
+// 编译一次，重复使用
+const validate = validator.compile(schema, 'user-schema');
+
+// 使用缓存
+const result = validator.validate(validate, data);
+```
+
+---
 
 ## 🗄️ 数据库导出
 
 ### MongoDB Schema
 
 ```javascript
-const { exporters } = require('schemoio');
+const { exporters } = require('schemaio');
 
 const mongoExporter = new exporters.MongoDBExporter();
 const mongoSchema = mongoExporter.export(jsonSchema);
 
-// 生成 createCollection 命令
+// 生成命令
 const command = mongoExporter.generateCommand('users', jsonSchema);
-console.log(command);
 ```
 
 ### MySQL DDL
 
 ```javascript
-const { exporters } = require('schemoio');
-
 const mysqlExporter = new exporters.MySQLExporter();
 const ddl = mysqlExporter.export('users', jsonSchema);
 
-console.log(ddl);
+// 输出:
 // CREATE TABLE `users` (
 //   `username` VARCHAR(32) NOT NULL,
 //   `email` VARCHAR(255) NOT NULL,
@@ -219,12 +377,10 @@ console.log(ddl);
 ### PostgreSQL DDL
 
 ```javascript
-const { exporters } = require('schemoio');
-
 const pgExporter = new exporters.PostgreSQLExporter();
 const ddl = pgExporter.export('users', jsonSchema);
 
-console.log(ddl);
+// 输出:
 // CREATE TABLE public.users (
 //   username VARCHAR(32) NOT NULL,
 //   email VARCHAR(255) NOT NULL,
@@ -232,162 +388,231 @@ console.log(ddl);
 // );
 ```
 
-## 🔧 自定义验证
+---
 
-### 自定义关键字
+## 🌍 多语言支持
 
-```javascript
-const { Validator, CustomKeywords } = require('schemoio');
-
-const validator = new Validator();
-
-// 注册自定义关键字
-CustomKeywords.registerAll(validator.getAjv());
-
-// 使用自定义验证
-const schema = {
-  type: 'string',
-  regex: '^[a-z]+$'  // 自定义正则验证
-};
-```
-
-### 函数验证
+### 切换语言
 
 ```javascript
-const schema = {
-  type: 'number',
-  validate: (value) => value % 2 === 0  // 验证偶数
-};
+const { Locale } = require('schemaio');
+
+Locale.setLocale('zh-CN');  // 中文
+Locale.setLocale('en-US');  // 英文
 ```
 
-## 📖 文档
+**内置语言**: `en-US` (英语), `zh-CN` (中文)
 
-### 快速开始
-- **[🚀 5分钟快速上手](docs/quick-start.md)** - 新手入门（推荐）
-- **[📚 完整API参考](docs/api-reference.md)** - 所有API详细说明
+### 添加语言包
 
-### 核心功能
-- **[✨ String扩展文档](docs/string-extensions.md)** - v2.0.1新特性
-- **[📝 DSL语法指南](docs/dsl-syntax.md)** - DSL完整语法（2815行）
-- **[🔧 错误处理](docs/error-handling.md)** - 错误消息定制
+```javascript
+Locale.addLocale('ja-JP', {
+  'minLength': '{{#label}}は{{#limit}}文字以上である必要があります',
+  'required': '{{#label}}は必須です'
+});
+```
+
+### 全局自定义消息
+
+```javascript
+Locale.setMessages({
+  'format': '格式不正确',
+  'required': '这是必填项',
+  'minLength': '长度不能少于{{#limit}}个字符'
+});
+```
+
+**📖 详细文档**: [错误处理指南](docs/error-handling.md)
+
+---
+
+## 🔧 错误处理
+
+### label、message、description
+
+```javascript
+const schema = dsl({
+  email: 'email!'
+    .label('邮箱地址')                    // 错误消息中显示
+    .description('用于登录和接收通知')    // 表单提示/文档
+    .messages({                           // 自定义错误消息
+      'required': '{{#label}}不能为空',
+      'format': '请输入有效的{{#label}}'
+      // 💡 'format' 是 JSON Schema 标准对 email/url/uuid 等格式验证失败的错误关键字
+    }),
+  
+  username: 'string:3-32!'
+    .label('用户名')
+    .messages({
+      'minLength': '{{#label}}至少{{#limit}}个字符',
+      'maxLength': '{{#label}}最多{{#limit}}个字符',
+      'pattern': '{{#label}}格式不正确',  // pattern 是正则验证失败的错误关键字
+      'required': '{{#label}}不能为空'
+    })
+});
+```
+
+| 属性 | 用途 | 场景 |
+|------|------|------|
+| **label** | 字段名称 | 错误消息 |
+| **messages** | 自定义错误 | 验证失败 |
+| **description** | 详细说明 | 表单提示/文档 |
+
+**常见错误关键字**（来自 JSON Schema / ajv）:
+- `required` - 必填字段为空
+- `min` / `max` - 字符串长度不符
+- `minimum` / `maximum` - 数字范围不符
+- `format` - 格式验证失败（email、url、uuid、date 等都用这个）
+- `pattern` - 正则表达式不匹配
+- `enum` - 不在枚举值中
+- `type` - 类型不匹配
+
+**💡 简化的错误关键字**:  
+SchemaIO 对常见的错误关键字做了简化：
+- `min` / `max` 代替 `minLength` / `maxLength` - 更简洁
+- 同时也支持完整关键字 `minLength` / `maxLength` - 向后兼容
+
+**💡 为什么 email 用 `format` 而不是 `email`？**  
+因为在 JSON Schema 标准中，email、url、uuid 等都是 `format` 属性的不同值，验证失败时统一使用 `format` 作为错误关键字。
+
+**📖 详细说明**: [label vs description](docs/label-vs-description.md)
+
+### 自定义验证器
+
+`.custom()` 方法支持多种优雅的返回方式：
+
+```javascript
+const schema = dsl({
+  // 方式1: 返回错误消息字符串（推荐，最简洁）
+  email: 'email!'
+    .custom(async (value) => {
+      const exists = await checkEmailExists(value);
+      if (exists) return '邮箱已被占用';
+      // 验证通过时无需返回
+    }),
+  
+  // 方式2: 返回错误对象（需要自定义错误码）
+  username: 'string:3-32!'
+    .custom(async (value) => {
+      const exists = await checkUsernameExists(value);
+      if (exists) {
+        return { error: 'username.exists', message: '用户名已被占用' };
+      }
+    }),
+  
+  // 方式3: 抛出异常
+  userId: 'string!'
+    .custom(async (value) => {
+      const user = await findUser(value);
+      if (!user) throw new Error('用户不存在');
+    })
+});
+```
+
+**支持的返回方式**:
+- 不返回/返回 `undefined` → 验证通过 ✅
+- 返回字符串 → 验证失败，字符串作为错误消息
+- 返回 `{ error, message }` → 验证失败，自定义错误码和消息
+- 抛出异常 → 验证失败，异常消息作为错误
+- 返回 `true` → 验证通过（兼容旧写法）
+- 返回 `false` → 验证失败（使用默认消息）
+
+---
+
+## 🧰 工具函数
+
+### Schema 复用
+
+```javascript
+const { SchemaUtils } = require('schemaio');
+
+// 创建可复用片段
+const emailField = SchemaUtils.reusable(() => dsl('email!'));
+
+const schema1 = dsl({ email: emailField() });
+const schema2 = dsl({ contactEmail: emailField() });
+```
+
+### Schema 合并
+
+```javascript
+const baseUser = dsl({ name: 'string!', email: 'email!' });
+const withAge = dsl({ age: 'number:18-120' });
+
+const merged = SchemaUtils.merge(baseUser, withAge);
+```
+
+### Schema 筛选
+
+```javascript
+// 选择字段
+const picked = SchemaUtils.pick(schema, ['name', 'email']);
+
+// 排除字段
+const omitted = SchemaUtils.omit(schema, ['password', 'secret']);
+```
+
+### Schema 导出
+
+```javascript
+// 导出为 Markdown
+const markdown = SchemaUtils.toMarkdown(schema);
+
+// 导出为 HTML
+const html = SchemaUtils.toHTML(schema);
+```
+
+**📖 完整API**: [功能索引](docs/FEATURE-INDEX.md)
+
+---
+
+## 📖 完整文档
+
+### 核心文档
+
+- [快速开始](docs/quick-start.md) - 5分钟入门
+- [DSL 语法指南](docs/dsl-syntax.md) - 完整语法（2815行）
+- [API 参考](docs/api-reference.md) - 所有API
+- [功能索引](docs/FEATURE-INDEX.md) - 功能查找
+
+### 专题文档
+
+- [String 扩展](docs/string-extensions.md) - 链式调用
+- [validate 方法](docs/validate.md) - 验证详解
+- [错误处理指南](docs/error-handling.md) - 多语言/自定义消息
+- [label vs description](docs/label-vs-description.md) - 属性区别
 
 ### 示例代码
-- **[String扩展示例](examples/string-extensions.js)** - 完整String扩展示例
-- **[DSL风格示例](examples/dsl-style.js)** - DSL基础示例
-- **[用户注册示例](examples/user-registration/)** - 真实业务场景
-- **[数据库导出示例](examples/export-demo.js)** - 导出MongoDB/MySQL/PostgreSQL
 
-运行示例：
+- [examples/string-extensions.js](examples/string-extensions.js) - String扩展
+- [examples/dsl-style.js](examples/dsl-style.js) - DSL基础
+- [examples/user-registration/](examples/user-registration/) - 注册场景
+- [examples/export-demo.js](examples/export-demo.js) - 数据库导出
 
-```bash
-node examples/string-extensions.js
-node examples/dsl-style.js
-```
-
-## 🎯 核心优势
-
-### 1. 简洁的DSL语法
-
-```javascript
-// ✅ SchemaIO - 一行搞定
-username: 'string:3-32!'
-
-// ❌ 其他库 - 冗长繁琐
-username: Joi.string().min(3).max(32).required()
-```
-
-### 2. String扩展（v2.0.1）
-
-```javascript
-// ✨ 字符串直接链式调用
-email: 'email!'.pattern(/custom/).label('邮箱')
-
-// 减少5个字符，更直观自然
-```
-
-### 3. 渐进式增强
-
-```javascript
-// 简单字段：纯DSL
-age: 'number:18-120'
-
-// 复杂字段：String扩展
-email: 'email!'.pattern(/custom/).messages({...})
-
-// 完美平衡：80%用DSL，20%用扩展
-```
-
-## 🏗️ 架构设计
-
-SchemaIO v2.0.1 采用统一DSL Pattern：
-
-```
-┌─────────────────────────────────────────┐
-│         用户API层（统一DSL）              │
-├─────────────────────────────────────────┤
-│  dsl() 函数  │  DslBuilder类  │  String扩展  │
-└─────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────┐
-│            核心层（统一表示）             │
-├─────────────────────────────────────────┤
-│           JSON Schema Core              │
-│  (标准JSON Schema Draft 7作为内部表示)   │
-└─────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────┐
-│         验证层 + 导出层（功能实现）        │
-├─────────────────────────────────────────┤
-│  ajv验证器  │  MongoDB  │  MySQL  │  PostgreSQL  │
-└─────────────────────────────────────────┘
-```
+---
 
 ## 🧪 测试
 
 ```bash
-# 运行测试
-npm test
-
-# 运行示例
-node examples/string-extensions.js
+npm test          # 运行测试
+npm run coverage  # 测试覆盖率
 ```
 
-**测试结果**: 86 passing (146ms) ✅
+**测试结果**: 97 passing ✅
 
-## 🗺️ 版本历史
-
-### v2.0.1（2025-12-25）✨
-
-- ✨ **String扩展**: 字符串直接链式调用
-- 🎯 **统一API**: 移除Joi风格，统一为DSL Pattern
-- 📦 **代码精简**: 核心文件减少40%
-- 📚 **文档完整**: 3815行核心文档
-- ✅ **测试通过**: 86个测试100%通过
-
-### v1.0.0（2024）
-
-- ✅ JSON Schema核心类
-- ✅ ajv验证器集成
-- ✅ Joi风格适配器（已废弃）
-- ✅ DSL风格适配器
-- ✅ MongoDB/MySQL/PostgreSQL导出器
+---
 
 ## 🤝 贡献
 
-欢迎贡献代码！请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
+欢迎贡献！查看 [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
 
 ## 📄 许可证
 
 [MIT](LICENSE)
 
-## 🔗 相关链接
-
-- [GitHub](https://github.com/yourname/schemaio)
-- [NPM](https://www.npmjs.com/package/schemaio)
-- [文档](https://github.com/yourname/schemaio/tree/main/docs)
-- [问题反馈](https://github.com/yourname/schemaio/issues)
-
 ---
 
-**SchemaIO v2.0.1** - 简洁 + 强大 = 完美平衡 🎉
+**SchemaIO** - 简洁而强大 🎉
 

@@ -134,3 +134,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# AI生成的规划和报告目录（不提交到Git）
+plans/
+reports/
+

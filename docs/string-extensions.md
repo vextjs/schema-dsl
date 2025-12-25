@@ -6,6 +6,34 @@
 
 ---
 
+## 📑 目录
+
+### 核心概念
+- [🎯 核心特性](#-核心特性) - String扩展是什么
+- [📋 可用方法](#-可用方法) - 所有可用的链式方法
+
+### 快速开始
+- [🚀 快速开始](#-快速开始) - 基础用法
+- [📖 详细示例](#-详细示例) - 6个完整示例
+  - [1. 正则验证](#1-正则验证)
+  - [2. 自定义错误消息](#2-自定义错误消息)
+  - [3. 自定义验证器](#3-自定义验证器)
+  - [4. 条件验证](#4-条件验证)
+  - [5. 嵌套对象](#5-嵌套对象)
+  - [6. 完整表单示例](#6-完整表单示例)
+
+### 进阶用法
+- [🔧 安装与卸载](#-安装与卸载) - 手动控制扩展
+- [⚙️ 原理说明](#️-原理说明) - 实现机制
+- [🎨 最佳实践](#-最佳实践) - 推荐用法
+- [⚠️ 注意事项](#️-注意事项) - 使用限制
+
+### 对比与参考
+- [📊 对比v1.0](#-对比v10) - 新旧版本对比
+- [🔗 相关文档](#-相关文档) - 其他文档链接
+
+---
+
 ## 🎯 核心特性
 
 **String 扩展让字符串可以直接调用 DslBuilder 的所有方法**
@@ -130,21 +158,44 @@ async function checkUsernameExists(username) {
 }
 
 const schema = dsl({
+  // 方式1: 返回错误消息字符串（推荐，最优雅）
   username: 'string:3-32!'
     .pattern(/^[a-zA-Z0-9_]+$/)
     .custom(async (value) => {
       const exists = await checkUsernameExists(value);
-      if (exists) {
-        return {
-          error: 'username.exists',
-          message: '用户名已被占用'
-        };
-      }
-      return true;
+      if (exists) return '用户名已被占用';
+      // 验证通过时无需返回任何值
     })
-    .label('用户名')
+    .label('用户名'),
+  
+  // 方式2: 返回错误对象（需要自定义错误码）
+  email: 'email!'
+    .custom(async (value) => {
+      const exists = await checkEmailExists(value);
+      if (exists) {
+        return { error: 'email.exists', message: '邮箱已被占用' };
+      }
+      // 验证通过时无需返回
+    })
+    .label('邮箱'),
+  
+  // 方式3: 抛出异常
+  userId: 'string!'
+    .custom(async (value) => {
+      const user = await findUser(value);
+      if (!user) throw new Error('用户不存在');
+    })
+    .label('用户ID')
 });
 ```
+
+**支持的返回方式**:
+- 不返回/返回 `undefined` → 验证通过 ✅
+- 返回字符串 → 验证失败，使用字符串作为错误消息
+- 返回 `{ error, message }` → 验证失败，自定义错误码和消息
+- 抛出异常 → 验证失败，异常消息作为错误
+- 返回 `true` → 验证通过（兼容旧写法）
+- 返回 `false` → 验证失败（使用默认消息）
 
 ---
 

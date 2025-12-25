@@ -1,42 +1,66 @@
 # DSL 语法完整指南
 
 > **版本**: v1.0.1  
-> **更新时间**: 2025-12-24  
-> **适用于**: SchemaIO 1.0+
+> **更新时间**: 2025-12-25  
+> **适用于**: SchemaIO 1.0+  
+> **文档长度**: 2815行 - 完整覆盖所有DSL语法  
 
 ---
 
 ## 📑 目录导航
 
-### 快速开始
-- [概述](#概述) - DSL 核心特性和设计原则
+### 📖 快速入口
+- [概述](#概述) - DSL 核心特性和设计原则（**推荐先读**）
 - [完整类型支持列表](#完整类型支持列表) - 所有支持的类型一览
 - [快速示例](#快速示例) - 5分钟上手
+- [语法速查表](#语法速查表) - 快速查询语法（**常用**）
 
-### 基础语法
+---
+
+### 🎯 基础语法（必读）
 - [基本类型](#基本类型) - 字符串、数字、布尔等6种基础类型
+  - [字符串类型](#字符串类型)
+  - [数字类型](#数字类型)
+  - [整数类型](#整数类型)
+  - [布尔类型](#布尔类型)
+  - [数组类型](#数组类型)
+  - [对象类型](#对象类型)
 - [约束条件](#约束条件) - 长度、范围、枚举约束
+  - [字符串长度范围](#字符串长度范围)
+  - [数字范围](#数字范围)
+  - [数组长度](#数组长度)
 - [必填标记](#必填标记) - 使用 `!` 标记必填
 - [格式类型](#格式类型) - email、url、uuid、date等内置格式
 
-### 高级功能
+---
+
+### 🚀 高级功能
 - [枚举值](#枚举值) - 使用 `|` 定义枚举
-- [数组类型](#数组类型) - array<type> 语法
+- [数组类型](#数组类型-1) - array<type> 语法详解
 - [嵌套对象](#嵌套对象) - 无限层级嵌套支持
 - [高级特性](#高级特性) - 混合使用、动态生成等
 
-### 设计限制与解决方案
-- [边界情况和限制](#边界情况和限制) - 5大限制及原因
+---
+
+### ⚠️ 限制与解决方案
+- [边界情况和限制](#边界情况和限制) - 5大限制及原因（**重要**）
 - [为什么不支持某些功能](#为什么不支持某些功能) - 设计理念解释
 - [优雅的扩展方案](#优雅的扩展方案) - 如何突破限制
 
-### 实践指南
+---
+
+### 💡 实践指南
 - [完整示例](#完整示例) - 4个真实业务场景
-- [语法速查表](#语法速查表) - 快速查询语法
+  - [用户注册表单](#用户注册表单)
+  - [商品信息Schema](#商品信息schema)
+  - [订单系统Schema](#订单系统schema)
+  - [API请求验证](#api请求验证)
 - [最佳实践](#最佳实践) - 推荐的使用方式
 - [常见问题](#常见问题) - FAQ
 
-### 参考资料
+---
+
+### 📚 参考资料
 - [相关文档](#相关文档) - 其他文档链接
 - [API参考](#api参考) - 完整API说明
 
@@ -198,42 +222,60 @@ dsl('object')   // { type: 'object' }
 ### 字符串长度范围
 
 ```javascript
-'string:min-max'    // 长度范围
-'string:max'        // 最大长度
+'string:min-max'    // 长度范围（最小-最大）
+'string:max'        // 最大长度（简写）
+'string:min-'       // 最小长度（无最大限制）
+'string:-max'       // 最大长度（明确写法，与简写等价）
 ```
 
 **示例**：
 ```javascript
 dsl('string:3-32')   // { type: 'string', minLength: 3, maxLength: 32 }
-dsl('string:100')    // { type: 'string', maxLength: 100 }
+dsl('string:100')    // { type: 'string', maxLength: 100 }  // 简写
+dsl('string:-100')   // { type: 'string', maxLength: 100 }  // 明确写法
+dsl('string:10-')    // { type: 'string', minLength: 10 }   // 只限最小
 dsl('s:1-50')        // { type: 'string', minLength: 1, maxLength: 50 }
 ```
+
+**语法规则**：
+- `type:max` → 最大值（简写，最常用）
+- `type:min-max` → 范围（最小-最大）
+- `type:min-` → 只限制最小值
+- `type:-max` → 只限制最大值（与简写等价，明确表达意图）
 
 ### 数字范围
 
 ```javascript
-'number:min-max'    // 数值范围
-'number:max'        // 最大值
+'number:min-max'    // 数值范围（最小-最大）
+'number:max'        // 最大值（简写）
+'number:min-'       // 最小值（无最大限制）
+'number:-max'       // 最大值（明确写法）
 ```
 
 **示例**：
 ```javascript
 dsl('number:0-100')  // { type: 'number', minimum: 0, maximum: 100 }
-dsl('number:999')    // { type: 'number', maximum: 999 }
+dsl('number:999')    // { type: 'number', maximum: 999 }    // 简写
+dsl('number:-999')   // { type: 'number', maximum: 999 }    // 明确写法
+dsl('number:18-')    // { type: 'number', minimum: 18 }     // 只限最小
 dsl('int:1-10')      // { type: 'integer', minimum: 1, maximum: 10 }
 ```
 
 ### 数组长度范围
 
 ```javascript
-'array:min-max'     // 数组长度范围
-'array:max'         // 最大长度
+'array:min-max'     // 数组长度范围（最小-最大）
+'array:max'         // 最大长度（简写）
+'array:min-'        // 最小长度（无最大限制）
+'array:-max'        // 最大长度（明确写法）
 ```
 
 **示例**：
 ```javascript
 dsl('array:1-10')    // { type: 'array', minItems: 1, maxItems: 10 }
-dsl('array:100')     // { type: 'array', maxItems: 100 }
+dsl('array:100')     // { type: 'array', maxItems: 100 }   // 简写
+dsl('array:-100')    // { type: 'array', maxItems: 100 }   // 明确写法
+dsl('array:1-')      // { type: 'array', minItems: 1 }     // 只限最小
 ```
 
 ---
