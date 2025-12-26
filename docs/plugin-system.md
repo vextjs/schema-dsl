@@ -47,7 +47,7 @@ PluginManager
 ### 1. 创建插件管理器
 
 ```javascript
-const { PluginManager } = require('schemaio');
+const { PluginManager } = require('schema-dsl');
 
 const pluginManager = new PluginManager();
 ```
@@ -71,7 +71,7 @@ pluginManager.register(myPlugin);
 ### 3. 安装插件
 
 ```javascript
-const schemaio = require('schemaio');
+const schemaio = require('schema-dsl');
 
 pluginManager.install(schemaio, 'my-plugin');
 ```
@@ -143,7 +143,7 @@ module.exports = {
   version: '1.0.0',
 
   install(schemaio, options, context) {
-    const validator = schemaio.getDefaultValidator();
+    const validator = schemaDsl.getDefaultValidator();
     const ajv = validator.getAjv();
     
     // 添加自定义格式
@@ -289,7 +289,7 @@ install(schemaio, options, context) {
 ```javascript
 uninstall(schemaio, context) {
   // 清理注册的验证器、格式、钩子等
-  delete schemaio.myCustomMethod;
+  delete schemaDsl.myCustomMethod;
 }
 ```
 
@@ -539,3 +539,4 @@ pluginManager.list(); // 是否在列表中?
 **贡献**
 
 欢迎提交你的插件到官方插件库！请提交 PR 到 `plugins/` 目录。
+

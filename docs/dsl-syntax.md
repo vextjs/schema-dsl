@@ -22,7 +22,7 @@
 ## 快速开始
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // 基本类型
 const schema = dsl({
@@ -508,7 +508,7 @@ const schema = dsl({
 ### 用户注册表单
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 const schema = dsl({
   // 基本信息
@@ -651,3 +651,4 @@ dsl.match('vipLevel', { gold: 'number:0-50', silver: 'number:0-20' })
 **最后更新**: 2025-12-25  
 **文档版本**: v2.0.1  
 **作者**: SchemaIO Team
+

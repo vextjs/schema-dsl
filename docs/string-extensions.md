@@ -39,10 +39,10 @@ age: 'number:18-120'
 如果你介意修改 `String.prototype`，可以直接使用 `dsl()` 包裹字符串：
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // 禁用 String 扩展
-require('schemaio').uninstallStringExtensions();
+require('schema-dsl').uninstallStringExtensions();
 
 const schema = dsl({
   // 使用 dsl() 包裹字符串
@@ -83,7 +83,7 @@ const schema = dsl({
 ## 快速开始
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 const schema = dsl({
   // 字符串直接链式调用
@@ -254,7 +254,7 @@ const schema = dsl({
 ### 6. 完整表单示例
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, Validator } = require('schema-dsl');
 
 const formSchema = dsl({
   email: 'email!'
@@ -286,7 +286,7 @@ const formSchema = dsl({
 });
 
 // 验证
-const { validate } = require('schemaio');
+const { validate } = require('schema-dsl');
 const result = validate(formSchema, {
   email: 'user@example.com',
   username: 'john_doe',
@@ -305,7 +305,7 @@ console.log(result.valid); // true
 ### 方案1: 全局多语言配置（推荐）
 
 ```javascript
-const { Locale } = require('schemaio');
+const { Locale } = require('schema-dsl');
 
 // 设置语言
 Locale.setLocale('zh-CN');
@@ -348,7 +348,7 @@ const schema = dsl({
 ### 方案3: 运行时动态切换
 
 ```javascript
-const { Locale } = require('schemaio');
+const { Locale } = require('schema-dsl');
 
 // 根据用户语言偏好切换
 function getSchema(locale) {
@@ -376,14 +376,14 @@ const enSchema = getSchema('en-US');
 String扩展在导入时自动安装：
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 // String扩展已自动安装
 ```
 
 ### 手动禁用
 
 ```javascript
-const { uninstallStringExtensions } = require('schemaio');
+const { uninstallStringExtensions } = require('schema-dsl');
 
 uninstallStringExtensions();
 
@@ -394,7 +394,7 @@ uninstallStringExtensions();
 ### 重新启用
 
 ```javascript
-const { installStringExtensions } = require('schemaio');
+const { installStringExtensions } = require('schema-dsl');
 
 installStringExtensions();
 
@@ -476,4 +476,5 @@ const schema = dsl({
 ---
 
 **最后更新**: 2025-12-25
+
 

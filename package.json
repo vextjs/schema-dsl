@@ -1,6 +1,6 @@
 {
-  "name": "schemaio",
-  "version": "2.1.2",
+  "name": "schema-dsl",
+  "version": "2.1.3",
   "description": "简洁强大的JSON Schema验证库 - DSL语法 + String扩展 + 便捷validate",
   "main": "index.js",
   "exports": {
@@ -38,7 +38,7 @@
   "bugs": {
     "url": "https://github.com/vextjs/schemaio/issues"
   },
-  "homepage": "https://github.com/vextjs/schemaio#readme",
+  "homepage": "https://github.com/vextjs/schema-dsl#readme",
   "engines": {
     "node": ">=12.0.0"
   },

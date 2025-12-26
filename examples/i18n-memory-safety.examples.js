@@ -265,3 +265,4 @@ function continueDemo() {
     console.log('\n✅ i18n 内存安全示例完成！');
     console.log('💡 提示：运行 npm test 验证所有功能');
 }
+

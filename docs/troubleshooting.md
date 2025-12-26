@@ -43,7 +43,7 @@ const result = validator.validate(schema, data);
 
 3. **使用 Schema 分析工具**
 ```javascript
-const { SchemaUtils } = require('schemaio');
+const { SchemaUtils } = require('schema-dsl');
 console.log(SchemaUtils.analyze(schema));
 ```
 
@@ -253,7 +253,7 @@ app.post('/admin/clear-cache', (req, res) => {
 
 #### 1. 检查语言包是否加载
 ```javascript
-const { Locale } = require('schemaio');
+const { Locale } = require('schema-dsl');
 console.log(Object.keys(Locale.locales));
 // 应该包含: ['zh-CN', 'en-US', 'ja-JP', ...]
 ```
@@ -380,7 +380,7 @@ db.createCollection('users', {
 ```javascript
 // SchemaIO 默认会自动安装 String 扩展
 // 如果未生效，手动安装：
-const { installStringExtensions } = require('schemaio');
+const { installStringExtensions } = require('schema-dsl');
 installStringExtensions();
 
 // 或者使用 dsl() 包裹（非侵入式）
@@ -408,7 +408,7 @@ console.log(JSON.stringify(schema, null, 2));
 ### 技巧2: 使用 Schema 分析工具
 
 ```javascript
-const { SchemaUtils } = require('schemaio');
+const { SchemaUtils } = require('schema-dsl');
 
 // 分析 Schema 结构
 const analysis = SchemaUtils.analyze(schema);
@@ -468,3 +468,4 @@ describe('User Schema', () => {
 ## 贡献
 
 发现了新的常见问题？欢迎提交 PR 补充本文档！
+

@@ -20,7 +20,7 @@
 ### 直接复用（最简单）✅
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // 定义可复用字段（就是普通对象）
 const commonFields = {
@@ -116,7 +116,7 @@ const registerSchema = dsl({
 ### merge() - 合并多个Schema
 
 ```javascript
-const { SchemaUtils, dsl } = require('schemaio');
+const { SchemaUtils, dsl } = require('schema-dsl');
 
 // 基础Schema
 const baseUser = dsl({
@@ -263,7 +263,7 @@ const html = SchemaUtils.toHTML(schema, {
 ### validateBatch() - 批量验证
 
 ```javascript
-const { Validator } = require('schemaio');
+const { Validator } = require('schema-dsl');
 
 const schema = dsl({
   email: 'email!',
@@ -488,4 +488,5 @@ const schema = dsl({
 ---
 
 **最后更新**: 2025-12-25
+
 

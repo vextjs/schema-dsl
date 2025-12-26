@@ -22,7 +22,7 @@
 ### 基本验证流程
 
 ```javascript
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 // 1. 定义 Schema
 const schema = dsl({
@@ -102,7 +102,7 @@ if (result.valid) {
 最简单的验证方式，使用内置单例 Validator：
 
 ```javascript
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 const result = validate(schema, data);
 ```
@@ -112,7 +112,7 @@ const result = validate(schema, data);
 需要自定义配置（如类型转换、自定义关键字）时使用：
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, Validator } = require('schema-dsl');
 
 // 创建自定义配置的 Validator
 const validator = new Validator({
@@ -147,7 +147,7 @@ const result3 = validateUser(data3);
 验证多条数据时使用：
 
 ```javascript
-const { Validator } = require('schemaio');
+const { Validator } = require('schema-dsl');
 const validator = new Validator();
 
 const dataList = [
@@ -196,7 +196,7 @@ const schema = dsl({
 ### 多语言错误消息
 
 ```javascript
-const { Locale, Validator } = require('schemaio');
+const { Locale, Validator } = require('schema-dsl');
 
 // 添加语言包
 Locale.addLocale('zh-CN', {
@@ -397,7 +397,7 @@ email: 'email!'.label('邮箱地址')
 
 ```javascript
 // schemas/index.js
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 exports.userSchema = dsl({
   username: 'string:3-32!',
@@ -413,7 +413,7 @@ exports.orderSchema = dsl({
 ### 3. 使用 SchemaUtils 复用字段
 
 ```javascript
-const { SchemaUtils, dsl } = require('schemaio');
+const { SchemaUtils, dsl } = require('schema-dsl');
 
 // 创建可复用字段
 const emailField = SchemaUtils.reusable(() =>
@@ -481,3 +481,4 @@ describe('User Schema', () => {
 - [错误处理指南](error-handling.md)
 - [多语言支持](dynamic-locale.md)
 - [String 扩展](string-extensions.md)
+

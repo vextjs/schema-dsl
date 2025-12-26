@@ -201,3 +201,4 @@ console.log('  - 插件间通信');
 console.log('  - 事件监听');
 console.log('');
 console.log('示例运行完成！');
+

@@ -956,7 +956,7 @@ dsl.if('isVip', 'number:0-50', 'number:0-10')
 导出为 MongoDB 验证Schema。
 
 ```javascript
-const { MongoDBExporter } = require('schemaio');
+const { MongoDBExporter } = require('schema-dsl');
 
 const exporter = new MongoDBExporter({ strict: true });
 const mongoSchema = exporter.export(jsonSchema);
@@ -974,7 +974,7 @@ const command = exporter.generateCommand('users', jsonSchema);
 导出为 MySQL DDL。
 
 ```javascript
-const { MySQLExporter } = require('schemaio');
+const { MySQLExporter } = require('schema-dsl');
 
 const exporter = new MySQLExporter();
 const ddl = exporter.export(jsonSchema, { tableName: 'users' });
@@ -990,7 +990,7 @@ const ddl = exporter.export(jsonSchema, { tableName: 'users' });
 导出为 PostgreSQL DDL。
 
 ```javascript
-const { PostgreSQLExporter } = require('schemaio');
+const { PostgreSQLExporter } = require('schema-dsl');
 
 const exporter = new PostgreSQLExporter();
 const ddl = exporter.export(jsonSchema, { tableName: 'users' });
@@ -1008,7 +1008,7 @@ const ddl = exporter.export(jsonSchema, { tableName: 'users' });
 类型转换工具。
 
 ```javascript
-const { TypeConverter } = require('schemaio');
+const { TypeConverter } = require('schema-dsl');
 
 TypeConverter.toJSONSchema(dslSchema);
 ```
@@ -1020,7 +1020,7 @@ TypeConverter.toJSONSchema(dslSchema);
 Schema辅助工具。
 
 ```javascript
-const { SchemaHelper } = require('schemaio');
+const { SchemaHelper } = require('schema-dsl');
 
 SchemaHelper.merge(schema1, schema2);
 SchemaHelper.clone(schema);
@@ -1072,7 +1072,7 @@ array<string:1-50>  # 带约束的数组元素
 错误代码常量。
 
 ```javascript
-const { ErrorCodes } = require('schemaio');
+const { ErrorCodes } = require('schema-dsl');
 
 console.log(ErrorCodes.STRING_MIN);     // 'string.min'
 console.log(ErrorCodes.NUMBER_RANGE);   // 'number.range'
@@ -1085,7 +1085,7 @@ console.log(ErrorCodes.NUMBER_RANGE);   // 'number.range'
 多语言支持。
 
 ```javascript
-const { Locale } = require('schemaio');
+const { Locale } = require('schema-dsl');
 
 Locale.setLocale('zh-CN');  // 设置中文
 Locale.setLocale('en-US');  // 设置英文
@@ -1096,7 +1096,7 @@ Locale.setLocale('en-US');  // 设置英文
 ## 完整示例
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, Validator } = require('schema-dsl');
 
 // 定义Schema（使用String扩展）
 const userSchema = dsl({
@@ -1144,4 +1144,5 @@ console.log(result.valid); // true
 
 **文档版本**: v2.0.1  
 **最后更新**: 2025-12-25
+
 

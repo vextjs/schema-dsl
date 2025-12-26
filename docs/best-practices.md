@@ -184,7 +184,7 @@ const validator = new Validator({
 });
 
 // 或者使用全局单例（默认启用缓存）
-const { validate } = require('schemaio');
+const { validate } = require('schema-dsl');
 validate(schema, data); // 自动缓存
 ```
 
@@ -442,7 +442,7 @@ src/
 
 **schemas/user.schema.js**:
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // 可复用的字段
 const commonFields = {
@@ -486,7 +486,7 @@ module.exports = {
 **routes/user.routes.js**:
 ```javascript
 const schemas = require('../schemas');
-const { validate } = require('schemaio');
+const { validate } = require('schema-dsl');
 
 router.post('/register', (req, res) => {
   const result = validate(schemas.user.registerSchema, req.body);
@@ -500,7 +500,7 @@ router.post('/register', (req, res) => {
 
 **使用 SchemaHelper**:
 ```javascript
-const { SchemaHelper } = require('schemaio');
+const { SchemaHelper } = require('schema-dsl');
 
 // 创建可复用字段库
 const fields = SchemaHelper.createLibrary({
@@ -529,7 +529,7 @@ const profileSchema = dsl({
 
 ```javascript
 // config/validator.js
-const { Validator } = require('schemaio');
+const { Validator } = require('schema-dsl');
 
 const config = {
   development: {
@@ -669,3 +669,4 @@ setInterval(() => {
 - [性能优化指南](performance-guide.md)（待创建）
 - [安全检查清单](security-checklist.md)（待创建）
 - [故障排查指南](troubleshooting.md)
+

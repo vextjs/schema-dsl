@@ -35,7 +35,7 @@ npm install schemaio
 ### 1. Hello World（30秒）
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, Validator } = require('schema-dsl');
 
 // 定义Schema
 const schema = dsl({
@@ -136,7 +136,7 @@ const schema = dsl({
 ### 4. 完整示例（2分钟）
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, Validator } = require('schema-dsl');
 
 // 定义用户注册Schema
 const registerSchema = dsl({
@@ -312,7 +312,7 @@ email: 'email!'
 
 **A**: 
 ```javascript
-const { uninstallStringExtensions } = require('schemaio');
+const { uninstallStringExtensions } = require('schema-dsl');
 uninstallStringExtensions();
 ```
 
@@ -358,7 +358,7 @@ npm install schemaio
 ### 1. Hello World（30秒）
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, Validator } = require('schema-dsl');
 
 // 定义Schema
 const schema = dsl({
@@ -459,7 +459,7 @@ const schema = dsl({
 ### 4. 完整示例（2分钟）
 
 ```javascript
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 // 定义用户注册Schema
 const registerSchema = dsl({
@@ -636,7 +636,7 @@ email: 'email!'
 
 **A**: 
 ```javascript
-const { uninstallStringExtensions } = require('schemaio');
+const { uninstallStringExtensions } = require('schema-dsl');
 uninstallStringExtensions();
 ```
 
@@ -662,4 +662,5 @@ uninstallStringExtensions();
 
 
 **最后更新**: 2025-12-25
+
 

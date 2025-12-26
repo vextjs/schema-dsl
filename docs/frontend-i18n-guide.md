@@ -21,7 +21,7 @@
 // server.js
 const express = require('express');
 const cors = require('cors');
-const { Validator, dsl } = require('schemaio');
+const { Validator, dsl } = require('schema-dsl');
 
 const app = express();
 app.use(cors());
@@ -233,7 +233,7 @@ app.post('/api/validate', (req, res) => {
 **A**: 使用 `Locale.addLocale()` 添加自定义语言包。
 
 ```javascript
-const { Locale } = require('schemaio');
+const { Locale } = require('schema-dsl');
 
 Locale.addLocale('de-DE', {
   required: '{{#label}} ist erforderlich',
@@ -287,3 +287,4 @@ app.use((req, res, next) => {
 **相关文档**：
 - [API 参考](api-reference.md)
 - [最佳实践](best-practices.md)
+

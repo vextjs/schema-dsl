@@ -61,7 +61,7 @@ npm install schemaio
 
 ```javascript
 // CommonJS
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 // ES Modules
 import { dsl, validate } from 'schemaio';
@@ -157,11 +157,11 @@ const schema = dsl({
 
 ```javascript
 // 方式1：便捷函数
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 const result = validate(schema, data);
 
 // 方式2：Validator 实例
-const { Validator } = require('schemaio');
+const { Validator } = require('schema-dsl');
 const validator = new Validator();
 const result = validator.validate(schema, data);
 ```
@@ -281,7 +281,7 @@ username: 'string:3-32!'
 **A**: 使用 `Locale` 类：
 
 ```javascript
-const { Locale } = require('schemaio');
+const { Locale } = require('schema-dsl');
 
 // 添加语言包
 Locale.addLocale('zh-CN', {
@@ -312,7 +312,7 @@ validator.validate(schema, data, { locale: 'zh-CN' });
 ### Q: 如何导出为 MongoDB Schema？
 
 ```javascript
-const { exporters } = require('schemaio');
+const { exporters } = require('schema-dsl');
 
 const exporter = new exporters.MongoDBExporter();
 const mongoSchema = exporter.export(schema);
@@ -404,3 +404,4 @@ const schema = dsl({
 - [验证指南](validation-guide.md)
 - [导出指南](export-guide.md)
 - [错误处理](error-handling.md)
+

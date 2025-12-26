@@ -120,7 +120,7 @@ result.valid === false  // 验证失败
 ### 示例 1: 验证简单对象
 
 ```javascript
-const { Validator } = require('schemaio');
+const { Validator } = require('schema-dsl');
 
 const validator = new Validator();
 
@@ -482,4 +482,5 @@ const schema = {
 
 
 **最后更新**: 2025-12-24
+
 

@@ -34,7 +34,7 @@
 ## 快速开始
 
 ```javascript
-const { dsl, exporters } = require('schemaio');
+const { dsl, exporters } = require('schema-dsl');
 
 // 1. 定义 Schema
 const userSchema = dsl({
@@ -195,7 +195,7 @@ const strictExporter = new exporters.MongoDBExporter({ strict: true });
 ### 用户集合验证
 
 ```javascript
-const { dsl, exporters } = require('schemaio');
+const { dsl, exporters } = require('schema-dsl');
 
 // 定义复杂用户 Schema
 const userSchema = dsl({
@@ -276,3 +276,4 @@ async function createValidatedCollection() {
 - [MySQL 导出器](mysql-exporter.md)
 - [PostgreSQL 导出器](postgresql-exporter.md)
 - [TypeConverter](type-converter.md)
+

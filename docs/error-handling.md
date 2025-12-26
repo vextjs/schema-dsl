@@ -26,7 +26,7 @@
 SchemaIO 验证返回的错误对象结构：
 
 ```javascript
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 const schema = dsl({
   username: 'string:3-32!'.label('用户名')
@@ -52,7 +52,7 @@ const result = validate(schema, { username: 'ab' });
 ### 嵌套对象错误
 
 ```javascript
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 const schema = dsl({
   user: {
@@ -78,7 +78,7 @@ console.log(result.errors[0].message);      // 'must match format "email"'
 ### 数组项错误
 
 ```javascript
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 const schema = dsl({
   items: 'array<string:3->!'
@@ -99,7 +99,7 @@ console.log(result.errors[0].instancePath); // '/items/0'
 ### 单字段定制
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // 使用 String 扩展定制消息
 const schema = dsl({
@@ -114,7 +114,7 @@ const schema = dsl({
 ### 多规则定制
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 const schema = dsl({
   email: 'email!'
@@ -129,7 +129,7 @@ const schema = dsl({
 ### 对象级定制
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 const schema = dsl({
   username: 'string:3-32!'
@@ -150,7 +150,7 @@ const schema = dsl({
 ### 全局定制
 
 ```javascript
-const { Locale } = require('schemaio');
+const { Locale } = require('schema-dsl');
 
 // 设置全局消息
 Locale.setMessages({
@@ -215,7 +215,7 @@ const schema = dsl({
 ### 自定义验证错误
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 const schema = dsl({
   username: 'string:3-32!'
@@ -236,7 +236,7 @@ const schema = dsl({
 ### 嵌套对象验证
 
 ```javascript
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 const schema = dsl({
   user: {
@@ -267,7 +267,7 @@ const result = validate(schema, {
 ### 数组验证
 
 ```javascript
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 const schema = dsl({
   items: 'array:1-<string:3->!'
@@ -322,7 +322,7 @@ console.log(result.errors[0].instancePath); // '/items/0'
 ### Express中间件
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, Validator } = require('schema-dsl');
 
 // 验证中间件
 function validateBody(schema) {
@@ -369,7 +369,7 @@ app.post('/api/users',
 ### Koa中间件
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, Validator } = require('schema-dsl');
 
 function validateBody(schema) {
   const validator = new Validator();
@@ -590,7 +590,7 @@ function logValidationError(req, result) {
 ### 1. 使用 label 让错误消息更清晰
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // ✅ 推荐：使用 label
 const schema = dsl({
@@ -608,7 +608,7 @@ const schema = dsl({
 ### 2. 提供友好的中文错误消息
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // ✅ 推荐：自定义中文消息
 const schema = dsl({
@@ -629,7 +629,7 @@ const schema = dsl({
 ### 3. 使用自定义验证实现业务逻辑
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // ✅ 推荐：返回错误消息字符串
 const schema = dsl({
@@ -699,4 +699,5 @@ if (!result.valid) {
 
 
 **最后更新**: 2025-12-25
+
 

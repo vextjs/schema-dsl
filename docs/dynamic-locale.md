@@ -39,7 +39,7 @@ validator.validate(schema, data, {
 使用 `dsl.config` 可以方便地加载自定义语言包。
 
 ```javascript
-const { dsl, Validator } = require('schemaio');
+const { dsl, Validator } = require('schema-dsl');
 
 // 方式一：直接传入对象
 dsl.config({
@@ -183,7 +183,7 @@ app.post('/api/user/register', (req, res) => {
 通过中间件一次性配置，后续业务代码无需关心语言参数。
 
 ```javascript
-const { Validator } = require('schemaio');
+const { Validator } = require('schema-dsl');
 const validator = new Validator();
 
 const schemaIoMiddleware = (req, res, next) => {
@@ -223,7 +223,7 @@ app.post('/users', (req, res) => {
 ### 3.2 Koa 中间件
 
 ```javascript
-const { Locale } = require('schemaio');
+const { Locale } = require('schema-dsl');
 
 /**
  * Koa 语言中间件
@@ -238,7 +238,7 @@ function localeMiddleware() {
     
     // 创建验证辅助函数
     ctx.validate = function(schema, data) {
-      const { Validator } = require('schemaio');
+      const { Validator } = require('schema-dsl');
       const validator = new Validator();
       return validator.validate(schema, data, { locale: ctx.locale });
     };
@@ -273,7 +273,7 @@ router.post('/api/user/register', async (ctx) => {
 
 ```javascript
 const express = require('express');
-const { dsl, Validator, Locale } = require('schemaio');
+const { dsl, Validator, Locale } = require('schema-dsl');
 
 const app = express();
 app.use(express.json());
@@ -548,4 +548,5 @@ const schema = dsl({
 
 **最后更新**: 2025-12-25  
 **作者**: SchemaIO Team
+
 

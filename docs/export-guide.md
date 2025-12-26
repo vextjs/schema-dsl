@@ -34,7 +34,7 @@ SchemaIO 支持将 JSON Schema 导出为多种数据库的 DDL 语句，实现"�
 ## 快速开始
 
 ```javascript
-const { dsl, exporters } = require('schemaio');
+const { dsl, exporters } = require('schema-dsl');
 
 // 定义统一的 Schema
 const userSchema = dsl({
@@ -62,7 +62,7 @@ const pgDdl = new exporters.PostgreSQLExporter().export('users', userSchema);
 ### 基本用法
 
 ```javascript
-const { dsl, exporters } = require('schemaio');
+const { dsl, exporters } = require('schema-dsl');
 
 const schema = dsl({
   username: 'string:3-32!',
@@ -146,7 +146,7 @@ async function setupCollection() {
 ### 基本用法
 
 ```javascript
-const { dsl, exporters } = require('schemaio');
+const { dsl, exporters } = require('schema-dsl');
 
 const schema = dsl({
   id: 'string!',
@@ -204,7 +204,7 @@ console.log(exporter.generateIndex('users', 'status'));
 ### 基本用法
 
 ```javascript
-const { dsl, exporters } = require('schemaio');
+const { dsl, exporters } = require('schema-dsl');
 
 const schema = dsl({
   id: 'uuid!',
@@ -320,7 +320,7 @@ const schema = dsl({
 
 ```javascript
 // schemas/user.js
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 module.exports = dsl({
   id: 'uuid!',
@@ -330,7 +330,7 @@ module.exports = dsl({
 });
 
 // 导出脚本
-const { exporters } = require('schemaio');
+const { exporters } = require('schema-dsl');
 const userSchema = require('./schemas/user');
 
 // 生成所有数据库的 DDL
@@ -345,7 +345,7 @@ const outputs = {
 
 ```javascript
 const fs = require('fs');
-const { dsl, exporters } = require('schemaio');
+const { dsl, exporters } = require('schema-dsl');
 
 function generateMigration(schemaName, schema) {
   const mysql = new exporters.MySQLExporter();
@@ -393,7 +393,7 @@ function exportWithVersion(name, schema, version) {
 ### 电商系统 Schema 导出
 
 ```javascript
-const { dsl, exporters } = require('schemaio');
+const { dsl, exporters } = require('schema-dsl');
 const fs = require('fs');
 
 // 用户 Schema
@@ -456,3 +456,4 @@ console.log('导出完成！');
 - [PostgreSQL 导出器](postgresql-exporter.md)
 - [TypeConverter](type-converter.md)
 - [DSL 语法](dsl-syntax.md)
+

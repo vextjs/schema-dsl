@@ -37,7 +37,7 @@
 
 ```javascript
 const { SchemaHelper } = require('schemaio/lib/utils');
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // 创建 Schema
 const userSchema = dsl({
@@ -264,7 +264,7 @@ const summary = SchemaHelper.summarizeSchema(userSchema);
 
 ```javascript
 const { SchemaHelper } = require('schemaio/lib/utils');
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 function analyzeSchema(schema, name = 'Schema') {
   console.log(`\n=== ${name} 分析 ===`);
@@ -337,3 +337,4 @@ function compareSchemaVersions(oldSchema, newSchema) {
 - [TypeConverter](type-converter.md)
 - [SchemaUtils](schema-utils.md)
 - [API 参考](api-reference.md)
+

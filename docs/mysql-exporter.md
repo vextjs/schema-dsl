@@ -35,7 +35,7 @@
 ## 快速开始
 
 ```javascript
-const { dsl, exporters } = require('schemaio');
+const { dsl, exporters } = require('schema-dsl');
 
 // 1. 定义 Schema
 const userSchema = dsl({
@@ -160,7 +160,7 @@ const exporter = new exporters.MySQLExporter({
 ### 用户表 DDL 生成
 
 ```javascript
-const { dsl, exporters } = require('schemaio');
+const { dsl, exporters } = require('schema-dsl');
 
 // 定义用户 Schema（带描述）
 const userSchema = dsl({
@@ -254,3 +254,4 @@ CREATE INDEX `idx_users_status` ON `users` (`status`);
 - [MongoDB 导出器](mongodb-exporter.md)
 - [PostgreSQL 导出器](postgresql-exporter.md)
 - [TypeConverter](type-converter.md)
+

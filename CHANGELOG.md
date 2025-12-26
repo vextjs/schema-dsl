@@ -1,6 +1,6 @@
-# SchemaIO 更新日志
+# schema-dsl 更新日志
 
-本文档记录 SchemaIO 项目的所有重要变更。
+本文档记录 schema-dsl 项目的所有重要变更。
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
@@ -17,6 +17,43 @@
 | [v2.0.1](#v201) | 2025-12-25 | 移除简写、补充类型、数组DSL、文档重写 | [查看详情](#v201) |
 | [v1.0.0](#v100) | 2025-12-24 | 重构为适配器模式架构，实现完整功能 | [查看详情](#v100) |
 | [v0.1.0](#v010) | 2025-12-XX | 初始版本，基础框架 | [查看详情](#v010) |
+
+---
+
+## [v2.1.3] - 2025-12-26
+
+### 🔄 重大变更
+
+#### 包名变更
+- ✅ **npm 包名从 `schemaio` 变更为 `schema-dsl`**
+- **原因**: 原包名 `schemaio` 已被占用，`schema-dsl` 更能体现项目核心特色（DSL 语法）
+- **影响**: 
+  - npm 安装命令: `npm install schema-dsl`
+  - 引入方式: `require('schema-dsl')` 或 `import ... from 'schema-dsl'`
+  - GitHub 仓库: https://github.com/vextjs/schema-dsl
+
+### 📝 文档更新
+- ✅ 更新所有文档中的包名引用
+- ✅ 更新 README.md 中的安装说明
+- ✅ 更新所有示例代码
+
+### ⚠️ 迁移指南
+
+如果您之前使用了 `schemaio`（内部测试版本），请按以下步骤迁移：
+
+```bash
+# 1. 卸载旧包（如果安装过）
+npm uninstall schemaio
+
+# 2. 安装新包
+npm install schema-dsl
+
+# 3. 更新代码中的引用
+# 旧: const { dsl } = require('schemaio');
+# 新: const { dsl } = require('schema-dsl');
+```
+
+**注意**: 除了包名变更，所有 API 保持完全兼容，无需修改业务代码。
 
 ---
 

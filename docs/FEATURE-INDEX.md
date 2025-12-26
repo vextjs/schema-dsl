@@ -26,7 +26,7 @@
 
 **使用示例**:
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // 字符串定义
 const builder = dsl('email!');
@@ -132,7 +132,7 @@ const schema = dsl({
 
 **使用示例**:
 ```javascript
-const { Validator } = require('schemaio');
+const { Validator } = require('schema-dsl');
 
 const validator = new Validator();
 const result = validator.validate(schema, data);
@@ -156,7 +156,7 @@ console.log(result.errors);  // 错误列表
 
 **使用示例**:
 ```javascript
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 const schema = dsl({ email: 'email!' });
 const result = validate(schema, { email: 'test@example.com' });
@@ -184,7 +184,7 @@ const result = validate(schema, { email: 'test@example.com' });
 
 **使用示例**:
 ```javascript
-const { exporters } = require('schemaio');
+const { exporters } = require('schema-dsl');
 
 const exporter = new exporters.MongoDBExporter();
 const mongoSchema = exporter.export(jsonSchema);
@@ -212,7 +212,7 @@ console.log(command);
 
 **使用示例**:
 ```javascript
-const { exporters } = require('schemaio');
+const { exporters } = require('schema-dsl');
 
 const exporter = new exporters.MySQLExporter();
 const ddl = exporter.export('users', jsonSchema);
@@ -242,7 +242,7 @@ console.log(ddl);
 
 **使用示例**:
 ```javascript
-const { exporters } = require('schemaio');
+const { exporters } = require('schema-dsl');
 
 const exporter = new exporters.PostgreSQLExporter();
 const ddl = exporter.export('users', jsonSchema);
@@ -281,7 +281,7 @@ console.log(ddl);
 
 **使用示例**:
 ```javascript
-const { SchemaUtils, dsl } = require('schemaio');
+const { SchemaUtils, dsl } = require('schema-dsl');
 
 // Schema复用
 const emailField = SchemaUtils.reusable(() => dsl('email!'));
@@ -436,7 +436,7 @@ const merged = SchemaUtils.merge(schema1, schema2);
 
 **使用示例**:
 ```javascript
-const { Validator, CustomKeywords } = require('schemaio');
+const { Validator, CustomKeywords } = require('schema-dsl');
 
 const validator = new Validator();
 CustomKeywords.registerAll(validator.getAjv());
@@ -517,4 +517,5 @@ const schema = {
 
 **最后更新**: 2025-12-25  
 **维护者**: SchemaIO Team
+
 

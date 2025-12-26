@@ -53,7 +53,7 @@
 ### 基本类型
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // 字符串
 const schema1 = dsl({ name: 'string' });
@@ -215,4 +215,5 @@ A: 不支持 `s`/`n`/`i`/`b` 等简写，统一使用完整类型名（`string`/
 ---
 
 **最后更新**: 2025-12-25
+
 

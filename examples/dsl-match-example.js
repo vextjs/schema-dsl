@@ -71,3 +71,4 @@ const vipSchema = dsl({
 log('VIP折扣: ' + validate(vipSchema, { isVip: true, discount: 40 }).valid);
 log('非VIP折扣: ' + validate(vipSchema, { isVip: false, discount: 40 }).valid); // false
 log('');
+

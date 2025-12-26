@@ -30,7 +30,7 @@
 ## 📦 安装
 
 ```bash
-npm install schemaio
+npm install schema-dsl
 ```
 
 ---
@@ -38,7 +38,7 @@ npm install schemaio
 ## 🚀 快速开始
 
 ```javascript
-const { dsl, validate } = require('schemaio');
+const { dsl, validate } = require('schema-dsl');
 
 // 定义Schema
 const schema = dsl({
@@ -298,7 +298,7 @@ const registrationSchema = dsl({
 ### 基础验证
 
 ```javascript
-const { validate } = require('schemaio');
+const { validate } = require('schema-dsl');
 
 const result = validate(schema, data);
 
@@ -312,7 +312,7 @@ console.log(result.data);    // 验证后的数据
 当需要自定义配置（如关闭默认值、启用类型转换）时，使用 `Validator` 类：
 
 ```javascript
-const { Validator } = require('schemaio');
+const { Validator } = require('schema-dsl');
 
 // 1. 创建实例（支持自定义配置）
 const validator = new Validator({
@@ -360,7 +360,7 @@ const result = validator.validate(validate, data);
 ### 快速开始
 
 ```javascript
-const { PluginManager } = require('schemaio');
+const { PluginManager } = require('schema-dsl');
 
 // 1. 创建插件管理器
 const pluginManager = new PluginManager();
@@ -370,7 +370,7 @@ const customPlugin = require('./plugins/custom-validator');
 pluginManager.register(customPlugin);
 
 // 3. 安装插件
-const schemaio = require('schemaio');
+const schemaio = require('schema-dsl');
 pluginManager.install(schemaio);
 ```
 
@@ -434,12 +434,12 @@ const myPlugin = {
   // 安装函数
   install(schemaio, options, context) {
     // 添加自定义功能
-    schemaio.myMethod = () => { /* ... */ };
+    schemaDsl.myMethod = () => { /* ... */ };
   },
 
   // 卸载函数（可选）
   uninstall(schemaio, context) {
-    delete schemaio.myMethod;
+    delete schemaDsl.myMethod;
   },
 
   // 生命周期钩子（可选）
@@ -498,7 +498,7 @@ pluginManager.clear(schemaio);
 ### MongoDB Schema
 
 ```javascript
-const { exporters } = require('schemaio');
+const { exporters } = require('schema-dsl');
 
 const mongoExporter = new exporters.MongoDBExporter();
 const mongoSchema = mongoExporter.export(jsonSchema);
@@ -551,7 +551,7 @@ const ddl = pgExporter.export('users', jsonSchema);
 ### 全局配置
 
 ```javascript
-const { dsl } = require('schemaio');
+const { dsl } = require('schema-dsl');
 
 // 配置多语言目录
 dsl.config({
@@ -572,7 +572,7 @@ dsl.config({
 ### 切换语言
 
 ```javascript
-const { Locale } = require('schemaio');
+const { Locale } = require('schema-dsl');
 
 Locale.setLocale('zh-CN');  // 中文
 Locale.setLocale('en-US');  // 英文
@@ -724,7 +724,7 @@ const schema = dsl({
 ### Schema 复用
 
 ```javascript
-const { SchemaUtils } = require('schemaio');
+const { SchemaUtils } = require('schema-dsl');
 
 // 创建可复用片段
 const emailField = SchemaUtils.reusable(() => dsl('email!'));
@@ -815,4 +815,5 @@ npm run coverage  # 测试覆盖率
 ---
 
 **SchemaIO** - 简洁而强大 🎉
+
 
