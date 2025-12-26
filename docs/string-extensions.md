@@ -71,6 +71,12 @@ const schema = dsl({
 | `.idCard(country)` | 身份证验证 | `'string!'.idCard('cn')` |
 | `.slug()` | URL别名验证 | `'string!'.slug()` |
 | `.password(strength)` | 密码验证 | `'string!'.password('strong')` |
+| `.format(name)` | 设置格式 | `'string'.format('email')` |
+| `.toSchema()` | 转为Schema | `'string!'.toSchema()` |
+| `.creditCard(type)` | 信用卡验证 | `'string!'.creditCard('visa')` |
+| `.licensePlate(country)` | 车牌验证 | `'string!'.licensePlate('cn')` |
+| `.postalCode(country)` | 邮编验证 | `'string!'.postalCode('cn')` |
+| `.passport(country)` | 护照验证 | `'string!'.passport('cn')` |
 
 ---
 

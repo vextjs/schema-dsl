@@ -43,6 +43,7 @@
 - ✅ 更新 `docs/quick-start.md` 示例使用 `min`/`max` 简写。
 - ✅ 更新 `README.md` 示例使用 `min`/`max` 简写。
 - ✅ 明确简写API的优势和兼容性说明。
+- ✅ 修复 `docs/dsl-syntax.md` 和 `docs/string-extensions.md` 缺失的类型和方法说明。
 
 ### 🧪 测试
 - ✅ 所有 318 个测试通过。

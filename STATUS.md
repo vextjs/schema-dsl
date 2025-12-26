@@ -31,9 +31,10 @@
 | min/max 简写支持 | ✅ 完成 | P1 | 支持 min/max 代替 minLength/maxLength |
 | 统一语言包占位符 | ✅ 完成 | P1 | 所有语言包统一使用 {{#limit}} |
 | 更新文档示例 | ✅ 完成 | P1 | 使用 min/max 简写 |
+| 文档一致性修复 | ✅ 完成 | P1 | 修复 dsl-syntax.md 和 string-extensions.md 缺失内容 |
 
 **实现状态统计**:
-- ✅ 完成: 5个
+- ✅ 完成: 6个
 - 🔄 进行中: 0个
 - ⏳ 待完成: 0个
 

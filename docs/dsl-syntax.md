@@ -170,6 +170,28 @@ const schema = dsl({
 });
 ```
 
+### 4. 特殊约束
+
+支持特定格式的约束：
+
+```javascript
+'phone:cn'        // 中国手机号
+'idCard:cn'       // 中国身份证
+'creditCard:visa' // Visa信用卡
+'licensePlate:cn' // 中国车牌
+'postalCode:cn'   // 中国邮编
+'passport:cn'     // 中国护照
+```
+
+**示例**:
+```javascript
+const schema = dsl({
+  mobile: 'phone:cn!',
+  id: 'idCard:cn',
+  card: 'creditCard:mastercard'
+});
+```
+
 ---
 
 ## 数组语法
