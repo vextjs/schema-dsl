@@ -1,7 +1,7 @@
 # TypeConverter 类型转换工具
 
 > **模块**: `lib/utils/TypeConverter.js`  
-> **版本**: v1.0.0  
+
 > **用途**: 提供 JSON Schema 与各种数据库类型之间的转换
 
 ---

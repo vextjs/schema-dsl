@@ -1,7 +1,7 @@
 # SchemaHelper Schema辅助工具
 
 > **模块**: `lib/utils/SchemaHelper.js`  
-> **版本**: v1.0.0  
+
 > **用途**: 提供 JSON Schema 操作的常用辅助方法
 
 ---

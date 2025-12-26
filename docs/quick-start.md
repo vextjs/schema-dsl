@@ -102,7 +102,7 @@ console.log(result.valid); // true
 
 ### 3. String 扩展（2分钟）
 
-字符串可以直接链式调用！
+字符串支持链式调用：
 
 ```javascript
 const schema = dsl({
@@ -336,9 +336,9 @@ uninstallStringExtensions();
 
 ---
 
-**最后更新**: 2025-12-25
+---
 
-### 进阶功能
+**最后更新**: 2025-12-26
 - [🔧 自定义验证](#-自定义验证)
 - [🗄️ 数据库导出](#️-数据库导出)
 - [📚 下一步](#-下一步)
@@ -425,7 +425,7 @@ console.log(result.valid); // true
 
 ### 3. String 扩展 - 核心特性（2分钟）
 
-**v2.0.1 新特性**：字符串可以直接链式调用！
+字符串支持链式调用：
 
 ```javascript
 const schema = dsl({

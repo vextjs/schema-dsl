@@ -1,6 +1,5 @@
 # SchemaIO 文档索引
 
-> **版本**: v2.2.0  
 > **更新时间**: 2025-12-26  
 > **用途**: 所有文档的快速导航  
 > **文档数量**: 26个文档（总计 11,600+ 行）
@@ -16,7 +15,7 @@
 - [🗄️ 导出器](#️-导出器) - 数据库Schema导出
 - [🛠️ 工具类](#️-工具类utilities) - 辅助工具
 - [📖 使用指南](#-使用指南guides) - 完整教程
-- [🔧 故障排查](#-故障排查troubleshooting) - 问题解决 🆕
+- [🔧 故障排查](#-故障排查troubleshooting) - 问题解决
 - [📝 示例代码](#-示例代码examples) - 完整示例
 - [❓ 常见问题](#-常见问题faq) - FAQ
 
@@ -29,8 +28,8 @@
 | [README.md](../README.md) | 3分钟 | 项目介绍、安装和快速开始 ⭐ |
 | [quick-start.md](quick-start.md) | 5分钟 | 5分钟快速上手教程 ⭐ |
 | [FEATURE-INDEX.md](FEATURE-INDEX.md) | 10分钟 | 完整功能索引 ⭐ |
-| [best-practices.md](best-practices.md) | 15分钟 | 最佳实践指南 ⭐⭐⭐ 🆕 |
-| [faq.md](faq.md) | 5分钟 | 常见问题解答 🆕 |
+| [best-practices.md](best-practices.md) | 15分钟 | 最佳实践指南 ⭐⭐⭐ |
+| [faq.md](faq.md) | 5分钟 | 常见问题解答 |
 
 ---
 
@@ -41,8 +40,8 @@
 | 文档 | 行数 | 说明 |
 |------|------|------|
 | [dsl-syntax.md](dsl-syntax.md) | 2815行 | **DSL语法完整指南**（最重要）⭐⭐⭐ |
-| [string-extensions.md](string-extensions.md) | 465行 | **String扩展文档**（v2.0.1新特性）⭐⭐ |
-| [plugin-system.md](plugin-system.md) | 580行 | **插件系统指南**（v2.2.0新特性）⭐⭐ 🆕 |
+| [string-extensions.md](string-extensions.md) | 465行 | **String扩展文档** ⭐⭐ |
+| [plugin-system.md](plugin-system.md) | 580行 | **插件系统指南** ⭐⭐ |
 | [api-reference.md](api-reference.md) | 534行 | API完整参考 ⭐⭐ |
 | [validate.md](validate.md) | 452行 | validate方法详解 ⭐ |
 
@@ -60,14 +59,6 @@
 | Validator 类 | [validate.md](validate.md) | `lib/core/Validator.js` |
 | validate() 函数 | [api-reference.md](api-reference.md) | `index.js` |
 
-### v2.0.1 新功能
-
-| 功能 | 文档 | 示例代码 |
-|------|------|---------|
-| String扩展 | [string-extensions.md](string-extensions.md) | [string-extensions.js](../examples/string-extensions.js) |
-| Schema复用 | [FEATURE-INDEX.md](FEATURE-INDEX.md#schemautils) | [v2.0.1-features.js](../examples/v2.0.1-features.js) |
-| 批量验证 | [validate.md](validate.md#批量验证) | [v2.0.1-features.js](../examples/v2.0.1-features.js) |
-| Schema工具 | [schema-helper.md](schema-helper.md) | [v2.0.1-features.js](../examples/v2.0.1-features.js) |
 
 ---
 
@@ -79,7 +70,7 @@
 
 | 文档 | 行数 | 说明 |
 |------|------|------|
-| [mongodb-exporter.md](mongodb-exporter.md) | ~200行 | MongoDB 导出器完整指南 🆕 |
+| [mongodb-exporter.md](mongodb-exporter.md) | ~200行 | MongoDB 导出器完整指南 |
 
 **主要功能**:
 - `export()` - 导出 $jsonSchema 验证规则
@@ -91,7 +82,7 @@
 
 | 文档 | 行数 | 说明 |
 |------|------|------|
-| [mysql-exporter.md](mysql-exporter.md) | ~220行 | MySQL 导出器完整指南 🆕 |
+| [mysql-exporter.md](mysql-exporter.md) | ~220行 | MySQL 导出器完整指南 |
 
 **主要功能**:
 - `export()` - 导出 CREATE TABLE DDL
@@ -102,7 +93,7 @@
 
 | 文档 | 行数 | 说明 |
 |------|------|------|
-| [postgresql-exporter.md](postgresql-exporter.md) | ~280行 | PostgreSQL 导出器完整指南 🆕 |
+| [postgresql-exporter.md](postgresql-exporter.md) | ~280行 | PostgreSQL 导出器完整指南 |
 
 **主要功能**:
 - `export()` - 导出 CREATE TABLE DDL（含 CHECK 约束）
@@ -115,9 +106,9 @@
 
 | 文档 | 行数 | 说明 |
 |------|------|------|
-| [type-converter.md](type-converter.md) | ~250行 | TypeConverter - 类型转换工具 🆕 |
-| [schema-helper.md](schema-helper.md) | ~220行 | SchemaHelper - Schema 辅助工具 🆕 |
-| [cache-manager.md](cache-manager.md) | ~250行 | CacheManager - LRU缓存管理 🆕 |
+| [type-converter.md](type-converter.md) | ~250行 | TypeConverter - 类型转换工具 |
+| [schema-helper.md](schema-helper.md) | ~220行 | SchemaHelper - Schema 辅助工具 |
+| [cache-manager.md](cache-manager.md) | ~250行 | CacheManager - LRU缓存管理 |
 
 ### TypeConverter 主要功能
 - `toMongoDBType()` - 转换为 MongoDB 类型
@@ -145,8 +136,8 @@
 
 | 文档 | 行数 | 说明 |
 |------|------|------|
-| [validation-guide.md](validation-guide.md) | ~400行 | 数据验证完整指南 🆕 |
-| [export-guide.md](export-guide.md) | ~350行 | 数据库导出完整指南 🆕 |
+| [validation-guide.md](validation-guide.md) | ~400行 | 数据验证完整指南 |
+| [export-guide.md](export-guide.md) | ~350行 | 数据库导出完整指南 |
 | [error-handling.md](error-handling.md) | ~640行 | 错误处理最佳实践 |
 
 ### 验证指南内容
@@ -172,7 +163,6 @@
 | [joi-style.js](../examples/joi-style.js) | Joi 风格完整示例 |
 | [dsl-style.js](../examples/dsl-style.js) | DSL 风格完整示例 |
 | [string-extensions.js](../examples/string-extensions.js) | String 扩展示例 |
-| [v2.0.1-features.js](../examples/v2.0.1-features.js) | v2.0.1 新特性示例 |
 | [password-reset/](../examples/password-reset/) | 密码重置表单示例 |
 
 ---
@@ -181,7 +171,7 @@
 
 | 文档 | 说明 |
 |------|------|
-| [faq.md](faq.md) | 常见问题与解答 🆕 |
+| [faq.md](faq.md) | 常见问题与解答 |
 
 **热门问题**:
 - DSL 语法与 Joi 语法的区别？
@@ -225,8 +215,8 @@
 
 **图例说明**:
 - ⭐ 重点推荐文档
-- 🆕 新增文档
+- ⭐⭐ 核心文档
+- ⭐⭐⭐ 必读文档
 
-**文档版本**: v2.0.0  
-**最后更新**: 2025-12-25
+**最后更新**: 2025-12-26
 

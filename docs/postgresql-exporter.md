@@ -1,7 +1,7 @@
 # PostgreSQL 导出器文档
 
 > **模块**: `lib/exporters/PostgreSQLExporter.js`  
-> **版本**: v1.0.0  
+
 > **用途**: 将 JSON Schema 转换为 PostgreSQL CREATE TABLE 语句
 
 ---
