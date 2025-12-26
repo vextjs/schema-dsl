@@ -1,9 +1,9 @@
 // Type definitions for SchemaIO v2.1.2
-// Project: https://github.com/schemaio/schemaio
+// Project: https://github.com/schema-dsl/schema-dsl
 // Definitions by: SchemaIO Team
 
 
-declare module 'schemaio' {
+declare module 'schema-dsl' {
   // ========== 核心类型 ==========
 
   /**
@@ -832,7 +832,7 @@ declare module 'schemaio' {
    * 
    * @example
    * ```typescript
-   * import { dsl, validate } from 'schemaio';
+   * import { dsl, validate } from 'schema-dsl';
    *
    * const schema = dsl({ email: 'email!' });
    * const result = validate(schema, { email: 'test@example.com' });
@@ -851,7 +851,7 @@ declare module 'schemaio' {
    * 
    * @example
    * ```typescript
-   * import { getDefaultValidator } from 'schemaio';
+   * import { getDefaultValidator } from 'schema-dsl';
    *
    * const validator = getDefaultValidator();
    * validator.addFormat('custom', /pattern/);
@@ -1016,7 +1016,7 @@ declare module 'schemaio' {
    * 
    * @example
    * ```typescript
-   * import { exporters } from 'schemaio';
+   * import { exporters } from 'schema-dsl';
    * 
    * const mongoExporter = new exporters.MongoDBExporter();
    * const mysqlExporter = new exporters.MySQLExporter();
@@ -1324,7 +1324,7 @@ declare module 'schemaio' {
    * 
    * @example
    * ```typescript
-   * import { ErrorCodes } from 'schemaio';
+   * import { ErrorCodes } from 'schema-dsl';
    * 
    * console.log(ErrorCodes.min);
    * // { code: 'MIN_LENGTH', message: 'Must be at least {{#limit}} characters', zhCN: '至少需要 {{#limit}} 个字符' }
@@ -1333,24 +1333,24 @@ declare module 'schemaio' {
    * // { code: 'INVALID_EMAIL', message: 'Invalid email format', zhCN: '邮箱格式不正确' }
    * ```
    */
-  export namespace ErrorCodes {
+  export const ErrorCodes: {
     /** 最小长度/最小值错误 */
-    const min: { code: string; message: string; zhCN: string };
+    min: { code: string; message: string; zhCN: string };
     /** 最大长度/最大值错误 */
-    const max: { code: string; message: string; zhCN: string };
+    max: { code: string; message: string; zhCN: string };
     /** 邮箱格式错误 */
-    const email: { code: string; message: string; zhCN: string };
+    email: { code: string; message: string; zhCN: string };
     /** URL格式错误 */
-    const url: { code: string; message: string; zhCN: string };
+    url: { code: string; message: string; zhCN: string };
     /** 正则表达式验证错误 */
-    const pattern: { code: string; message: string; zhCN: string };
+    pattern: { code: string; message: string; zhCN: string };
     /** 必填项错误 */
-    const required: { code: string; message: string; zhCN: string };
+    required: { code: string; message: string; zhCN: string };
     /** 类型错误 */
-    const type: { code: string; message: string; zhCN: string };
+    type: { code: string; message: string; zhCN: string };
     /** 枚举值错误 */
-    const enum: { code: string; message: string; zhCN: string };
-  }
+    enum: { code: string; message: string; zhCN: string };
+  };
 
   // ========== 多语言 ==========
 
@@ -1361,7 +1361,7 @@ declare module 'schemaio' {
    * 
    * @example
    * ```typescript
-   * import { Locale } from 'schemaio';
+   * import { Locale } from 'schema-dsl';
    * 
    * // 设置语言
    * Locale.setLocale('zh-CN');
@@ -1429,7 +1429,7 @@ declare module 'schemaio' {
    * 
    * @example
    * ```typescript
-   * import { installStringExtensions } from 'schemaio';
+   * import { installStringExtensions } from 'schema-dsl';
    * 
    * // 安装扩展
    * installStringExtensions();
@@ -1449,7 +1449,7 @@ declare module 'schemaio' {
    * 
    * @example
    * ```typescript
-   * import { uninstallStringExtensions } from 'schemaio';
+   * import { uninstallStringExtensions } from 'schema-dsl';
    * 
    * // 卸载扩展
    * uninstallStringExtensions();
@@ -1487,13 +1487,13 @@ declare module 'schemaio' {
    * @example
    * ```typescript
    * import express from 'express';
-   * import schemaio from 'schemaio';
+   * import schema-dsl from 'schema-dsl';
    * 
    * const app = express();
    * app.use(express.json());
    * 
    * // 定义Schema
-   * const userSchema = schemaio({
+   * const userSchema = schema-dsl({
    *   username: 'string:3-32!',
    *   email: 'email!',
    *   age: 'number:18-100'
@@ -1501,7 +1501,7 @@ declare module 'schemaio' {
    * 
    * // 使用中间件
    * app.post('/api/user', 
-   *   schemaio.middleware({ body: userSchema }),
+   *   schema-dsl.middleware({ body: userSchema }),
    *   (req, res) => {
    *     // req.body 已经通过验证
    *     res.json({ success: true, data: req.body });
@@ -1510,7 +1510,7 @@ declare module 'schemaio' {
    * 
    * // 自定义错误处理
    * app.post('/api/user2', 
-   *   schemaio.middleware({ 
+   *   schema-dsl.middleware({ 
    *     body: userSchema,
    *     onError: (errors, req, res, next) => {
    *       res.status(400).json({
@@ -1537,9 +1537,9 @@ declare module 'schemaio' {
    * 
    * @example
    * ```typescript
-   * import schemaio from 'schemaio';
+   * import schema-dsl from 'schema-dsl';
    * 
-   * const schema = schemaio({
+   * const schema = schema-dsl({
    *   username: 'string:3-32!',
    *   email: 'email!'
    * });
