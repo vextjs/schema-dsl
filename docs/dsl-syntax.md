@@ -282,7 +282,7 @@ const schema = dsl({
 
 ## 条件验证 (Match)
 
-v2.1.0 引入了更优雅的条件验证语法 `dsl.match` 和 `dsl.if`。
+支持更优雅的条件验证语法 `dsl.match` 和 `dsl.if`。
 
 ### 1. dsl.match (推荐)
 
@@ -391,7 +391,7 @@ const schema = dsl({
 **解决方案**: 使用 `dsl.match` (推荐)
 
 ```javascript
-// ✅ 推荐：使用 dsl.match (v2.1+)
+// ✅ 推荐：使用 dsl.match
 const schema = dsl({
   vipLevel: 'string',
   discount: dsl.match('vipLevel', {
@@ -582,7 +582,7 @@ const schema = dsl({
 
 ### Q2: 数组长度约束怎么写？
 
-**A**: v2.0+ 支持直接在DSL中写：
+**A**: 支持直接在DSL中写：
 ```javascript
 'array!1-10<string>'    // 推荐
 ```
@@ -604,7 +604,7 @@ const schema = dsl({
 
 ### Q4: 不支持条件验证吗？
 
-**A**: 支持。推荐使用 `dsl.match` (v2.1+)：
+**A**: 支持。推荐使用 `dsl.match`：
 ```javascript
 dsl.match('vipLevel', { gold: 'number:0-50', silver: 'number:0-20' })
 ```

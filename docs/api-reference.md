@@ -1,6 +1,6 @@
 # SchemaIO API 参考文档
 
-> **版本**: v2.0.1  
+
 > **更新时间**: 2025-12-25  
 
 ---
@@ -296,7 +296,7 @@ console.log(result.valid); // true
 
 ---
 
-### 静态方法 (v2.1.0)
+### 静态方法 
 
 #### `dsl.match(field, map)```
 
@@ -602,7 +602,7 @@ console.log(result.valid); // true
 
 ---
 
-### 静态方法 (v2.1.0)
+### 静态方法 
 
 #### `dsl.match(field, map)```
 
@@ -908,7 +908,7 @@ console.log(result.valid); // true
 
 ---
 
-### 静态方法 (v2.1.0)
+### 静态方法 
 
 #### `dsl.match(field, map)```
 

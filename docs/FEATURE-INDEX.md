@@ -1,6 +1,6 @@
 # SchemaIO 功能索引
 
-> **版本**: v2.0.1  
+
 > **更新时间**: 2025-12-25  
 > **用途**: 快速查找所有功能及其文档位置  
 
@@ -63,7 +63,7 @@ const schema = dsl({
 - ✅ `validate(data)` - 验证数据
 - ✅ `validateNestingDepth(schema, maxDepth)` - 检测嵌套深度（静态方法）
 
-**默认验证器方法**（v2.0.1 新增）:
+**默认验证器方法**:
 - ✅ `username(preset?)` - 用户名验证（preset: 'short'|'medium'|'long'|'5-20'）
 - ✅ `password(strength?)` - 密码强度验证（strength: 'weak'|'medium'|'strong'|'veryStrong'）
 - ✅ `phone(country?)` - 手机号验证（country: 'cn'|'us'|'uk'|'hk'|'tw'|'international'）
@@ -92,7 +92,7 @@ const userSchema = dsl({
 
 ---
 
-### String 扩展（v2.0.1 新特性）
+### String 扩展
 
 **功能**: 字符串直接链式调用，无需 dsl() 包裹
 
@@ -264,7 +264,7 @@ console.log(ddl);
 
 ## 工具函数
 
-### SchemaUtils（v2.0.1 新增）
+### SchemaUtils
 
 **功能**: Schema复用、合并、操作工具
 

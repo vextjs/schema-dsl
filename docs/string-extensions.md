@@ -219,10 +219,10 @@ const schema = dsl({
   // 密码强度
   password: 'string!'.password('strong'),  // 强密码
 
-  // 身份证验证 (v2.0.1)
+  // 身份证验证
   idCard: 'string!'.idCard('cn'),
 
-  // URL别名验证 (v2.0.1)
+  // URL别名验证
   slug: 'string!'.slug()
 });
 ```

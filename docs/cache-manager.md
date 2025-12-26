@@ -1,7 +1,7 @@
 # CacheManager 缓存管理器
 
 > **模块**: `lib/core/CacheManager.js`  
-> **版本**: v1.0.0  
+
 > **用途**: 高性能 Schema 编译缓存，支持 LRU 淘汰和 TTL 过期
 
 ---

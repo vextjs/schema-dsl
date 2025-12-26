@@ -660,6 +660,6 @@ uninstallStringExtensions();
 
 ---
 
-**文档版本**: v2.0.1  
+
 **最后更新**: 2025-12-25
 
