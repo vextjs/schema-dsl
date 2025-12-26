@@ -430,7 +430,7 @@ validate(schema, data, { locale: 'zh-CN' });
 ❌ 性能开销（轻微）  
 ❌ 调试复杂度增加
 
-#### 方案C：消息缓存优化
+#### 方案C：消息缓存优化（⚠️ 需要内存管理）
 
 ```javascript
 class ErrorFormatter {
@@ -450,6 +450,15 @@ class ErrorFormatter {
     this.messageCache.set(locale, messages);
     return messages;
   }
+  
+  // 🆕 清除特定语言缓存
+  clearCache(locale) {
+    if (locale) {
+      this.messageCache.delete(locale);
+    } else {
+      this.messageCache.clear();
+    }
+  }
 }
 ```
 
@@ -460,8 +469,549 @@ class ErrorFormatter {
 
 **缺点**：
 ❌ 需要处理缓存失效（动态添加语言时）
+❌ **⚠️ 潜在内存泄漏风险**（见下文详细分析）
 
-### 4.2 语言包优化
+### 4.2 内存泄漏问题深度分析 ⚠️
+
+#### A. 风险场景识别
+
+**场景1：无限制缓存增长**
+
+```javascript
+// ❌ 问题代码：无限制缓存
+class ErrorFormatter {
+  constructor() {
+    this.messageCache = new Map();  // 永不清理
+  }
+  
+  _loadMessages(locale) {
+    if (!this.messageCache.has(locale)) {
+      // 每次新语言都缓存，永不删除
+      this.messageCache.set(locale, loadedMessages);
+    }
+    return this.messageCache.get(locale);
+  }
+}
+
+// 场景：用户动态切换大量语言
+for (let i = 0; i < 10000; i++) {
+  const customLocale = `custom-${i}`;
+  Locale.addLocale(customLocale, messages);
+  formatter._loadMessages(customLocale);  // ⚠️ 内存持续增长
+}
+```
+
+**内存泄漏原因**：
+1. **Map 无限增长**：每次新语言都添加到缓存，从不清理
+2. **对象引用持久化**：合并后的消息对象保留在内存
+3. **WeakMap 不适用**：消息对象不能被垃圾回收（需要主动使用）
+
+**场景2：全局静态缓存**
+
+```javascript
+// ❌ 问题代码：全局静态缓存
+class Locale {
+  static messageCache = new Map();  // 全局静态，永不释放
+  
+  static getMessages(locale) {
+    if (!this.messageCache.has(locale)) {
+      this.messageCache.set(locale, merged);  // 永久保存
+    }
+    return this.messageCache.get(locale);
+  }
+}
+```
+
+**风险**：
+- 应用生命周期内永不清理
+- 多租户场景下，每个租户的自定义语言都累积
+- 长期运行的服务器（如API服务）内存持续增长
+
+#### B. 内存泄漏检测
+
+**检测工具**：
+
+```javascript
+// 内存泄漏检测示例
+const used = process.memoryUsage();
+console.log('Initial Memory:', Math.round(used.heapUsed / 1024 / 1024 * 100) / 100 + ' MB');
+
+// 模拟大量语言切换
+for (let i = 0; i < 1000; i++) {
+  Locale.addLocale(`locale-${i}`, largeMessages);
+  formatter._loadMessages(`locale-${i}`);
+}
+
+const usedAfter = process.memoryUsage();
+console.log('After Memory:', Math.round(usedAfter.heapUsed / 1024 / 1024 * 100) / 100 + ' MB');
+console.log('Leaked:', Math.round((usedAfter.heapUsed - used.heapUsed) / 1024 / 1024 * 100) / 100 + ' MB');
+```
+
+**预期结果**（无缓存限制）：
+```
+Initial Memory: 10.5 MB
+After Memory: 125.3 MB  ⚠️ 内存显著增长
+Leaked: 114.8 MB
+```
+
+#### C. 解决方案
+
+**方案1：LRU 缓存（推荐 ⭐⭐⭐⭐⭐）**
+
+```javascript
+class LRUCache {
+  constructor(maxSize = 10) {
+    this.maxSize = maxSize;
+    this.cache = new Map();
+  }
+
+  get(key) {
+    if (!this.cache.has(key)) return undefined;
+    
+    // 移到最后（最近使用）
+    const value = this.cache.get(key);
+    this.cache.delete(key);
+    this.cache.set(key, value);
+    return value;
+  }
+
+  set(key, value) {
+    // 如果已存在，先删除（为了更新顺序）
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    }
+    
+    // 如果超过容量，删除最旧的
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    
+    this.cache.set(key, value);
+  }
+
+  clear() {
+    this.cache.clear();
+  }
+}
+
+// 使用
+class Locale {
+  static messageCache = new LRUCache(10);  // ✅ 最多缓存10种语言
+
+  static getMessages(locale) {
+    let messages = this.messageCache.get(locale);
+    if (!messages) {
+      messages = this._loadMessagesFromDisk(locale);
+      this.messageCache.set(locale, messages);
+    }
+    return messages;
+  }
+}
+```
+
+**优点**：
+✅ 自动清理最少使用的语言  
+✅ 内存占用可控  
+✅ 保留热点语言的性能优势
+
+**方案2：容量限制 + 手动清理**
+
+```javascript
+class Locale {
+  static messageCache = new Map();
+  static MAX_CACHE_SIZE = 20;  // ✅ 设置上限
+
+  static getMessages(locale) {
+    // 检查缓存大小
+    if (this.messageCache.size >= this.MAX_CACHE_SIZE) {
+      console.warn(`[SchemaIO] Message cache limit reached (${this.MAX_CACHE_SIZE}), clearing...`);
+      this.messageCache.clear();  // 清空所有缓存
+    }
+
+    let messages = this.messageCache.get(locale);
+    if (!messages) {
+      messages = this._loadMessages(locale);
+      this.messageCache.set(locale, messages);
+    }
+    return messages;
+  }
+
+  // 手动清理接口
+  static clearCache(locale) {
+    if (locale) {
+      this.messageCache.delete(locale);
+    } else {
+      this.messageCache.clear();
+    }
+  }
+}
+```
+
+**优点**：
+✅ 实现简单  
+✅ 容量可配置  
+✅ 提供手动清理接口
+
+**缺点**：
+❌ 达到上限时清空所有缓存（可能丢失热点数据）
+
+**方案3：TTL（Time To Live）缓存**
+
+```javascript
+class TTLCache {
+  constructor(ttl = 3600000) {  // 默认1小时
+    this.cache = new Map();
+    this.ttl = ttl;
+  }
+
+  set(key, value) {
+    this.cache.set(key, {
+      value,
+      expireAt: Date.now() + this.ttl
+    });
+  }
+
+  get(key) {
+    const entry = this.cache.get(key);
+    if (!entry) return undefined;
+    
+    // 检查是否过期
+    if (Date.now() > entry.expireAt) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    
+    return entry.value;
+  }
+
+  // 清理过期项
+  cleanup() {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now > entry.expireAt) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
+
+// 定期清理
+setInterval(() => {
+  Locale.messageCache.cleanup();
+}, 60000);  // 每分钟清理一次
+```
+
+**优点**：
+✅ 自动过期机制  
+✅ 适合长期运行的服务
+
+**缺点**：
+❌ 需要定时器（可能影响性能）  
+❌ 实现复杂度高
+
+#### D. 推荐实现（综合方案）
+
+```javascript
+/**
+ * 带内存管理的语言包缓存
+ */
+class SafeMessageCache {
+  constructor(options = {}) {
+    this.maxSize = options.maxSize || 10;
+    this.cache = new Map();
+    this.stats = { hits: 0, misses: 0 };
+  }
+
+  get(key) {
+    if (this.cache.has(key)) {
+      this.stats.hits++;
+      // LRU: 移到最后
+      const value = this.cache.get(key);
+      this.cache.delete(key);
+      this.cache.set(key, value);
+      return value;
+    }
+    this.stats.misses++;
+    return undefined;
+  }
+
+  set(key, value) {
+    // 如果已存在，更新
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    }
+    
+    // 如果超过容量，删除最旧的
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`[SchemaIO] Message cache evicted: ${firstKey}`);
+      }
+    }
+    
+    this.cache.set(key, value);
+  }
+
+  clear() {
+    this.cache.clear();
+    this.stats = { hits: 0, misses: 0 };
+  }
+
+  getStats() {
+    const hitRate = this.stats.hits / (this.stats.hits + this.stats.misses) || 0;
+    return {
+      ...this.stats,
+      hitRate: `${(hitRate * 100).toFixed(2)}%`,
+      size: this.cache.size,
+      maxSize: this.maxSize
+    };
+  }
+}
+
+// 应用到 Locale 类
+class Locale {
+  static messageCache = new SafeMessageCache({ maxSize: 10 });
+  
+  static getMessages(locale) {
+    let messages = this.messageCache.get(locale);
+    if (!messages) {
+      messages = this._loadMessages(locale);
+      this.messageCache.set(locale, messages);
+    }
+    return messages;
+  }
+  
+  // 监控接口
+  static getCacheStats() {
+    return this.messageCache.getStats();
+  }
+}
+```
+
+**优点**：
+✅ LRU 策略，自动清理  
+✅ 容量可配置  
+✅ 提供统计信息  
+✅ 开发环境下有警告  
+✅ 生产环境友好
+
+### 4.3 前端动态切换语言分析
+
+#### A. 前端场景特点
+
+**典型前端架构**：
+
+```
+┌─────────────────────────────────────────┐
+│          前端应用（浏览器）               │
+│                                         │
+│  用户切换语言 → 更新 UI                   │
+│       ↓                                 │
+│  发送验证请求到后端 API                   │
+│       ↓                                 │
+│  请求头：{ "Accept-Language": "zh-CN" }  │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│          后端 API（Node.js）             │
+│                                         │
+│  解析请求头 → 获取语言                    │
+│       ↓                                 │
+│  validate(schema, data, {               │
+│    locale: requestLocale                │
+│  })                                     │
+└─────────────────────────────────────────┘
+```
+
+#### B. 当前架构是否支持？
+
+**✅ 支持场景**：
+
+1. **单用户单线程验证**
+```javascript
+// ✅ 前端请求1（中文用户）
+app.post('/api/validate', (req, res) => {
+  const locale = req.headers['accept-language'] || 'en-US';
+  
+  const result = validate(schema, req.body, {
+    locale: locale  // 每次请求独立
+  });
+  
+  res.json(result);
+});
+```
+
+**原因**：
+- 每次请求独立处理
+- Node.js 单线程，请求按顺序处理
+- 临时切换-恢复机制在单次请求内有效
+
+**❌ 不支持场景**：
+
+1. **高并发多语言请求**
+```javascript
+// ❌ 并发问题
+Promise.all([
+  fetch('/api/validate', { headers: { 'Accept-Language': 'zh-CN' } }),
+  fetch('/api/validate', { headers: { 'Accept-Language': 'en-US' } }),
+  fetch('/api/validate', { headers: { 'Accept-Language': 'ja-JP' } })
+]);
+
+// 可能出现：
+// 请求1想要中文，但得到英文错误
+// 请求2想要英文，但得到日文错误
+```
+
+**原因**：
+- 全局 Locale.setLocale() 被并发修改
+- 临时切换-恢复机制在异步场景下不可靠
+
+#### C. 前端切换语言的最佳实践
+
+**方案1：请求头传递语言（推荐 ⭐⭐⭐⭐⭐）**
+
+```javascript
+// ===== 前端代码 =====
+import { useState } from 'react';
+
+function App() {
+  const [locale, setLocale] = useState('zh-CN');
+
+  const handleSubmit = async (data) => {
+    const response = await fetch('/api/validate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept-Language': locale  // ✅ 通过请求头传递
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+    return result;
+  };
+
+  return (
+    <div>
+      <select value={locale} onChange={(e) => setLocale(e.target.value)}>
+        <option value="zh-CN">中文</option>
+        <option value="en-US">English</option>
+        <option value="ja-JP">日本語</option>
+      </select>
+      
+      <Form onSubmit={handleSubmit} />
+    </div>
+  );
+}
+
+// ===== 后端代码（支持实例级配置） =====
+app.post('/api/validate', (req, res) => {
+  const locale = req.headers['accept-language'] || 'en-US';
+  
+  // ✅ 推荐：使用实例级配置
+  const validator = new Validator({ locale });
+  const result = validator.validate(schema, req.body);
+  
+  res.json(result);
+});
+```
+
+**优点**：
+✅ RESTful 风格，符合 HTTP 标准  
+✅ 每个请求独立，无并发问题  
+✅ 支持缓存（CDN 可识别语言）
+
+**方案2：URL 参数传递**
+
+```javascript
+// 前端
+fetch(`/api/validate?locale=${locale}`, { ... });
+
+// 后端
+app.post('/api/validate', (req, res) => {
+  const locale = req.query.locale || 'en-US';
+  const validator = new Validator({ locale });
+  // ...
+});
+```
+
+**方案3：请求体传递**
+
+```javascript
+// 前端
+fetch('/api/validate', {
+  body: JSON.stringify({
+    ...data,
+    _locale: locale  // 元数据
+  })
+});
+
+// 后端
+app.post('/api/validate', (req, res) => {
+  const locale = req.body._locale || 'en-US';
+  delete req.body._locale;  // 清理元数据
+  
+  const validator = new Validator({ locale });
+  const result = validator.validate(schema, req.body);
+  
+  res.json(result);
+});
+```
+
+#### D. 现有架构改造建议
+
+**短期方案（v2.2.1）：文档说明**
+
+```markdown
+## 前端动态切换语言
+
+### ⚠️ 注意事项
+
+当前版本在高并发场景下使用全局语言切换可能不安全。
+
+### ✅ 推荐方式
+
+**方式1：实例级配置（推荐）**
+```javascript
+// 每个请求创建新实例
+app.post('/api/validate', (req, res) => {
+  const locale = req.headers['accept-language'] || 'en-US';
+  const validator = new Validator({ locale });
+  const result = validator.validate(schema, req.body);
+  res.json(result);
+});
+```
+
+**方式2：请求级配置**
+```javascript
+// 使用 options.locale
+const validator = new Validator();
+app.post('/api/validate', (req, res) => {
+  const locale = req.headers['accept-language'] || 'en-US';
+  const result = validator.validate(schema, req.body, { locale });
+  res.json(result);
+});
+```
+
+### ❌ 避免使用
+
+```javascript
+// ❌ 避免：全局切换
+Locale.setLocale('zh-CN');
+const result = validate(schema, data);
+```
+```
+
+**中期方案（v2.3.0）：架构重构**
+
+- 实现实例级配置（见前文方案A）
+- 彻底移除全局状态依赖
+- 提供向后兼容层
+
+### 4.4 语言包优化
 
 #### A. 添加语言包验证工具
 
