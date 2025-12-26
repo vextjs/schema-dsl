@@ -56,106 +56,106 @@ module.exports = {
         // 检查关键字是否已存在
         if (!ajv.getKeyword('unique')) {
             validator.addKeyword('unique', {
-            async: true,
-            type: 'string',
-            validate: async function validateUnique(schema, data, parentSchema, dataPath) {
-                // schema: { unique: { table: 'users', field: 'email' } }
-                // data: 实际要验证的值
+                async: true,
+                type: 'string',
+                validate: async function validateUnique(schema, data, parentSchema, dataPath) {
+                    // schema: { unique: { table: 'users', field: 'email' } }
+                    // data: 实际要验证的值
 
-                if (!schema) return true;
+                    if (!schema) return true;
 
-                const { table, field } = schema;
+                    const { table, field } = schema;
 
-                // 模拟数据库查询
-                // 实际使用时替换为真实的数据库查询
-                const exists = false; // await db.query(...)
+                    // 模拟数据库查询
+                    // 实际使用时替换为真实的数据库查询
+                    const exists = false; // await db.query(...)
 
-                if (exists) {
-                    validateUnique.errors = [{
-                        keyword: 'unique',
-                        message: `${field} already exists in ${table}`,
-                        params: { table, field }
-                    }];
-                    return false;
+                    if (exists) {
+                        validateUnique.errors = [{
+                            keyword: 'unique',
+                            message: `${field} already exists in ${table}`,
+                            params: { table, field }
+                        }];
+                        return false;
+                    }
+
+                    return true;
                 }
-
-                return true;
-            }
-        });
+            });
         }
 
         // 示例2: 密码强度验证
         if (!ajv.getKeyword('passwordStrength')) {
             validator.addKeyword('passwordStrength', {
-            type: 'string',
-            validate: function validatePasswordStrength(schema, data) {
-                if (!schema) return true;
+                type: 'string',
+                validate: function validatePasswordStrength(schema, data) {
+                    if (!schema) return true;
 
-                // schema: { passwordStrength: 'medium' }
-                // 强度等级: weak, medium, strong
+                    // schema: { passwordStrength: 'medium' }
+                    // 强度等级: weak, medium, strong
 
-                const strength = schema;
-                const value = data;
+                    const strength = schema;
+                    const value = data;
 
-                const rules = {
-                    weak: /^.{6,}$/,
-                    medium: /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/,
-                    strong: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{10,}$/
-                };
+                    const rules = {
+                        weak: /^.{6,}$/,
+                        medium: /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/,
+                        strong: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{10,}$/
+                    };
 
-                const pattern = rules[strength];
-                if (!pattern) {
+                    const pattern = rules[strength];
+                    if (!pattern) {
+                        return true;
+                    }
+
+                    if (!pattern.test(value)) {
+                        validatePasswordStrength.errors = [{
+                            keyword: 'passwordStrength',
+                            message: `Password does not meet ${strength} strength requirements`,
+                            params: { strength }
+                        }];
+                        return false;
+                    }
+
                     return true;
                 }
-
-                if (!pattern.test(value)) {
-                    validatePasswordStrength.errors = [{
-                        keyword: 'passwordStrength',
-                        message: `Password does not meet ${strength} strength requirements`,
-                        params: { strength }
-                    }];
-                    return false;
-                }
-
-                return true;
-            }
-        });
+            });
         }
 
         // 示例3: 中国身份证号验证
         if (!ajv.getKeyword('idCard')) {
             validator.addKeyword('idCard', {
-            type: 'string',
-            validate: function validateIdCard(schema, data) {
-                if (!schema) return true;
+                type: 'string',
+                validate: function validateIdCard(schema, data) {
+                    if (!schema) return true;
 
-                const value = data;
+                    const value = data;
 
-                // 身份证号正则
-                const pattern = /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/;
+                    // 身份证号正则
+                    const pattern = /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/;
 
-                if (!pattern.test(value)) {
-                    validateIdCard.errors = [{
-                        keyword: 'idCard',
-                        message: 'Invalid ID card number',
-                        params: {}
-                    }];
-                    return false;
+                    if (!pattern.test(value)) {
+                        validateIdCard.errors = [{
+                            keyword: 'idCard',
+                            message: 'Invalid ID card number',
+                            params: {}
+                        }];
+                        return false;
+                    }
+
+                    // 验证校验码
+                    if (!this._validateIdCardChecksum(value)) {
+                        validateIdCard.errors = [{
+                            keyword: 'idCard',
+                            message: 'Invalid ID card checksum',
+                            params: {}
+                        }];
+                        return false;
+                    }
+
+                    return true;
                 }
-
-                // 验证校验码
-                if (!this._validateIdCardChecksum(value)) {
-                    validateIdCard.errors = [{
-                        keyword: 'idCard',
-                        message: 'Invalid ID card checksum',
-                        params: {}
-                    }];
-                    return false;
-                }
-
-                return true;
-            }
-        });
+            });
         }
     },
 

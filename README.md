@@ -20,6 +20,7 @@
 - [验证功能](#-验证功能)
 - [数据库导出](#-数据库导出)
 - [多语言支持](#-多语言支持)
+- [插件系统](#-插件系统)
 - [错误处理](#-错误处理)
 - [工具函数](#-工具函数)
 - [完整文档](#-完整文档)
@@ -65,6 +66,7 @@ console.log(result.valid);  // true
 - **简洁语法**: 一行代码定义验证规则
 - **String扩展**: 字符串直接链式调用方法
 - **默认验证器**: 内置用户名、手机号、密码验证
+- **插件系统**: 强大的插件机制，支持自定义验证器和格式 🆕
 - **数据库导出**: 导出MongoDB/MySQL/PostgreSQL Schema
 - **多语言支持**: 内置中英文，可自定义语言包
 - **高性能**: 基于ajv，支持编译缓存
@@ -351,7 +353,147 @@ const result = validator.validate(validate, data);
 
 ---
 
-## 🗄️ 数据库导出
+## � 插件系统
+
+**v2.2.0 新增**：强大的插件机制，轻松扩展 SchemaIO 功能。
+
+### 快速开始
+
+```javascript
+const { PluginManager } = require('schemaio');
+
+// 1. 创建插件管理器
+const pluginManager = new PluginManager();
+
+// 2. 注册插件
+const customPlugin = require('./plugins/custom-validator');
+pluginManager.register(customPlugin);
+
+// 3. 安装插件
+const schemaio = require('schemaio');
+pluginManager.install(schemaio);
+```
+
+### 内置示例插件
+
+#### 1. custom-validator - 自定义验证器
+
+```javascript
+const customValidator = require('schemaio/plugins/custom-validator');
+pluginManager.register(customValidator);
+pluginManager.install(schemaio);
+
+// 现在可以使用自定义关键字
+const schema = dsl({
+  email: { type: 'string', unique: { table: 'users', field: 'email' } },
+  password: { type: 'string', passwordStrength: 'strong' },
+  idCard: { type: 'string', idCard: true }
+});
+```
+
+**提供的验证器**：
+- `unique` - 异步唯一性验证（数据库检查）
+- `passwordStrength` - 密码强度验证（weak/medium/strong）
+- `idCard` - 中国身份证号验证（含校验和）
+
+#### 2. custom-format - 自定义格式
+
+```javascript
+const customFormat = require('schemaio/plugins/custom-format');
+pluginManager.register(customFormat);
+pluginManager.install(schemaio);
+
+// 使用新增的格式
+const schema = dsl({
+  phone: { type: 'string', format: 'phone-cn' },
+  bankCard: { type: 'string', format: 'bank-card' },
+  licensePlate: { type: 'string', format: 'license-plate' }
+});
+```
+
+**提供的格式**：
+- `phone-cn` - 中国手机号
+- `postal-code-cn` - 中国邮编
+- `wechat` - 微信号
+- `qq` - QQ号
+- `bank-card` - 银行卡号（Luhn算法）
+- `license-plate` - 车牌号
+- `credit-code` - 统一社会信用代码
+- `passport-cn` - 中国护照
+- `hk-macao-pass` - 港澳通行证
+- `ipv4` - IPv4地址
+
+### 创建自定义插件
+
+```javascript
+const myPlugin = {
+  name: 'my-plugin',
+  version: '1.0.0',
+  description: '我的自定义插件',
+
+  // 安装函数
+  install(schemaio, options, context) {
+    // 添加自定义功能
+    schemaio.myMethod = () => { /* ... */ };
+  },
+
+  // 卸载函数（可选）
+  uninstall(schemaio, context) {
+    delete schemaio.myMethod;
+  },
+
+  // 生命周期钩子（可选）
+  hooks: {
+    onBeforeValidate(schema, data) {
+      // 验证前处理
+    },
+    onAfterValidate(result) {
+      // 验证后处理
+    }
+  }
+};
+
+pluginManager.register(myPlugin);
+pluginManager.install(schemaio, 'my-plugin', { /* 选项 */ });
+```
+
+### 生命周期钩子
+
+插件系统提供9个生命周期钩子：
+- `onBeforeRegister` - 插件注册前
+- `onAfterRegister` - 插件注册后
+- `onBeforeValidate` - 验证前
+- `onAfterValidate` - 验证后
+- `onBeforeExport` - 导出前
+- `onAfterExport` - 导出后
+- `onBeforeCompile` - 编译前
+- `onAfterCompile` - 编译后
+- `onError` - 错误处理
+
+### 插件管理
+
+```javascript
+// 查看所有插件
+pluginManager.list();
+
+// 检查插件是否存在
+pluginManager.has('custom-validator');
+
+// 获取插件信息
+pluginManager.get('custom-validator');
+
+// 卸载插件
+pluginManager.uninstall('custom-validator', schemaio);
+
+// 清空所有插件
+pluginManager.clear(schemaio);
+```
+
+**📖 完整文档**: [插件系统指南](docs/plugin-system.md)
+
+---
+
+## �🗄️ 数据库导出
 
 ### MongoDB Schema
 
@@ -397,7 +539,16 @@ const ddl = pgExporter.export('users', jsonSchema);
 
 ## 🌍 多语言支持
 
-### 全局配置 (v2.1.0 新增)
+### 内置语言包
+
+默认支持5种语言：
+- `zh-CN` - 简体中文
+- `en-US` - 英语
+- `ja-JP` - 日语
+- `es-ES` - 西班牙语
+- `fr-FR` - 法语
+
+### 全局配置
 
 ```javascript
 const { dsl } = require('schemaio');
