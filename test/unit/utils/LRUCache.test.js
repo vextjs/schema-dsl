@@ -3,7 +3,7 @@
  */
 
 const { expect } = require('chai');
-const LRUCache = require('../../lib/utils/LRUCache');
+const LRUCache = require('../../../lib/utils/LRUCache');
 
 describe('LRUCache', () => {
     let cache;
