@@ -29,16 +29,16 @@
     "postgresql",
     "typescript"
   ],
-  "author": "",
+  "author": "rocky <rockyshi1993@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/schemaio/schemaio.git"
+    "url": "https://github.com/vextjs/schemaio.git"
   },
   "bugs": {
-    "url": "https://github.com/schemaio/schemaio/issues"
+    "url": "https://github.com/vextjs/schemaio/issues"
   },
-  "homepage": "https://github.com/schemaio/schemaio#readme",
+  "homepage": "https://github.com/vextjs/schemaio#readme",
   "engines": {
     "node": ">=12.0.0"
   },

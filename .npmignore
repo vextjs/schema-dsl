@@ -1,0 +1,25 @@
+# 测试文件和临时文件
+test/
+*.test.js
+coverage/
+.nyc_output/
+
+# 开发文件
+reports/
+plans/
+.temp/
+*.log
+
+# 文档草稿
+DOCUMENTATION-CLEANUP-SUMMARY.md
+DOCUMENTATION-ISSUES.md
+FIXES_SUMMARY.md
+
+# IDE
+.vscode/
+.idea/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
