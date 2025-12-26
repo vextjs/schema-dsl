@@ -33,10 +33,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vextjs/schemaio.git"
+    "url": "https://github.com/vextjs/schema-dsl.git"
   },
   "bugs": {
-    "url": "https://github.com/vextjs/schemaio/issues"
+    "url": "https://github.com/vextjs/schema-dsl/issues"
   },
   "homepage": "https://github.com/vextjs/schema-dsl#readme",
   "engines": {

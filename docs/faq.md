@@ -48,7 +48,7 @@ const schema = Joi.object({
 ### Q: 如何安装 SchemaIO？
 
 ```bash
-npm install schemaio
+npm install schema-dsl
 ```
 
 **Node.js 版本要求**：>= 12.0.0
@@ -64,7 +64,7 @@ npm install schemaio
 const { dsl, validate } = require('schema-dsl');
 
 // ES Modules
-import { dsl, validate } from 'schemaio';
+import { dsl, validate } from 'schema-dsl';
 ```
 
 ---
@@ -358,7 +358,7 @@ MySQL 会生成 `COMMENT`，PostgreSQL 会生成 `COMMENT ON COLUMN`。
 **A**: 支持，类型定义在 `index.d.ts`：
 
 ```typescript
-import { dsl, validate, DslBuilder, Validator } from 'schemaio';
+import { dsl, validate, DslBuilder, Validator } from 'schema-dsl';
 
 const schema = dsl({
   username: 'string:3-32!',
@@ -393,7 +393,7 @@ const schema = dsl({
 1. 查看 [完整文档](INDEX.md)
 2. 查看 [DSL 语法指南](dsl-syntax.md)
 3. 查看 [API 参考](api-reference.md)
-4. 提交 [GitHub Issue](https://github.com/schemaio/schemaio/issues)
+4. 提交 [GitHub Issue](https://github.com/schema-dsl/schema-dsl/issues)
 
 ---
 

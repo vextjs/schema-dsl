@@ -25,7 +25,7 @@
 ## 🚀 安装
 
 ```bash
-npm install schemaio
+npm install schema-dsl
 ```
 
 ---
@@ -332,7 +332,7 @@ uninstallStringExtensions();
 3. ✅ 80%用DSL，20%用扩展
 4. ✅ 字符串可以直接链式调用
 
-**开始使用**: `npm install schemaio`
+**开始使用**: `npm install schema-dsl`
 
 ---
 
@@ -348,7 +348,7 @@ uninstallStringExtensions();
 ## 🚀 安装
 
 ```bash
-npm install schemaio
+npm install schema-dsl
 ```
 
 ---
@@ -656,7 +656,7 @@ uninstallStringExtensions();
 3. ✅ 80%用DSL，20%用扩展
 4. ✅ 字符串可以直接链式调用
 
-**开始使用**: `npm install schemaio`
+**开始使用**: `npm install schema-dsl`
 
 ---
 

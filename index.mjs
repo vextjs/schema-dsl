@@ -1,4 +1,4 @@
-import schemaio from './index.js';
+import schema-dsl from './index.js';
 
 export const {
   dsl,
@@ -24,7 +24,7 @@ export const {
   VERSION,
   installStringExtensions,
   uninstallStringExtensions
-} = schemaio;
+} = schema-dsl;
 
-export default schemaio;
+export default schema-dsl;
 

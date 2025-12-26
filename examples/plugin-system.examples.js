@@ -19,8 +19,8 @@ const customFormatPlugin = require('../plugins/custom-format');
 pluginManager.register(customFormatPlugin);
 
 // 安装插件
-const schemaio = require('../index');
-pluginManager.install(schemaio);
+const schema-dsl = require('../index');
+pluginManager.install(schema-dsl);
 
 console.log('已安装插件:', pluginManager.list());
 console.log('');
@@ -81,20 +81,20 @@ const myPlugin = {
     version: '1.0.0',
     description: '我的自定义插件',
 
-    install(schemaio, options, context) {
+    install(schema-dsl, options, context) {
         console.log('[Plugin] my-plugin 安装中...');
         console.log('  选项:', options);
         console.log('  已注册插件数:', context.plugins.size);
 
         // 添加自定义方法
-        schemaio.myCustomMethod = () => {
+        schema-dsl.myCustomMethod = () => {
             console.log('  这是自定义方法!');
         };
     },
 
-    uninstall(schemaio, context) {
+    uninstall(schema-dsl, context) {
         console.log('[Plugin] my-plugin 卸载中...');
-        delete schemaio.myCustomMethod;
+        delete schema-dsl.myCustomMethod;
     },
 
     hooks: {
@@ -106,11 +106,11 @@ const myPlugin = {
 
 // 注册并安装
 pluginManager.register(myPlugin);
-pluginManager.install(schemaio, 'my-plugin', { custom: true });
+pluginManager.install(schema-dsl, 'my-plugin', { custom: true });
 
 // 使用自定义方法
-if (schemaio.myCustomMethod) {
-    schemaio.myCustomMethod();
+if (schema-dsl.myCustomMethod) {
+    schema-dsl.myCustomMethod();
 }
 console.log('');
 
@@ -137,10 +137,10 @@ const loggingPlugin = {
     name: 'logging',
     version: '1.0.0',
 
-    install(schemaio, options, context) {
+    install(schema-dsl, options, context) {
         // 包装 validate 方法
-        const originalValidate = schemaio.validate;
-        schemaio.validate = function (...args) {
+        const originalValidate = schema-dsl.validate;
+        schema-dsl.validate = function (...args) {
             console.log('[Logging] 开始验证');
             const start = Date.now();
             const result = originalValidate.apply(this, args);
@@ -152,7 +152,7 @@ const loggingPlugin = {
 };
 
 pluginManager.register(loggingPlugin);
-pluginManager.install(schemaio, 'logging');
+pluginManager.install(schema-dsl, 'logging');
 
 // 测试日志插件
 const schema = dsl({ email: 'email!' });
@@ -163,7 +163,7 @@ console.log('');
 
 console.log('=== 7. 卸载插件 ===\n');
 
-pluginManager.uninstall('my-plugin', schemaio);
+pluginManager.uninstall('my-plugin', schema-dsl);
 console.log('my-plugin 已卸载');
 console.log('当前插件数:', pluginManager.size);
 console.log('');
@@ -173,7 +173,7 @@ console.log('');
 console.log('=== 8. 批量插件 ===\n');
 
 // 清空所有插件
-pluginManager.clear(schemaio);
+pluginManager.clear(schema-dsl);
 console.log('所有插件已清空');
 console.log('当前插件数:', pluginManager.size);
 console.log('');
@@ -185,7 +185,7 @@ const plugins = [
 ];
 
 plugins.forEach(plugin => pluginManager.register(plugin));
-pluginManager.install(schemaio); // 安装所有插件
+pluginManager.install(schema-dsl); // 安装所有插件
 
 console.log('批量安装完成:', pluginManager.list());
 console.log('');

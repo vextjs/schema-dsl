@@ -36,7 +36,7 @@
 ## 快速开始
 
 ```javascript
-const { SchemaHelper } = require('schemaio/lib/utils');
+const { SchemaHelper } = require('schema-dsl/lib/utils');
 const { dsl } = require('schema-dsl');
 
 // 创建 Schema
@@ -263,7 +263,7 @@ const summary = SchemaHelper.summarizeSchema(userSchema);
 ### Schema 分析工具
 
 ```javascript
-const { SchemaHelper } = require('schemaio/lib/utils');
+const { SchemaHelper } = require('schema-dsl/lib/utils');
 const { dsl } = require('schema-dsl');
 
 function analyzeSchema(schema, name = 'Schema') {

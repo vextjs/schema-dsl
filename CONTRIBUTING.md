@@ -25,7 +25,7 @@
 
 ### 报告 Bug
 
-发现 Bug？请[创建 Issue](https://github.com/yourusername/schemaio/issues)，并提供以下信息：
+发现 Bug？请[创建 Issue](https://github.com/yourusername/schema-dsl/issues)，并提供以下信息：
 
 - **环境信息**: Node.js 版本、操作系统
 - **重现步骤**: 详细的步骤描述
@@ -56,7 +56,7 @@
 
 ### 提出功能请求
 
-有好的想法？请[创建 Feature Request](https://github.com/yourusername/schemaio/issues)，说明：
+有好的想法？请[创建 Feature Request](https://github.com/yourusername/schema-dsl/issues)，说明：
 
 - **功能描述**: 您想要什么功能
 - **使用场景**: 这个功能解决什么问题
@@ -78,8 +78,8 @@
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/yourusername/schemaio.git
-cd schemaio
+git clone https://github.com/yourusername/schema-dsl.git
+cd schema-dsl
 ```
 
 ### 2. 安装依赖
@@ -352,8 +352,8 @@ node test/benchmarks/validation-speed.js
 
 ## 获取帮助
 
-- **提问**: [GitHub Discussions](https://github.com/yourusername/schemaio/discussions)
-- **Bug 报告**: [GitHub Issues](https://github.com/yourusername/schemaio/issues)
+- **提问**: [GitHub Discussions](https://github.com/yourusername/schema-dsl/discussions)
+- **Bug 报告**: [GitHub Issues](https://github.com/yourusername/schema-dsl/issues)
 - **邮件**: your-email@example.com
 
 ---

@@ -370,8 +370,8 @@ const customPlugin = require('./plugins/custom-validator');
 pluginManager.register(customPlugin);
 
 // 3. 安装插件
-const schemaio = require('schema-dsl');
-pluginManager.install(schemaio);
+const schema-dsl = require('schema-dsl');
+pluginManager.install(schema-dsl);
 ```
 
 ### 内置示例插件
@@ -379,9 +379,9 @@ pluginManager.install(schemaio);
 #### 1. custom-validator - 自定义验证器
 
 ```javascript
-const customValidator = require('schemaio/plugins/custom-validator');
+const customValidator = require('schema-dsl/plugins/custom-validator');
 pluginManager.register(customValidator);
-pluginManager.install(schemaio);
+pluginManager.install(schema-dsl);
 
 // 现在可以使用自定义关键字
 const schema = dsl({
@@ -399,9 +399,9 @@ const schema = dsl({
 #### 2. custom-format - 自定义格式
 
 ```javascript
-const customFormat = require('schemaio/plugins/custom-format');
+const customFormat = require('schema-dsl/plugins/custom-format');
 pluginManager.register(customFormat);
-pluginManager.install(schemaio);
+pluginManager.install(schema-dsl);
 
 // 使用新增的格式
 const schema = dsl({
@@ -432,13 +432,13 @@ const myPlugin = {
   description: '我的自定义插件',
 
   // 安装函数
-  install(schemaio, options, context) {
+  install(schema-dsl, options, context) {
     // 添加自定义功能
     schemaDsl.myMethod = () => { /* ... */ };
   },
 
   // 卸载函数（可选）
-  uninstall(schemaio, context) {
+  uninstall(schema-dsl, context) {
     delete schemaDsl.myMethod;
   },
 
@@ -454,7 +454,7 @@ const myPlugin = {
 };
 
 pluginManager.register(myPlugin);
-pluginManager.install(schemaio, 'my-plugin', { /* 选项 */ });
+pluginManager.install(schema-dsl, 'my-plugin', { /* 选项 */ });
 ```
 
 ### 生命周期钩子
@@ -483,10 +483,10 @@ pluginManager.has('custom-validator');
 pluginManager.get('custom-validator');
 
 // 卸载插件
-pluginManager.uninstall('custom-validator', schemaio);
+pluginManager.uninstall('custom-validator', schema-dsl);
 
 // 清空所有插件
-pluginManager.clear(schemaio);
+pluginManager.clear(schema-dsl);
 ```
 
 **📖 完整文档**: [插件系统指南](docs/plugin-system.md)

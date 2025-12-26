@@ -74,19 +74,19 @@ describe('PluginManager', () => {
 
             const plugin = {
                 name: 'test-plugin',
-                install(schemaio) {
+                install(coreInstance) {
                     installed = true;
-                    schemaio.testMethod = () => 'test';
+                    coreInstance.testMethod = () => 'test';
                 }
             };
 
             pluginManager.register(plugin);
 
-            const schemaio = {};
-            pluginManager.install(schemaio, 'test-plugin');
+            const coreInstance = {};
+            pluginManager.install(coreInstance, 'test-plugin');
 
             expect(installed).to.be.true;
-            expect(schemaio.testMethod()).to.equal('test');
+            expect(coreInstance.testMethod()).to.equal('test');
         });
 
         it('应该安装所有已注册的插件', () => {
@@ -116,7 +116,7 @@ describe('PluginManager', () => {
             const plugin = {
                 name: 'test-plugin',
                 options: { default: true },
-                install(schemaio, options) {
+                install(coreInstance, options) {
                     receivedOptions = options;
                 }
             };
@@ -152,23 +152,23 @@ describe('PluginManager', () => {
 
             const plugin = {
                 name: 'test-plugin',
-                install(schemaio) {
-                    schemaio.testMethod = () => 'test';
+                install(coreInstance) {
+                    coreInstance.testMethod = () => 'test';
                 },
-                uninstall(schemaio) {
+                uninstall(coreInstance) {
                     uninstalled = true;
-                    delete schemaio.testMethod;
+                    delete coreInstance.testMethod;
                 }
             };
 
             pluginManager.register(plugin);
 
-            const schemaio = {};
-            pluginManager.install(schemaio, 'test-plugin');
-            pluginManager.uninstall('test-plugin', schemaio);
+            const coreInstance = {};
+            pluginManager.install(coreInstance, 'test-plugin');
+            pluginManager.uninstall('test-plugin', coreInstance);
 
             expect(uninstalled).to.be.true;
-            expect(schemaio.testMethod).to.be.undefined;
+            expect(coreInstance.testMethod).to.be.undefined;
             expect(pluginManager.has('test-plugin')).to.be.false;
         });
 
@@ -377,7 +377,7 @@ describe('PluginManager', () => {
 
             const plugin = {
                 name: 'test-plugin',
-                install(schemaio, options, context) {
+                install(coreInstance, options, context) {
                     receivedContext = context;
                 }
             };
@@ -400,7 +400,7 @@ describe('PluginManager', () => {
 
             const plugin2 = {
                 name: 'plugin2',
-                install(schemaio, options, context) {
+                install(coreInstance, options, context) {
                     plugin2Context = context;
                 }
             };
@@ -417,10 +417,10 @@ describe('PluginManager', () => {
         it('应该支持自定义验证器插件', () => {
             const customValidatorPlugin = {
                 name: 'custom-validator',
-                install(schemaio) {
-                    schemaio.customValidators = {};
+                install(coreInstance) {
+                    coreInstance.customValidators = {};
 
-                    schemaio.addValidator = function (name, fn) {
+                    coreInstance.addValidator = function (name, fn) {
                         this.customValidators[name] = fn;
                     };
                 }
@@ -428,14 +428,14 @@ describe('PluginManager', () => {
 
             pluginManager.register(customValidatorPlugin);
 
-            const schemaio = {};
-            pluginManager.install(schemaio);
+            const coreInstance = {};
+            pluginManager.install(coreInstance);
 
-            schemaio.addValidator('unique', (value) => {
+            coreInstance.addValidator('unique', (value) => {
                 return value === 'unique';
             });
 
-            expect(schemaio.customValidators.unique('unique')).to.be.true;
+            expect(coreInstance.customValidators.unique('unique')).to.be.true;
         });
 
         it('应该支持日志插件', async () => {
@@ -443,7 +443,7 @@ describe('PluginManager', () => {
 
             const loggingPlugin = {
                 name: 'logging',
-                install(schemaio, options, context) { },
+                install(coreInstance, options, context) { },
                 hooks: {
                     onBeforeValidate(schema, data) {
                         logs.push('before');
@@ -464,3 +464,5 @@ describe('PluginManager', () => {
         });
     });
 });
+
+

@@ -34,7 +34,7 @@
 ## 快速开始
 
 ```javascript
-const CacheManager = require('schemaio/lib/core/CacheManager');
+const CacheManager = require('schema-dsl/lib/core/CacheManager');
 
 // 创建缓存实例
 const cache = new CacheManager({

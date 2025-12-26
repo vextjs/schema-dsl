@@ -460,7 +460,7 @@ describe('User Schema', () => {
 
 1. **查看文档**: [完整文档索引](INDEX.md)
 2. **查看示例**: [examples/](../examples/) 目录
-3. **GitHub Issues**: [提交问题](https://github.com/schemaio/schemaio/issues)
+3. **GitHub Issues**: [提交问题](https://github.com/schema-dsl/schema-dsl/issues)
 4. **常见问题**: [FAQ.md](faq.md)
 
 ---

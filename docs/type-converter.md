@@ -34,7 +34,7 @@
 ## 快速开始
 
 ```javascript
-const { TypeConverter } = require('schemaio/lib/utils');
+const { TypeConverter } = require('schema-dsl/lib/utils');
 
 // JSON Schema 类型转 MongoDB 类型
 const mongoType = TypeConverter.toMongoDBType('integer');
@@ -285,7 +285,7 @@ const constraints = TypeConverter.extractConstraints(schema);
 ### 批量类型转换
 
 ```javascript
-const { TypeConverter } = require('schemaio/lib/utils');
+const { TypeConverter } = require('schema-dsl/lib/utils');
 
 const fields = ['string', 'number', 'integer', 'boolean', 'object', 'array'];
 

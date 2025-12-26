@@ -14,22 +14,22 @@ module.exports = {
     /**
      * 插件安装函数
      * 
-     * @param {Object} schemaio - SchemaIO 实例
+     * @param {Object} schema-dsl - SchemaIO 实例
      * @param {Object} options - 插件选项
      * @param {Object} context - 插件上下文
      */
-    install(schemaio, options = {}, context) {
+    install(coreInstance, options = {}, context) {
         // 1. 获取默认 validator 实例
-        const validator = schemaio.getDefaultValidator();
+        const validator = schema-dsl.getDefaultValidator();
 
         // 2. 添加自定义关键字
         this.addCustomKeywords(validator);
 
         // 3. 注册到全局
-        if (!global.__schemaio_plugins) {
-            global.__schemaio_plugins = {};
+        if (!global.__schema-dsl_plugins) {
+            global.__schema-dsl_plugins = {};
         }
-        global.__schemaio_plugins['custom-validator'] = this;
+        global.__schema-dsl_plugins['custom-validator'] = this;
 
         console.log('[Plugin] custom-validator installed');
     },
@@ -37,10 +37,10 @@ module.exports = {
     /**
      * 插件卸载函数
      */
-    uninstall(schemaio, context) {
+    uninstall(coreInstance, context) {
         // 清理全局注册
-        if (global.__schemaio_plugins) {
-            delete global.__schemaio_plugins['custom-validator'];
+        if (global.__schema-dsl_plugins) {
+            delete global.__schema-dsl_plugins['custom-validator'];
         }
 
         console.log('[Plugin] custom-validator uninstalled');
@@ -196,3 +196,4 @@ module.exports = {
         }
     }
 };
+

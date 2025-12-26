@@ -22,8 +22,8 @@ examples/password-reset/
 ## Schema定义
 
 ```javascript
-const { dsl } = require('schemaio');
-const Locale = require('schemaio/lib/core/Locale');
+const { dsl } = require('schema-dsl');
+const Locale = require('schema-dsl/lib/core/Locale');
 
 // 设置中文
 Locale.setLocale('zh-CN');
@@ -131,7 +131,7 @@ module.exports = router;
 
 ```bash
 # 安装依赖
-npm install schemaio
+npm install schema-dsl
 
 # 运行测试
 node examples/password-reset/test.js

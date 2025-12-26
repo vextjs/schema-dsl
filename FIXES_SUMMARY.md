@@ -36,7 +36,7 @@
 
 **改进后**：
 ```javascript
-// 关键字映射 (ajv keyword -> schemaio 简写)
+// 关键字映射 (ajv keyword -> schema-dsl 简写)
 const keywordMap = {
   'minLength': 'min',
   'maxLength': 'max',

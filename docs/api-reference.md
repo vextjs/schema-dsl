@@ -1138,7 +1138,7 @@ console.log(result.valid); // true
 - [DSL 语法完整指南](./dsl-syntax.md)
 - [错误处理](./error-handling.md)
 - [示例代码](../examples/)
-- [GitHub](https://github.com/yourname/schemaio)
+- [GitHub](https://github.com/yourname/schema-dsl)
 
 ---
 

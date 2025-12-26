@@ -25,8 +25,8 @@
 ### 🔄 重大变更
 
 #### 包名变更
-- ✅ **npm 包名从 `schemaio` 变更为 `schema-dsl`**
-- **原因**: 原包名 `schemaio` 已被占用，`schema-dsl` 更能体现项目核心特色（DSL 语法）
+- ✅ **npm 包名从 `schema-dsl` 变更为 `schema-dsl`**
+- **原因**: 原包名 `schema-dsl` 已被占用，`schema-dsl` 更能体现项目核心特色（DSL 语法）
 - **影响**: 
   - npm 安装命令: `npm install schema-dsl`
   - 引入方式: `require('schema-dsl')` 或 `import ... from 'schema-dsl'`
@@ -39,17 +39,17 @@
 
 ### ⚠️ 迁移指南
 
-如果您之前使用了 `schemaio`（内部测试版本），请按以下步骤迁移：
+如果您之前使用了 `schema-dsl`（内部测试版本），请按以下步骤迁移：
 
 ```bash
 # 1. 卸载旧包（如果安装过）
-npm uninstall schemaio
+npm uninstall schema-dsl
 
 # 2. 安装新包
 npm install schema-dsl
 
 # 3. 更新代码中的引用
-# 旧: const { dsl } = require('schemaio');
+# 旧: const { dsl } = require('schema-dsl');
 # 新: const { dsl } = require('schema-dsl');
 ```
 

@@ -60,7 +60,7 @@ const myPlugin = {
   version: '1.0.0',
   description: '我的自定义插件',
 
-  install(schemaio, options, context) {
+  install(schema-dsl, options, context) {
     console.log('插件安装成功！');
   }
 };
@@ -71,9 +71,9 @@ pluginManager.register(myPlugin);
 ### 3. 安装插件
 
 ```javascript
-const schemaio = require('schema-dsl');
+const schema-dsl = require('schema-dsl');
 
-pluginManager.install(schemaio, 'my-plugin');
+pluginManager.install(schema-dsl, 'my-plugin');
 ```
 
 ### 4. 使用插件
@@ -92,14 +92,14 @@ pluginManager.install(schemaio, 'my-plugin');
 module.exports = {
   // ========== 必填 ==========
   name: 'plugin-name',          // 插件名称（唯一）
-  install: function(schemaio, options, context) {
+  install: function(schema-dsl, options, context) {
     // 安装逻辑
   },
 
   // ========== 可选 ==========
   version: '1.0.0',            // 插件版本
   description: '插件描述',      // 插件描述
-  uninstall: function(schemaio, context) {
+  uninstall: function(schema-dsl, context) {
     // 卸载逻辑
   },
   hooks: {                      // 生命周期钩子
@@ -119,8 +119,8 @@ module.exports = {
   name: 'custom-validator',
   version: '1.0.0',
 
-  install(schemaio, options, context) {
-    const { Validator } = schemaio;
+  install(schema-dsl, options, context) {
+    const { Validator } = schema-dsl;
     
     // 添加自定义关键字
     Validator.prototype.addKeyword('unique', {
@@ -142,7 +142,7 @@ module.exports = {
   name: 'custom-format',
   version: '1.0.0',
 
-  install(schemaio, options, context) {
+  install(schema-dsl, options, context) {
     const validator = schemaDsl.getDefaultValidator();
     const ajv = validator.getAjv();
     
@@ -211,10 +211,10 @@ module.exports = {
 添加业务特定的验证规则。
 
 ```javascript
-const customValidator = require('schemaio/plugins/custom-validator');
+const customValidator = require('schema-dsl/plugins/custom-validator');
 
 pluginManager.register(customValidator);
-pluginManager.install(schemaio);
+pluginManager.install(schema-dsl);
 ```
 
 **功能**:
@@ -227,10 +227,10 @@ pluginManager.install(schemaio);
 添加常用的格式验证。
 
 ```javascript
-const customFormat = require('schemaio/plugins/custom-format');
+const customFormat = require('schema-dsl/plugins/custom-format');
 
 pluginManager.register(customFormat);
-pluginManager.install(schemaio);
+pluginManager.install(schema-dsl);
 ```
 
 **格式**:
@@ -272,7 +272,7 @@ version: '1.0.0'   // 主版本.次版本.修订版本
 插件应该优雅地处理错误：
 
 ```javascript
-install(schemaio, options, context) {
+install(schema-dsl, options, context) {
   try {
     // 安装逻辑
   } catch (error) {
@@ -287,7 +287,7 @@ install(schemaio, options, context) {
 提供 `uninstall` 方法：
 
 ```javascript
-uninstall(schemaio, context) {
+uninstall(schema-dsl, context) {
   // 清理注册的验证器、格式、钩子等
   delete schemaDsl.myCustomMethod;
 }
@@ -306,7 +306,7 @@ uninstall(schemaio, context) {
  * @example
  * ```javascript
  * pluginManager.register(myPlugin);
- * pluginManager.install(schemaio);
+ * pluginManager.install(schema-dsl);
  * ```
  */
 module.exports = { /* ... */ };
@@ -331,30 +331,30 @@ module.exports = { /* ... */ };
 ```javascript
 pluginManager.register({
   name: 'my-plugin',
-  install(schemaio) {
+  install(schema-dsl) {
     // ...
   }
 });
 ```
 
-#### `install(schemaio, [pluginName], [options])`
+#### `install(schema-dsl, [pluginName], [options])`
 
 安装插件。
 
 **参数**:
-- `schemaio` (Object) - SchemaIO 实例
+- `schema-dsl` (Object) - SchemaIO 实例
 - `pluginName` (String, optional) - 插件名称
 - `options` (Object, optional) - 安装选项
 
 **返回**: `this`
 
-#### `uninstall(pluginName, schemaio)`
+#### `uninstall(pluginName, schema-dsl)`
 
 卸载插件。
 
 **参数**:
 - `pluginName` (String) - 插件名称
-- `schemaio` (Object) - SchemaIO 实例
+- `schema-dsl` (Object) - SchemaIO 实例
 
 **返回**: `this`
 
@@ -393,12 +393,12 @@ pluginManager.register({
 
 **返回**: `Boolean`
 
-#### `clear(schemaio)`
+#### `clear(schema-dsl)`
 
 清空所有插件。
 
 **参数**:
-- `schemaio` (Object) - SchemaIO 实例
+- `schema-dsl` (Object) - SchemaIO 实例
 
 **返回**: `this`
 
@@ -439,7 +439,7 @@ pluginManager.on('plugin:error', ({ plugin, error }) => {
 通过 `context` 参数访问其他插件：
 
 ```javascript
-install(schemaio, options, context) {
+install(schema-dsl, options, context) {
   // 检查依赖插件
   if (!context.plugins.has('dependency-plugin')) {
     throw new Error('需要先安装 dependency-plugin');
@@ -463,14 +463,14 @@ module.exports = {
     maxRetries: 3
   },
   
-  install(schemaio, options) {
+  install(schema-dsl, options) {
     const config = { ...this.options, ...options };
     console.log('配置:', config);
   }
 };
 
 // 安装时覆盖配置
-pluginManager.install(schemaio, 'my-plugin', {
+pluginManager.install(schema-dsl, 'my-plugin', {
   strict: true
 });
 ```
@@ -483,7 +483,7 @@ pluginManager.install(schemaio, 'my-plugin', {
 module.exports = {
   name: 'async-plugin',
   
-  async install(schemaio, options) {
+  async install(schema-dsl, options) {
     // 异步初始化
     await this.loadConfig();
     await this.connectDatabase();

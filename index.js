@@ -4,7 +4,7 @@
  * 统一的DSL Builder Pattern
  * 简洁 + 强大 = 完美平衡
  *
- * @module schemaio
+ * @module schema-dsl
  * @version 2.0.0
  */
 
@@ -110,7 +110,7 @@ function getDefaultValidator() {
  * @returns {Object} 验证结果
  *
  * @example
- * const { validate, dsl } = require('schemaio');
+ * const { validate, dsl } = require('schema-dsl');
  *
  * const schema = dsl({ email: 'email!' });
  * const result = validate(schema, { email: 'test@example.com' });

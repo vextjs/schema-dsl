@@ -248,7 +248,7 @@ Locale.addLocale('de-DE', {
 
 ```javascript
 // 前端可以使用相同的 SchemaIO（浏览器版）
-import { dsl, validate } from 'schemaio/browser';
+import { dsl, validate } from 'schema-dsl/browser';
 
 const schema = dsl({ /* ... */ });
 const result = validate(schema, formData, { 

@@ -10,9 +10,9 @@ module.exports = {
     version: '1.0.0',
     description: '自定义格式验证插件',
 
-    install(schemaio, options = {}, context) {
+    install(coreInstance, options = {}, context) {
         // 获取默认 validator 实例
-        const validator = schemaio.getDefaultValidator();
+        const validator = schema-dsl.getDefaultValidator();
         const ajv = validator.getAjv();
 
         // 添加自定义格式
@@ -21,7 +21,7 @@ module.exports = {
         console.log('[Plugin] custom-format installed');
     },
 
-    uninstall(schemaio, context) {
+    uninstall(coreInstance, context) {
         console.log('[Plugin] custom-format uninstalled');
     },
 
@@ -97,3 +97,4 @@ module.exports = {
         });
     }
 };
+
