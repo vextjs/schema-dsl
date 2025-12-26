@@ -146,8 +146,8 @@ const registerSchema = dsl({
     .label('用户名')
     .messages({
       'pattern': '只能包含字母、数字和下划线',
-      'minLength': '至少3个字符',
-      'maxLength': '最多32个字符'
+      'min': '至少3个字符',
+      'max': '最多32个字符'
     }),
   
   // 邮箱：标签

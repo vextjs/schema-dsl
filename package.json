@@ -1,6 +1,6 @@
 {
   "name": "schemaio",
-  "version": "2.1.0",
+  "version": "2.1.2",
   "description": "简洁强大的JSON Schema验证库 - DSL语法 + String扩展 + 便捷validate",
   "main": "index.js",
   "exports": {

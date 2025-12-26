@@ -493,8 +493,8 @@ const schema = dsl({
   username: 'string:3-32!'
     .label('用户名')
     .messages({
-      'minLength': '{{#label}}至少{{#limit}}个字符',
-      'maxLength': '{{#label}}最多{{#limit}}个字符',
+      'min': '{{#label}}至少{{#limit}}个字符',
+      'max': '{{#label}}最多{{#limit}}个字符',
       'pattern': '{{#label}}格式不正确',  // pattern 是正则验证失败的错误关键字
       'required': '{{#label}}不能为空'
     })
