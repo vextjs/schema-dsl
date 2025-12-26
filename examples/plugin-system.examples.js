@@ -30,22 +30,22 @@ console.log('');
 console.log('=== 2. 使用自定义格式 ===\n');
 
 const contactSchema = dsl({
-  phone: 'string!',
-  email: 'email!',
-  wechat: 'string'
+    phone: 'string!',
+    email: 'email!',
+    wechat: 'string'
 });
 
 // 测试数据
 const validContact = {
-  phone: '13800138000',
-  email: 'test@example.com',
-  wechat: 'my_wechat_id'
+    phone: '13800138000',
+    email: 'test@example.com',
+    wechat: 'my_wechat_id'
 };
 
 const result1 = validate(contactSchema, validContact);
 console.log('验证结果:', result1.valid ? '✅ 通过' : '❌ 失败');
 if (!result1.valid) {
-  console.log('错误:', result1.errors);
+    console.log('错误:', result1.errors);
 }
 console.log('');
 
@@ -55,11 +55,11 @@ console.log('=== 3. 使用钩子系统 ===\n');
 
 // 注册钩子
 pluginManager.hook('onBeforeValidate', (schema, data) => {
-  console.log('[Hook] 验证前:', { schema: '...', data });
+    console.log('[Hook] 验证前:', { schema: '...', data });
 });
 
 pluginManager.hook('onAfterValidate', (result) => {
-  console.log('[Hook] 验证后:', { valid: result.valid });
+    console.log('[Hook] 验证后:', { valid: result.valid });
 });
 
 // 运行钩子
@@ -77,31 +77,31 @@ console.log('=== 4. 自定义插件 ===\n');
 
 // 创建自定义插件
 const myPlugin = {
-  name: 'my-plugin',
-  version: '1.0.0',
-  description: '我的自定义插件',
+    name: 'my-plugin',
+    version: '1.0.0',
+    description: '我的自定义插件',
 
-  install(schemaio, options, context) {
-    console.log('[Plugin] my-plugin 安装中...');
-    console.log('  选项:', options);
-    console.log('  已注册插件数:', context.plugins.size);
+    install(schemaio, options, context) {
+        console.log('[Plugin] my-plugin 安装中...');
+        console.log('  选项:', options);
+        console.log('  已注册插件数:', context.plugins.size);
 
-    // 添加自定义方法
-    schemaio.myCustomMethod = () => {
-      console.log('  这是自定义方法!');
-    };
-  },
+        // 添加自定义方法
+        schemaio.myCustomMethod = () => {
+            console.log('  这是自定义方法!');
+        };
+    },
 
-  uninstall(schemaio, context) {
-    console.log('[Plugin] my-plugin 卸载中...');
-    delete schemaio.myCustomMethod;
-  },
+    uninstall(schemaio, context) {
+        console.log('[Plugin] my-plugin 卸载中...');
+        delete schemaio.myCustomMethod;
+    },
 
-  hooks: {
-    onBeforeValidate(schema, data) {
-      console.log('  [my-plugin] 验证前钩子');
+    hooks: {
+        onBeforeValidate(schema, data) {
+            console.log('  [my-plugin] 验证前钩子');
+        }
     }
-  }
 };
 
 // 注册并安装
@@ -110,7 +110,7 @@ pluginManager.install(schemaio, 'my-plugin', { custom: true });
 
 // 使用自定义方法
 if (schemaio.myCustomMethod) {
-  schemaio.myCustomMethod();
+    schemaio.myCustomMethod();
 }
 console.log('');
 
@@ -134,21 +134,21 @@ console.log('=== 6. 实用插件示例 ===\n');
 
 // 日志插件
 const loggingPlugin = {
-  name: 'logging',
-  version: '1.0.0',
+    name: 'logging',
+    version: '1.0.0',
 
-  install(schemaio, options, context) {
-    // 包装 validate 方法
-    const originalValidate = schemaio.validate;
-    schemaio.validate = function(...args) {
-      console.log('[Logging] 开始验证');
-      const start = Date.now();
-      const result = originalValidate.apply(this, args);
-      const duration = Date.now() - start;
-      console.log(`[Logging] 验证完成，耗时 ${duration}ms，结果: ${result.valid ? '通过' : '失败'}`);
-      return result;
-    };
-  }
+    install(schemaio, options, context) {
+        // 包装 validate 方法
+        const originalValidate = schemaio.validate;
+        schemaio.validate = function (...args) {
+            console.log('[Logging] 开始验证');
+            const start = Date.now();
+            const result = originalValidate.apply(this, args);
+            const duration = Date.now() - start;
+            console.log(`[Logging] 验证完成，耗时 ${duration}ms，结果: ${result.valid ? '通过' : '失败'}`);
+            return result;
+        };
+    }
 };
 
 pluginManager.register(loggingPlugin);
@@ -180,8 +180,8 @@ console.log('');
 
 // 批量注册多个插件
 const plugins = [
-  customValidatorPlugin,
-  customFormatPlugin
+    customValidatorPlugin,
+    customFormatPlugin
 ];
 
 plugins.forEach(plugin => pluginManager.register(plugin));

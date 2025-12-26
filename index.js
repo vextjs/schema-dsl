@@ -37,7 +37,7 @@ dsl.if = dsl.DslAdapter.if;
  * @param {Object} options.patterns - 验证规则扩展 (phone, idCard, creditCard)
  * @param {Object} options.phone - 手机号验证规则扩展 (兼容旧版)
  */
-dsl.config = function(options = {}) {
+dsl.config = function (options = {}) {
   const patterns = require('./lib/config/patterns');
 
   // 兼容旧版 options.phone

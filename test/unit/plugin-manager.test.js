@@ -17,7 +17,7 @@ describe('PluginManager', () => {
         it('应该成功注册插件', () => {
             const plugin = {
                 name: 'test-plugin',
-                install() {}
+                install() { }
             };
 
             pluginManager.register(plugin);
@@ -43,7 +43,7 @@ describe('PluginManager', () => {
         it('应该拒绝重复注册同名插件', () => {
             const plugin = {
                 name: 'test-plugin',
-                install() {}
+                install() { }
             };
 
             pluginManager.register(plugin);
@@ -56,7 +56,7 @@ describe('PluginManager', () => {
         it('应该触发注册事件', (done) => {
             const plugin = {
                 name: 'test-plugin',
-                install() {}
+                install() { }
             };
 
             pluginManager.on('plugin:registered', (p) => {
@@ -175,7 +175,7 @@ describe('PluginManager', () => {
         it('应该处理没有 uninstall 方法的插件', () => {
             const plugin = {
                 name: 'test-plugin',
-                install() {}
+                install() { }
             };
 
             pluginManager.register(plugin);
@@ -189,8 +189,8 @@ describe('PluginManager', () => {
         it('应该触发卸载事件', (done) => {
             const plugin = {
                 name: 'test-plugin',
-                install() {},
-                uninstall() {}
+                install() { },
+                uninstall() { }
             };
 
             pluginManager.register(plugin);
@@ -207,7 +207,7 @@ describe('PluginManager', () => {
 
     describe('钩子系统', () => {
         it('应该注册钩子', () => {
-            const handler = () => {};
+            const handler = () => { };
 
             pluginManager.hook('onBeforeValidate', handler);
 
@@ -259,7 +259,7 @@ describe('PluginManager', () => {
         });
 
         it('应该移除钩子', () => {
-            const handler = () => {};
+            const handler = () => { };
 
             pluginManager.hook('testHook', handler);
             pluginManager.unhook('testHook', handler);
@@ -271,12 +271,12 @@ describe('PluginManager', () => {
 
     describe('插件钩子', () => {
         it('应该注册插件定义的钩子', () => {
-            const hook1 = () => {};
-            const hook2 = () => {};
+            const hook1 = () => { };
+            const hook2 = () => { };
 
             const plugin = {
                 name: 'test-plugin',
-                install() {},
+                install() { },
                 hooks: {
                     onBeforeValidate: hook1,
                     onAfterValidate: hook2
@@ -293,12 +293,12 @@ describe('PluginManager', () => {
         });
 
         it('应该在卸载时移除插件钩子', () => {
-            const hook = () => {};
+            const hook = () => { };
 
             const plugin = {
                 name: 'test-plugin',
-                install() {},
-                uninstall() {},
+                install() { },
+                uninstall() { },
                 hooks: {
                     onBeforeValidate: hook
                 }
@@ -317,7 +317,7 @@ describe('PluginManager', () => {
         it('应该获取插件', () => {
             const plugin = {
                 name: 'test-plugin',
-                install() {}
+                install() { }
             };
 
             pluginManager.register(plugin);
@@ -327,8 +327,8 @@ describe('PluginManager', () => {
         });
 
         it('应该获取所有插件', () => {
-            const plugin1 = { name: 'plugin1', install() {} };
-            const plugin2 = { name: 'plugin2', install() {} };
+            const plugin1 = { name: 'plugin1', install() { } };
+            const plugin2 = { name: 'plugin2', install() { } };
 
             pluginManager.register(plugin1);
             pluginManager.register(plugin2);
@@ -344,7 +344,7 @@ describe('PluginManager', () => {
                 name: 'test-plugin',
                 version: '1.0.0',
                 description: 'Test plugin',
-                install() {}
+                install() { }
             };
 
             pluginManager.register(plugin);
@@ -358,8 +358,8 @@ describe('PluginManager', () => {
         });
 
         it('应该清空所有插件', () => {
-            const plugin1 = { name: 'plugin1', install() {}, uninstall() {} };
-            const plugin2 = { name: 'plugin2', install() {}, uninstall() {} };
+            const plugin1 = { name: 'plugin1', install() { }, uninstall() { } };
+            const plugin2 = { name: 'plugin2', install() { }, uninstall() { } };
 
             pluginManager.register(plugin1);
             pluginManager.register(plugin2);
@@ -395,7 +395,7 @@ describe('PluginManager', () => {
 
             const plugin1 = {
                 name: 'plugin1',
-                install() {}
+                install() { }
             };
 
             const plugin2 = {
@@ -419,8 +419,8 @@ describe('PluginManager', () => {
                 name: 'custom-validator',
                 install(schemaio) {
                     schemaio.customValidators = {};
-                    
-                    schemaio.addValidator = function(name, fn) {
+
+                    schemaio.addValidator = function (name, fn) {
                         this.customValidators[name] = fn;
                     };
                 }
@@ -443,7 +443,7 @@ describe('PluginManager', () => {
 
             const loggingPlugin = {
                 name: 'logging',
-                install(schemaio, options, context) {},
+                install(schemaio, options, context) { },
                 hooks: {
                     onBeforeValidate(schema, data) {
                         logs.push('before');
