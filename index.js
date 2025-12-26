@@ -14,6 +14,7 @@ const Validator = require('./lib/core/Validator');
 const ErrorFormatter = require('./lib/core/ErrorFormatter');
 const CacheManager = require('./lib/core/CacheManager');
 const DslBuilder = require('./lib/core/DslBuilder');
+const PluginManager = require('./lib/core/PluginManager');
 
 // ========== 错误消息系统 ==========
 const ErrorCodes = require('./lib/core/ErrorCodes');
@@ -157,6 +158,9 @@ module.exports = {
   MessageTemplate,
   Locale,
 
+  // 插件系统 (v2.2.0 新增)
+  PluginManager,
+
   // 导出器
   exporters,
   MongoDBExporter: exporters.MongoDBExporter,
@@ -175,5 +179,5 @@ module.exports = {
   CONSTANTS,
 
   // 版本信息
-  VERSION: '2.1.0'              // 更新版本号
+  VERSION: '2.2.0'              // 更新版本号
 };
