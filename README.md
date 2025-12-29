@@ -17,6 +17,8 @@
 
 ### 代码量减少 65% | 性能优秀 | 独家数据库导出
 
+### 🆕 v2.1.0 新特性：异步验证 + Schema 链式复用
+
 </div>
 
 ---
@@ -69,6 +71,63 @@ const result = validate(schema, {
 console.log(result.valid);  // true
 ```
 
+### 🆕 v2.1.0 新特性快速示例
+
+#### 异步验证 + 自动错误处理
+
+```javascript
+const { dsl, validateAsync, ValidationError } = require('schema-dsl');
+
+// Express 中使用
+app.post('/users', async (req, res, next) => {
+  try {
+    // 验证通过返回数据，失败自动抛出 ValidationError
+    const data = await validateAsync(userSchema, req.body);
+    const user = await db.users.insert(data);
+    res.json(user);
+  } catch (error) {
+    next(error); // 自动传递给错误处理中间件
+  }
+});
+
+// 全局错误处理
+app.use((error, req, res, next) => {
+  if (error instanceof ValidationError) {
+    return res.status(error.statusCode).json(error.toJSON());
+  }
+  next(error);
+});
+```
+
+#### Schema 链式复用 - 一行代码搞定
+
+```javascript
+const { SchemaUtils } = require('schema-dsl');
+
+// POST /users - 创建用户（严格模式）
+const createSchema = SchemaUtils
+  .omit(fullUserSchema, ['id', 'createdAt', 'updatedAt'])
+  .strict();
+
+// GET /users/:id - 查询用户（移除敏感字段）
+const publicSchema = SchemaUtils
+  .omit(fullUserSchema, ['password'])
+  .clean();
+
+// PATCH /users/:id - 更新用户（部分验证，宽松模式）
+const updateSchema = SchemaUtils
+  .pick(fullUserSchema, ['name', 'age'])
+  .partial()
+  .loose();
+```
+
+**详细文档**:
+- [异步验证完整指南](./docs/validate-async.md)
+- [Schema链式复用方法](./docs/schema-utils-chaining.md)
+- [Express集成示例](./examples/express-integration.js)
+
+---
+
 ### 📊 与其他库对比
 
 <table>
@@ -114,7 +173,9 @@ const schema = Joi.object({
 - **简洁语法**: 一行代码定义验证规则
 - **String扩展**: 字符串直接链式调用方法
 - **默认验证器**: 内置用户名、手机号、密码验证
-- **插件系统**: 强大的插件机制，支持自定义验证器和格式 🆕
+- **🆕 异步验证（v2.1.0）**: `validateAsync` + `ValidationError` 自动错误处理
+- **🆕 Schema链式复用（v2.1.0）**: 8个链式方法简化Schema复用
+- **插件系统**: 强大的插件机制，支持自定义验证器和格式
 - **数据库导出**: 导出MongoDB/MySQL/PostgreSQL Schema
 - **多语言支持**: 内置中英文，可自定义语言包
 - **高性能**: 基于ajv，支持编译缓存
@@ -934,7 +995,7 @@ const schema2 = dsl({ contactEmail: emailField() });
 const baseUser = dsl({ name: 'string!', email: 'email!' });
 const withAge = dsl({ age: 'number:18-120' });
 
-const merged = SchemaUtils.merge(baseUser, withAge);
+const extended = SchemaUtils.extend(baseUser, { age: 'number:18-120' });
 ```
 
 ### Schema 筛选

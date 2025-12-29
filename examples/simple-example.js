@@ -69,7 +69,7 @@ console.log('✨ 5. Schema合并');
 const baseUser = dsl({ name: 'string!', email: 'email!' });
 const withAge = dsl({ age: 'number:18-120' });
 
-const fullUser = SchemaUtils.merge(baseUser, withAge);
+const fullUser = SchemaUtils.extend(baseUser, withAge);
 
 console.log('合并后字段:', Object.keys(fullUser.properties));
 console.log('');
@@ -114,7 +114,7 @@ console.log(`
    })
 
 3. 强大
-   SchemaUtils.merge()    // 灵活组合
+   SchemaUtils.extend()   // 扩展字段
    validateBatch()        // 快50倍
 
 🎉 简洁 + 直观 + 强大 = 完美验证库！

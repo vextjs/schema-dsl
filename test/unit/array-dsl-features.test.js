@@ -78,18 +78,16 @@ describe('v2.0.1 新功能测试', () => {
     });
   });
 
-  // ========== 3. Schema合并 ==========
-  describe('Schema合并', () => {
-    it('应该合并多个Schema', () => {
+  // ========== 3. Schema 扩展 (替代 merge) ==========
+  describe('Schema扩展', () => {
+    it('应该扩展Schema', () => {
       const schema1 = dsl({ name: 'string!' });
-      const schema2 = dsl({ age: 'number' });
+      const extended = SchemaUtils.extend(schema1, { age: 'number' });
 
-      const merged = SchemaUtils.merge(schema1, schema2);
-
-      expect(Object.keys(merged.properties)).to.have.lengthOf(2);
-      expect(merged.properties.name).to.exist;
-      expect(merged.properties.age).to.exist;
-      expect(merged.required).to.include('name');
+      expect(Object.keys(extended.properties)).to.have.lengthOf(2);
+      expect(extended.properties.name).to.exist;
+      expect(extended.properties.age).to.exist;
+      expect(extended.required).to.include('name');
     });
 
     it('应该支持pick筛选字段', () => {

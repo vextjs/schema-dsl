@@ -45,6 +45,10 @@
 | [plugin-system.md](plugin-system.md) | 580行 | **插件系统指南** ⭐⭐ |
 | [api-reference.md](api-reference.md) | 534行 | API完整参考 ⭐⭐ |
 | [validate.md](validate.md) | 452行 | validate方法详解 ⭐ |
+| [**validate-async.md**](validate-async.md) | ~700行 | **异步验证方法详解** ⭐⭐⭐ |
+| [**schema-utils-chaining.md**](schema-utils-chaining.md) | ~680行 | **Schema链式复用方法** ⭐⭐⭐ |
+| [**schema-utils-best-practices.md**](schema-utils-best-practices.md) | ~500行 | **SchemaUtils最佳实践与常见陷阱** ⭐⭐⭐ |
+| [**schema-utils-advanced-issues.md**](schema-utils-advanced-issues.md) | ~600行 | **SchemaUtils深入问题分析** ⭐⭐ |
 
 ---
 
@@ -59,6 +63,9 @@
 | String 扩展 | [string-extensions.md](string-extensions.md) | `lib/core/StringExtensions.js` |
 | Validator 类 | [validate.md](validate.md) | `lib/core/Validator.js` |
 | validate() 函数 | [api-reference.md](api-reference.md) | `index.js` |
+| **validateAsync() 函数（v2.1.0）** | [validate-async.md](validate-async.md) | `index.js` |
+| **ValidationError 类（v2.1.0）** | [validate-async.md](validate-async.md#validationerror) | `lib/errors/ValidationError.js` |
+| **SchemaUtils 链式调用（v2.1.0）** | [schema-utils-chaining.md](schema-utils-chaining.md) | `lib/utils/SchemaUtils.js` |
 
 
 ---

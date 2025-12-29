@@ -290,7 +290,7 @@ const schema1 = dsl({ email: emailField() });
 const schema2 = dsl({ contactEmail: emailField() });
 
 // Schema合并
-const merged = SchemaUtils.merge(schema1, schema2);
+const extended = SchemaUtils.extend(schema1, { age: 'number' });
 ```
 
 **文档位置**:

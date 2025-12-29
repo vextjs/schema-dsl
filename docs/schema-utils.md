@@ -130,16 +130,15 @@ const withAge = dsl({
   gender: 'male|female|other'
 });
 
-const withProfile = dsl({
+// 扩展
+const fullUser = SchemaUtils.extend(baseUser, {
+  age: 'number:18-120',
   bio: 'string:500',
   avatar: 'url'
 });
-
-// 合并
-const fullUser = SchemaUtils.merge(baseUser, withAge, withProfile);
 ```
 
-**说明**: 合并 properties 和 required 数组，自动去重
+**说明**: 扩展字段，合并 properties 和 required 数组
 
 ---
 
@@ -428,10 +427,9 @@ const profileSchema = dsl({
 });
 
 // 完整用户
-const userSchema = SchemaUtils.merge(
-  registerSchema,
-  profileSchema,
-  dsl(fields.address())
+const userSchema = SchemaUtils.extend(
+  SchemaUtils.extend(registerSchema, profileSchema),
+  fields.address()
 );
 ```
 

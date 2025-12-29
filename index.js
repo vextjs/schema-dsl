@@ -220,6 +220,12 @@ dsl.config = function(options = {}) {
 
 // ========== 导出 ==========
 
+// 导入 ValidationError
+const ValidationError = require('./lib/errors/ValidationError');
+
+// 导入 validateAsync
+const { validateAsync } = require('./lib/adapters/DslAdapter');
+
 module.exports = {
   // 统一DSL API
   dsl,
@@ -235,9 +241,13 @@ module.exports = {
 
   // 便捷方法（推荐）
   validate,                    // 便捷验证（单例）
+  validateAsync,               // v2.1.0 新增：异步验证
   getDefaultValidator,         // 获取单例Validator
   ErrorFormatter,
   CacheManager,
+
+  // 错误类 (v2.1.0 新增)
+  ValidationError,
 
   // 错误消息系统
   ErrorCodes,
@@ -266,5 +276,7 @@ module.exports = {
   CONSTANTS,
 
   // 版本信息
-  VERSION: '2.3.0'
+  VERSION: '2.1.0'
 };
+
+

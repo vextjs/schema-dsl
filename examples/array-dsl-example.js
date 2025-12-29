@@ -102,7 +102,7 @@ const withAge = dsl({
 });
 
 // ✨ 新特性：merge方法
-const mergedSchema = SchemaUtils.merge(baseUser, withAge);
+const extendedSchema = SchemaUtils.extend(baseUser, withAge);
 
 console.log('合并后字段数:', Object.keys(mergedSchema.properties).length);
 console.log('');
