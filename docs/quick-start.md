@@ -1,7 +1,7 @@
-# SchemaIO 快速上手
+# schema-dsl 快速上手
 
 > **阅读时间**: 5分钟  
-> **目标**: 快速掌握 SchemaIO 核心用法  
+> **目标**: 快速掌握 schema-dsl 核心用法  
 
 ---
 
@@ -286,6 +286,102 @@ const schema = dsl({
 - [自定义验证器](./api-reference.md#custom)
 - [条件验证（when）](./api-reference.md#when)
 - [数据库Schema导出](./api-reference.md#导出器)
+
+---
+
+## 🎯 设计理念与性能
+
+### 为什么选择运行时解析？
+
+Schema-DSL 使用**运行时解析 DSL**，而非编译时构建（如 Zod），这是有意的设计选择：
+
+#### ✅ 运行时解析的优势
+
+1. **完全动态** - 验证规则可以从配置文件、数据库动态加载
+   ```javascript
+   // 从配置读取规则
+   const rules = await db.findOne({ entity: 'user' });
+   const schema = dsl({
+     username: `string:${rules.min}-${rules.max}!`
+   });
+   ```
+
+2. **多租户支持** - 每个租户可以有不同的验证规则
+   ```javascript
+   // 租户A: 用户名3-32字符
+   // 租户B: 用户名5-50字符
+   function getTenantSchema(tenantId) {
+     const rules = tenantConfig[tenantId];
+     return dsl({
+       username: `string:${rules.min}-${rules.max}!`
+     });
+   }
+   ```
+
+3. **可序列化** - DSL 字符串可以存储、传输、共享
+   ```javascript
+   // 存储到数据库
+   await db.insert({ 
+     formId: 'register', 
+     rules: { username: 'string:3-32!', email: 'email!' }
+   });
+   
+   // 通过 API 传输
+   res.json({ validationRules: rules });
+   
+   // 前后端共享规则
+   ```
+
+4. **低代码基础** - 支持可视化表单构建器
+   ```javascript
+   // 管理员在界面配置验证规则
+   const formBuilder = {
+     fields: [
+       { name: 'username', validation: 'string:3-32!' }
+     ]
+   };
+   ```
+
+#### ⚠️ 性能权衡
+
+运行时解析的代价是性能略低于编译时构建：
+
+| 库名 | 每秒操作数 | 说明 |
+|------|-----------|------|
+| Ajv | 2,000,000 ops/s | 原生 JSON Schema（最快） |
+| Zod | 526,316 ops/s | 编译时构建 |
+| **Schema-DSL** | **277,778 ops/s** | 运行时解析（第3名） |
+| Joi | 97,087 ops/s | 功能丰富 |
+| Yup | 60,241 ops/s | React 生态 |
+
+**结论**:
+- ✅ Schema-DSL 比 Joi 快 **2.86倍**，比 Yup 快 **4.61倍**
+- ✅ 对大多数应用足够（27万+ ops/s）
+- ⚠️ 如需极致性能（>50万 ops/s），推荐使用 Zod 或 Ajv
+
+**权衡**:
+```
+损失: 比 Zod 慢 1.9倍
+换来: 
+  ✅ 代码量减少 65%
+  ✅ 完全动态的验证规则
+  ✅ 多租户/配置驱动支持
+  ✅ 前后端共享规则
+  ✅ 低代码平台基础
+```
+
+### 适用场景
+
+**✅ 选择 Schema-DSL**:
+- 需要动态验证规则（配置驱动、多租户）
+- 需要数据库 Schema 导出
+- 快速开发原型
+- 多语言 SaaS 系统
+
+**⚠️ 考虑其他库**:
+- TypeScript 项目需要强类型推断 → **Zod**
+- 性能是第一优先级 → **Ajv** 或 **Zod**
+- 静态验证规则 → **Zod**
 
 ---
 

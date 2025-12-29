@@ -1,6 +1,6 @@
-# SchemaIO 文档索引
+# schema-dsl 文档索引
 
-> **更新时间**: 2025-12-26  
+> **更新时间**: 2025-12-29  
 > **用途**: 所有文档的快速导航  
 > **文档数量**: 26个文档（总计 11,600+ 行）
 
@@ -27,6 +27,7 @@
 |------|----------|------|
 | [README.md](../README.md) | 3分钟 | 项目介绍、安装和快速开始 ⭐ |
 | [quick-start.md](quick-start.md) | 5分钟 | 5分钟快速上手教程 ⭐ |
+| [design-philosophy.md](design-philosophy.md) | 15分钟 | **设计理念与性能权衡** ⭐⭐⭐ |
 | [FEATURE-INDEX.md](FEATURE-INDEX.md) | 10分钟 | 完整功能索引 ⭐ |
 | [best-practices.md](best-practices.md) | 15分钟 | 最佳实践指南 ⭐⭐⭐ |
 | [faq.md](faq.md) | 5分钟 | 常见问题解答 |

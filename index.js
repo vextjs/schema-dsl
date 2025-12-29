@@ -132,6 +132,92 @@ const CONSTANTS = require('./lib/config/constants');
 // ========== 自动安装 String 扩展 ==========
 installStringExtensions(dsl);
 
+// ========== 全局配置函数 ==========
+/**
+ * 全局配置
+ * @param {Object} options - 配置选项
+ * @param {Object} options.i18n - 多语言配置
+ * @param {string} options.i18n.localesPath - 用户语言包目录路径
+ * @param {Object} options.i18n.locales - 直接传入的语言包对象
+ * @param {Object} options.cache - 缓存配置
+ * @param {number} options.cache.maxSize - 缓存最大条目数
+ * @param {number} options.cache.ttl - 缓存过期时间（ms）
+ *
+ * @example
+ * dsl.config({
+ *   i18n: {
+ *     localesPath: './i18n/labels'
+ *   },
+ *   cache: {
+ *     maxSize: 10000,
+ *     ttl: 7200000
+ *   }
+ * });
+ */
+dsl.config = function(options = {}) {
+  // ========== 用户语言包配置 ==========
+  if (options.i18n) {
+    const { localesPath, locales } = options.i18n;
+
+    // 方式 1：从路径加载语言包文件
+    if (localesPath) {
+      const fs = require('fs');
+      const path = require('path');
+
+      const resolvedPath = path.resolve(localesPath);
+
+      if (fs.existsSync(resolvedPath)) {
+        const files = fs.readdirSync(resolvedPath);
+
+        files.forEach(file => {
+          if (file.endsWith('.js') || file.endsWith('.json')) {
+            const locale = path.basename(file, path.extname(file));
+            try {
+              const messages = require(path.join(resolvedPath, file));
+              Locale.addLocale(locale, messages);
+              if (process.env.DEBUG) {
+                console.log(`[schema-dsl] Loaded user locale: ${locale}`);
+              }
+            } catch (error) {
+              console.warn(`[schema-dsl] Failed to load locale ${locale}:`, error.message);
+            }
+          }
+        });
+      } else {
+        console.warn(`[schema-dsl] Locales path not found: ${resolvedPath}`);
+      }
+    }
+
+    // 方式 2：直接传入语言包对象
+    if (locales && typeof locales === 'object') {
+      Object.keys(locales).forEach(locale => {
+        Locale.addLocale(locale, locales[locale]);
+        if (process.env.DEBUG) {
+          console.log(`[schema-dsl] Added user locale: ${locale}`);
+        }
+      });
+    }
+  }
+
+  // ========== 缓存配置 ==========
+  if (options.cache) {
+    const { maxSize, ttl } = options.cache;
+
+    // 更新默认 Validator 的缓存配置
+    if (_defaultValidator) {
+      if (maxSize !== undefined) {
+        _defaultValidator.cache.options.maxSize = maxSize;
+      }
+      if (ttl !== undefined) {
+        _defaultValidator.cache.options.ttl = ttl;
+      }
+      if (process.env.DEBUG) {
+        console.log(`[schema-dsl] Updated cache config: maxSize=${maxSize || 'default'}, ttl=${ttl || 'default'}ms`);
+      }
+    }
+  }
+};
+
 // ========== 导出 ==========
 
 module.exports = {
@@ -180,5 +266,5 @@ module.exports = {
   CONSTANTS,
 
   // 版本信息
-  VERSION: '2.2.0'              // 更新版本号
+  VERSION: '2.3.0'
 };

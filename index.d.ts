@@ -1023,9 +1023,6 @@ declare module 'schema-dsl' {
    * const pgExporter = new exporters.PostgreSQLExporter();
    * ```
    */
-  export namespace exporters {
-    export { MongoDBExporter, MySQLExporter, PostgreSQLExporter };
-  }
 
   // ========== 工具函数 ==========
 
@@ -1419,6 +1416,458 @@ declare module 'schema-dsl' {
      */
     static getAvailableLocales(): string[];
   }
+
+  // ========== JSONSchemaCore 类 ==========
+
+  /**
+   * JSON Schema 核心类
+   *
+   * @description 对 JSON Schema 进行封装，提供验证和操作方法
+   *
+   * @example
+   * ```typescript
+   * const core = new JSONSchemaCore({
+   *   type: 'string',
+   *   minLength: 3,
+   *   maxLength: 32
+   * });
+   *
+   * const result = core.validate('test');
+   * console.log(result.valid); // true
+   * ```
+   */
+  export class JSONSchemaCore {
+    /**
+     * 构造函数
+     * @param schema - JSON Schema 对象
+     */
+    constructor(schema: JSONSchema);
+
+    /**
+     * 验证数据
+     * @param data - 要验证的数据
+     * @returns 验证结果
+     */
+    validate<T = any>(data: any): ValidationResult<T>;
+
+    /**
+     * 获取 JSON Schema 对象
+     * @returns JSON Schema
+     */
+    toJsonSchema(): JSONSchema;
+  }
+
+  // ========== ErrorFormatter 类 ==========
+
+  /**
+   * 错误格式化器
+   *
+   * @description 格式化 ajv 验证错误为友好的错误消息
+   *
+   * @example
+   * ```typescript
+   * const formatter = new ErrorFormatter();
+   * const errors = formatter.format(ajvErrors, { locale: 'zh-CN' });
+   * ```
+   */
+  export class ErrorFormatter {
+    /**
+     * 格式化错误
+     * @param errors - ajv 错误数组
+     * @param options - 格式化选项
+     * @returns 格式化后的错误数组
+     */
+    format(errors: any[], options?: { locale?: string }): ValidationError[];
+  }
+
+  // ========== MessageTemplate 类 ==========
+
+  /**
+   * 消息模板类
+   *
+   * @description 处理错误消息模板和变量替换
+   *
+   * @example
+   * ```typescript
+   * const template = new MessageTemplate('至少需要{{#limit}}个字符');
+   * const message = template.render({ limit: 3 });
+   * console.log(message); // "至少需要3个字符"
+   * ```
+   */
+  export class MessageTemplate {
+    /**
+     * 构造函数
+     * @param template - 消息模板字符串
+     */
+    constructor(template: string);
+
+    /**
+     * 渲染模板
+     * @param variables - 模板变量
+     * @returns 渲染后的消息
+     */
+    render(variables: Record<string, any>): string;
+
+    /**
+     * 静态渲染方法
+     * @param template - 消息模板
+     * @param variables - 模板变量
+     * @returns 渲染后的消息
+     */
+    static render(template: string, variables: Record<string, any>): string;
+  }
+
+  // ========== CacheManager 类 ==========
+
+  /**
+   * 缓存管理器选项
+   */
+  export interface CacheManagerOptions {
+    /** 最大缓存条目数 */
+    maxSize?: number;
+    /** 缓存过期时间（毫秒） */
+    ttl?: number;
+  }
+
+  /**
+   * 缓存管理器
+   *
+   * @description LRU 缓存管理器，用于缓存编译后的 Schema
+   *
+   * @example
+   * ```typescript
+   * const cache = new CacheManager({ maxSize: 1000, ttl: 60000 });
+   *
+   * // 设置缓存
+   * cache.set('key', value);
+   *
+   * // 获取缓存
+   * const value = cache.get('key');
+   *
+   * // 清空缓存
+   * cache.clear();
+   * ```
+   */
+  export class CacheManager {
+    /**
+     * 构造函数
+     * @param options - 缓存选项
+     */
+    constructor(options?: CacheManagerOptions);
+
+    /**
+     * 缓存选项
+     */
+    options: CacheManagerOptions;
+
+    /**
+     * 设置缓存
+     * @param key - 缓存键
+     * @param value - 缓存值
+     */
+    set(key: string, value: any): void;
+
+    /**
+     * 获取缓存
+     * @param key - 缓存键
+     * @returns 缓存值或 undefined
+     */
+    get(key: string): any | undefined;
+
+    /**
+     * 检查缓存是否存在
+     * @param key - 缓存键
+     * @returns 是否存在
+     */
+    has(key: string): boolean;
+
+    /**
+     * 删除缓存
+     * @param key - 缓存键
+     */
+    delete(key: string): void;
+
+    /**
+     * 清空所有缓存
+     */
+    clear(): void;
+
+    /**
+     * 获取缓存统计信息
+     * @returns 统计信息对象
+     */
+    getStats(): {
+      size: number;
+      hits: number;
+      misses: number;
+      evictions: number;
+    };
+  }
+
+  // ========== PluginManager 类 ==========
+
+  /**
+   * 插件接口
+   */
+  export interface Plugin {
+    /** 插件名称 */
+    name: string;
+    /** 插件版本 */
+    version: string;
+    /** 插件描述 */
+    description?: string;
+    /** 安装方法 */
+    install(core: any, options?: any, context?: any): void;
+    /** 卸载方法（可选） */
+    uninstall?(core: any, context?: any): void;
+  }
+
+  /**
+   * 插件管理器
+   *
+   * @description 管理验证库的插件系统
+   *
+   * @example
+   * ```typescript
+   * const pluginManager = new PluginManager();
+   *
+   * // 注册插件
+   * pluginManager.register({
+   *   name: 'my-plugin',
+   *   version: '1.0.0',
+   *   install(core) {
+   *     // 安装逻辑
+   *   }
+   * });
+   *
+   * // 安装插件
+   * pluginManager.install(schemaCore);
+   *
+   * // 获取插件
+   * const plugin = pluginManager.get('my-plugin');
+   * ```
+   */
+  export class PluginManager {
+    /**
+     * 构造函数
+     */
+    constructor();
+
+    /**
+     * 注册插件
+     * @param plugin - 插件对象
+     */
+    register(plugin: Plugin): void;
+
+    /**
+     * 安装所有插件
+     * @param core - 核心对象
+     * @param options - 安装选项
+     */
+    install(core: any, options?: any): void;
+
+    /**
+     * 获取插件
+     * @param name - 插件名称
+     * @returns 插件对象或 undefined
+     */
+    get(name: string): Plugin | undefined;
+
+    /**
+     * 卸载插件
+     * @param name - 插件名称
+     */
+    uninstall(name: string): void;
+
+    /**
+     * 列出所有插件
+     * @returns 插件名称数组
+     */
+    list(): string[];
+
+    /**
+     * 清空所有插件
+     */
+    clear(): void;
+  }
+
+  // ========== MarkdownExporter 类 ==========
+
+  /**
+   * Markdown 导出器选项
+   */
+  export interface MarkdownExporterOptions {
+    /** 文档标题 */
+    title?: string;
+    /** 语言（zh-CN, en-US等） */
+    locale?: string;
+    /** 是否包含示例数据 */
+    includeExamples?: boolean;
+  }
+
+  /**
+   * Markdown 导出器
+   *
+   * @description 将 JSON Schema 导出为 Markdown 文档
+   *
+   * @example
+   * ```typescript
+   * const exporter = new MarkdownExporter();
+   * const markdown = exporter.export(schema, {
+   *   title: '用户注册 API',
+   *   locale: 'zh-CN',
+   *   includeExamples: true
+   * });
+   *
+   * console.log(markdown);
+   * // # 用户注册 API
+   * //
+   * // ## 字段列表
+   * // | 字段名 | 类型 | 必填 | 约束 | 说明 |
+   * // |--------|------|------|------|------|
+   * // | username | 字符串 | ✅ | 长度: 3-32 | - |
+   * ```
+   */
+  export class MarkdownExporter {
+    /**
+     * 构造函数
+     */
+    constructor();
+
+    /**
+     * 导出为 Markdown
+     * @param schema - JSON Schema 对象
+     * @param options - 导出选项
+     * @returns Markdown 字符串
+     */
+    export(schema: JSONSchema, options?: MarkdownExporterOptions): string;
+
+    /**
+     * 静态导出方法
+     * @param schema - JSON Schema 对象
+     * @param options - 导出选项
+     * @returns Markdown 字符串
+     */
+    static export(schema: JSONSchema, options?: MarkdownExporterOptions): string;
+  }
+
+  // ========== CustomKeywords 类 ==========
+
+  /**
+   * 自定义关键字
+   *
+   * @description 扩展 ajv 的自定义验证关键字
+   *
+   * @example
+   * ```typescript
+   * // 添加自定义关键字通常通过 Validator 的 addKeyword 方法
+   * const validator = new Validator();
+   * const ajv = validator.getAjv();
+   *
+   * // 使用 ajv.addKeyword() 添加自定义关键字
+   * ```
+   */
+  export const CustomKeywords: any;
+
+  // ========== dsl.config 选项（v2.3.0+）==========
+
+  /**
+   * i18n 配置选项（v2.3.0+）
+   */
+  export interface I18nConfig {
+    /** 语言包目录路径 */
+    localesPath?: string;
+    /** 直接传入的语言包 */
+    locales?: Record<string, ErrorMessages>;
+  }
+
+  /**
+   * 缓存配置选项（v2.3.0+）
+   */
+  export interface CacheConfig {
+    /** 最大缓存条目数 */
+    maxSize?: number;
+    /** 缓存过期时间（毫秒） */
+    ttl?: number;
+  }
+
+  /**
+   * dsl.config() 配置选项（v2.3.0+）
+   *
+   * @description 全局配置选项，包括多语言和缓存设置
+   *
+   * @example
+   * ```typescript
+   * // 配置多语言
+   * dsl.config({
+   *   i18n: {
+   *     locales: {
+   *       'zh-CN': { 'username': '用户名' },
+   *       'en-US': { 'username': 'Username' }
+   *     }
+   *   }
+   * });
+   *
+   * // 配置缓存
+   * dsl.config({
+   *   cache: {
+   *     maxSize: 5000,
+   *     ttl: 60000
+   *   }
+   * });
+   *
+   * // 同时配置多个选项
+   * dsl.config({
+   *   i18n: { locales: {...} },
+   *   cache: { maxSize: 5000 },
+   *   patterns: {
+   *     phone: { cn: /^1[3-9]\d{9}$/ }
+   *   }
+   * });
+   * ```
+   */
+  export interface DslConfigOptions {
+    /** i18n 配置 */
+    i18n?: I18nConfig;
+    /** 缓存配置 */
+    cache?: CacheConfig;
+    /** 自定义验证规则扩展 */
+    patterns?: {
+      /** 手机号验证规则 */
+      phone?: Record<string, RegExp>;
+      /** 身份证验证规则 */
+      idCard?: Record<string, RegExp>;
+      /** 信用卡验证规则 */
+      creditCard?: Record<string, RegExp>;
+    };
+    /** 向后兼容：手机号验证规则（推荐使用 patterns.phone） */
+    phone?: Record<string, RegExp>;
+  }
+
+  // ========== exporters 对象 ==========
+
+  /**
+   * 导出器集合
+   *
+   * @description 包含所有导出器的对象
+   *
+   * @example
+   * ```typescript
+   * import { exporters } from 'schema-dsl';
+   *
+   * // 使用 MongoDB 导出器
+   * const mongoSchema = exporters.MongoDBExporter.export(schema);
+   *
+   * // 使用 MySQL 导出器
+   * const mysqlDDL = new exporters.MySQLExporter().export(schema, { tableName: 'users' });
+   * ```
+   */
+  export const exporters: {
+    MongoDBExporter: typeof MongoDBExporter;
+    MySQLExporter: typeof MySQLExporter;
+    PostgreSQLExporter: typeof PostgreSQLExporter;
+    MarkdownExporter: typeof MarkdownExporter;
+  };
 
   // ========== String 扩展控制 ==========
 

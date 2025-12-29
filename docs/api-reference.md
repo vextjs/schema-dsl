@@ -1,4 +1,4 @@
-# SchemaIO API 参考文档
+# schema-dsl API 参考文档
 
 
 > **更新时间**: 2025-12-25  
@@ -452,31 +452,6 @@ dsl('string:3-32!')
 
 ---
 
-#### `.when(refField, options)`
-
-条件验证（根据其他字段值动态验证）。
-
-**参数**:
-- `refField` (**string**) - 引用字段名
-- `options` (**Object**) - 条件选项
-  - `is` (**any**) - 期望值
-  - `then` (**DslBuilder** | **Object**) - 满足条件时的Schema
-  - `otherwise` (**DslBuilder** | **Object**, 可选) - 不满足时的Schema
-
-**返回**: **DslBuilder**
-
-**示例**:
-```javascript
-dsl('string')
-  .when('contactType', {
-    is: 'email',
-    then: dsl('email!'),
-    otherwise: dsl('string').pattern(/^\d{11}$/)
-  })
-```
-
----
-
 #### `.default(value)`
 
 设置默认值。
@@ -753,31 +728,6 @@ dsl('string:3-32!')
       return { error: 'username.exists', message: '用户名已存在' };
     }
     return true;
-  })
-```
-
----
-
-#### `.when(refField, options)`
-
-条件验证（根据其他字段值动态验证）。
-
-**参数**:
-- `refField` (**string**) - 引用字段名
-- `options` (**Object**) - 条件选项
-  - `is` (**any**) - 期望值
-  - `then` (**DslBuilder** | **Object**) - 满足条件时的Schema
-  - `otherwise` (**DslBuilder** | **Object**, 可选) - 不满足时的Schema
-
-**返回**: **DslBuilder**
-
-**示例**:
-```javascript
-dsl('string')
-  .when('contactType', {
-    is: 'email',
-    then: dsl('email!'),
-    otherwise: dsl('string').pattern(/^\d{11}$/)
   })
 ```
 

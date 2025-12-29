@@ -19,8 +19,8 @@ const customFormatPlugin = require('../plugins/custom-format');
 pluginManager.register(customFormatPlugin);
 
 // 安装插件
-const schema-dsl = require('../index');
-pluginManager.install(schema-dsl);
+const schemaDsl = require('../index');
+pluginManager.install(schemaDsl);
 
 console.log('已安装插件:', pluginManager.list());
 console.log('');
@@ -81,20 +81,20 @@ const myPlugin = {
     version: '1.0.0',
     description: '我的自定义插件',
 
-    install(schema-dsl, options, context) {
+    install(schemaDsl, options, context) {
         console.log('[Plugin] my-plugin 安装中...');
         console.log('  选项:', options);
         console.log('  已注册插件数:', context.plugins.size);
 
         // 添加自定义方法
-        schema-dsl.myCustomMethod = () => {
+        schemaDsl.myCustomMethod = () => {
             console.log('  这是自定义方法!');
         };
     },
 
-    uninstall(schema-dsl, context) {
+    uninstall(schemaDsl, context) {
         console.log('[Plugin] my-plugin 卸载中...');
-        delete schema-dsl.myCustomMethod;
+        delete schemaDsl.myCustomMethod;
     },
 
     hooks: {
@@ -106,11 +106,11 @@ const myPlugin = {
 
 // 注册并安装
 pluginManager.register(myPlugin);
-pluginManager.install(schema-dsl, 'my-plugin', { custom: true });
+pluginManager.install(schemaDsl, 'my-plugin', { custom: true });
 
 // 使用自定义方法
-if (schema-dsl.myCustomMethod) {
-    schema-dsl.myCustomMethod();
+if (schemaDsl.myCustomMethod) {
+    schemaDsl.myCustomMethod();
 }
 console.log('');
 
@@ -137,10 +137,10 @@ const loggingPlugin = {
     name: 'logging',
     version: '1.0.0',
 
-    install(schema-dsl, options, context) {
+    install(schemaDsl, options, context) {
         // 包装 validate 方法
-        const originalValidate = schema-dsl.validate;
-        schema-dsl.validate = function (...args) {
+        const originalValidate = schemaDsl.validate;
+        schemaDsl.validate = function (...args) {
             console.log('[Logging] 开始验证');
             const start = Date.now();
             const result = originalValidate.apply(this, args);
@@ -152,7 +152,7 @@ const loggingPlugin = {
 };
 
 pluginManager.register(loggingPlugin);
-pluginManager.install(schema-dsl, 'logging');
+pluginManager.install(schemaDsl, 'logging');
 
 // 测试日志插件
 const schema = dsl({ email: 'email!' });
@@ -163,7 +163,7 @@ console.log('');
 
 console.log('=== 7. 卸载插件 ===\n');
 
-pluginManager.uninstall('my-plugin', schema-dsl);
+pluginManager.uninstall('my-plugin', schemaDsl);
 console.log('my-plugin 已卸载');
 console.log('当前插件数:', pluginManager.size);
 console.log('');
@@ -173,7 +173,7 @@ console.log('');
 console.log('=== 8. 批量插件 ===\n');
 
 // 清空所有插件
-pluginManager.clear(schema-dsl);
+pluginManager.clear(schemaDsl);
 console.log('所有插件已清空');
 console.log('当前插件数:', pluginManager.size);
 console.log('');
@@ -185,7 +185,7 @@ const plugins = [
 ];
 
 plugins.forEach(plugin => pluginManager.register(plugin));
-pluginManager.install(schema-dsl); // 安装所有插件
+pluginManager.install(schemaDsl); // 安装所有插件
 
 console.log('批量安装完成:', pluginManager.list());
 console.log('');
@@ -201,4 +201,5 @@ console.log('  - 插件间通信');
 console.log('  - 事件监听');
 console.log('');
 console.log('示例运行完成！');
+
 

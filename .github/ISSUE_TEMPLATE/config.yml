@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 查看文档
+    url: https://github.com/vextjs/schema-dsl#readme
+    about: 查看完整文档和示例
+  - name: 💬 讨论区
+    url: https://github.com/vextjs/schema-dsl/discussions
+    about: 提问、分享想法或参与讨论
+  - name: 📝 常见问题
+    url: https://github.com/vextjs/schema-dsl/blob/main/docs/faq.md
+    about: 查看常见问题解答

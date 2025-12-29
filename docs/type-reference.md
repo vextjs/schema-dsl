@@ -1,4 +1,4 @@
-# SchemaIO 完整类型列表
+# schema-dsl 完整类型列表
 
 > **更新时间**: 2025-12-25  
 
@@ -192,12 +192,12 @@ const schema = dsl({
 
 ### Q1: 为什么没有 `Joi.alternatives()` 对应？
 
-A: 使用条件验证 `.when()` 实现：
+A: 使用条件验证 `dsl.match()` 实现：
 
 ```javascript
 const schema = dsl({
   contactType: 'email|phone',
-  contact: 'string!'.when('contactType', {
+  contact: dsl.match('contactType', {
     email: 'email!',
     phone: 'string:11!'
   })

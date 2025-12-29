@@ -10,9 +10,9 @@ module.exports = {
     version: '1.0.0',
     description: '自定义格式验证插件',
 
-    install(coreInstance, options = {}, context) {
+    install(schemaDsl, options = {}, context) {
         // 获取默认 validator 实例
-        const validator = schema-dsl.getDefaultValidator();
+        const validator = schemaDsl.getDefaultValidator();
         const ajv = validator.getAjv();
 
         // 添加自定义格式
@@ -21,7 +21,7 @@ module.exports = {
         console.log('[Plugin] custom-format installed');
     },
 
-    uninstall(coreInstance, context) {
+    uninstall(schemaDsl, context) {
         console.log('[Plugin] custom-format uninstalled');
     },
 
@@ -97,4 +97,5 @@ module.exports = {
         });
     }
 };
+
 

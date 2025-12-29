@@ -25,15 +25,14 @@ console.log('✨ 2. when条件验证');
 
 const contactSchema = dsl({
   contactType: 'email|phone',
-  // 使用when条件验证
-  contact: dsl('string').when('contactType', {
-    is: 'email',
-    then: dsl('email!'),
-    otherwise: dsl('string:11!')
-  }).label('联系方式')
+  // 使用 dsl.match 条件验证
+  contact: dsl.match('contactType', {
+    email: 'email!',
+    phone: 'string:11!'
+  })
 });
 
-console.log('when条件Schema已创建');
+console.log('match条件Schema已创建');
 console.log('');
 
 // ========== 3. 自定义验证器 ==========
@@ -127,7 +126,7 @@ console.log('');
 // ========== 8. 性能监控 ==========
 console.log('✨ 8. 性能监控');
 
-const { Validator } = require('../index');
+// Validator 已在文件开头导入
 const validator = new Validator(); // 高级用法：创建实例以增强功能
 
 // ✨ 新特性：性能监控
