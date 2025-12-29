@@ -3,6 +3,8 @@
 > **用途**: Schema 到数据库 DDL 的完整导出指南  
 > **阅读时间**: 10分钟
 
+> ⚠️ **重要提示**: 并非所有 SchemaIO 特性都能导出到数据库。请先阅读 [导出限制说明](export-limitations.md) 了解哪些特性不支持导出。
+
 ---
 
 ## 📑 目录
@@ -451,6 +453,7 @@ console.log('导出完成！');
 
 ## 相关文档
 
+- [**导出限制说明**](export-limitations.md) ⚠️ **必读**
 - [MongoDB 导出器](mongodb-exporter.md)
 - [MySQL 导出器](mysql-exporter.md)
 - [PostgreSQL 导出器](postgresql-exporter.md)

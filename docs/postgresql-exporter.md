@@ -281,10 +281,24 @@ exporter.generateIndex('users', 'metadata', { method: 'gin' });
 
 ---
 
+## 导出限制
+
+⚠️ **重要提示**: PostgreSQL 虽然支持 CHECK 约束，但仍有部分特性无法导出。
+
+**PostgreSQL 不支持的特性**:
+- ❌ 正则表达式约束（`pattern`）
+- ❌ 嵌套对象约束（导出为 `JSONB`，内部约束丢失）
+- ❌ 条件验证逻辑（`dsl.match()`, `dsl.if()`）
+
+**详细说明**: 请阅读 [导出限制说明文档](export-limitations.md)
+
+---
+
 ## 相关文档
 
 - [数据库导出指南](export-guide.md)
 - [MongoDB 导出器](mongodb-exporter.md)
 - [MySQL 导出器](mysql-exporter.md)
 - [TypeConverter](type-converter.md)
+- [**导出限制说明**](export-limitations.md) ⚠️
 

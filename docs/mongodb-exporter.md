@@ -270,10 +270,26 @@ async function createValidatedCollection() {
 
 ---
 
+## 导出限制
+
+⚠️ **重要提示**: 并非所有 SchemaIO 特性都能导出到数据库 Schema。
+
+**不支持导出的特性**:
+- ❌ 条件验证逻辑（`dsl.match()`, `dsl.if()`）
+- ❌ 自定义验证器（`.custom()`）
+- ❌ 复杂 JSON Schema 关键字（`allOf`, `anyOf`, `oneOf`）
+- ❌ 自定义错误消息（`.messages()`）
+
+**详细说明**: 请阅读 [导出限制说明文档](export-limitations.md)
+
+---
+
 ## 相关文档
 
 - [数据库导出指南](export-guide.md)
 - [MySQL 导出器](mysql-exporter.md)
 - [PostgreSQL 导出器](postgresql-exporter.md)
 - [TypeConverter](type-converter.md)
+- [**导出限制说明**](export-limitations.md) ⚠️
+
 

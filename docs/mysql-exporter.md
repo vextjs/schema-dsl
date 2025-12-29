@@ -248,10 +248,26 @@ CREATE INDEX `idx_users_status` ON `users` (`status`);
 
 ---
 
+## 导出限制
+
+⚠️ **重要提示**: MySQL 对约束的支持有限。
+
+**MySQL 不支持的特性**:
+- ❌ 正则表达式约束（`pattern`）
+- ❌ 数值范围约束（`minimum/maximum`）
+- ❌ 枚举 CHECK 约束（导出为普通 `VARCHAR`）
+- ❌ 字符串最小长度（`minLength`）
+- ❌ 条件验证逻辑（`dsl.match()`, `dsl.if()`）
+
+**详细说明**: 请阅读 [导出限制说明文档](export-limitations.md)
+
+---
+
 ## 相关文档
 
 - [数据库导出指南](export-guide.md)
 - [MongoDB 导出器](mongodb-exporter.md)
 - [PostgreSQL 导出器](postgresql-exporter.md)
 - [TypeConverter](type-converter.md)
+- [**导出限制说明**](export-limitations.md) ⚠️
 

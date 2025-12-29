@@ -260,7 +260,7 @@ schema-dsl 使用**运行时解析**，而 Zod 使用**编译时构建**。
    res.json({ rules: { username: 'string:3-32!' } });
    ```
 
-**权衡结果**：
+**权衡结果**
 ```
 损失：比 Zod 慢 1.9倍
 换来：代码量减少 65% + 完全动态性 + 独家功能
@@ -548,7 +548,7 @@ const result = validator.validate(validate, data);
 
 ## � 插件系统
 
-**v2.2.0 新增**：强大的插件机制，轻松扩展 SchemaIO 功能。
+**v2.2.0 新增**：强大的插件机制，轻松扩展 schema-dsl 功能。
 
 ### 快速开始
 
@@ -687,6 +687,8 @@ pluginManager.clear(schema-dsl);
 ---
 
 ## �🗄️ 数据库导出
+
+> ⚠️ **重要提示**: 并非所有 schema-dsl 特性都能导出到数据库。条件验证（`dsl.match()`、`dsl.if()`）、自定义验证器等无法导出。详见 [**导出限制说明**](docs/export-limitations.md)。
 
 ### MongoDB Schema
 
@@ -861,7 +863,7 @@ const schema = dsl({
 - `type` - 类型不匹配
 
 **💡 简化的错误关键字**:  
-SchemaIO 对常见的错误关键字做了简化：
+schema-dsl 对常见的错误关键字做了简化：
 - `min` / `max` 代替 `minLength` / `maxLength` - 更简洁
 - 同时也支持完整关键字 `minLength` / `maxLength` - 向后兼容
 
@@ -1067,7 +1069,7 @@ npm run coverage  # 测试覆盖率
 
 ### 贡献者
 
-感谢所有为 SchemaIO 做出贡献的开发者！
+感谢所有为 schema-dsl 做出贡献的开发者！
 
 <a href="https://github.com/vextjs/schema-dsl/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=vextjs/schema-dsl" />
@@ -1117,6 +1119,5 @@ npm run coverage  # 测试覆盖率
 Made with ❤️ by [vextjs](https://github.com/vextjs)
 
 </div>
-
 
 
