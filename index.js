@@ -166,6 +166,7 @@ module.exports = {
   MongoDBExporter: exporters.MongoDBExporter,
   MySQLExporter: exporters.MySQLExporter,
   PostgreSQLExporter: exporters.PostgreSQLExporter,
+  MarkdownExporter: exporters.MarkdownExporter,
 
   // 工具函数
   TypeConverter,

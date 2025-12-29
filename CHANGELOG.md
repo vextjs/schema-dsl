@@ -20,6 +20,62 @@
 
 ---
 
+## [v2.2.0] - 2025-12-29
+
+### ✨ 新增功能
+
+#### Markdown 导出器
+- ✅ **新增 `MarkdownExporter`**: 将 JSON Schema 导出为人类可读的 Markdown 文档
+- ✅ **多语言支持**: 支持中文、英文、日文三种语言
+- ✅ **自动生成字段表格**: 包含类型、约束、说明等信息
+- ✅ **自动生成示例数据**: 根据 Schema 生成示例 JSON
+- ✅ **约束规则汇总**: 自动列出必填和可选字段
+
+**使用示例**:
+```javascript
+const { dsl, exporters } = require('schema-dsl');
+
+const schema = dsl({
+  username: 'string:3-32!',
+  email: 'email!'
+});
+
+const markdown = exporters.MarkdownExporter.export(schema, {
+  title: '用户注册 API',
+  locale: 'zh-CN',
+  includeExample: true
+});
+```
+
+### 📝 文档优化
+- ✅ **更新快速开始文档**: 使用 `validate()` 便捷函数代替 `new Validator()`
+- ✅ **新增 Markdown 导出器文档**: 完整的使用指南和示例
+- ✅ **优化代码示例**: 所有文档统一使用更简洁的 API
+
+**改进前**:
+```javascript
+const validator = new Validator();
+const result = validator.validate(schema, data);
+```
+
+**改进后**:
+```javascript
+const { validate } = require('schema-dsl');
+const result = validate(schema, data);  // 更简洁！
+```
+
+### 🔧 改进
+- ✅ 统一文档示例使用便捷函数
+- ✅ 新增 `examples/markdown-export.js` 示例文件
+- ✅ 导出器索引添加 Markdown 导出器
+
+### 📚 文档变更
+- ✅ `docs/markdown-exporter.md` - Markdown 导出器完整文档
+- ✅ `docs/quick-start.md` - 更新验证示例
+- ✅ `plans/optimizations/opt-code-quality-improvements-v2.1.4.md` - 改进方案文档
+
+---
+
 ## [v2.1.3] - 2025-12-26
 
 ### 🔄 重大变更

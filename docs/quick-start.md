@@ -35,7 +35,7 @@ npm install schema-dsl
 ### 1. Hello World（30秒）
 
 ```javascript
-const { dsl, Validator } = require('schema-dsl');
+const { dsl, validate } = require('schema-dsl');
 
 // 定义Schema
 const schema = dsl({
@@ -43,9 +43,8 @@ const schema = dsl({
   email: 'email!'
 });
 
-// 验证数据
-const validator = new Validator();
-const result = validator.validate(schema, {
+// 验证数据（使用便捷函数）
+const result = validate(schema, {
   name: '张三',
   email: 'zhangsan@example.com'
 });
