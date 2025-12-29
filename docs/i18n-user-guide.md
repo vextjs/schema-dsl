@@ -1,6 +1,5 @@
 # 多语言支持用户指南
 
-> **版本**: v2.3.0  
 > **更新日期**: 2025-12-29
 
 ---
@@ -473,16 +472,5 @@ function changeLanguage(lang) {
 
 - [API 参考](./api-reference.md)
 - [完整示例](../examples/i18n-full-demo.js)
-- [实际实现说明](./ACTUAL-MULTILANG-IMPLEMENTATION.md)
-
----
-
-## 更新日志
-
-### v2.3.0 (2025-12-29)
-
-- ✅ 新增 `dsl.config()` 支持用户语言包配置
-- ✅ 优化缓存配置（1000 → 5000）
-- ✅ 支持动态缓存配置
-- ✅ 完善多语言文档和示例
+- [动态缓存优化](./cache-manager.md)
 

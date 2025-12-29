@@ -63,9 +63,9 @@
 | String 扩展 | [string-extensions.md](string-extensions.md) | `lib/core/StringExtensions.js` |
 | Validator 类 | [validate.md](validate.md) | `lib/core/Validator.js` |
 | validate() 函数 | [api-reference.md](api-reference.md) | `index.js` |
-| **validateAsync() 函数（v2.1.0）** | [validate-async.md](validate-async.md) | `index.js` |
-| **ValidationError 类（v2.1.0）** | [validate-async.md](validate-async.md#validationerror) | `lib/errors/ValidationError.js` |
-| **SchemaUtils 链式调用（v2.1.0）** | [schema-utils-chaining.md](schema-utils-chaining.md) | `lib/utils/SchemaUtils.js` |
+| validateAsync() 函数 | [validate-async.md](validate-async.md) | `index.js` |
+| ValidationError 类 | [validate-async.md](validate-async.md#validationerror) | `lib/errors/ValidationError.js` |
+| SchemaUtils 链式调用 | [schema-utils-chaining.md](schema-utils-chaining.md) | `lib/utils/SchemaUtils.js` |
 
 
 ---

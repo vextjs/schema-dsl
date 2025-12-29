@@ -108,7 +108,8 @@ const schema = dsl({
 
 **文档位置**:
 - 📖 [String扩展完整文档](./string-extensions.md)
-- 📖 [README - v2.0.1新特性](../README.md#-v201-新特性)
+- 📖 [README](../README.md)
+
 
 **代码位置**: `lib/core/StringExtensions.js`
 
@@ -295,7 +296,6 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 
 **文档位置**:
 - 📖 [API参考 - SchemaUtils](./api-reference.md#工具函数)
-- 📖 [示例代码](../examples/v2.0.1-features.js)
 
 **代码位置**: `lib/utils/SchemaUtils.js`
 
@@ -461,8 +461,6 @@ const schema = {
 **基础示例**:
 - 📄 [dsl-style.js](../examples/dsl-style.js) - DSL基础用法
 - 📄 [string-extensions.js](../examples/string-extensions.js) - String扩展示例
-- 📄 [v2.0.1-features.js](../examples/v2.0.1-features.js) - v2.0.1新功能完整示例
-- 📄 [v2.0.1-simple.js](../examples/v2.0.1-simple.js) - v2.0.1简单示例
 
 **场景示例**:
 - 📁 [user-registration/](../examples/user-registration/) - 用户注册表单验证
@@ -484,7 +482,7 @@ const schema = {
 5. ✅ 快速开始 - `docs/quick-start.md`
 6. ✅ 数据库导出 - `README.md` + `examples/export-demo.js`
 7. ✅ 自定义验证 - `README.md`
-8. ✅ Schema工具 - `examples/v2.0.1-features.js`
+8. ✅ Schema工具 - `examples/schema-utils-chaining.examples.js`
 
 ### ⚠️ 文档需要补充
 
@@ -507,15 +505,15 @@ const schema = {
 
 - 📖 [README.md](../README.md) - 项目介绍
 - 📖 [快速开始](./quick-start.md) - 5分钟入门
-- 📖 [DSL语法指南](./dsl-syntax.md) - 完整语法（2815行）
-- 📖 [String扩展](./string-extensions.md) - v2.0.1新特性
+- 📖 [DSL语法指南](./dsl-syntax.md) - 完整语法
+- 📖 [String扩展](./string-extensions.md) - String扩展特性
 - 📖 [API参考](./api-reference.md) - 完整API
 - 📖 [CHANGELOG](../CHANGELOG.md) - 更新日志
 - 📖 [STATUS](../STATUS.md) - 项目状态
 
 ---
 
-**最后更新**: 2025-12-25  
+**最后更新**: 2025-12-29
 **维护者**: SchemaIO Team
 
 

@@ -648,7 +648,6 @@ dsl.match('vipLevel', { gold: 'number:0-50', silver: 'number:0-20' })
 
 ---
 
-**最后更新**: 2025-12-25  
-**文档版本**: v2.0.1  
+**最后更新**: 2025-12-29  
 **作者**: SchemaIO Team
 

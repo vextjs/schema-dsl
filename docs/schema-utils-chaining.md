@@ -140,7 +140,4 @@ app.patch('/users/:id', async (req, res, next) => {
 ### extend(schema, extensions)
 扩展字段
 
----
-
-**版本**: v2.3.1
 

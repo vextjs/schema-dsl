@@ -271,7 +271,8 @@ console.log(result.data);
 const validator = new Validator();
 const validateUser = validator.compile(userSchema);
 
-// 2. 启用缓存（v2.3.0）
+// 2. 启用缓存
+
 const validator = new Validator({
   cache: {
     maxSize: 5000,   // 缓存5000个Schema
@@ -298,7 +299,7 @@ app.post('/api/users', (req, res) => {
 
 ### Q: 缓存如何工作？
 
-**A**: SchemaIO 内置 LRU 缓存（v2.3.0）：
+**A**: SchemaIO 内置 LRU 缓存：
 
 ```javascript
 const validator = new Validator({
