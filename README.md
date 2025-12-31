@@ -172,10 +172,13 @@ npm install schema-dsl
 
 ## 🚀 快速开始
 
-### 1. 基础验证
+### 1. 基础验证（JavaScript）
 
 ```javascript
 const { dsl, validate } = require('schema-dsl');
+
+const userSchema = dsl({
+  username: 'string:3-32!',
   email: 'email!',
   age: 'number:18-120',
   tags: 'array<string>'
@@ -210,7 +213,52 @@ console.log(result2.errors);   // 错误列表
 */
 ```
 
-### Express 集成 - 自动错误处理
+### 1.5 TypeScript 用法 ⭐
+
+**重要**: TypeScript 中使用链式调用需要用 `dsl()` 包裹字符串以获得完整的类型推导：
+
+```typescript
+import { dsl, validateAsync, ValidationError } from 'schema-dsl';
+
+// ✅ 推荐：使用 dsl() 包裹字符串获得完整类型提示
+const userSchema = dsl({
+  username: dsl('string:3-32!')
+    .pattern(/^[a-zA-Z0-9_]+$/, '只能包含字母、数字和下划线')
+    .label('用户名'),
+  
+  email: dsl('email!')
+    .label('邮箱地址')
+    .messages({ required: '邮箱必填' }),
+  
+  age: dsl('number:18-100')
+    .label('年龄')
+});
+
+// 异步验证（推荐）
+try {
+  const validData = await validateAsync(userSchema, {
+    username: 'testuser',
+    email: 'test@example.com',
+    age: 25
+  });
+  console.log('验证通过:', validData);
+} catch (error) {
+  if (error instanceof ValidationError) {
+    error.errors.forEach(err => {
+      console.log(`${err.path}: ${err.message}`);
+    });
+  }
+}
+```
+
+**为什么要用 `dsl()` 包裹？**
+- ✅ 完整的类型推导和 IDE 自动提示
+- ✅ 避免 TypeScript 严格模式警告
+- ✅ 更好的开发体验
+
+**详细说明**: 请查看 [TypeScript 使用指南](./docs/typescript-guide.md)
+
+### 2. Express 集成 - 自动错误处理
 
 ```javascript
 const { dsl, validateAsync, ValidationError } = require('schema-dsl');
@@ -937,6 +985,7 @@ const dynamicSchema = dsl(
 - [快速开始](./docs/quick-start.md) - 5分钟上手指南
 - [DSL 语法完整参考](./docs/dsl-syntax.md) - 所有语法详解
 - [API 文档](./docs/api-reference.md) - 完整 API 说明
+- [**TypeScript 使用指南**](./docs/typescript-guide.md) - TypeScript 最佳实践 ⭐
 
 ### 功能指南
 - [String 扩展方法](./docs/string-extensions.md) - 链式调用详解

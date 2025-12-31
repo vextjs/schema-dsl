@@ -411,30 +411,100 @@ declare module 'schema-dsl' {
 
   /**
    * String 扩展全局接口
-   * 让字符串直接支持链式调用
+   *
+   * ⚠️ TypeScript 用户注意事项
+   *
+   * 由于 TypeScript 对全局扩展的类型推导限制，在 .ts 文件中使用链式调用时，
+   * 推荐使用 dsl() 函数包裹字符串以获得完整的类型提示：
    *
    * @example
    * ```typescript
+   * // ❌ 不推荐：可能缺少类型提示
    * const schema = dsl({
-   *   email: 'email!'.pattern(/custom/).label('邮箱')
+   *   email: 'email!'.label('邮箱')  // TypeScript 可能无法推导
+   * });
+   *
+   * // ✅ 推荐：使用 dsl() 包裹获得完整类型推导
+   * const schema = dsl({
+   *   email: dsl('email!').label('邮箱').pattern(/custom/)
+   * });
+   *
+   * // ✅ 也可以：先定义再使用
+   * const emailField = dsl('email!').label('邮箱');
+   * const schema = dsl({ email: emailField });
+   *
+   * // 📝 JavaScript 用户不受影响，可以直接使用
+   * const schema = dsl({
+   *   email: 'email!'.label('邮箱')  // JavaScript 中完全正常
    * });
    * ```
    */
   global {
     interface String {
+      /**
+       * 添加正则验证
+       * @deprecated TypeScript 用户请使用 dsl(string).pattern()
+       */
       pattern(regex: RegExp | string, message?: string): DslBuilder;
+
+      /**
+       * 设置字段标签
+       * @deprecated TypeScript 用户请使用 dsl(string).label()
+       */
       label(text: string): DslBuilder;
+
+      /**
+       * 自定义错误消息
+       * @deprecated TypeScript 用户请使用 dsl(string).messages()
+       */
       messages(messages: ErrorMessages): DslBuilder;
+
+      /**
+       * 设置描述
+       * @deprecated TypeScript 用户请使用 dsl(string).description()
+       */
       description(text: string): DslBuilder;
+
+      /**
+       * 自定义验证器
+       * @deprecated TypeScript 用户请使用 dsl(string).custom()
+       */
       custom(validator: (value: any) => boolean | Promise<boolean> | { error: string; message: string }): DslBuilder;
+
+      /**
+       * 条件验证
+       * @deprecated TypeScript 用户请使用 dsl(string).when()
+       */
       when(refField: string, options: { is: any; then: DslBuilder | JSONSchema; otherwise?: DslBuilder | JSONSchema }): DslBuilder;
+
+      /**
+       * 设置默认值
+       * @deprecated TypeScript 用户请使用 dsl(string).default()
+       */
       default(value: any): DslBuilder;
+
+      /**
+       * 转为 JSON Schema
+       * @deprecated TypeScript 用户请使用 dsl(string).toSchema()
+       */
       toSchema(): JSONSchema;
-      /** 用户名验证 */
+
+      /**
+       * 用户名验证
+       * @deprecated TypeScript 用户请使用 dsl(string).username()
+       */
       username(preset?: 'short' | 'medium' | 'long' | string): DslBuilder;
-      /** 密码强度验证 */
+
+      /**
+       * 密码强度验证
+       * @deprecated TypeScript 用户请使用 dsl(string).password()
+       */
       password(strength?: 'weak' | 'medium' | 'strong' | 'veryStrong'): DslBuilder;
-      /** 手机号验证 */
+
+      /**
+       * 手机号验证
+       * @deprecated TypeScript 用户请使用 dsl(string).phone()
+       */
       phone(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): DslBuilder;
     }
   }
@@ -623,8 +693,25 @@ declare module 'schema-dsl' {
      * 
      * @example
      * ```typescript
+     * // 方式 1: 使用 i18n 配置（推荐，v1.0.4+）
      * dsl.config({
-     *   // 自定义手机号规则
+     *   i18n: {
+     *     locales: {
+     *       'zh-CN': { required: '必填' },
+     *       'en-US': { required: 'Required' }
+     *     }
+     *   }
+     * });
+     *
+     * // 方式 2: 使用 locales 配置（向后兼容）
+     * dsl.config({
+     *   locales: {
+     *     'zh-CN': { required: '必填' }
+     *   }
+     * });
+     *
+     * // 自定义手机号规则
+     * dsl.config({
      *   patterns: {
      *     phone: {
      *       cn: {
@@ -634,13 +721,15 @@ declare module 'schema-dsl' {
      *         key: 'phone.cn'
      *       }
      *     }
-     *   },
-     *   // 设置语言包
-     *   locales: 'zh-CN'
+     *   }
      * });
      * ```
      */
     export function config(options: {
+      /** i18n 配置（推荐，v1.0.4+） */
+      i18n?: I18nConfig;
+      /** 缓存配置 */
+      cache?: CacheConfig;
       /** 自定义验证规则 */
       patterns?: {
         /** 手机号规则 */
@@ -652,7 +741,7 @@ declare module 'schema-dsl' {
       };
       /** 手机号规则（兼容旧版） */
       phone?: Record<string, { pattern: RegExp; min?: number; max?: number; key?: string }>;
-      /** 语言包配置 */
+      /** 语言包配置（兼容旧版，推荐使用 i18n.locales） */
       locales?: Record<string, ErrorMessages> | string;
     }): void;
 
@@ -826,8 +915,8 @@ declare module 'schema-dsl' {
   }
 
   /**
-   * 便捷验证方法（推荐）
-   * 
+   * 便捷验证方法（同步）
+   *
    * @description 使用默认的单例Validator，无需new
    * 
    * @example
@@ -843,6 +932,146 @@ declare module 'schema-dsl' {
    * ```
    */
   export function validate<T = any>(schema: JSONSchema | SchemaIO, data: any): ValidationResult<T>;
+
+  /**
+   * 便捷异步验证方法（推荐）
+   *
+   * @description
+   * - 异步验证数据，验证失败时抛出 ValidationError
+   * - 推荐在异步场景下使用此方法
+   * - 验证成功返回验证后的数据，失败抛出异常
+   *
+   * @param schema - JSON Schema对象或SchemaIO实例
+   * @param data - 要验证的数据
+   * @param options - 验证选项（可选）
+   * @returns 验证成功返回数据的Promise
+   * @throws {ValidationError} 验证失败时抛出
+   *
+   * @example
+   * ```typescript
+   * import { dsl, validateAsync, ValidationError } from 'schema-dsl';
+   *
+   * const schema = dsl({
+   *   email: dsl('email!').label('邮箱'),
+   *   username: dsl('string:3-32!').label('用户名')
+   * });
+   *
+   * try {
+   *   const validData = await validateAsync(schema, {
+   *     email: 'test@example.com',
+   *     username: 'testuser'
+   *   });
+   *   console.log('验证通过:', validData);
+   * } catch (error) {
+   *   if (error instanceof ValidationError) {
+   *     console.log('验证失败:', error.errors);
+   *     error.errors.forEach(err => {
+   *       console.log(`${err.path}: ${err.message}`);
+   *     });
+   *   }
+   * }
+   * ```
+   */
+  export function validateAsync<T = any>(
+    schema: JSONSchema | SchemaIO,
+    data: any,
+    options?: ValidatorOptions
+  ): Promise<T>;
+
+  /**
+   * 验证错误类
+   *
+   * @description 当 validateAsync 验证失败时抛出此错误
+   *
+   * @example
+   * ```typescript
+   * import { ValidationError, validateAsync, dsl } from 'schema-dsl';
+   *
+   * const schema = dsl({
+   *   email: dsl('email!').label('邮箱'),
+   *   age: dsl('number:18-100').label('年龄')
+   * });
+   *
+   * try {
+   *   await validateAsync(schema, { email: 'invalid' });
+   * } catch (error) {
+   *   if (error instanceof ValidationError) {
+   *     // 获取所有错误
+   *     console.log('错误列表:', error.errors);
+   *
+   *     // 获取错误数量
+   *     console.log('错误数量:', error.errors.length);
+   *
+   *     // 遍历处理每个字段错误
+   *     error.errors.forEach(err => {
+   *       console.log(`字段 ${err.path}: ${err.message}`);
+   *     });
+   *
+   *     // 转为 JSON 格式
+   *     const json = error.toJSON();
+   *     console.log('JSON格式:', json);
+   *   }
+   * }
+   * ```
+   */
+  export class ValidationError extends Error {
+    /** 错误名称（固定为 'ValidationError'） */
+    readonly name: 'ValidationError';
+
+    /** 错误消息 */
+    message: string;
+
+    /** 验证错误列表 */
+    errors: ValidationError[];
+
+    /**
+     * 构造函数
+     * @param errors - 验证错误数组
+     * @param message - 错误消息（可选）
+     */
+    constructor(errors: ValidationError[], message?: string);
+
+    /**
+     * 转为 JSON 格式
+     * @returns JSON 对象
+     */
+    toJSON(): {
+      name: string;
+      message: string;
+      errors: Array<{
+        field: string;
+        message: string;
+        keyword: string;
+        params?: Record<string, any>;
+      }>;
+    };
+
+    /**
+     * 获取指定字段的错误
+     * @param field - 字段路径
+     * @returns 错误对象或 null
+     */
+    getFieldError(field: string): ValidationError | null;
+
+    /**
+     * 获取所有字段的错误映射
+     * @returns 字段错误映射对象
+     */
+    getFieldErrors(): Record<string, ValidationError>;
+
+    /**
+     * 检查指定字段是否有错误
+     * @param field - 字段路径
+     * @returns 是否有错误
+     */
+    hasFieldError(field: string): boolean;
+
+    /**
+     * 获取错误总数
+     * @returns 错误数量
+     */
+    getErrorCount(): number;
+  }
 
   /**
    * 获取默认Validator实例（单例）

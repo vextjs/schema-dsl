@@ -11,10 +11,68 @@
 
 | 版本 | 日期 | 变更摘要 | 详细 |
 |------|------|---------|------|
+| [v1.0.4](#v104) | 2025-12-31 | TypeScript 完整支持、validateAsync、ValidationError | [查看详情](#v104) |
 | [v1.0.3](#v103) | 2025-12-31 | ⚠️ 破坏性变更：单值语法修复 | [查看详情](#v103) |
 | [v1.0.2](#v102) | 2025-12-31 | 15个新增验证器、完整文档、75个测试 | [查看详情](#v102) |
 | [v1.0.1](#v101) | 2025-12-31 | 枚举功能、自动类型识别、统一错误消息 | [查看详情](#v101) |
 | [v1.0.0](#v100) | 2025-12-29 | 初始发布版本 | [查看详情](#v100) |
+
+---
+
+## [v1.0.4] - 2025-12-31
+
+### Added (新增功能)
+
+#### TypeScript 完整支持 ⭐
+
+- ✅ **完整的类型定义**
+  - 新增 `validateAsync` 函数类型定义
+  - 新增 `ValidationError` 类完整类型（包含所有方法）
+  - 优化 String 扩展的 TypeScript 说明
+
+- ✅ **TypeScript 使用指南**
+  - 创建完整的 TypeScript 使用文档 (`docs/typescript-guide.md`)
+  - 1000+ 行详细说明，涵盖从基础到高级所有场景
+  - 3个完整实战案例（用户注册、API验证、字段复用）
+  - 5个常见问题解答
+
+- ✅ **TypeScript 链式调用最佳实践**
+  ```typescript
+  // ✅ 推荐：使用 dsl() 包裹获得完整类型推导
+  const schema = dsl({
+    email: dsl('email!').label('邮箱').pattern(/custom/)
+  });
+  
+  // ❌ 不推荐：可能缺少类型提示
+  const schema = dsl({
+    email: 'email!'.label('邮箱')
+  });
+  ```
+
+### Improved (改进)
+
+- 📝 **README 更新**
+  - 添加 "1.5 TypeScript 用法" 快速开始章节
+  - 添加 TypeScript 使用指南链接
+  - 清晰说明 TypeScript 和 JavaScript 的不同用法
+
+- 🔧 **类型定义优化**
+  - 修复 `dsl.config` 的 `i18n` 参数类型错误
+  - 统一 `DslConfigOptions` 和 `dsl.config` 的类型定义
+  - 标记 String 扩展方法为 `@deprecated` for TypeScript
+
+### Documentation (文档)
+
+- 📚 新增文档
+  - `docs/typescript-guide.md` - TypeScript 使用指南（1000+ 行）
+  - `reports/schema-dsl/implementation/dollar-method-implementation-v1.0.4.md` - 实施报告
+  - `reports/schema-dsl/summary/typescript-support-completion-v1.0.4.md` - 完成总结
+
+### Note (重要说明)
+
+- ✅ **100% 向后兼容** - JavaScript 用户无需任何改变
+- ✅ **TypeScript 用户推荐使用 `dsl()` 包裹字符串** 以获得完整类型推导
+- ✅ **所有 API 都有完整的 TypeScript 类型定义**
 
 ---
 
