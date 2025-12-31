@@ -199,7 +199,14 @@ dsl({
   active: 'boolean!',
   
   // 枚举
-  role: 'admin|user|guest',     // 只能是这三个值之一
+  status: 'active|inactive|pending',     // 字符串枚举（简写）
+  role: 'enum:admin|user|guest!',        // 字符串枚举（完整形式）
+  isPublic: 'true|false',                 // 布尔值枚举（自动识别）
+  isVerified: 'enum:boolean:true|false',  // 布尔值枚举（显式指定）
+  priority: '1|2|3!',                     // 数字枚举（自动识别）
+  level: 'enum:number:1|2|3|4|5',        // 数字枚举（显式指定）
+  grade: 'enum:integer:1|2|3',           // 整数枚举（禁止小数）
+  rating: '1.0|1.5|2.0|2.5',             // 小数枚举
   
   // 数组
   tags: 'array<string>',        // 字符串数组

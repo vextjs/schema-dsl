@@ -110,7 +110,8 @@ describe('DslBuilder - 完整测试', () => {
 
     it('应该支持数字枚举', () => {
       const schema = dsl({ priority: '1|2|3|4|5' });
-      expect(schema.properties.priority.enum).to.deep.equal(['1', '2', '3', '4', '5']);
+      expect(schema.properties.priority.type).to.equal('number');
+      expect(schema.properties.priority.enum).to.deep.equal([1, 2, 3, 4, 5]);
     });
 
     it('应该支持必填枚举', () => {

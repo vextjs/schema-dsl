@@ -116,9 +116,10 @@ describe('Validator - 完整验证测试', () => {
     it('应验证数字枚举', () => {
       const schema = dsl({ priority: '1|2|3|4|5!' });
 
-      expect(validate(schema, { priority: '1' }).valid).to.be.true;
-      expect(validate(schema, { priority: '5' }).valid).to.be.true;
-      expect(validate(schema, { priority: '6' }).valid).to.be.false;
+      expect(validate(schema, { priority: 1 }).valid).to.be.true;
+      expect(validate(schema, { priority: 5 }).valid).to.be.true;
+      expect(validate(schema, { priority: 6 }).valid).to.be.false;
+      expect(validate(schema, { priority: '1' }).valid).to.be.false; // 字符串应该失败
     });
   });
 
