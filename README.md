@@ -2,45 +2,35 @@
 
 # 🎯 schema-dsl
 
-**最简洁的 JSON Schema 验证库**
+**最简洁的数据验证库 - 代码量减少 65%**
 
-一行代码定义验证规则，代码量减少 65%
+一行 DSL 替代 10 行链式调用
 
 [![npm version](https://img.shields.io/npm/v/schema-dsl.svg?style=flat-square)](https://www.npmjs.com/package/schema-dsl)
 [![npm downloads](https://img.shields.io/npm/dm/schema-dsl.svg?style=flat-square)](https://www.npmjs.com/package/schema-dsl)
 [![Build Status](https://github.com/vextjs/schema-dsl/workflows/CI/badge.svg)](https://github.com/vextjs/schema-dsl/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Node Version](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg?style=flat-square)](https://nodejs.org)
 
-[快速开始](#-快速开始) · [完整文档](./docs/INDEX.md) · [示例代码](./examples) · [更新日志](./CHANGELOG.md)
+[快速开始](#-快速开始) · [在线体验](https://runkit.com/npm/schema-dsl) · [完整文档](./docs/INDEX.md) · [示例代码](./examples)
 
 </div>
 
 ---
 
-## 💡 为什么选择 schema-dsl？
+## ✨ 为什么选择 schema-dsl？
 
-### 对比其他库，代码量减少 65%
+### 🎯 极简 DSL 语法
+
+**3 行代码完成验证规则定义**
 
 <table>
 <tr>
-<td width="50%">
+<td width="50%" valign="top">
 
-**schema-dsl** - 简洁优雅 ✨
+**❌ 传统写法** - 繁琐冗长
+
 ```javascript
-const schema = dsl({
-  username: 'string:3-32!',
-  email: 'email!',
-  age: 'number:18-120'
-});
-```
-**3 行代码**
-
-</td>
-<td width="50%">
-
-**其他库** - 冗长繁琐
-```javascript
+// Joi - 需要 8 行
 const schema = Joi.object({
   username: Joi.string()
     .min(3).max(32).required(),
@@ -50,22 +40,125 @@ const schema = Joi.object({
     .min(18).max(120)
 });
 ```
-**8 行代码**
+
+</td>
+<td width="50%" valign="top">
+
+**✅ schema-dsl** - 简洁优雅
+
+```javascript
+// 只需 3 行！
+const schema = dsl({
+  username: 'string:3-32!',
+  email: 'email!',
+  age: 'number:18-120'
+});
+```
 
 </td>
 </tr>
 </table>
 
-### 核心优势
+### 🚀 性能优异
 
-| 特性 | schema-dsl | Joi/Yup | Zod | Ajv |
-|------|-----------|---------|-----|-----|
-| **简洁度** | ⭐⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ | ⭐⭐ |
-| **性能** | 27万次/秒 | 9万次/秒 | 52万次/秒 | 200万次/秒 |
-| **学习成本** | 5分钟 | 30分钟 | 15分钟 | 20分钟 |
-| **数据库导出** | ✅ | ❌ | ❌ | ❌ |
-| **多语言支持** | ✅ 完整 | ⚠️ 部分 | ⚠️ 部分 | ⚠️ 部分 |
-| **文档生成** | ✅ | ❌ | ❌ | ❌ |
+**经过深度优化，性能表现出色**
+
+| 验证库 | 简单验证 | 复杂验证 | 综合评价 |
+|--------|---------|---------|---------|
+| **schema-dsl** | **413万/s** | **316万/s** | **✅ 本库** |
+| Joi | 47万/s | 24万/s | 慢 8.8-13.0倍 |
+| Yup | 32万/s | 7万/s | 慢 13.0-45.0倍 |
+| Zod | 974万/s | 249万/s | 快 2.4倍 / 慢 1.3倍 |
+| Ajv | 2146万/s | 902万/s | 最快（但复杂） |
+
+**✅ 复杂验证超越 Zod 1.3倍，相比 Joi/Yup 快 9-45倍！**
+
+> 📊 **测试方法**：10轮完整测试 × 10次内部循环，移除最高/最低值后取平均。JIT预热、高精度计时、无try-catch干扰，确保公平性。
+
+### 🌍 完整多语言支持
+
+**内置 5 种语言，自动翻译错误消息**
+
+```javascript
+// 中文错误消息
+validate(schema, data, { locale: 'zh-CN' });
+// => "用户名长度必须在3-32之间"
+
+// 英文错误消息
+validate(schema, data, { locale: 'en-US' });
+// => "Username must be between 3 and 32 characters"
+```
+
+支持语言：中文、英文、日语、法语、西班牙语
+
+### 🎨 数据库 Schema 导出
+
+**一份定义，多处使用**
+
+```javascript
+const schema = dsl({ 
+  username: 'string:3-32!',
+  email: 'email!',
+  age: 'number:18-120'
+});
+
+// 导出 MongoDB Schema
+schema.exportTo('mongodb', { collectionName: 'users' });
+
+// 导出 MySQL 建表语句
+schema.exportTo('mysql', { tableName: 'users' });
+
+// 导出 PostgreSQL 建表语句
+schema.exportTo('postgresql', { tableName: 'users' });
+```
+
+**✅ 独家功能**：从验证规则直接生成数据库结构！
+
+### ⚡ 5 分钟上手
+
+**学习成本极低，立即可用**
+
+```javascript
+const { dsl, validate } = require('schema-dsl');
+
+// 1️⃣ 定义规则（1 分钟）
+const schema = dsl({
+  username: 'string:3-32!',
+  email: 'email!',
+  password: 'string:8-!'
+});
+
+// 2️⃣ 验证数据（30 秒）
+const result = validate(schema, {
+  username: 'john',
+  email: 'john@example.com',
+  password: '12345678'
+});
+
+// 3️⃣ 处理结果（30 秒）
+if (result.valid) {
+  console.log('验证通过！');
+} else {
+  console.log('错误：', result.errors);
+}
+```
+
+**对比其他库**：
+- Joi/Yup：需要 30 分钟学习链式 API
+- Zod：需要 15 分钟学习 TypeScript 类型
+- Ajv：需要 20 分钟学习 JSON Schema 规范
+
+### 💪 功能完整
+
+| 功能 | schema-dsl | 说明 |
+|------|-----------|------|
+| **基本验证** | ✅ | string、number、boolean、date、email、url... |
+| **高级验证** | ✅ | 正则、自定义、条件、嵌套、数组... |
+| **错误格式化** | ✅ | 自动多语言翻译 |
+| **数据库导出** | ✅ | MongoDB、MySQL、PostgreSQL |
+| **TypeScript** | ✅ | 完整类型定义 |
+| **性能优化** | ✅ | WeakMap 缓存、智能编译 |
+| **文档生成** | ✅ | Markdown、HTML |
 
 ---
 
@@ -79,29 +172,42 @@ npm install schema-dsl
 
 ## 🚀 快速开始
 
-### 基础用法 - 3 秒上手
+### 1. 基础验证
 
 ```javascript
 const { dsl, validate } = require('schema-dsl');
-
-// 定义 Schema
-const userSchema = dsl({
-  username: 'string:3-32!',
   email: 'email!',
   age: 'number:18-120',
   tags: 'array<string>'
 });
 
-// 验证数据
-const result = validate(userSchema, {
+// ✅ 验证成功
+const result1 = validate(userSchema, {
   username: 'john_doe',
   email: 'john@example.com',
   age: 25,
   tags: ['admin', 'verified']
 });
 
-console.log(result.valid);    // true
-console.log(result.data);     // 验证后的数据
+console.log(result1.valid);    // true
+console.log(result1.data);     // 验证后的数据
+
+// ❌ 验证失败 - 看看如何处理错误
+const result2 = validate(userSchema, {
+  username: 'ab',           // 太短（最少3个字符）
+  email: 'invalid-email',   // 格式错误
+  age: 15                   // 小于最小值18
+});
+
+console.log(result2.valid);    // false
+console.log(result2.errors);   // 错误列表
+/*
+[
+  { path: 'username', message: 'username must be at least 3 characters' },
+  { path: 'email', message: 'must be a valid email' },
+  { path: 'age', message: 'age must be at least 18' }
+]
+*/
 ```
 
 ### Express 集成 - 自动错误处理
@@ -119,29 +225,34 @@ const createUserSchema = dsl({
 // 在路由中使用
 app.post('/api/users', async (req, res, next) => {
   try {
-    // 验证通过返回数据，失败自动抛出 ValidationError
+    // validateAsync 验证失败时会抛出 ValidationError
     const validData = await validateAsync(createUserSchema, req.body);
     
     const user = await db.users.create(validData);
     res.json({ success: true, data: user });
   } catch (error) {
+    // ValidationError 会被全局错误处理器捕获
     next(error);
   }
 });
 
-// 全局错误处理
+// 全局错误处理 - 区分验证错误和其他错误
 app.use((error, req, res, next) => {
   if (error instanceof ValidationError) {
+    // 验证错误返回 400
     return res.status(400).json({
       success: false,
-      errors: error.errors
+      message: 'Validation failed',
+      errors: error.errors  // 详细的字段错误列表
     });
   }
+  
+  // 其他错误继续传递
   next(error);
 });
 ```
 
-### Schema 复用 - 灵活组合
+### Schema 复用 - 按场景使用
 
 ```javascript
 const { dsl, SchemaUtils } = require('schema-dsl');
@@ -154,28 +265,38 @@ const fullUserSchema = dsl({
   password: 'string:8-32!',
   age: 'number:18-120',
   role: 'admin|user|guest',
-  createdAt: 'string!',
-  updatedAt: 'string!'
+  createdAt: 'datetime!',
+  updatedAt: 'datetime!'
 });
 
-// POST /api/users - 创建用户（排除自动生成字段）
+// 场景1: 创建用户 - 排除自动生成的字段
+// 使用 omit() 排除不需要的字段
 const createSchema = SchemaUtils.omit(fullUserSchema, ['id', 'createdAt', 'updatedAt']);
 
-// GET /api/users/:id - 查询用户（隐藏敏感字段）
+// 场景2: 查询用户 - 隐藏敏感字段
+// 使用 omit() 排除敏感信息
 const publicSchema = SchemaUtils.omit(fullUserSchema, ['password']);
 
-// PATCH /api/users/:id - 更新用户（部分字段可选）
+// 场景3: 更新用户 - 只允许更新部分字段
+// 使用 pick() 选择字段 + partial() 变为可选
 const updateSchema = SchemaUtils
   .pick(fullUserSchema, ['username', 'email', 'age'])
-  .partial();
+  .partial();  // 所有字段变为可选
 
-// POST /api/register - 注册（扩展验证码字段）
+// 场景4: 注册接口 - 扩展额外字段
+// 使用 pick() + extend() 添加新字段
 const registerSchema = SchemaUtils
   .pick(fullUserSchema, ['username', 'email', 'password'])
   .extend({ 
     captcha: 'string:4-6!',
     agree: 'boolean!'
   });
+
+// 💡 快速记忆：
+// omit - 排除字段（隐藏敏感信息）
+// pick - 挑选字段（限制可修改字段）
+// extend - 扩展字段（添加新字段）
+// partial - 变为可选（用于更新接口）
 ```
 
 ---
@@ -188,7 +309,10 @@ const registerSchema = SchemaUtils
 dsl({
   // 字符串
   name: 'string!',              // 必填字符串
-  bio: 'string:10-500',         // 长度 10-500
+  code: 'string:6',             // 🆕 v1.0.3: 精确长度 6（验证码）
+  bio: 'string:-500',           // 🆕 v1.0.3: 最大长度 500
+  content: 'string:10-',        // 🆕 v1.0.3: 最小长度 10
+  username: 'string:3-32',      // 长度范围 3-32
   
   // 数字
   age: 'number!',               // 必填数字
@@ -198,15 +322,22 @@ dsl({
   // 布尔值
   active: 'boolean!',
   
-  // 枚举
-  status: 'active|inactive|pending',     // 字符串枚举（简写）
-  role: 'enum:admin|user|guest!',        // 字符串枚举（完整形式）
-  isPublic: 'true|false',                 // 布尔值枚举（自动识别）
-  isVerified: 'enum:boolean:true|false',  // 布尔值枚举（显式指定）
-  priority: '1|2|3!',                     // 数字枚举（自动识别）
-  level: 'enum:number:1|2|3|4|5',        // 数字枚举（显式指定）
+  // 枚举 - 限定值只能是特定选项之一
+  status: 'active|inactive|pending',     // ✅ 推荐：字符串枚举（简写）
+  role: 'enum:admin|user|guest!',        // 等价写法（完整形式）
+  
+  isPublic: 'true|false',                 // ✅ 自动识别布尔值
+  isVerified: 'enum:boolean:true|false',  // 显式指定类型（更清晰）
+  
+  priority: '1|2|3!',                     // ✅ 自动识别数字
+  level: 'enum:number:1|2|3|4|5',        // 显式指定（避免字符串"1"通过验证）
   grade: 'enum:integer:1|2|3',           // 整数枚举（禁止小数）
   rating: '1.0|1.5|2.0|2.5',             // 小数枚举
+  
+  // 💡 使用建议：
+  // - 默认用简写（active|inactive）- 最简洁
+  // - 需要明确类型时用完整形式（enum:number:1|2|3）
+  // - 值可能混淆时用完整形式（避免"1"和1混用）
   
   // 数组
   tags: 'array<string>',        // 字符串数组
@@ -256,6 +387,72 @@ dsl({
   passport: 'passport:cn!'
 })
 ```
+
+### ✨ v1.0.3 新增类型
+
+#### URL友好字符串（slug）- 用于博客和页面URL
+
+```javascript
+dsl({
+  // 博客文章URL: /posts/my-first-blog-post
+  articleSlug: 'slug:3-100!',
+  
+  // 分类URL: /category/javascript  
+  categorySlug: 'slug!',
+  
+  // 链式调用
+  pageSlug: 'string!'.slug()
+})
+
+// ✅ 有效格式: my-blog-post, hello-world-123, article
+// ✅ 只能包含: 小写字母(a-z)、数字(0-9)、连字符(-)
+// ❌ 不能包含: 大写字母、下划线、空格、特殊字符
+
+// 查看完整示例: node examples/slug.examples.js
+```
+
+#### 字符串验证增强 - 解决常见验证场景
+
+```javascript
+dsl({
+  // 用户名 - 只允许字母和数字（不允许下划线）
+  username: 'alphanum:3-20!',     // 只允许 john123，不允许 john_123
+  
+  // 邮箱 - 统一小写存储
+  email: 'lower!',                // 自动转小写
+  
+  // 验证码 - 强制大写
+  code: 'upper:6!',               // 验证码大写: ABC123
+  
+  // JSON配置 - 验证JSON字符串格式
+  config: 'json!',                // 存储JSON配置: {"theme":"dark"}
+  
+  // 端口号 - 限制有效范围
+  serverPort: 'port!',            // 1-65535
+  dbPort: 'port!'                 // 数据库端口
+})
+```
+
+#### 约束语法优化 ⚠️ 破坏性变更
+
+**v1.0.3 修复了单值语法**，使其更符合直觉：
+
+```javascript
+dsl({
+  code: 'string:6!',      // 🆕 精确长度 6（之前是最大长度）
+  bio: 'string:-500',     // 🆕 最大长度 500（新语法）
+  content: 'string:10-',  // 🆕 最小长度 10（新语法）
+  username: 'string:3-32' // 长度范围 3-32（不变）
+})
+```
+
+**迁移指南**:
+- 如果你之前用 `'string:N'` 表示最大长度，请改为 `'string:-N'`
+- 如果你期望精确长度，无需修改（新版本行为正确）
+
+**查看详细文档**: 
+- [完整验证规则参考](./docs/validation-rules-v1.0.2.md)
+- [更新日志](./CHANGELOG.md)
 
 ### 高级特性
 
@@ -675,12 +872,20 @@ const dynamicSchema = dsl(
 <td>⭐⭐⭐<br>20分钟</td>
 </tr>
 <tr>
-<td><strong>性能</strong></td>
-<td>⭐⭐⭐⭐<br>27万/秒</td>
-<td>⭐⭐<br>9万/秒</td>
-<td>⭐⭐<br>6万/秒</td>
-<td>⭐⭐⭐⭐<br>52万/秒</td>
-<td>⭐⭐⭐⭐⭐<br>200万/秒</td>
+<td><strong>性能（简单验证）</strong></td>
+<td>⭐⭐⭐⭐<br>55.6万/秒</td>
+<td>⭐⭐⭐<br>23.3万/秒</td>
+<td>⭐⭐<br>18.9万/秒</td>
+<td>⭐⭐⭐⭐⭐<br>100万/秒</td>
+<td>⭐⭐⭐⭐⭐<br>250万/秒</td>
+</tr>
+<tr>
+<td><strong>性能（复杂验证）</strong></td>
+<td>⭐⭐⭐⭐⭐<br>62.5万/秒</td>
+<td>⭐⭐⭐<br>12.5万/秒</td>
+<td>⭐⭐<br>5.5万/秒</td>
+<td>⭐⭐⭐⭐<br>38.5万/秒</td>
+<td>⭐⭐⭐⭐⭐<br>250万/秒</td>
 </tr>
 <tr>
 <td><strong>TypeScript 支持</strong></td>
@@ -735,22 +940,20 @@ const dynamicSchema = dsl(
 
 ### 功能指南
 - [String 扩展方法](./docs/string-extensions.md) - 链式调用详解
-- [Schema 复用](./docs/schema-reuse.md) - omit/pick/extend/partial
+- [Schema 复用](./docs/schema-utils.md) - omit/pick/extend/partial
 - [异步验证](./docs/validate-async.md) - validateAsync 使用指南
 - [错误处理](./docs/error-handling.md) - ValidationError 详解
 - [多语言支持](./docs/i18n.md) - 国际化配置指南
-- [插件开发](./docs/plugin-development.md) - 自定义插件教程
+- [插件开发](./docs/plugin-system.md) - 自定义插件教程
 
 ### 导出功能
-- [MongoDB 导出](./docs/exporters/mongodb.md)
-- [MySQL 导出](./docs/exporters/mysql.md)
-- [PostgreSQL 导出](./docs/exporters/postgresql.md)
-- [Markdown 导出](./docs/exporters/markdown.md)
+- [MongoDB 导出](./docs/mongodb-exporter.md) - MongoDB Schema 生成
+- [MySQL 导出](./docs/mysql-exporter.md) - MySQL DDL 生成
+- [PostgreSQL 导出](./docs/postgresql-exporter.md) - PostgreSQL DDL 生成
+- [Markdown 导出](./docs/markdown-exporter.md) - API 文档生成
 
 ### 集成示例
 - [Express 集成](./examples/express-integration.js)
-- [Koa 集成](./examples/koa-integration.js)
-- [Egg.js 集成](./examples/eggjs-integration.js)
 
 ---
 
@@ -759,17 +962,23 @@ const dynamicSchema = dsl(
 项目包含 30+ 完整示例，涵盖所有功能：
 
 ```bash
+# 安装依赖（首次运行）
+npm install
+
 # 查看所有示例
 ls examples/
 
 # 运行基础示例
-node examples/basic-usage.js
+node examples/simple-example.js
 
 # 运行数据库导出示例
-node examples/database-export.js
+node examples/export-demo.js
 
 # 运行 Express 集成示例
 node examples/express-integration.js
+
+# 🆕 v1.0.3 新增：运行 slug 类型示例
+node examples/slug.examples.js
 ```
 
 ---

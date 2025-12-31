@@ -60,7 +60,7 @@ const myPlugin = {
   version: '1.0.0',
   description: '我的自定义插件',
 
-  install(schema-dsl, options, context) {
+  install(schemaDsl, options, context) {
     console.log('插件安装成功！');
   }
 };
@@ -71,9 +71,9 @@ pluginManager.register(myPlugin);
 ### 3. 安装插件
 
 ```javascript
-const schema-dsl = require('schema-dsl');
+const schemaDsl = require('schema-dsl');
 
-pluginManager.install(schema-dsl, 'my-plugin');
+pluginManager.install(schemaDsl, 'my-plugin');
 ```
 
 ### 4. 使用插件
@@ -92,14 +92,14 @@ pluginManager.install(schema-dsl, 'my-plugin');
 module.exports = {
   // ========== 必填 ==========
   name: 'plugin-name',          // 插件名称（唯一）
-  install: function(schema-dsl, options, context) {
+  install: function(schemaDsl, options, context) {
     // 安装逻辑
   },
 
   // ========== 可选 ==========
   version: '1.0.0',            // 插件版本
   description: '插件描述',      // 插件描述
-  uninstall: function(schema-dsl, context) {
+  uninstall: function(schemaDsl, context) {
     // 卸载逻辑
   },
   hooks: {                      // 生命周期钩子
@@ -119,8 +119,8 @@ module.exports = {
   name: 'custom-validator',
   version: '1.0.0',
 
-  install(schema-dsl, options, context) {
-    const { Validator } = schema-dsl;
+  install(schemaDsl, options, context) {
+    const { Validator } = schemaDsl;
     
     // 添加自定义关键字
     Validator.prototype.addKeyword('unique', {
@@ -142,7 +142,7 @@ module.exports = {
   name: 'custom-format',
   version: '1.0.0',
 
-  install(schema-dsl, options, context) {
+  install(schemaDsl, options, context) {
     const validator = schemaDsl.getDefaultValidator();
     const ajv = validator.getAjv();
     

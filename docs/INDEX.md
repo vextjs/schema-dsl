@@ -190,7 +190,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| [joi-style.js](../examples/joi-style.js) | Joi 风格完整示例 |
+| [simple-example.js](../examples/simple-example.js) | 简单示例 |
 | [dsl-style.js](../examples/dsl-style.js) | DSL 风格完整示例 |
 | [string-extensions.js](../examples/string-extensions.js) | String 扩展示例 |
 | [password-reset/](../examples/password-reset/) | 密码重置表单示例 |
@@ -217,7 +217,6 @@
 | 文档 | 说明 |
 |------|------|
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | 贡献指南 |
-| [DOCUMENTATION-ISSUES.md](../DOCUMENTATION-ISSUES.md) | 文档审核报告 |
 
 ---
 

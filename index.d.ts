@@ -1,6 +1,6 @@
-// Type definitions for SchemaIO v2.1.2
-// Project: https://github.com/schema-dsl/schema-dsl
-// Definitions by: SchemaIO Team
+// Type definitions for schema-dsl v1.0.3
+// Project: https://github.com/vextjs/schema-dsl
+// Definitions by: schema-dsl Team
 
 
 declare module 'schema-dsl' {
@@ -130,9 +130,9 @@ declare module 'schema-dsl' {
    * ```
    */
   export interface ErrorMessages {
-    /** 最小长度/最小值错误 (v2.1.2+: 推荐使用min代替minLength) */
+    /** 最小长度/最小值错误 (v1.0.3+: 推荐使用min代替minLength) */
     min?: string;
-    /** 最大长度/最大值错误 (v2.1.2+: 推荐使用max代替maxLength) */
+    /** 最大长度/最大值错误 (v1.0.3+: 推荐使用max代替maxLength) */
     max?: string;
     /** 最小长度错误 (向后兼容，推荐使用min) */
     minLength?: string;

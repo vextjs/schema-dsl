@@ -474,7 +474,7 @@ new ValidationError(errors, data)
 
 ---
 
-**版本**: v2.1.0  
+**版本**: v1.0.3  
 **更新日期**: 2025-12-29  
 **作者**: SchemaIO Team
 

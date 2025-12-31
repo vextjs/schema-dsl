@@ -65,7 +65,7 @@ describe('v2.0.1 新功能测试', () => {
     it('应该支持createLibrary创建字段库', () => {
       const fields = SchemaUtils.createLibrary({
         email: () => 'email!',
-        phone: () => 'string:11!'
+        phone: () => 'string:-11!'  // 修复：使用-11表示最大长度
       });
 
       const schema = dsl({

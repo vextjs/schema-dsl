@@ -32,14 +32,20 @@ describe('DslBuilder - 完整测试', () => {
   });
 
   describe('约束条件完整测试', () => {
-    it('应该支持 string:max 简写语法', () => {
-      const schema = dsl({ bio: 'string:500' });
-      expect(schema.properties.bio.maxLength).to.equal(500);
+    it('应该支持 string:N 精确长度语法', () => {
+      const schema = dsl({ code: 'string:6' });
+      expect(schema.properties.code.exactLength).to.equal(6);
     });
 
     it('应该支持 string:-max 明确语法', () => {
       const schema = dsl({ bio: 'string:-500' });
       expect(schema.properties.bio.maxLength).to.equal(500);
+    });
+
+    it('应该支持组合：精确长度+必填', () => {
+      const schema = dsl({ code: 'string:6!' });
+      expect(schema.properties.code.exactLength).to.equal(6);
+      expect(schema.required).to.include('code');
     });
 
     it('应该支持 string:min-max 范围语法', () => {

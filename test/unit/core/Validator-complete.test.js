@@ -250,7 +250,7 @@ describe('Validator - 完整验证测试', () => {
         age: 'number:18-120',
         gender: 'male|female|other',
         website: 'url',
-        bio: 'string:500',
+        bio: 'string:-500',  // 修复：最大500字符
         tags: 'array<string:1-20>'
       });
 

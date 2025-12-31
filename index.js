@@ -1,11 +1,11 @@
 /**
- * SchemaIO 2.0 - 主入口文件
+ * schema-dsl - 主入口文件
  *
  * 统一的DSL Builder Pattern
  * 简洁 + 强大 = 完美平衡
  *
  * @module schema-dsl
- * @version 2.0.0
+ * @version 1.0.3
  */
 
 // ========== 核心层 ==========
@@ -150,7 +150,7 @@ installStringExtensions(dsl);
  *   }
  * });
  */
-dsl.config = function(options = {}) {
+dsl.config = function (options = {}) {
   // ========== 用户语言包配置 ==========
   if (options.i18n) {
     const { localesPath, locales } = options.i18n;
@@ -272,7 +272,7 @@ module.exports = {
   CONSTANTS,
 
   // 版本信息
-  VERSION: '2.1.0'
+  VERSION: '1.0.3'
 };
 
 

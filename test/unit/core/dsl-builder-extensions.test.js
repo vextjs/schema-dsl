@@ -24,7 +24,7 @@ describe('DslBuilder Extensions & Fixes', () => {
 
     it('should support slug()', () => {
       const schema = dsl('string').slug();
-      expect(schema._baseSchema.pattern).to.exist;
+      expect(schema._baseSchema.pattern).to.equal('^[a-z0-9]+(?:-[a-z0-9]+)*$');
     });
   });
 

@@ -51,8 +51,8 @@ describe('PostgreSQLExporter', () => {
 
     it('应该转换字符串约束', () => {
       const schema = dsl({
-        bio: 'string:1000',
-        code: 'string:10'
+        bio: 'string:-1000',   // 修复：最大1000字符
+        code: 'string:-10'     // 修复：最大10字符
       });
       const ddl = exporter.export('profiles', schema);
 

@@ -7,6 +7,8 @@ coverage/
 # 开发文件
 reports/
 plans/
+releases/
+plugins/
 .temp/
 *.log
 
@@ -23,3 +25,7 @@ FIXES_SUMMARY.md
 .DS_Store
 Thumbs.db
 
+# Git
+.git/
+.github/
+.gitignore

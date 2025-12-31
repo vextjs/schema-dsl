@@ -462,7 +462,7 @@ describe('ArrayType', () => {
 
 #### test/api/joi-style.test.js (已删除)
 
-> **注意**: Joi风格API已在 v2.1.0 中移除。
+> **注意**: Joi风格API已在 v1.0.3 中移除。
 
 ```javascript
 // 已移除
