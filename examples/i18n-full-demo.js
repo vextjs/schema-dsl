@@ -14,26 +14,24 @@ console.log('========== 多语言配置完整示例 ==========\n');
 // ========================================
 // 步骤 1：应用启动时配置
 // ========================================
-console.log('【步骤 1】配置用户语言包和缓存\n');
+console.log('【步骤 1】配置用户语言包\n');
 
 dsl.config({
-  // 用户语言包配置
+  // 方式 A：从目录加载（推荐用于大型项目）
+  // i18n: path.join(__dirname, 'i18n/dsl')
+
+  // 方式 B：直接传入对象（推荐用于小型项目）
   i18n: {
-    // 方式 A：从目录加载（推荐用于大型项目）
-    // localesPath: path.join(__dirname, 'i18n/labels'),
+    'zh-CN': {
+      // 字段标签
+      'username': '用户名',
+      'email': '邮箱地址',
+      'password': '密码',
+      'age': '年龄',
+      'phone': '手机号',
 
-    // 方式 B：直接传入对象（推荐用于小型项目）
-    locales: {
-      'zh-CN': {
-        // 字段标签
-        'username': '用户名',
-        'email': '邮箱地址',
-        'password': '密码',
-        'age': '年龄',
-        'phone': '手机号',
-
-        // 嵌套字段
-        'address.city': '城市',
+      // 嵌套字段
+      'address.city': '城市',
         'address.street': '街道',
 
         // 自定义错误消息
@@ -79,13 +77,6 @@ dsl.config({
         'custom.passwordWeak': 'パスワードが弱すぎます'
       }
     }
-  },
-
-  // 缓存配置（可选，大型项目推荐）
-  cache: {
-    maxSize: 10000,   // 大型项目：1万个 Schema
-    ttl: 7200000      // 2 小时
-  }
 });
 
 console.log('✅ 配置完成\n');
