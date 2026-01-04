@@ -34,67 +34,113 @@ validator.validate(schema, data, {
 
 这是**最推荐**的方案，无需修改全局状态，支持并发请求。
 
-### 1.1 全局配置
+### 1.1 应用启动时配置（一次性加载所有语言）
 
-使用 `dsl.config` 可以方便地加载自定义语言包。
+使用 `dsl.config` 在应用启动时一次性加载所有自定义语言包。
 
 ```javascript
-const { dsl, Validator } = require('schema-dsl');
+const { dsl, validate } = require('schema-dsl');
+const path = require('path');
 
-// 方式一：直接传入对象
+// ========== 应用启动时配置（只执行一次）==========
+
+// 方式一：传入目录路径（推荐）⭐
+// 自动扫描目录下的所有 .js 和 .json 文件
 dsl.config({
-  locales: {
+  i18n: path.join(__dirname, 'locales')
+});
+
+// 方式二：直接传入对象
+dsl.config({
+  i18n: {
     'fr-FR': {
       'required': '{{#label}} est requis',
-      'pattern.phone.cn': 'Numéro de téléphone invalide'
+      'string.minLength': '{{#label}} doit contenir au moins {{#limit}} caractères'
+    },
+    'de-DE': {
+      'required': '{{#label}} ist erforderlich',
+      'string.minLength': '{{#label}} muss mindestens {{#limit}} Zeichen lang sein'
     }
   }
 });
 
-// 方式二：传入目录路径
-// 目录下应包含 zh-CN.js, en-US.js 等文件
-dsl.config({
-  locales: './locales'
-});
+// 说明：
+// - 只在应用启动时执行一次
+// - 自动与系统内置语言包合并（用户自定义的优先）
+// - 运行时无需重新加载，直接切换
 ```
 
-### 1.2 基础用法
+### 1.2 运行时直接切换语言（无需重新加载）
 
 ```javascript
-// 定义Schema
+const { dsl, validate } = require('schema-dsl');
+
+// 定义 Schema
 const schema = dsl({
-  username: 'string:3-32!'.label('用户名'),
-  email: 'email!'.label('邮箱地址')
+  username: 'string:3-32!',
+  email: 'email!'
 });
 
-// 创建验证器
-const validator = new Validator();
+// 测试数据
+const data = { username: 'ab', email: 'invalid' };
 
-// 验证时动态指定语言
-const result1 = validator.validate(schema, data, { locale: 'zh-CN' });
-const result2 = validator.validate(schema, data, { locale: 'fr-FR' });
+// ========== 运行时直接切换语言 ==========
+
+// 使用中文
+const result1 = validate(schema, data, { locale: 'zh-CN' });
+// 错误: "username长度不能少于3个字符"
+
+// 使用法语
+const result2 = validate(schema, data, { locale: 'fr-FR' });
+// 错误: "username doit contenir au moins 3 caractères"
+
+// 使用德语
+const result3 = validate(schema, data, { locale: 'de-DE' });
+// 错误: "username muss mindestens 3 Zeichen lang sein"
+
+// 说明：
+// - 无需重新加载语言包
+// - 每次验证可以使用不同语言
+// - 支持高并发（无全局状态修改）
 ```
 
-### 1.3 从请求头获取语言
+### 1.3 从请求头获取语言（实际应用场景）
 
 ```javascript
-// Express 示例
+const express = require('express');
+const { dsl, validate } = require('schema-dsl');
+const path = require('path');
+
+const app = express();
+
+// ========== 应用启动时配置（只执行一次）==========
+dsl.config({
+  i18n: path.join(__dirname, 'locales')
+});
+
+// 定义 Schema
+const userSchema = dsl({
+  username: 'string:3-32!',
+  email: 'email!',
+  password: 'string:8-32!'
+});
+
+// ========== Express 路由 ==========
 app.post('/api/user/register', (req, res) => {
-  // 从请求头获取语言
+  // 从请求头获取语言偏好
   const locale = req.headers['accept-language'] || 'en-US';
   
-  // 验证数据
-  const result = validator.validate(schema, req.body, { 
-    locale: locale 
-  });
+  // 验证数据（直接切换语言，无需重新加载）
+  const result = validate(userSchema, req.body, { locale });
   
   if (!result.valid) {
     return res.status(400).json({
-      errors: result.errors  // 自动使用对应语言的错误消息
+      errors: result.errors  // 自动使用用户偏好的语言
     });
   }
   
   // 处理成功...
+  res.json({ message: 'User registered successfully' });
 });
 ```
 

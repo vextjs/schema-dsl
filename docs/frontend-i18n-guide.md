@@ -21,23 +21,16 @@
 // server.js
 const express = require('express');
 const cors = require('cors');
-const { Validator, dsl } = require('schema-dsl');
+const { dsl, validate } = require('schema-dsl');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 语言中间件
-app.use((req, res, next) => {
-  const acceptLanguage = req.headers['accept-language'] || 'en-US';
-  const locale = acceptLanguage.split(',')[0].trim();
-  
-  req.validator = new Validator({ 
-    locale,
-    allErrors: true  // 返回所有错误
-  });
-  
-  next();
+// ========== 应用启动时配置（只执行一次）==========
+dsl.config({
+  i18n: path.join(__dirname, 'locales')  // 一次性加载所有语言包
 });
 
 // Schema 定义
@@ -66,18 +59,27 @@ app.post('/api/validate/:type', (req, res) => {
     return res.status(404).json({ error: 'Schema not found' });
   }
   
-  const result = req.validator.validate(schema, req.body);
+  // 从请求头获取语言偏好
+  const locale = req.headers['accept-language'] || 'en-US';
+  
+  // 验证（直接切换语言，无需重新加载）
+  const result = validate(schema, req.body, { locale });
+  
   res.json(result);
 });
 
 // 用户注册（带验证）
 app.post('/api/register', (req, res) => {
-  const result = req.validator.validate(schemas.user, req.body);
+  // 从请求头获取语言偏好
+  const locale = req.headers['accept-language'] || 'en-US';
+  
+  // 验证数据
+  const result = validate(schemas.user, req.body, { locale });
   
   if (!result.valid) {
     return res.status(400).json({
       success: false,
-      errors: result.errors
+      errors: result.errors  // 自动使用用户偏好的语言
     });
   }
   
@@ -87,6 +89,7 @@ app.post('/api/register', (req, res) => {
 
 app.listen(3000, () => {
   console.log('Server running on http://localhost:3000');
+  console.log('语言包已加载，支持动态切换');
 });
 ```
 

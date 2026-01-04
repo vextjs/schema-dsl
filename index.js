@@ -128,16 +128,25 @@ function getDefaultValidator() {
  * 便捷验证方法（使用默认Validator）
  * @param {Object} schema - JSON Schema对象
  * @param {*} data - 待验证数据
+ * @param {Object} [options] - 验证选项
+ * @param {boolean} [options.format=true] - 是否格式化错误
+ * @param {string} [options.locale] - 动态指定语言（如 'zh-CN', 'en-US'）
+ * @param {Object} [options.messages] - 自定义错误消息
  * @returns {Object} 验证结果
  *
  * @example
  * const { validate, dsl } = require('schema-dsl');
  *
  * const schema = dsl({ email: 'email!' });
- * const result = validate(schema, { email: 'test@example.com' });
+ *
+ * // 基本验证
+ * const result1 = validate(schema, { email: 'test@example.com' });
+ *
+ * // 指定语言
+ * const result2 = validate(schema, { email: 'invalid' }, { locale: 'zh-CN' });
  */
-function validate(schema, data) {
-  return getDefaultValidator().validate(schema, data);
+function validate(schema, data, options) {
+  return getDefaultValidator().validate(schema, data, options);
 }
 
 // ========== 工具函数 ==========

@@ -25,15 +25,13 @@ const { dsl, validate } = require('schema-dsl');
 // 1. 配置用户语言包
 dsl.config({
   i18n: {
-    locales: {
-      'zh-CN': {
-        'username': '用户名',
-        'email': '邮箱地址'
-      },
-      'en-US': {
-        'username': 'Username',
-        'email': 'Email Address'
-      }
+    'zh-CN': {
+      'username': '用户名',
+      'email': '邮箱地址'
+    },
+    'en-US': {
+      'username': 'Username',
+      'email': 'Email Address'
     }
   }
 });

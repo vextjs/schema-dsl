@@ -113,6 +113,35 @@ declare module 'schema-dsl' {
   }
 
   /**
+   * 验证选项
+   *
+   * @description validate() 和 Validator.validate() 的配置选项
+   *
+   * @example
+   * ```typescript
+   * const options: ValidateOptions = {
+   *   format: true,
+   *   locale: 'zh-CN',
+   *   messages: {
+   *     min: '至少需要 {{#limit}} 个字符'
+   *   }
+   * };
+   *
+   * const result = validate(schema, data, options);
+   * ```
+   */
+  export interface ValidateOptions {
+    /** 是否格式化错误（默认true） */
+    format?: boolean;
+    /** 动态指定语言（如 'zh-CN', 'en-US', 'ja-JP', 'es-ES', 'fr-FR'） */
+    locale?: string;
+    /** 自定义错误消息 */
+    messages?: ErrorMessages;
+    /** 扩展选项 */
+    [key: string]: any;
+  }
+
+  /**
    * 错误消息对象
    * 
    * @description 自定义错误消息的配置对象
@@ -1257,9 +1286,27 @@ declare module 'schema-dsl' {
      * 验证数据
      * @param schema - JSON Schema对象
      * @param data - 要验证的数据
+     * @param options - 验证选项
      * @returns 验证结果
+     *
+     * @example
+     * ```typescript
+     * const validator = new Validator();
+     *
+     * // 使用默认语言
+     * const result1 = validator.validate(schema, data);
+     *
+     * // 动态指定语言
+     * const result2 = validator.validate(schema, data, { locale: 'zh-CN' });
+     *
+     * // 自定义错误消息
+     * const result3 = validator.validate(schema, data, {
+     *   locale: 'zh-CN',
+     *   messages: { min: '至少{{#limit}}个字符' }
+     * });
+     * ```
      */
-    validate<T = any>(schema: JSONSchema, data: any): ValidationResult<T>;
+    validate<T = any>(schema: JSONSchema, data: any, options?: ValidateOptions): ValidationResult<T>;
 
     /**
      * 获取底层ajv实例
@@ -1300,14 +1347,25 @@ declare module 'schema-dsl' {
    * import { dsl, validate } from 'schema-dsl';
    *
    * const schema = dsl({ email: 'email!' });
-   * const result = validate(schema, { email: 'test@example.com' });
-   * 
-   * if (result.valid) {
+   *
+   * // 基本验证
+   * const result1 = validate(schema, { email: 'test@example.com' });
+   *
+   * // 指定语言
+   * const result2 = validate(schema, { email: 'invalid' }, { locale: 'zh-CN' });
+   *
+   * if (result2.valid) {
    *   console.log('验证通过');
+   * } else {
+   *   console.log('错误:', result2.errors); // 中文错误消息
    * }
    * ```
    */
-  export function validate<T = any>(schema: JSONSchema | SchemaIO, data: any): ValidationResult<T>;
+  export function validate<T = any>(
+    schema: JSONSchema | SchemaIO,
+    data: any,
+    options?: ValidateOptions
+  ): ValidationResult<T>;
 
   /**
    * 便捷异步验证方法（推荐）
