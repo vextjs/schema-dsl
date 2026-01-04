@@ -1,7 +1,8 @@
 # TypeScript 使用指南
 
-> **版本**: schema-dsl v1.0.4+  
-> **更新日期**: 2025-12-31
+> **版本**: schema-dsl v1.0.6+  
+> **更新日期**: 2026-01-04  
+> **重要**: v1.0.6 移除了全局 String 类型扩展以避免类型污染
 
 ---
 
@@ -53,27 +54,46 @@ if (result.valid) {
 
 ## 2. TypeScript 中的链式调用
 
-### 2.1 问题说明
+### 2.1 重要变更（v1.0.6）
 
-由于 TypeScript 对全局 `String.prototype` 扩展的类型推导限制，在 `.ts` 文件中直接使用字符串链式调用可能会缺少类型提示：
+**v1.0.6 移除了全局 `interface String` 扩展**，原因：
+- ❌ 全局类型扩展会污染原生 String 类型
+- ❌ 导致 `trim()`、`toLowerCase()` 等原生方法的类型推断错误
+- ❌ 影响所有使用 TypeScript 的项目的类型安全
+
+**结果**：在 TypeScript 中直接对字符串链式调用会报类型错误：
 
 ```typescript
-// ❌ TypeScript 可能无法正确推导类型
+// ❌ TypeScript 中会报错（v1.0.6+）
 const schema = dsl({
-  email: 'email!'.label('邮箱')  // 可能报错或无类型提示
+  email: 'email!'.label('邮箱')  // 类型错误：Property 'label' does not exist on type 'string'
+});
+
+// ✅ JavaScript 中仍然可以正常使用
+const schema = dsl({
+  email: 'email!'.label('邮箱')  // 运行时完全正常
 });
 ```
 
-### 2.2 推荐解决方案 ⭐
+### 2.2 正确用法 ⭐⭐⭐
 
-**使用 `dsl()` 函数包裹字符串**，可以获得完整的类型推导和 IDE 提示：
+**TypeScript 中必须使用 `dsl()` 函数包裹字符串**，才能获得类型提示和链式调用：
 
 ```typescript
-// ✅ 推荐：使用 dsl() 包裹
+// ✅ 正确：使用 dsl() 包裹（v1.0.6+ 必须）
 const schema = dsl({
   email: dsl('email!').label('邮箱').pattern(/custom/)
 });
+
+// ✅ 也可以先定义再使用
+const emailField = dsl('email!').label('邮箱');
+const schema = dsl({ email: emailField });
 ```
+
+**好处**：
+- ✅ 获得完整的类型推导和 IDE 自动提示
+- ✅ 不污染原生 String 类型（`trim()` 正确返回 `string`）
+- ✅ 更好的类型安全和开发体验
 
 ### 2.3 工作原理
 

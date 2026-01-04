@@ -814,256 +814,47 @@ declare module 'schema-dsl' {
    * });
    * ```
    */
-  global {
-    interface String {
-      /**
-       * 添加正则验证
-       * @deprecated TypeScript 用户请使用 dsl(string).pattern()
-       */
-      pattern(regex: RegExp | string, message?: string): DslBuilder;
 
-      /**
-       * 设置字段标签
-       * @deprecated TypeScript 用户请使用 dsl(string).label()
-       */
-      label(text: string): DslBuilder;
+  // ========== String 扩展说明 ==========
 
-      /**
-       * 自定义错误消息
-       * @deprecated TypeScript 用户请使用 dsl(string).messages()
-       */
-      messages(messages: ErrorMessages): DslBuilder;
-
-      /**
-       * 设置描述
-       * @deprecated TypeScript 用户请使用 dsl(string).description()
-       */
-      description(text: string): DslBuilder;
-
-      /**
-       * 自定义验证器
-       * @deprecated TypeScript 用户请使用 dsl(string).custom()
-       */
-      custom(validator: (value: any) => boolean | Promise<boolean> | { error: string; message: string }): DslBuilder;
-
-      /**
-       * 条件验证
-       * @deprecated TypeScript 用户请使用 dsl(string).when()
-       */
-      when(refField: string, options: { is: any; then: DslBuilder | JSONSchema; otherwise?: DslBuilder | JSONSchema }): DslBuilder;
-
-      /**
-       * 设置默认值
-       * @deprecated TypeScript 用户请使用 dsl(string).default()
-       */
-      default(value: any): DslBuilder;
-
-      /**
-       * 转为 JSON Schema
-       * @deprecated TypeScript 用户请使用 dsl(string).toSchema()
-       */
-      toSchema(): JSONSchema;
-
-      /**
-       * 用户名验证
-       * @deprecated TypeScript 用户请使用 dsl(string).username()
-       */
-      username(preset?: 'short' | 'medium' | 'long' | string): DslBuilder;
-
-      /**
-       * 密码强度验证
-       * @deprecated TypeScript 用户请使用 dsl(string).password()
-       */
-      password(strength?: 'weak' | 'medium' | 'strong' | 'veryStrong'): DslBuilder;
-
-      /**
-       * 手机号验证
-       * @deprecated TypeScript 用户请使用 dsl(string).phone()
-       */
-      phone(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): DslBuilder;
-
-      /**
-       * 设置格式
-       * @deprecated TypeScript 用户请使用 dsl(string).format()
-       */
-      format(format: string): DslBuilder;
-
-      /**
-       * 手机号别名
-       * @deprecated TypeScript 用户请使用 dsl(string).phoneNumber()
-       */
-      phoneNumber(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): DslBuilder;
-
-      /**
-       * 身份证验证
-       * @deprecated TypeScript 用户请使用 dsl(string).idCard()
-       */
-      idCard(country?: 'cn'): DslBuilder;
-
-      /**
-       * 信用卡验证
-       * @deprecated TypeScript 用户请使用 dsl(string).creditCard()
-       */
-      creditCard(type?: 'visa' | 'mastercard' | 'amex' | 'discover' | 'jcb' | 'unionpay'): DslBuilder;
-
-      /**
-       * 车牌号验证
-       * @deprecated TypeScript 用户请使用 dsl(string).licensePlate()
-       */
-      licensePlate(country?: 'cn' | 'us' | 'uk'): DslBuilder;
-
-      /**
-       * 邮政编码验证
-       * @deprecated TypeScript 用户请使用 dsl(string).postalCode()
-       */
-      postalCode(country?: 'cn' | 'us' | 'uk'): DslBuilder;
-
-      /**
-       * 护照号码验证
-       * @deprecated TypeScript 用户请使用 dsl(string).passport()
-       */
-      passport(country?: 'cn' | 'us' | 'uk'): DslBuilder;
-
-      /**
-       * String 最小长度
-       * @deprecated TypeScript 用户请使用 dsl(string).min()
-       */
-      min(n: number): DslBuilder;
-
-      /**
-       * String 最大长度
-       * @deprecated TypeScript 用户请使用 dsl(string).max()
-       */
-      max(n: number): DslBuilder;
-
-
-      /**
-       * String 只能包含字母和数字
-       * @deprecated TypeScript 用户请使用 dsl(string).alphanum()
-       */
-      alphanum(): DslBuilder;
-
-      /**
-       * String 不能包含前后空格
-       * @deprecated TypeScript 用户请使用 dsl(string).trim()
-       */
-      trim(): DslBuilder;
-
-      /**
-       * String 必须是小写
-       * @deprecated TypeScript 用户请使用 dsl(string).lowercase()
-       */
-      lowercase(): DslBuilder;
-
-      /**
-       * String 必须是大写
-       * @deprecated TypeScript 用户请使用 dsl(string).uppercase()
-       */
-      uppercase(): DslBuilder;
-
-      /**
-       * Number 小数位数限制
-       * @deprecated TypeScript 用户请使用 dsl(string).precision()
-       */
-      precision(n: number): DslBuilder;
-
-      /**
-       * Number 倍数验证
-       * @deprecated TypeScript 用户请使用 dsl(string).multiple()
-       */
-      multiple(n: number): DslBuilder;
-
-      /**
-       * Number 端口号验证
-       * @deprecated TypeScript 用户请使用 dsl(string).port()
-       */
-      port(): DslBuilder;
-
-      /**
-       * Object 要求所有属性都必须存在
-       * @deprecated TypeScript 用户请使用 dsl(obj).requireAll()
-       */
-      requireAll(): DslBuilder;
-
-      /**
-       * Object 严格模式
-       * @deprecated TypeScript 用户请使用 dsl(obj).strict()
-       */
-      strict(): DslBuilder;
-
-      /**
-       * Array 不允许稀疏数组
-       * @deprecated TypeScript 用户请使用 dsl(string).noSparse()
-       */
-      noSparse(): DslBuilder;
-
-      /**
-       * Array 必须包含指定元素
-       * @deprecated TypeScript 用户请使用 dsl(string).includesRequired()
-       */
-      includesRequired(items: any[]): DslBuilder;
-
-      /**
-       * Date 自定义日期格式验证
-       * @deprecated TypeScript 用户请使用 dsl(string).dateFormat()
-       */
-      dateFormat(fmt: string): DslBuilder;
-
-      /**
-       * Date 必须晚于指定日期
-       * @deprecated TypeScript 用户请使用 dsl(string).after()
-       */
-      after(date: string): DslBuilder;
-
-      /**
-       * Date 必须早于指定日期
-       * @deprecated TypeScript 用户请使用 dsl(string).before()
-       */
-      before(date: string): DslBuilder;
-
-      /**
-       * Pattern 域名验证
-       * @deprecated TypeScript 用户请使用 dsl(string).domain()
-       */
-      domain(): DslBuilder;
-
-      /**
-       * Pattern IP地址验证
-       * @deprecated TypeScript 用户请使用 dsl(string).ip()
-       */
-      ip(): DslBuilder;
-
-      /**
-       * Pattern Base64编码验证
-       * @deprecated TypeScript 用户请使用 dsl(string).base64()
-       */
-      base64(): DslBuilder;
-
-      /**
-       * Pattern JWT令牌验证
-       * @deprecated TypeScript 用户请使用 dsl(string).jwt()
-       */
-      jwt(): DslBuilder;
-
-      /**
-       * Pattern JSON字符串验证
-       * @deprecated TypeScript 用户请使用 dsl(string).json()
-       */
-      json(): DslBuilder;
-
-      /**
-       * 日期大于验证
-       * @deprecated TypeScript 用户请使用 dsl(string).dateGreater()
-       */
-      dateGreater(date: string): DslBuilder;
-
-      /**
-       * 日期小于验证
-       * @deprecated TypeScript 用户请使用 dsl(string).dateLess()
-       */
-      dateLess(date: string): DslBuilder;
-    }
-  }
+  /**
+   * ⚠️ String 原型扩展的 TypeScript 限制
+   *
+   * 本库在运行时扩展了 String.prototype，允许在 JavaScript 中直接链式调用：
+   * ```javascript
+   * const schema = dsl({ email: 'email!'.label('邮箱') });  // ✅ JavaScript 中完全正常
+   * ```
+   *
+   * 但在 TypeScript 中，为了**避免污染全局 String 类型**（会导致原生方法如 trim() 的类型推断错误），
+   * 我们**不提供**全局 String 接口扩展。
+   *
+   * TypeScript 用户请使用以下方式：
+   *
+   * @example
+   * ```typescript
+   * import { dsl } from 'schema-dsl';
+   *
+   * // ✅ 推荐：使用 dsl() 函数获得完整类型提示
+   * const schema = dsl({
+   *   email: dsl('email!').label('邮箱').pattern(/custom/)
+   * });
+   *
+   * // ✅ 或者先定义再使用
+   * const emailField = dsl('email!').label('邮箱');
+   * const schema = dsl({ email: emailField });
+   *
+   * // ❌ 避免：在 TypeScript 中直接对字符串字面量链式调用
+   * // 这在运行时可以工作，但 TypeScript 无法提供类型提示
+   * const schema = dsl({
+   *   email: 'email!'.label('邮箱')  // TypeScript: 类型错误
+   * });
+   * ```
+   *
+   * 📝 说明：
+   * - JavaScript 用户不受影响，可以直接使用字符串链式调用
+   * - TypeScript 用户应使用 dsl() 函数包裹字符串以获得类型提示
+   * - 移除全局 String 扩展是为了防止污染原生 String 方法的类型定义
+   */
 
   // ========== dsl() 函数 ==========
 
@@ -2954,4 +2745,5 @@ declare module 'schema-dsl' {
    */
   export default dsl;
 }
+
 

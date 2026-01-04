@@ -1,6 +1,6 @@
 {
   "name": "schema-dsl",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "简洁强大的JSON Schema验证库 - DSL语法 + String扩展 + 便捷validate",
   "main": "index.js",
   "exports": {

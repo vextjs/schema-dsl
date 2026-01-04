@@ -220,12 +220,12 @@ console.log(result2.errors);   // 错误列表
 
 ### 1.5 TypeScript 用法 ⭐
 
-**重要**: TypeScript 中使用链式调用需要用 `dsl()` 包裹字符串以获得完整的类型推导：
+**重要**: TypeScript 中**必须**使用 `dsl()` 包裹字符串以获得类型提示（v1.0.6+ 移除了全局 String 类型扩展以避免类型污染）：
 
 ```typescript
 import { dsl, validateAsync, ValidationError } from 'schema-dsl';
 
-// ✅ 推荐：使用 dsl() 包裹字符串获得完整类型提示
+// ✅ 正确：使用 dsl() 包裹字符串获得完整类型提示
 const userSchema = dsl({
   username: dsl('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/, '只能包含字母、数字和下划线')
@@ -256,10 +256,13 @@ try {
 }
 ```
 
-**为什么要用 `dsl()` 包裹？**
+**为什么必须用 `dsl()` 包裹？**
 - ✅ 完整的类型推导和 IDE 自动提示
-- ✅ 避免 TypeScript 严格模式警告
-- ✅ 更好的开发体验
+- ✅ 避免污染原生 String 类型（v1.0.6+ 重要改进）
+- ✅ 保证 `trim()`、`toLowerCase()` 等原生方法类型正确
+- ✅ 更好的开发体验和类型安全
+
+**JavaScript 用户不受影响**：在 JavaScript 中仍然可以直接使用 `'email!'.label('邮箱')` 语法。
 
 **详细说明**: 请查看 [TypeScript 使用指南](./docs/typescript-guide.md)
 
