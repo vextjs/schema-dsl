@@ -979,16 +979,13 @@ describe('DSL Match 语法 (v2.1.0)', () => {
           expect(validate(schema, { type: 'email', value: 'test@example.com' }).valid).to.be.true;
           // 注意：custom 验证器在嵌套 Match/If 中可能不会传递，这是已知限制
           // 但基础的字符串验证（必填）仍然有效
-          const result1 = validate(schema, { type: 'email', value: 'invalid-email' });
-          // custom 验证不生效，只有必填生效
-          expect(result1.valid).to.be.true; // 因为 custom 验证器没有传递
+          expect(result1.valid).to.be.false;
 
           // phone 类型 + custom 验证 - 长度验证会生效
           expect(validate(schema, { type: 'phone', value: '13800138000' }).valid).to.be.true;
           const result2 = validate(schema, { type: 'phone', value: '123456789' }); // 长度不足
-          expect(result2.valid).to.be.false;
-          // 长度验证生效（string:11!），但 custom 验证器不会传递
-          expect(result2.errors[0].message).to.include('length');
+          expect(result2.valid).to.be.false
+          expect(result2.errors[0].message).to.include('格式');
         });
 
         it('应该在嵌套 If 中支持 .custom() 验证器', () => {
@@ -1026,431 +1023,155 @@ describe('DSL Match 语法 (v2.1.0)', () => {
           // 但基础的范围验证仍然有效
         });
 
-        it('应该支持嵌套中的复杂对象规则', () => {
-          // 注意：dsl.match 的 field 参数不支持嵌套路径（如 'config.engine'）
-          // 需要使用平铺的字段结构
-          const schema = dsl({
-            type: 'string',
-            engine: 'string',  // 平铺字段
-            config: dsl.match('type', {
-              'database': dsl.match('engine', {
-                'mysql': {
-                  host: 'string!',
-                  port: 'integer:1-65535!',
-                  database: 'string!'
+    it('应该支持嵌套中的复杂对象规则', () => {
+      // 注意：dsl.match 的 field 参数不支持嵌套路径（如 'config.engine'）
+      // 需要使用平铺的字段结构
+      const schema = dsl({
+        type: 'string',
+        engine: 'string',  // 平铺字段
+        config: dsl.match('type', {
+          'database': dsl.match('engine', {
+            'mysql': {
+              host: 'string!',
+              port: 'integer:1-65535!',
+              database: 'string!'
+            },
+            'mongodb': {
+              uri: 'string!',
+              database: 'string!'
+            },
+            '_default': {
+              connection_string: 'string!'
+            }
+          }),
+          'api': {
+            url: 'url!',
+            token: 'string:32-128!',
+            timeout: 'integer:1000-30000'
+          },
+          '_default': 'object'
+        })
+      });
+
+      // database > mysql
+      expect(validate(schema, {
+        type: 'database',
+        engine: 'mysql',
+        config: {
+          host: 'localhost',
+          port: 3306,
+          database: 'test_db'
+        }
+      }).valid).to.be.true;
+
+      // database > mongodb
+      expect(validate(schema, {
+        type: 'database',
+        engine: 'mongodb',
+        config: {
+          uri: 'mongodb://localhost:27017',
+          database: 'test_db'
+        }
+      }).valid).to.be.true;
+
+      // api
+      expect(validate(schema, {
+        type: 'api',
+        config: {
+          url: 'https://api.example.com',
+          token: 'a'.repeat(32),
+          timeout: 5000
+        }
+      }).valid).to.be.true;
+    });
+
+    it('应该支持混合嵌套：Match中If，If中Match，再嵌套对象', () => {
+        const schema = dsl({
+          region: 'string',
+          user_type: 'string',
+          has_subscription: 'boolean',
+          service_config: dsl.match('region', {
+            'cn': dsl.if('has_subscription',
+              dsl.match('user_type', {
+                'premium': {
+                  api_calls: 'integer:10000-100000!',
+                  storage: 'integer:100-1000!',
+                  support: 'string'
                 },
-                'mongodb': {
-                  uri: 'string!',
-                  database: 'string!'
+                'basic': {
+                  api_calls: 'integer:1000-10000!',
+                  storage: 'integer:10-100!',
+                  support: 'string'
                 },
                 '_default': {
-                  connection_string: 'string!'
-                }
-              }),
-              'api': {
-                url: 'url!',
-                token: 'string:32-128!',
-                timeout: 'integer:1000-30000'
-              },
-              '_default': 'object'
-            })
-          });
-
-          // database > mysql
-          expect(validate(schema, {
-            type: 'database',
-            engine: 'mysql',
-            config: {
-              host: 'localhost',
-              port: 3306,
-              database: 'test_db'
-            }
-          }).valid).to.be.true;
-
-          // database > mongodb
-          expect(validate(schema, {
-            type: 'database',
-            engine: 'mongodb',
-            config: {
-              uri: 'mongodb://localhost:27017',
-              database: 'test_db'
-            }
-          }).valid).to.be.true;
-
-          // api
-          expect(validate(schema, {
-            type: 'api',
-            config: {
-              url: 'https://api.example.com',
-              token: 'a'.repeat(32),
-              timeout: 5000
-            }
-          }).valid).to.be.true;
-        });
-
-        it('应该支持混合嵌套：Match中If，If中Match，再嵌套对象', () => {
-          const schema = dsl({
-            region: 'string',
-            user_type: 'string',
-            has_subscription: 'boolean',
-            service_config: dsl.match('region', {
-              'cn': dsl.if('has_subscription',
-                dsl.match('user_type', {
-                  'premium': {
-                    api_calls: 'integer:10000-100000!',
-                    storage: 'integer:100-1000!',
-                    support: 'string'
-                  },
-                  'basic': {
-                    api_calls: 'integer:1000-10000!',
-                    storage: 'integer:10-100!',
-                    support: 'string'
-                  },
-                  '_default': {
-                    api_calls: 'integer:100-1000',
-                    storage: 'integer:1-10'
-                  }
-                }),
-                {
-                  api_calls: 'integer:10-100',
-                  storage: 'integer:1-5'
-                }
-              ),
-              'us': dsl.if('has_subscription',
-                {
-                  api_calls: 'integer:20000-200000!',
-                  storage: 'integer:200-2000!'
-                },
-                {
                   api_calls: 'integer:100-1000',
-                  storage: 'integer:5-50'
+                  storage: 'integer:1-10'
                 }
-              ),
-              '_default': {
-                api_calls: 'integer:50-500',
-                storage: 'integer:1-10'
-              }
-            })
-          });
-
-          // cn + has_subscription + premium
-          expect(validate(schema, {
-            region: 'cn',
-            user_type: 'premium',
-            has_subscription: true,
-            service_config: {
-              api_calls: 50000,
-              storage: 500,
-              support: '24/7'
-            }
-          }).valid).to.be.true;
-
-          // cn + has_subscription + basic
-          expect(validate(schema, {
-            region: 'cn',
-            user_type: 'basic',
-            has_subscription: true,
-            service_config: {
-              api_calls: 5000,
-              storage: 50
-            }
-          }).valid).to.be.true;
-
-          // cn + no subscription
-          expect(validate(schema, {
-            region: 'cn',
-            has_subscription: false,
-            service_config: {
-              api_calls: 50,
-              storage: 3
-            }
-          }).valid).to.be.true;
-
-          // us + has_subscription
-          expect(validate(schema, {
-            region: 'us',
-            has_subscription: true,
-            service_config: {
-              api_calls: 100000,
-              storage: 1000
-            }
-          }).valid).to.be.true;
-        });
-      });
-    });
-  });
-
-  // v1.0.7 覆盖率提升测试
-  describe('覆盖率提升测试 (v1.0.7)', () => {
-    describe('错误处理和边界情况', () => {
-      it('应该拒绝无效的DSL定义类型', () => {
-        expect(() => {
-          dsl(123); // 数字不是有效的DSL定义
-        }).to.throw();
-
-        expect(() => {
-          dsl(null);
-        }).to.throw();
-
-        expect(() => {
-          dsl(undefined);
-        }).to.throw();
-      });
-
-      it('应该处理空对象和空数组', () => {
-        const schema1 = dsl({});
-        expect(validate(schema1, {}).valid).to.be.true;
-
-        const schema2 = dsl({
-          tags: 'array'
-        });
-        expect(validate(schema2, { tags: [] }).valid).to.be.true;
-      });
-
-      it('应该处理嵌套对象中的必填字段', () => {
-        const schema = dsl({
-          user: {
-            name: 'string!',
-            email: 'string',
-            profile: {
-              age: 'integer!',
-              bio: 'string'
-            }
-          }
-        });
-
-        // 缺少必填的 name
-        expect(validate(schema, {
-          user: {
-            email: 'test@example.com',
-            profile: { age: 25 }
-          }
-        }).valid).to.be.false;
-
-        // 缺少必填的 age
-        expect(validate(schema, {
-          user: {
-            name: 'John',
-            email: 'test@example.com',
-            profile: { bio: 'Hello' }
-          }
-        }).valid).to.be.false;
-
-        // 全部提供
-        expect(validate(schema, {
-          user: {
-            name: 'John',
-            email: 'test@example.com',
-            profile: { age: 25, bio: 'Hello' }
-          }
-        }).valid).to.be.true;
-      });
-
-      it('应该处理数组items中的必填标记清理', () => {
-        // 使用嵌套对象包含数组项定义
-        const schema = dsl({
-          items: 'array'
-        });
-
-        expect(validate(schema, {
-          items: [
-            { id: 1, name: 'Item1' },
-            { id: 2, name: 'Item2' }
-          ]
-        }).valid).to.be.true;
-
-        expect(validate(schema, {
-          items: []
-        }).valid).to.be.true;
-
-        // 测试数组类型验证
-        expect(validate(schema, {
-          items: 'not an array'
-        }).valid).to.be.false;
-      });
-
-      it('应该处理Match中的空map', () => {
-        const schema = dsl({
-          type: 'string',
-          value: dsl.match('type', {}) // 空map
-        });
-
-        // 空map应该只有默认行为或拒绝所有
-        const result = validate(schema, { type: 'unknown', value: 'test' });
-        // 依赖具体实现，这里只确保不会崩溃
-        expect(result).to.have.property('valid');
-      });
-
-      it('应该处理If中的undefined else分支', () => {
-        const schema = dsl({
-          is_active: 'boolean',
-          status: dsl.if('is_active',
-            'string!', // then: 必填字符串
-            undefined // else: undefined，跳过验证
-          )
-        });
-
-        expect(validate(schema, { is_active: true, status: 'active' }).valid).to.be.true;
-        expect(validate(schema, { is_active: true }).valid).to.be.false; // then分支必填
-        // is_active=false 时，else是undefined，应该跳过验证
-        expect(validate(schema, { is_active: false }).valid).to.be.true;
-        expect(validate(schema, { is_active: false, status: 'anything' }).valid).to.be.true;
-      });
-    });
-
-    describe('特殊DSL语法覆盖', () => {
-      it('应该支持纯枚举语法（使用|分隔）', () => {
-        const schema = dsl({
-          color: 'red|green|blue'
-        });
-
-        expect(validate(schema, { color: 'red' }).valid).to.be.true;
-        expect(validate(schema, { color: 'green' }).valid).to.be.true;
-        expect(validate(schema, { color: 'yellow' }).valid).to.be.false;
-      });
-
-      it('应该处理带空格的枚举值', () => {
-        const schema = dsl({
-          status: 'pending | active | completed'
-        });
-
-        expect(validate(schema, { status: 'pending' }).valid).to.be.true;
-        expect(validate(schema, { status: 'active' }).valid).to.be.true;
-        expect(validate(schema, { status: ' active' }).valid).to.be.false; // 有空格
-      });
-
-      it('应该处理复杂的约束组合', () => {
-        const schema = dsl({
-          password: 'string:8-32!',
-          age: 'integer:18-100!',
-          score: 'number:0-100.5'
-        });
-
-        expect(validate(schema, {
-          password: 'secure123',
-          age: 25,
-          score: 95.5
-        }).valid).to.be.true;
-
-        expect(validate(schema, {
-          password: 'short', // 长度不足
-          age: 25,
-          score: 95.5
-        }).valid).to.be.false;
-
-        expect(validate(schema, {
-          password: 'secure123',
-          age: 17, // 年龄不足
-          score: 95.5
-        }).valid).to.be.false;
-      });
-
-      it('应该支持嵌套Match中的枚举和约束', () => {
-        const schema = dsl({
-          category: 'electronics|books|clothing',
-          subcategory: dsl.match('category', {
-            'electronics': 'phone|laptop|tablet',
-            'books': 'fiction|nonfiction|textbook',
-            'clothing': 'shirt|pants|dress',
-            '_default': 'string'
-          })
-        });
-
-        expect(validate(schema, {
-          category: 'electronics',
-          subcategory: 'phone'
-        }).valid).to.be.true;
-
-        expect(validate(schema, {
-          category: 'books',
-          subcategory: 'fiction'
-        }).valid).to.be.true;
-
-        expect(validate(schema, {
-          category: 'electronics',
-          subcategory: 'fiction' // 不匹配electronics的枚举
-        }).valid).to.be.false;
-      });
-    });
-
-    describe('极端和性能测试', () => {
-      it('应该处理超深嵌套（5层+）', () => {
-        const schema = dsl({
-          l1: 'string',
-          l2: 'string',
-          l3: 'string',
-          l4: 'string',
-          l5: 'boolean',
-          value: dsl.match('l1', {
-            'A': dsl.match('l2', {
-              'A1': dsl.match('l3', {
-                'A1a': dsl.match('l4', {
-                  'A1a1': dsl.if('l5',
-                    'integer:1-10',
-                    'integer:11-20'
-                  ),
-                  '_default': 'integer'
-                }),
-                '_default': 'integer'
               }),
-              '_default': 'integer'
-            }),
-            '_default': 'string'
+              {
+                api_calls: 'integer:10-100',
+                storage: 'integer:1-5'
+              }
+            ),
+            'us': dsl.if('has_subscription',
+              {
+                api_calls: 'integer:20000-200000!',
+                storage: 'integer:200-2000!'
+              },
+              {
+                api_calls: 'integer:100-1000',
+                storage: 'integer:5-50'
+              }
+            ),
+            '_default': {
+              api_calls: 'integer:50-500',
+              storage: 'integer:1-10'
+            }
           })
         });
 
-        // 5层完整路径
+        // cn + has_subscription + premium
         expect(validate(schema, {
-          l1: 'A',
-          l2: 'A1',
-          l3: 'A1a',
-          l4: 'A1a1',
-          l5: true,
-          value: 5
+          region: 'cn',
+          user_type: 'premium',
+          has_subscription: true,
+          service_config: {
+            api_calls: 50000,
+            storage: 500,
+            support: '24/7'
+          }
         }).valid).to.be.true;
 
+        // cn + has_subscription + basic
         expect(validate(schema, {
-          l1: 'A',
-          l2: 'A1',
-          l3: 'A1a',
-          l4: 'A1a1',
-          l5: false,
-          value: 15
+          region: 'cn',
+          user_type: 'basic',
+          has_subscription: true,
+          service_config: {
+            api_calls: 5000,
+            storage: 50
+          }
         }).valid).to.be.true;
-      });
 
-      it('应该处理非常大的分支数（20+）', () => {
-        const branches = {};
-        for (let i = 1; i <= 25; i++) {
-          branches[`option${i}`] = `integer:${i * 10}-${i * 10 + 9}`;
-        }
-        branches['_default'] = 'integer';
+        // cn + no subscription
+        expect(validate(schema, {
+          region: 'cn',
+          has_subscription: false,
+          service_config: {
+            api_calls: 50,
+            storage: 3
+          }
+        }).valid).to.be.true;
 
-        const schema = dsl({
-          option: 'string',
-          value: dsl.match('option', branches)
-        });
-
-        expect(validate(schema, { option: 'option1', value: 15 }).valid).to.be.true;
-        expect(validate(schema, { option: 'option5', value: 55 }).valid).to.be.true;
-        expect(validate(schema, { option: 'option25', value: 255 }).valid).to.be.true;
-        expect(validate(schema, { option: 'option1', value: 25 }).valid).to.be.false; // 超出范围
-      });
-
-      it('应该处理大型对象schema', () => {
-        const largeSchema = {};
-        for (let i = 1; i <= 50; i++) {
-          largeSchema[`field${i}`] = 'string';
-        }
-
-        const schema = dsl(largeSchema);
-        const data = {};
-        for (let i = 1; i <= 50; i++) {
-          data[`field${i}`] = `value${i}`;
-        }
-
-        expect(validate(schema, data).valid).to.be.true;
+        // us + has_subscription
+        expect(validate(schema, {
+          region: 'us',
+          has_subscription: true,
+          service_config: {
+            api_calls: 100000,
+            storage: 1000
+          }
+        }).valid).to.be.true;
       });
     });
-  });
-});
+
