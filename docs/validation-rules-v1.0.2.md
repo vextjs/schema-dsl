@@ -61,10 +61,17 @@ const schema = {
   }
 };
 
-// 方式2: DSL 语法 (推荐)
+// 方式2: DSL 语法 + 约束（v1.0.3+）
 const schema2 = dsl({
-  code: 'string!',
-  exactLength: 6
+  code: 'string:6!'  // 精确长度 6
+});
+
+// 方式3: 链式调用 JSON Schema
+const schema3 = dsl({
+  code: {
+    type: 'string',
+    exactLength: 6
+  }
 });
 ```
 

@@ -96,6 +96,8 @@ validate(schema, data, { locale: 'en-US' });
 **一份定义，多处使用**
 
 ```javascript
+const { dsl, exporters } = require('schema-dsl');
+
 const schema = dsl({ 
   username: 'string:3-32!',
   email: 'email!',
@@ -103,13 +105,16 @@ const schema = dsl({
 });
 
 // 导出 MongoDB Schema
-schema.exportTo('mongodb', { collectionName: 'users' });
+const mongoExporter = new exporters.MongoDBExporter();
+const mongoSchema = mongoExporter.export(schema);
 
 // 导出 MySQL 建表语句
-schema.exportTo('mysql', { tableName: 'users' });
+const mysqlExporter = new exporters.MySQLExporter();
+const mysqlDDL = mysqlExporter.export('users', schema);
 
 // 导出 PostgreSQL 建表语句
-schema.exportTo('postgresql', { tableName: 'users' });
+const pgExporter = new exporters.PostgreSQLExporter();
+const pgDDL = pgExporter.export('users', schema);
 ```
 
 **✅ 独家功能**：从验证规则直接生成数据库结构！
@@ -525,16 +530,81 @@ dsl({
   email: 'email!'.label('用户邮箱'),
   
   // 字段描述
-  bio: 'string:10-500'.description('用户简介，10-500字符'),
-  
-  // 条件验证
-  discount: 'number'.when('vip', {
-    is: true,
-    then: 'number:10-50!',  // VIP 用户折扣必填
-    otherwise: 'number'      // 普通用户可选
-  })
+  bio: 'string:10-500'.description('用户简介，10-500字符')
 })
 ```
+
+### 条件验证 - dsl.match 和 dsl.if
+
+**根据其他字段的值动态决定验证规则**
+
+```javascript
+const { dsl } = require('schema-dsl');
+
+// 1. dsl.match - 根据字段值匹配不同规则（类似 switch-case）
+const contactSchema = dsl({
+  contactType: 'email|phone|wechat',
+  
+  // 根据 contactType 的值决定 contact 字段的验证规则
+  contact: dsl.match('contactType', {
+    email: 'email!',           // contactType='email' 时验证邮箱格式
+    phone: 'string:11!',       // contactType='phone' 时验证11位手机号
+    wechat: 'string:6-20!',    // contactType='wechat' 时验证微信号
+    _default: 'string'         // 默认规则（可选）
+  })
+});
+
+// ✅ 验证通过
+validate(contactSchema, { contactType: 'email', contact: 'user@example.com' });
+validate(contactSchema, { contactType: 'phone', contact: '13800138000' });
+
+// ❌ 验证失败
+validate(contactSchema, { contactType: 'email', contact: 'invalid' });
+
+
+// 2. dsl.if - 简单条件分支（类似 if-else）
+const vipSchema = dsl({
+  isVip: 'boolean!',
+  
+  // 如果是 VIP，折扣必须在 10-50 之间；否则在 0-10 之间
+  discount: dsl.if('isVip', 'number:10-50!', 'number:0-10')
+});
+
+// ✅ VIP 用户
+validate(vipSchema, { isVip: true, discount: 30 });
+
+// ❌ 非 VIP 用户折扣超过 10
+validate(vipSchema, { isVip: false, discount: 15 });
+
+
+// 3. 实际应用场景：订单验证
+const orderSchema = dsl({
+  paymentMethod: 'alipay|wechat|card|cod',  // cod = 货到付款
+  
+  // 根据支付方式决定支付信息格式
+  paymentInfo: dsl.match('paymentMethod', {
+    alipay: 'email!',                        // 支付宝：邮箱
+    wechat: 'string:20-30',                  // 微信：支付串
+    card: 'string:16-19',                    // 银行卡：卡号
+    cod: 'string:0-0',                       // 货到付款：无需支付信息
+    _default: 'string'
+  }),
+  
+  // 货到付款需要详细地址
+  address: dsl.if('paymentMethod', 
+    'string:10-200!',   // cod = 货到付款时地址必填
+    'string:10-200'     // 其他支付方式地址可选
+  )
+});
+```
+
+**💡 使用场景**:
+- ✅ 多种联系方式验证（邮箱/手机/微信）
+- ✅ VIP 和普通用户不同的折扣范围
+- ✅ 不同支付方式的支付信息格式
+- ✅ 根据用户类型决定必填字段
+
+**查看完整示例**: [examples/dsl-match-example.js](./examples/dsl-match-example.js)
 
 ---
 
@@ -653,32 +723,36 @@ const markdown = exporters.MarkdownExporter.export(userSchema, {
 ### 4. 多语言支持
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+const { dsl, validate } = require('schema-dsl');
+const path = require('path');
 
-// 配置语言包
+// 方式 1: 从目录加载语言包（推荐）
+dsl.config({
+  i18n: path.join(__dirname, 'i18n/dsl')  // 直接传字符串路径
+});
+
+// 方式 2: 直接传入语言包对象
 dsl.config({
   i18n: {
-    locales: {
-      'zh-CN': {
-        'label.username': '用户名',
-        'label.email': '邮箱地址',
-        'required': '{{#label}}不能为空',
-        'string.min': '{{#label}}长度不能少于{{#limit}}个字符'
-      },
-      'en-US': {
-        'label.username': 'Username',
-        'label.email': 'Email Address',
-        'required': '{{#label}} is required',
-        'string.min': '{{#label}} must be at least {{#limit}} characters'
-      }
+    'zh-CN': {
+      'label.username': '用户名',
+      'label.email': '邮箱地址',
+      'required': '{{#label}}不能为空',
+      'string.min': '{{#label}}长度不能少于{{#limit}}个字符'
+    },
+    'en-US': {
+      'label.username': 'Username',
+      'label.email': 'Email Address',
+      'required': '{{#label}} is required',
+      'string.min': '{{#label}} must be at least {{#limit}} characters'
     }
   }
 });
 
 // 使用 Label Key
 const schema = dsl({
-  username: 'string:3-32!'.label('label.username'),
-  email: 'email!'.label('label.email')
+  username: dsl('string:3-32!').label('label.username'),
+  email: dsl('email!').label('label.email')
 });
 
 // 验证时指定语言
@@ -687,16 +761,44 @@ const result1 = validate(schema, data, { locale: 'zh-CN' });
 
 const result2 = validate(schema, data, { locale: 'en-US' });
 // 错误消息：Username must be at least 3 characters
+```
 
-// 从文件加载语言包
-dsl.config({
-  i18n: {
-    localesPath: './i18n'  // 自动加载 ./i18n/*.js 或 *.json
+### 5. 缓存配置 (v1.0.4+)
+
+```javascript
+const { dsl, config } = require('schema-dsl');
+
+// 配置缓存选项（推荐在使用 DSL 之前调用）
+config({
+  cache: {
+    maxSize: 1000,        // 最大缓存条目数（默认：100）
+    ttl: 7200000,         // 缓存过期时间（毫秒，默认：3600000，即1小时）
+    enabled: true,        // 是否启用缓存（默认：true）
+    statsEnabled: true    // 是否启用统计（默认：true）
   }
+});
+
+// 之后创建的 Schema 将使用新的缓存配置
+const schema = dsl({ name: 'string!' });
+
+// 也可以在 Validator 创建后动态修改配置（向后兼容）
+const { getDefaultValidator } = require('schema-dsl');
+const validator = getDefaultValidator();
+console.log('当前缓存配置:', validator.cache.options);
+
+// 动态修改
+config({
+  cache: { maxSize: 5000 }  // 只修改某个参数
 });
 ```
 
-### 5. 插件系统
+**缓存说明**：
+- Schema 编译结果会被缓存以提高性能
+- 使用 LRU（最近最少使用）淘汰策略
+- 支持 TTL（生存时间）自动过期
+- 可通过 `validator.cache.getStats()` 查看缓存统计信息
+
+### 6. 插件系统
 
 ```javascript
 const { PluginManager } = require('schema-dsl');
@@ -748,7 +850,7 @@ const schema = dsl({
 });
 ```
 
-### 6. 错误处理
+### 7. 错误处理
 
 ```javascript
 const { validate, ValidationError } = require('schema-dsl');

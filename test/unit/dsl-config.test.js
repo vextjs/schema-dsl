@@ -17,15 +17,13 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
     it('应该支持从对象直接加载语言包', () => {
       dsl.config({
         i18n: {
-          locales: {
-            'zh-CN': {
-              'username': '用户名',
-              'email': '邮箱地址'
-            },
-            'en-US': {
-              'username': 'Username',
-              'email': 'Email Address'
-            }
+          'zh-CN': {
+            'username': '用户名',
+            'email': '邮箱地址'
+          },
+          'en-US': {
+            'username': 'Username',
+            'email': 'Email Address'
           }
         }
       });
@@ -45,12 +43,10 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
       // 配置用户语言包
       dsl.config({
         i18n: {
-          locales: {
-            'zh-CN': {
-              'username': '用户名',
-              'email': '邮箱地址',
-              'custom.invalidEmail': '邮箱格式不正确'
-            }
+          'zh-CN': {
+            'username': '用户名',
+            'email': '邮箱地址',
+            'custom.invalidEmail': '邮箱格式不正确'
           }
         }
       });
@@ -83,19 +79,17 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
     it('应该支持动态语言切换', () => {
       dsl.config({
         i18n: {
-          locales: {
-            'zh-CN': {
-              'username': '用户名',
-              'min': '{{#label}}长度不能少于{{#limit}}个字符'
-            },
-            'en-US': {
-              'username': 'Username',
-              'min': '{{#label}} length must be at least {{#limit}}'
-            },
-            'ja-JP': {
-              'username': 'ユーザー名',
-              'min': '{{#label}}の長さは{{#limit}}文字以上でなければなりません'
-            }
+          'zh-CN': {
+            'username': '用户名',
+            'min': '{{#label}}长度不能少于{{#limit}}个字符'
+          },
+          'en-US': {
+            'username': 'Username',
+            'min': '{{#label}} length must be at least {{#limit}}'
+          },
+          'ja-JP': {
+            'username': 'ユーザー名',
+            'min': '{{#label}}の長さは{{#limit}}文字以上でなければなりません'
           }
         }
       });
@@ -173,15 +167,101 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
       expect(validator.cache.options.maxSize).to.equal(20000);
       expect(validator.cache.options.ttl).to.equal(28800000);
     });
+
+    it('应该支持 enabled 参数', () => {
+      dsl.config({
+        cache: {
+          enabled: false
+        }
+      });
+
+      const { getDefaultValidator } = require('../../index');
+      const validator = getDefaultValidator();
+
+      expect(validator.cache.options.enabled).to.be.false;
+    });
+
+    it('应该支持 statsEnabled 参数', () => {
+      dsl.config({
+        cache: {
+          statsEnabled: false
+        }
+      });
+
+      const { getDefaultValidator } = require('../../index');
+      const validator = getDefaultValidator();
+
+      expect(validator.cache.options.statsEnabled).to.be.false;
+    });
+
+    it('应该支持所有 cache 参数一起配置', () => {
+      dsl.config({
+        cache: {
+          maxSize: 500,
+          ttl: 1000000,
+          enabled: false,
+          statsEnabled: false
+        }
+      });
+
+      const { getDefaultValidator } = require('../../index');
+      const validator = getDefaultValidator();
+
+      expect(validator.cache.options.maxSize).to.equal(500);
+      expect(validator.cache.options.ttl).to.equal(1000000);
+      expect(validator.cache.options.enabled).to.be.false;
+      expect(validator.cache.options.statsEnabled).to.be.false;
+    });
+
+    it('应该支持部分参数配置（只配置 maxSize）', () => {
+      // 先重新创建一个干净的 Validator
+      delete require.cache[require.resolve('../../index')];
+      const { dsl: dsl2, getDefaultValidator: getValidator2, config: config2 } = require('../../index');
+
+      config2({
+        cache: {
+          maxSize: 2000
+        }
+      });
+
+      const schema = dsl2({ name: 'string!' });
+      const validator = getValidator2();
+
+      expect(validator.cache.options.maxSize).to.equal(2000);
+      // 其他参数应保持默认值
+      expect(validator.cache.options.ttl).to.equal(3600000);
+    });
+
+    it('应该支持在 Validator 创建后动态修改配置', () => {
+      // 先创建 Validator
+      const schema1 = dsl({ name: 'string!' });
+      const { getDefaultValidator } = require('../../index');
+      const validator = getDefaultValidator();
+
+      const initialMaxSize = validator.cache.options.maxSize;
+      const initialTtl = validator.cache.options.ttl;
+
+      // 动态修改配置
+      dsl.config({
+        cache: {
+          maxSize: 8888,
+          ttl: 9999999
+        }
+      });
+
+      // 验证配置已更新
+      expect(validator.cache.options.maxSize).to.equal(8888);
+      expect(validator.cache.options.ttl).to.equal(9999999);
+      expect(validator.cache.options.maxSize).to.not.equal(initialMaxSize);
+      expect(validator.cache.options.ttl).to.not.equal(initialTtl);
+    });
   });
 
   describe('综合配置', () => {
     it('应该同时支持 i18n 和 cache 配置', () => {
       dsl.config({
         i18n: {
-          locales: {
-            'zh-CN': { 'test': '测试' }
-          }
+          'zh-CN': { 'test': '测试' }
         },
         cache: {
           maxSize: 5000,

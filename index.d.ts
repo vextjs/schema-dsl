@@ -1,4 +1,4 @@
-// Type definitions for schema-dsl v1.0.3
+// Type definitions for schema-dsl v1.0.4
 // Project: https://github.com/vextjs/schema-dsl
 // Definitions by: schema-dsl Team
 
@@ -405,6 +405,381 @@ declare module 'schema-dsl' {
      * ```
      */
     phone(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): this;
+
+    /**
+     * 设置格式
+     * @param format - 格式名称 (email, url, uuid, date, date-time, time, ipv4, ipv6等)
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * builder.format('email');
+     * builder.format('uuid');
+     * builder.format('date-time');
+     * ```
+     */
+    format(format: string): this;
+
+    /**
+     * 手机号别名（phoneNumber是phone的别名）
+     * @param country - 国家代码
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * builder.phoneNumber('cn');  // 等同于 phone('cn')
+     * ```
+     */
+    phoneNumber(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): this;
+
+    /**
+     * 身份证验证
+     * @param country - 国家代码（目前仅支持 'cn'）
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * builder.idCard('cn');  // 中国身份证18位
+     * ```
+     */
+    idCard(country?: 'cn'): this;
+
+    /**
+     * URL Slug 验证（只能包含小写字母、数字和连字符）
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * builder.slug();  // my-blog-post, hello-world-123
+     * ```
+     */
+    slug(): this;
+
+    /**
+     * 信用卡验证
+     * @param type - 卡类型
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * builder.creditCard('visa');
+     * builder.creditCard('mastercard');
+     * builder.creditCard('amex');
+     * ```
+     */
+    creditCard(type?: 'visa' | 'mastercard' | 'amex' | 'discover' | 'jcb' | 'unionpay'): this;
+
+    /**
+     * 车牌号验证
+     * @param country - 国家代码
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * builder.licensePlate('cn');  // 中国车牌号
+     * ```
+     */
+    licensePlate(country?: 'cn' | 'us' | 'uk'): this;
+
+    /**
+     * 邮政编码验证
+     * @param country - 国家代码
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * builder.postalCode('cn');  // 中国邮政编码6位
+     * builder.postalCode('us');  // 美国邮政编码
+     * ```
+     */
+    postalCode(country?: 'cn' | 'us' | 'uk'): this;
+
+    /**
+     * 护照号码验证
+     * @param country - 国家代码
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * builder.passport('cn');  // 中国护照号
+     * ```
+     */
+    passport(country?: 'cn' | 'us' | 'uk'): this;
+
+    /**
+     * String 最小长度（使用AJV原生minLength）
+     * @param n - 最小长度
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').min(3);  // 最少3个字符
+     * ```
+     */
+    min(n: number): this;
+
+    /**
+     * String 最大长度（使用AJV原生maxLength）
+     * @param n - 最大长度
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').max(32);  // 最多32个字符
+     * ```
+     */
+    max(n: number): this;
+
+    /**
+     * String 精确长度
+     * @param n - 精确长度
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').length(11);  // 必须是11个字符
+     * ```
+     */
+    length(n: number): this;
+
+    /**
+     * String 只能包含字母和数字
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').alphanum();  // 只能是字母和数字
+     * ```
+     */
+    alphanum(): this;
+
+    /**
+     * String 不能包含前后空格
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').trim();  // 不能有前后空格
+     * ```
+     */
+    trim(): this;
+
+    /**
+     * String 必须是小写
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').lowercase();  // 必须全小写
+     * ```
+     */
+    lowercase(): this;
+
+    /**
+     * String 必须是大写
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').uppercase();  // 必须全大写
+     * ```
+     */
+    uppercase(): this;
+
+    /**
+     * Number 小数位数限制
+     * @param n - 最大小数位数
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('number!').precision(2);  // 最多2位小数
+     * ```
+     */
+    precision(n: number): this;
+
+    /**
+     * Number 倍数验证（使用AJV原生multipleOf）
+     * @param n - 必须是此数的倍数
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('number!').multiple(5);  // 必须是5的倍数
+     * ```
+     */
+    multiple(n: number): this;
+
+    /**
+     * Number 端口号验证（1-65535）
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('integer!').port();  // 必须是有效端口号
+     * ```
+     */
+    port(): this;
+
+    /**
+     * Object 要求所有属性都必须存在
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl({ name: 'string', age: 'number' }).requireAll();
+     * ```
+     */
+    requireAll(): this;
+
+    /**
+     * Object 严格模式，不允许额外属性
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl({ name: 'string!' }).strict();
+     * ```
+     */
+    strict(): this;
+
+    /**
+     * Array 不允许稀疏数组
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('array<string>').noSparse();
+     * ```
+     */
+    noSparse(): this;
+
+    /**
+     * Array 必须包含指定元素
+     * @param items - 必须包含的元素数组
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('array<string>').includesRequired(['admin', 'user']);
+     * ```
+     */
+    includesRequired(items: any[]): this;
+
+    /**
+     * Date 自定义日期格式验证
+     * @param fmt - 日期格式（YYYY-MM-DD, YYYY/MM/DD, DD-MM-YYYY, DD/MM/YYYY, ISO8601）
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').dateFormat('YYYY-MM-DD');
+     * ```
+     */
+    dateFormat(fmt: 'YYYY-MM-DD' | 'YYYY/MM/DD' | 'DD-MM-YYYY' | 'DD/MM/YYYY' | 'ISO8601' | string): this;
+
+    /**
+     * Date 必须晚于指定日期
+     * @param date - 比较日期
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('date!').after('2024-01-01');
+     * ```
+     */
+    after(date: string): this;
+
+    /**
+     * Date 必须早于指定日期
+     * @param date - 比较日期
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('date!').before('2025-12-31');
+     * ```
+     */
+    before(date: string): this;
+
+    /**
+     * Pattern 域名验证
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').domain();  // example.com, sub.example.com
+     * ```
+     */
+    domain(): this;
+
+    /**
+     * Pattern IP地址验证（IPv4或IPv6）
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').ip();  // 192.168.1.1 或 2001:0db8:85a3::8a2e:0370:7334
+     * ```
+     */
+    ip(): this;
+
+    /**
+     * Pattern Base64编码验证
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').base64();
+     * ```
+     */
+    base64(): this;
+
+    /**
+     * Pattern JWT令牌验证
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').jwt();
+     * ```
+     */
+    jwt(): this;
+
+    /**
+     * Pattern JSON字符串验证
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').json();
+     * ```
+     */
+    json(): this;
+
+    /**
+     * 日期大于验证
+     * @param date - 对比日期
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').dateGreater('2025-01-01');
+     * ```
+     */
+    dateGreater(date: string): this;
+
+    /**
+     * 日期小于验证
+     * @param date - 对比日期
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * dsl('string!').dateLess('2025-12-31');
+     * ```
+     */
+    dateLess(date: string): this;
   }
 
   // ========== String 扩展 ==========
@@ -506,6 +881,187 @@ declare module 'schema-dsl' {
        * @deprecated TypeScript 用户请使用 dsl(string).phone()
        */
       phone(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): DslBuilder;
+
+      /**
+       * 设置格式
+       * @deprecated TypeScript 用户请使用 dsl(string).format()
+       */
+      format(format: string): DslBuilder;
+
+      /**
+       * 手机号别名
+       * @deprecated TypeScript 用户请使用 dsl(string).phoneNumber()
+       */
+      phoneNumber(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): DslBuilder;
+
+      /**
+       * 身份证验证
+       * @deprecated TypeScript 用户请使用 dsl(string).idCard()
+       */
+      idCard(country?: 'cn'): DslBuilder;
+
+      /**
+       * 信用卡验证
+       * @deprecated TypeScript 用户请使用 dsl(string).creditCard()
+       */
+      creditCard(type?: 'visa' | 'mastercard' | 'amex' | 'discover' | 'jcb' | 'unionpay'): DslBuilder;
+
+      /**
+       * 车牌号验证
+       * @deprecated TypeScript 用户请使用 dsl(string).licensePlate()
+       */
+      licensePlate(country?: 'cn' | 'us' | 'uk'): DslBuilder;
+
+      /**
+       * 邮政编码验证
+       * @deprecated TypeScript 用户请使用 dsl(string).postalCode()
+       */
+      postalCode(country?: 'cn' | 'us' | 'uk'): DslBuilder;
+
+      /**
+       * 护照号码验证
+       * @deprecated TypeScript 用户请使用 dsl(string).passport()
+       */
+      passport(country?: 'cn' | 'us' | 'uk'): DslBuilder;
+
+      /**
+       * String 最小长度
+       * @deprecated TypeScript 用户请使用 dsl(string).min()
+       */
+      min(n: number): DslBuilder;
+
+      /**
+       * String 最大长度
+       * @deprecated TypeScript 用户请使用 dsl(string).max()
+       */
+      max(n: number): DslBuilder;
+
+
+      /**
+       * String 只能包含字母和数字
+       * @deprecated TypeScript 用户请使用 dsl(string).alphanum()
+       */
+      alphanum(): DslBuilder;
+
+      /**
+       * String 不能包含前后空格
+       * @deprecated TypeScript 用户请使用 dsl(string).trim()
+       */
+      trim(): DslBuilder;
+
+      /**
+       * String 必须是小写
+       * @deprecated TypeScript 用户请使用 dsl(string).lowercase()
+       */
+      lowercase(): DslBuilder;
+
+      /**
+       * String 必须是大写
+       * @deprecated TypeScript 用户请使用 dsl(string).uppercase()
+       */
+      uppercase(): DslBuilder;
+
+      /**
+       * Number 小数位数限制
+       * @deprecated TypeScript 用户请使用 dsl(string).precision()
+       */
+      precision(n: number): DslBuilder;
+
+      /**
+       * Number 倍数验证
+       * @deprecated TypeScript 用户请使用 dsl(string).multiple()
+       */
+      multiple(n: number): DslBuilder;
+
+      /**
+       * Number 端口号验证
+       * @deprecated TypeScript 用户请使用 dsl(string).port()
+       */
+      port(): DslBuilder;
+
+      /**
+       * Object 要求所有属性都必须存在
+       * @deprecated TypeScript 用户请使用 dsl(obj).requireAll()
+       */
+      requireAll(): DslBuilder;
+
+      /**
+       * Object 严格模式
+       * @deprecated TypeScript 用户请使用 dsl(obj).strict()
+       */
+      strict(): DslBuilder;
+
+      /**
+       * Array 不允许稀疏数组
+       * @deprecated TypeScript 用户请使用 dsl(string).noSparse()
+       */
+      noSparse(): DslBuilder;
+
+      /**
+       * Array 必须包含指定元素
+       * @deprecated TypeScript 用户请使用 dsl(string).includesRequired()
+       */
+      includesRequired(items: any[]): DslBuilder;
+
+      /**
+       * Date 自定义日期格式验证
+       * @deprecated TypeScript 用户请使用 dsl(string).dateFormat()
+       */
+      dateFormat(fmt: string): DslBuilder;
+
+      /**
+       * Date 必须晚于指定日期
+       * @deprecated TypeScript 用户请使用 dsl(string).after()
+       */
+      after(date: string): DslBuilder;
+
+      /**
+       * Date 必须早于指定日期
+       * @deprecated TypeScript 用户请使用 dsl(string).before()
+       */
+      before(date: string): DslBuilder;
+
+      /**
+       * Pattern 域名验证
+       * @deprecated TypeScript 用户请使用 dsl(string).domain()
+       */
+      domain(): DslBuilder;
+
+      /**
+       * Pattern IP地址验证
+       * @deprecated TypeScript 用户请使用 dsl(string).ip()
+       */
+      ip(): DslBuilder;
+
+      /**
+       * Pattern Base64编码验证
+       * @deprecated TypeScript 用户请使用 dsl(string).base64()
+       */
+      base64(): DslBuilder;
+
+      /**
+       * Pattern JWT令牌验证
+       * @deprecated TypeScript 用户请使用 dsl(string).jwt()
+       */
+      jwt(): DslBuilder;
+
+      /**
+       * Pattern JSON字符串验证
+       * @deprecated TypeScript 用户请使用 dsl(string).json()
+       */
+      json(): DslBuilder;
+
+      /**
+       * 日期大于验证
+       * @deprecated TypeScript 用户请使用 dsl(string).dateGreater()
+       */
+      dateGreater(date: string): DslBuilder;
+
+      /**
+       * 日期小于验证
+       * @deprecated TypeScript 用户请使用 dsl(string).dateLess()
+       */
+      dateLess(date: string): DslBuilder;
     }
   }
 
@@ -764,23 +1320,52 @@ declare module 'schema-dsl' {
     export function match(value: any, cases: Record<string, any>): any;
 
     /**
-     * 条件规则
+     * 条件规则 (if)
      * 
-     * @description 根据条件选择不同的Schema（JavaScript中使用 dsl.if）
+     * @description 根据条件字段的值选择不同的Schema
+     * 
+     * JavaScript 中使用: `dsl.if(condition, thenSchema, elseSchema)`
+     * TypeScript 中使用: `dsl['if'](condition, thenSchema, elseSchema)` 或 `dsl._if(...)`
+     * 
+     * @param condition - 条件字段名
+     * @param thenSchema - 条件为 true 时的 Schema
+     * @param elseSchema - 条件为 false 时的 Schema（可选）
      * 
      * @example
      * ```typescript
+     * // TypeScript 中因为 if 是保留字，需要用字符串索引或 _if
      * const schema = dsl({
+     *   isVip: 'boolean',
+     *   discount: dsl['if']('isVip', 'number:10-50!', 'number:0-10')
+     * });
+     * 
+     * // 或者使用 _if 别名
+     * const schema2 = dsl({
      *   age: 'number',
-     *   license: dsl._if(
-     *     (data) => data.age >= 18,
-     *     { hasLicense: 'boolean!' },
-     *     { hasLicense: 'boolean' }
-     *   )
+     *   license: dsl._if('age', 'boolean!', 'boolean')
+     * });
+     * ```
+     * 
+     * @example
+     * ```javascript
+     * // JavaScript 中可以直接使用 dsl.if
+     * const schema = dsl({
+     *   isVip: 'boolean',
+     *   discount: dsl.if('isVip', 'number:10-50!', 'number:0-10')
      * });
      * ```
      */
     export const _if: (condition: any, thenSchema: any, elseSchema?: any) => any;
+
+    /**
+     * 条件规则的别名（用于 TypeScript）
+     * 
+     * @description 因为 TypeScript 中 `if` 是保留字，提供 `_if` 作为别名
+     * 
+     * JavaScript 用户请直接使用 `dsl.if()`
+     * TypeScript 用户可以使用 `dsl['if']()` 或 `dsl._if()`
+     */
+    export { _if as if };
 
     /**
      * 设置默认语言
@@ -1992,23 +2577,31 @@ declare module 'schema-dsl' {
    * // 添加自定义关键字通常通过 Validator 的 addKeyword 方法
    * const validator = new Validator();
    * const ajv = validator.getAjv();
-   *
-   * // 使用 ajv.addKeyword() 添加自定义关键字
-   * ```
-   */
-  export const CustomKeywords: any;
 
-  // ========== dsl.config 选项（v2.3.0+）==========
+  // ========== dsl.config 选项 ==========
 
   /**
-   * i18n 配置选项（v2.3.0+）
+   * i18n 配置选项
+   *
+   * @description 支持两种配置方式
+   *
+   * @example
+   * ```typescript
+   * // 方式1: 直接传字符串路径
+   * dsl.config({
+   *   i18n: './i18n/dsl'
+   * });
+   *
+   * // 方式2: 传入语言包对象
+   * dsl.config({
+   *   i18n: {
+   *     'zh-CN': { required: '必填' },
+   *     'en-US': { required: 'Required' }
+   *   }
+   * });
+   * ```
    */
-  export interface I18nConfig {
-    /** 语言包目录路径 */
-    localesPath?: string;
-    /** 直接传入的语言包 */
-    locales?: Record<string, ErrorMessages>;
-  }
+  export type I18nConfig = string | Record<string, ErrorMessages>;
 
   /**
    * 缓存配置选项（v2.3.0+）
@@ -2209,6 +2802,142 @@ declare module 'schema-dsl' {
   export function middleware(options: MiddlewareOptions): (req: any, res: any, next: any) => void;
 
   // ========== 默认导出 ==========
+
+  // ========== 验证器扩展 ==========
+
+  /**
+   * 自定义关键字
+   *
+   * @description 扩展ajv的自定义验证关键字
+   *
+   * @example
+   * ```typescript
+   * import { CustomKeywords, Validator } from 'schema-dsl';
+   *
+   * const validator = new Validator();
+   * const ajv = validator.getAjv();
+   * CustomKeywords.registerAll(ajv);
+   * ```
+   */
+  export const CustomKeywords: {
+    /**
+     * 注册所有自定义关键字到ajv实例
+     * @param ajv - ajv实例
+     */
+    registerAll(ajv: any): void;
+
+    /**
+     * 注册元数据关键字
+     * @param ajv - ajv实例
+     */
+    registerMetadataKeywords(ajv: any): void;
+
+    /**
+     * 注册字符串验证器
+     * @param ajv - ajv实例
+     */
+    registerStringValidators(ajv: any): void;
+
+    /**
+     * 注册数字验证器
+     * @param ajv - ajv实例
+     */
+    registerNumberValidators(ajv: any): void;
+
+    /**
+     * 注册对象验证器
+     * @param ajv - ajv实例
+     */
+    registerObjectValidators(ajv: any): void;
+
+    /**
+     * 注册数组验证器
+     * @param ajv - ajv实例
+     */
+    registerArrayValidators(ajv: any): void;
+
+    /**
+     * 注册日期验证器
+     * @param ajv - ajv实例
+     */
+    registerDateValidators(ajv: any): void;
+  };
+
+  // ========== 常量 ==========
+
+  /**
+   * SchemaIO 配置常量
+   *
+   * @description 所有魔法数字和配置项的统一定义
+   *
+   * @example
+   * ```typescript
+   * import { CONSTANTS } from 'schema-dsl';
+   *
+   * console.log(CONSTANTS.VALIDATION.MAX_RECURSION_DEPTH); // 100
+   * console.log(CONSTANTS.CACHE.SCHEMA_CACHE.MAX_SIZE);    // 5000
+   * ```
+   */
+  export const CONSTANTS: {
+    /** 验证配置 */
+    VALIDATION: {
+      /** 递归深度限制 */
+      MAX_RECURSION_DEPTH: number;
+      /** 数组大小限制 */
+      MAX_ARRAY_SIZE: number;
+      /** 字符串长度限制 */
+      MAX_STRING_LENGTH: number;
+      /** 对象属性数量限制 */
+      MAX_OBJECT_KEYS: number;
+      /** 验证超时时间（ms） */
+      DEFAULT_TIMEOUT: number;
+      /** 正则表达式超时（ms） */
+      REGEX_TIMEOUT: number;
+      /** 自定义验证函数超时（ms） */
+      CUSTOM_VALIDATOR_TIMEOUT: number;
+      /** 默认选项 */
+      DEFAULT_OPTIONS: {
+        abortEarly: boolean;
+        stripUnknown: boolean;
+        convert: boolean;
+        presence: string;
+        allowUnknown: boolean;
+        skipFunctions: boolean;
+      };
+    };
+    /** 缓存配置 */
+    CACHE: {
+      /** 缓存开关 */
+      ENABLED: boolean;
+      /** Schema编译缓存 */
+      SCHEMA_CACHE: {
+        /** 最大缓存条目 */
+        MAX_SIZE: number;
+        /** 缓存过期时间（ms） */
+        TTL: number;
+      };
+    };
+    /** 格式配置 */
+    FORMAT: Record<string, any>;
+    /** 类型配置 */
+    TYPES: Record<string, any>;
+    /** 错误配置 */
+    ERRORS: Record<string, any>;
+  };
+
+  /**
+   * 版本信息
+   *
+   * @description 当前schema-dsl版本号
+   *
+   * @example
+   * ```typescript
+   * import { VERSION } from 'schema-dsl';
+   *
+   * console.log(`schema-dsl version: ${VERSION}`); // schema-dsl version: 1.0.4
+   * ```
+   */
+  export const VERSION: string;
 
   /**
    * 默认导出（dsl函数）

@@ -5,7 +5,7 @@
  * 简洁 + 强大 = 完美平衡
  *
  * @module schema-dsl
- * @version 1.0.3
+ * @version 1.0.4
  */
 
 // ========== 核心层 ==========
@@ -36,6 +36,7 @@ dsl.if = dsl.DslAdapter.if;
  * @param {Object} options - 配置选项
  * @param {Object} options.patterns - 验证规则扩展 (phone, idCard, creditCard)
  * @param {string|Object} options.i18n - 多语言配置（目录路径或语言包对象）
+ * @param {Object} options.cache - 缓存配置
  */
 dsl.config = function (options = {}) {
   const patterns = require('./lib/config/patterns');
@@ -74,6 +75,29 @@ dsl.config = function (options = {}) {
       });
     }
   }
+
+  // 缓存配置 (v1.0.4+)
+  if (options.cache) {
+    // 如果 Validator 还未创建，保存配置供后续创建时使用
+    if (!_defaultValidator) {
+      _validatorOptions.cache = options.cache;
+    } else {
+      // 如果已创建，动态修改现有实例的配置（向后兼容）
+      const cacheOpts = _defaultValidator.cache.options;
+      if (options.cache.maxSize !== undefined) {
+        cacheOpts.maxSize = options.cache.maxSize;
+      }
+      if (options.cache.ttl !== undefined) {
+        cacheOpts.ttl = options.cache.ttl;
+      }
+      if (options.cache.enabled !== undefined) {
+        cacheOpts.enabled = options.cache.enabled;
+      }
+      if (options.cache.statsEnabled !== undefined) {
+        cacheOpts.statsEnabled = options.cache.statsEnabled;
+      }
+    }
+  }
 };
 
 // ========== 导出器层 ==========
@@ -87,6 +111,7 @@ Object.entries(defaultLocales).forEach(([locale, messages]) => {
 
 // ========== 单例Validator ==========
 let _defaultValidator = null;
+let _validatorOptions = {}; // 存储 Validator 配置选项
 
 /**
  * 获取默认Validator实例（单例）
@@ -94,7 +119,7 @@ let _defaultValidator = null;
  */
 function getDefaultValidator() {
   if (!_defaultValidator) {
-    _defaultValidator = new Validator();
+    _defaultValidator = new Validator(_validatorOptions);
   }
   return _defaultValidator;
 }
@@ -128,91 +153,6 @@ const CONSTANTS = require('./lib/config/constants');
 // ========== 自动安装 String 扩展 ==========
 installStringExtensions(dsl);
 
-// ========== 全局配置函数 ==========
-/**
- * 全局配置
- * @param {Object} options - 配置选项
- * @param {Object} options.i18n - 多语言配置
- * @param {string} options.i18n.localesPath - 用户语言包目录路径
- * @param {Object} options.i18n.locales - 直接传入的语言包对象
- * @param {Object} options.cache - 缓存配置
- * @param {number} options.cache.maxSize - 缓存最大条目数
- * @param {number} options.cache.ttl - 缓存过期时间（ms）
- *
- * @example
- * dsl.config({
- *   i18n: {
- *     localesPath: './i18n/labels'
- *   },
- *   cache: {
- *     maxSize: 10000,
- *     ttl: 7200000
- *   }
- * });
- */
-dsl.config = function (options = {}) {
-  // ========== 用户语言包配置 ==========
-  if (options.i18n) {
-    const { localesPath, locales } = options.i18n;
-
-    // 方式 1：从路径加载语言包文件
-    if (localesPath) {
-      const fs = require('fs');
-      const path = require('path');
-
-      const resolvedPath = path.resolve(localesPath);
-
-      if (fs.existsSync(resolvedPath)) {
-        const files = fs.readdirSync(resolvedPath);
-
-        files.forEach(file => {
-          if (file.endsWith('.js') || file.endsWith('.json')) {
-            const locale = path.basename(file, path.extname(file));
-            try {
-              const messages = require(path.join(resolvedPath, file));
-              Locale.addLocale(locale, messages);
-              if (process.env.DEBUG) {
-                console.log(`[schema-dsl] Loaded user locale: ${locale}`);
-              }
-            } catch (error) {
-              console.warn(`[schema-dsl] Failed to load locale ${locale}:`, error.message);
-            }
-          }
-        });
-      } else {
-        console.warn(`[schema-dsl] Locales path not found: ${resolvedPath}`);
-      }
-    }
-
-    // 方式 2：直接传入语言包对象
-    if (locales && typeof locales === 'object') {
-      Object.keys(locales).forEach(locale => {
-        Locale.addLocale(locale, locales[locale]);
-        if (process.env.DEBUG) {
-          console.log(`[schema-dsl] Added user locale: ${locale}`);
-        }
-      });
-    }
-  }
-
-  // ========== 缓存配置 ==========
-  if (options.cache) {
-    const { maxSize, ttl } = options.cache;
-
-    // 更新默认 Validator 的缓存配置
-    if (_defaultValidator) {
-      if (maxSize !== undefined) {
-        _defaultValidator.cache.options.maxSize = maxSize;
-      }
-      if (ttl !== undefined) {
-        _defaultValidator.cache.options.ttl = ttl;
-      }
-      if (process.env.DEBUG) {
-        console.log(`[schema-dsl] Updated cache config: maxSize=${maxSize || 'default'}, ttl=${ttl || 'default'}ms`);
-      }
-    }
-  }
-};
 
 // ========== 导出 ==========
 
@@ -226,6 +166,9 @@ module.exports = {
   // 统一DSL API
   dsl,
   DslBuilder,
+
+  // 配置函数 (v1.0.4+)
+  config: dsl.config,
 
   // String 扩展控制
   installStringExtensions: () => installStringExtensions(dsl),
@@ -272,7 +215,7 @@ module.exports = {
   CONSTANTS,
 
   // 版本信息
-  VERSION: '1.0.3'
+  VERSION: '1.0.4'
 };
 
 
