@@ -11,11 +11,9 @@
 
 | 版本               | 日期 | 变更摘要 | 详细 |
 |------------------|------|---------|------|
-| [v1.1.0](#v110)  | 2026-01-05 | 🎉 新功能：ConditionalBuilder 快捷验证方法 | [查看详情](#v110) |
+| [v1.1.0](#v110)  | 2026-01-05 | 🎉 重大功能：跨类型联合验证 + 插件系统增强 | [查看详情](#v110) |
 | [v1.0.9](#v109)  | 2026-01-04 | 🎉 重大改进：多语言支持完善 + TypeScript 类型完整 | [查看详情](#v109) |
 | [v1.0.8](#v108) | 2026-01-04 | 优化：错误消息过滤增强 | [查看详情](#v108) |
-| [v1.0.7](#v107)  | 2026-01-04 | 修复：dsl.match/dsl.if 嵌套支持 dsl() 包裹 | [查看详情](#v107) |
-| [v1.0.6](#v106)  | 2026-01-04 | 🚨 紧急修复：TypeScript 类型污染 | [查看详情](#v106) |
 | [v1.0.7](#v107)  | 2026-01-04 | 修复：dsl.match/dsl.if 嵌套支持 dsl() 包裹 | [查看详情](#v107) |
 | [v1.0.6](#v106)  | 2026-01-04 | 🚨 紧急修复：TypeScript 类型污染 | [查看详情](#v106) |
 | [v1.0.5](#v105)  | 2026-01-04 | 测试覆盖率提升至 97% | [查看详情](#v105) |
@@ -31,7 +29,142 @@
 
 ### 🎉 新功能
 
-#### ConditionalBuilder 快捷验证方法
+#### 1. 跨类型联合验证 - `types:` 语法
+
+**一个字段支持多种类型**
+
+现在可以使用 `types:` 前缀定义跨类型联合验证，支持字段匹配多种不同的数据类型。
+
+**基础用法**：
+
+```javascript
+const { dsl, validate } = require('schema-dsl');
+
+// 字段可以是字符串或数字
+const schema = dsl({
+  value: 'types:string|number'
+});
+
+validate(schema, { value: 'hello' });  // ✅ 通过
+validate(schema, { value: 123 });      // ✅ 通过
+validate(schema, { value: true });     // ❌ 失败
+```
+
+**带约束的联合类型**：
+
+```javascript
+const schema = dsl({
+  contact: 'types:email|phone!',         // 邮箱或手机号
+  price: 'types:number:0-|string:1-20',  // 数字价格或"面议"
+  rating: 'types:integer:1-5|string:9'   // 整数1-5或字符串"excellent"
+});
+```
+
+**实际应用场景**：
+
+```javascript
+// 用户注册：灵活的联系方式
+const registerSchema = dsl({
+  username: 'string:3-20!',
+  contact: 'types:email|phone!',  // 支持邮箱或手机号注册
+  age: 'types:integer:1-150|null' // 年龄可选（null表示不填）
+});
+```
+
+**支持的类型**：
+- ✅ 所有内置类型：`string`, `number`, `email`, `url`, `uuid` 等
+- ✅ 插件注册的自定义类型（见下文）
+
+---
+
+#### 2. 插件系统增强 - DSL类型注册
+
+**插件现在可以注册自定义DSL类型**
+
+插件不再局限于注册ajv format/keyword，现在可以注册完整的DSL类型，让自定义类型在DSL语法中直接可用。
+
+**改造前** (v1.0.x)：
+```javascript
+// ❌ 只能注册ajv format（仅验证阶段生效）
+install(schemaDsl, options) {
+  const ajv = validator.getAjv();
+  ajv.addFormat('phone-cn', { validate: /^1[3-9]\d{9}$/ });
+  
+  // ❌ 无法在DSL语法中使用
+  // dsl({ phone: 'phone-cn!' })  // 报错：未知类型
+}
+```
+
+**改造后** (v1.1.0)：
+```javascript
+// ✅ 同时注册DSL类型和ajv format
+install(schemaDsl, options) {
+  const { DslBuilder } = schemaDsl;
+  
+  // ✅ 注册到DSL解析器（解析阶段）
+  DslBuilder.registerType('phone-cn', {
+    type: 'string',
+    pattern: /^1[3-9]\d{9}$/.source,
+    minLength: 11,
+    maxLength: 11
+  });
+  
+  // ✅ 注册到ajv（验证阶段）
+  const ajv = validator.getAjv();
+  ajv.addFormat('phone-cn', { validate: /^1[3-9]\d{9}$/ });
+  
+  // ✅ 现在可以在DSL中直接使用
+  // dsl({ phone: 'phone-cn!' })  // ✅ 成功
+  // dsl({ contact: 'types:email|phone-cn' })  // ✅ 在联合类型中也能用
+}
+```
+
+**新增 API**：
+
+| API | 说明 | 用途 |
+|-----|------|------|
+| `DslBuilder.registerType(name, schema)` | 注册自定义类型 | 插件注册新类型 |
+| `DslBuilder.hasType(type)` | 检查类型是否存在 | 插件验证类型 |
+| `DslBuilder.getCustomTypes()` | 获取所有自定义类型 | 调试和测试 |
+| `DslBuilder.clearCustomTypes()` | 清除自定义类型 | 测试用 |
+
+**插件示例**：
+
+```javascript
+// plugins/custom-format.js (v2.0.0)
+module.exports = {
+  name: 'custom-format',
+  version: '2.0.0',
+  
+  install(schemaDsl, options, context) {
+    const { DslBuilder } = schemaDsl;
+    const ajv = validator.getAjv();
+    
+    // 定义自定义类型
+    const types = {
+      'phone-cn': {
+        pattern: /^1[3-9]\d{9}$/,
+        schema: { type: 'string', pattern: /^1[3-9]\d{9}$/.source, minLength: 11, maxLength: 11 }
+      },
+      'qq': {
+        pattern: /^[1-9][0-9]{4,10}$/,
+        schema: { type: 'string', pattern: /^[1-9][0-9]{4,10}$/.source, minLength: 5, maxLength: 11 }
+      }
+    };
+    
+    // 注册到DSL和ajv
+    Object.keys(types).forEach(name => {
+      const config = types[name];
+      DslBuilder.registerType(name, config.schema);  // DSL解析
+      ajv.addFormat(name, { validate: config.pattern });  // ajv验证
+    });
+  }
+};
+```
+
+---
+
+#### 3. ConditionalBuilder 快捷验证方法
 
 **一行代码完成条件验证**
 

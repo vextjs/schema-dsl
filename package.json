@@ -1,8 +1,9 @@
 {
   "name": "schema-dsl",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "简洁强大的JSON Schema验证库 - DSL语法 + String扩展 + 便捷validate",
   "main": "index.js",
+  "types": "index.d.ts",
   "exports": {
     ".": {
       "require": "./index.js",

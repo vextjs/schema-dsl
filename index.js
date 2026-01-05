@@ -203,6 +203,7 @@ module.exports = {
   // 核心类
   JSONSchemaCore,
   Validator,
+  DslBuilder,                  // v1.1.0 新增：导出DslBuilder供插件使用
 
   // 便捷方法（推荐）
   validate,                    // 便捷验证（单例）

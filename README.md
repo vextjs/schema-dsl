@@ -181,11 +181,48 @@ if (result.valid) {
 |------|-----------|------|
 | **基本验证** | ✅ | string、number、boolean、date、email、url... |
 | **高级验证** | ✅ | 正则、自定义、条件、嵌套、数组... |
+| **🆕 跨类型联合** | ✅ | `types:string|number` 一个字段支持多种类型 (v1.1.0+) |
 | **错误格式化** | ✅ | 自动多语言翻译 |
 | **数据库导出** | ✅ | MongoDB、MySQL、PostgreSQL |
 | **TypeScript** | ✅ | 完整类型定义 |
 | **性能优化** | ✅ | WeakMap 缓存、智能编译 |
+| **插件系统** | ✅ | 支持自定义类型注册 (v1.1.0+) |
 | **文档生成** | ✅ | Markdown、HTML |
+
+### 🆕 v1.1.0 新特性：跨类型联合验证
+
+**一行代码支持多种类型**
+
+```javascript
+const { dsl, validate } = require('schema-dsl');
+
+// 字段可以是字符串或数字
+const schema = dsl({
+  value: 'types:string|number'
+});
+
+validate(schema, { value: 'hello' });  // ✅ 通过
+validate(schema, { value: 123 });      // ✅ 通过
+validate(schema, { value: true });     // ❌ 失败
+
+// 带约束的联合类型
+const advancedSchema = dsl({
+  contact: 'types:email|phone!',  // 邮箱或手机号
+  price: 'types:number:0-|string:1-20'  // 数字价格或"面议"
+});
+```
+
+**实际场景示例**:
+```javascript
+// 用户注册：支持邮箱或手机号
+const registerSchema = dsl({
+  username: 'string:3-20!',
+  contact: 'types:email|phone!',  // 灵活的联系方式
+  age: 'types:integer:1-150|null' // 年龄可选
+});
+```
+
+📖 [完整文档](./docs/union-types.md) | [插件开发指南](./docs/plugin-type-registration.md)
 
 ---
 

@@ -219,13 +219,81 @@ declare module 'schema-dsl' {
    */
   export class DslBuilder {
     /**
+     * 注册自定义类型（供插件使用）
+     * @param name - 类型名称
+     * @param schema - JSON Schema对象或生成函数
+     * @static
+     * @since v1.1.0
+     *
+     * @example
+     * ```typescript
+     * // 注册自定义类型
+     * DslBuilder.registerType('phone-cn', {
+     *   type: 'string',
+     *   pattern: '^1[3-9]\\d{9}$',
+     *   minLength: 11,
+     *   maxLength: 11
+     * });
+     *
+     * // 在DSL中使用
+     * const schema = dsl({ phone: 'phone-cn!' });
+     * const schema2 = dsl({ contact: 'types:email|phone-cn' });
+     * ```
+     */
+    static registerType(name: string, schema: JSONSchema | (() => JSONSchema)): void;
+
+    /**
+     * 检查类型是否已注册
+     * @param type - 类型名称
+     * @returns 是否已注册
+     * @static
+     * @since v1.1.0
+     *
+     * @example
+     * ```typescript
+     * DslBuilder.hasType('string');     // true (内置)
+     * DslBuilder.hasType('phone-cn');   // false (未注册)
+     * DslBuilder.registerType('phone-cn', { ... });
+     * DslBuilder.hasType('phone-cn');   // true (已注册)
+     * ```
+     */
+    static hasType(type: string): boolean;
+
+    /**
+     * 获取所有已注册的自定义类型
+     * @returns 自定义类型名称数组
+     * @static
+     * @since v1.1.0
+     *
+     * @example
+     * ```typescript
+     * const types = DslBuilder.getCustomTypes();
+     * console.log(types); // ['phone-cn', 'order-id', ...]
+     * ```
+     */
+    static getCustomTypes(): string[];
+
+    /**
+     * 清除所有自定义类型（主要用于测试）
+     * @static
+     * @since v1.1.0
+     *
+     * @example
+     * ```typescript
+     * DslBuilder.clearCustomTypes();
+     * ```
+     */
+    static clearCustomTypes(): void;
+
+    /**
      * 构造函数
-     * @param dslString - DSL字符串（如 'email!', 'string:3-32!'）
-     * 
+     * @param dslString - DSL字符串（如 'email!', 'string:3-32!', 'types:string|number'）
+     *
      * @example
      * ```typescript
      * const builder = new DslBuilder('email!');
      * const builder2 = new DslBuilder('string:3-32');
+     * const builder3 = new DslBuilder('types:string|number');
      * ```
      */
     constructor(dslString: string);
