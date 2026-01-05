@@ -19,7 +19,7 @@
 
 ## 概述
 
-`MySQLExporter` 将 SchemaIO 生成的 JSON Schema 转换为 MySQL 的 DDL 语句，包括 `CREATE TABLE` 和索引创建语句。
+`MySQLExporter` 将 SchemaI-DSL 生成的 JSON Schema 转换为 MySQL 的 DDL 语句，包括 `CREATE TABLE` 和索引创建语句。
 
 ### 核心功能
 

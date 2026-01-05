@@ -49,7 +49,7 @@ const schema = dsl({
 
 **替代方案**:
 - 导出为最宽松的类型（`VARCHAR(255)`）
-- 验证逻辑保留在应用层（使用 SchemaIO 验证器）
+- 验证逻辑保留在应用层（使用 SchemaI-DSL 验证器）
 
 ---
 
@@ -331,7 +331,7 @@ const schema = dsl('string!')
 
 ```
 ┌─────────────────────────────────────────┐
-│  应用层（SchemaIO 完整验证）             │
+│  应用层（SchemaI-DSL 完整验证）             │
 │  - 条件逻辑（match/if）                 │
 │  - 自定义验证器                         │
 │  - 复杂约束（正则、范围等）              │
@@ -449,7 +449,7 @@ module.exports = {
 ```markdown
 ## 数据验证说明
 
-### 应用层验证（SchemaIO）
+### 应用层验证（SchemaI-DSL）
 - ✅ `contact` 字段根据 `contactType` 动态验证
 - ✅ 用户名正则验证（`^[a-zA-Z0-9_]+$`）
 - ✅ 自定义业务规则验证

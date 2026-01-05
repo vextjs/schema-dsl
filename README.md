@@ -377,6 +377,146 @@ const registerSchema = SchemaUtils
 // partial - 变为可选（用于更新接口）
 ```
 
+### 条件验证 - 一行代码搞定
+
+**问题场景**：不同情况需要不同的验证规则
+
+```javascript
+const { dsl } = require('schema-dsl');
+
+// 场景1：年龄限制 - 未成年不能注册
+// ❌ 传统做法：先验证，再判断，写两次
+const result = validate(schema, userData);
+if (!result.valid) return;
+if (userData.age < 18) {
+  throw new Error('未成年用户不能注册');
+}
+
+// ✅ 新做法：一行代码搞定
+dsl.if(d => d.age < 18)
+  .message('未成年用户不能注册')
+  .assert(userData);  // 失败自动抛错
+
+// 场景2：权限检查 - 快速判断
+// ❌ 传统做法：写 if 判断
+if (user.role !== 'admin' && user.role !== 'moderator') {
+  return res.status(403).json({ error: '权限不足' });
+}
+
+// ✅ 新做法：一行搞定
+if (!dsl.if(d => d.role === 'admin' || d.role === 'moderator')
+     .message('权限不足')
+     .check(user)) {
+  return res.status(403).json({ error: '权限不足' });
+}
+
+// 场景3：批量过滤 - 筛选符合条件的数据
+// ❌ 传统做法：写 filter 函数
+const adults = users.filter(u => u.age >= 18);
+
+// ✅ 新做法：语义更清晰
+const adults = users.filter(u => 
+  !dsl.if(d => d.age < 18).message('未成年').check(u)
+);
+```
+
+#### 四种方法，满足不同场景
+
+| 方法 | 什么时候用 | 返回什么 | 示例 |
+|------|-----------|---------|------|
+| **`.validate()`** | 需要知道错误详情 | `{ valid, errors, data }` | 表单验证 |
+| **`.validateAsync()`** | async/await 场景 | Promise（失败抛错） | Express 中间件 |
+| **`.assert()`** | 快速失败，不想写 if | 失败直接抛错 | 函数入口检查 |
+| **`.check()`** | 只需要判断真假 | `true/false` | 数据过滤 |
+
+#### 实际例子
+
+**表单验证 - 需要显示错误**
+
+```javascript
+// 使用 .validate() 获取错误详情
+const result = dsl.if(d => d.age < 18)
+  .message('未成年用户不能注册')
+  .validate(formData);
+
+if (!result.valid) {
+  showError(result.errors[0].message);  // 显示给用户
+}
+```
+
+**Express 中间件 - 异步验证**
+
+```javascript
+// 使用 .validateAsync() 失败自动抛错
+app.post('/register', async (req, res, next) => {
+  try {
+    await dsl.if(d => d.age < 18)
+      .message('未成年用户不能注册')
+      .validateAsync(req.body);
+    
+    // 验证通过，继续处理
+    const user = await createUser(req.body);
+    res.json(user);
+  } catch (error) {
+    next(error);  // 自动传递给错误处理中间件
+  }
+});
+```
+
+**函数参数检查 - 快速断言**
+
+```javascript
+// 使用 .assert() 不满足直接抛错
+function registerUser(userData) {
+  // 入口检查，不满足直接抛错，代码更清晰
+  dsl.if(d => d.age < 18).message('未成年不能注册').assert(userData);
+  dsl.if(d => !d.email).message('邮箱必填').assert(userData);
+  dsl.if(d => !d.phone).message('手机号必填').assert(userData);
+  
+  // 检查通过，继续业务逻辑
+  return createUser(userData);
+}
+```
+
+**批量数据处理 - 快速过滤**
+
+```javascript
+// 使用 .check() 只返回 true/false
+const canRegister = dsl.if(d => d.age < 18)
+  .or(d => d.status === 'blocked')
+  .message('不允许注册');
+
+// 过滤出可以注册的用户
+const validUsers = users.filter(u => !canRegister.check(u));
+
+// 统计未成年用户数量
+const minorCount = users.filter(u => 
+  dsl.if(d => d.age < 18).message('未成年').check(u)
+).length;
+```
+
+**复用验证器**
+
+```javascript
+// 创建一次，到处使用
+const ageValidator = dsl.if(d => d.age < 18)
+  .message('未成年用户不能注册');
+
+// 不同场景使用不同方法
+const r1 = ageValidator.validate({ age: 16 });      // 同步，返回详情
+const r2 = await ageValidator.validateAsync(data);  // 异步，失败抛错
+const r3 = ageValidator.check({ age: 20 });         // 快速判断
+```
+
+#### 💡 选择建议
+
+- 🎯 **表单验证**：用 `.validate()` - 需要显示错误给用户
+- 🚀 **API 接口**：用 `.validateAsync()` - 配合 try/catch
+- ⚡ **函数入口**：用 `.assert()` - 快速失败，代码简洁
+- 🔍 **数据过滤**：用 `.check()` - 只需要判断真假
+
+**完整文档**: [ConditionalBuilder API](./docs/conditional-api.md)
+
 ---
 
 ## 📖 DSL 语法速查
@@ -599,6 +739,86 @@ const vipSchema = dsl({
 validate(vipSchema, { isVip: true, discount: 30 });
 
 // ❌ 非 VIP 用户折扣超过 10
+```
+
+### 🆕 链式条件判断 - dsl.if() (v1.1.0)
+
+**运行时动态条件判断，类似 JavaScript if-else 语句**
+
+```javascript
+const { dsl, validate } = require('schema-dsl');
+
+// 1. 简单条件 + 错误消息
+const schema1 = dsl({
+  age: 'number!',
+  status: dsl.if((data) => data.age >= 18)
+    .message('未成年用户不能注册')  // 不满足自动抛错
+});
+
+validate(schema1, { age: 16, status: 'active' });
+// => { valid: false, errors: [{ message: '未成年用户不能注册' }] }
+
+
+// 2. 条件 + then/else（动态Schema）
+const schema2 = dsl({
+  userType: 'string!',
+  email: dsl.if((data) => data.userType === 'admin')
+    .then('email!')  // 管理员必填
+    .else('email')   // 普通用户可选
+});
+
+
+// 3. 多条件 AND
+const schema3 = dsl({
+  age: 'number!',
+  userType: 'string!',
+  email: dsl.if((data) => data.age >= 18)
+    .and((data) => data.userType === 'admin')
+    .then('email!')
+    .else('email')
+});
+
+
+// 4. 多条件 OR
+const schema4 = dsl({
+  age: 'number!',
+  status: 'string!',
+  reason: dsl.if((data) => data.age < 18)
+    .or((data) => data.status === 'blocked')
+    .message('不允许注册')
+});
+
+
+// 5. elseIf 多分支
+const schema5 = dsl({
+  userType: 'string!',
+  permissions: dsl.if((data) => data.userType === 'admin')
+    .then('array<string>!')
+    .elseIf((data) => data.userType === 'vip')
+    .then('array<string>')
+    .else(null)  // 游客不验证
+});
+
+
+// 6. else 可选（不写 else 就不验证）
+const schema6 = dsl({
+  userType: 'string!',
+  vipLevel: dsl.if((data) => data.userType === 'vip')
+    .then('enum:gold|silver|bronze!')
+    // 不写 else，非 vip 用户不验证
+});
+```
+
+**核心特性**:
+- ✅ **运行时执行** - 在验证时根据实际数据判断（不是Schema定义时）
+- ✅ **多条件组合** - 支持 and/or 逻辑组合
+- ✅ **elseIf 分支** - 支持多层条件判断
+- ✅ **else 可选** - 不写 else 就不验证
+- ✅ **简化设计** - message 自动抛错，无需 throwError()
+
+📖 [完整链式条件判断文档](./docs/conditional-api.md)
+
+---
 validate(vipSchema, { isVip: false, discount: 15 });
 
 

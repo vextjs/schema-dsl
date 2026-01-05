@@ -19,7 +19,7 @@
 
 ## 概述
 
-`MongoDBExporter` 将 SchemaIO 生成的 JSON Schema 转换为 MongoDB 的 `$jsonSchema` 验证格式，可直接用于创建集合时的文档验证。
+`MongoDBExporter` 将 SchemaI-DSL 生成的 JSON Schema 转换为 MongoDB 的 `$jsonSchema` 验证格式，可直接用于创建集合时的文档验证。
 
 ### 核心功能
 
@@ -104,7 +104,7 @@ const mongoSchema = exporter.export(jsonSchema);
 ```
 
 **参数**：
-- `jsonSchema` (Object): SchemaIO 生成的 JSON Schema 对象
+- `jsonSchema` (Object): SchemaI-DSL 生成的 JSON Schema 对象
 
 **返回值**：
 - `Object`: 包含 `$jsonSchema` 的 MongoDB 验证对象
@@ -272,7 +272,7 @@ async function createValidatedCollection() {
 
 ## 导出限制
 
-⚠️ **重要提示**: 并非所有 SchemaIO 特性都能导出到数据库 Schema。
+⚠️ **重要提示**: 并非所有 SchemaI-DSL 特性都能导出到数据库 Schema。
 
 **不支持导出的特性**:
 - ❌ 条件验证逻辑（`dsl.match()`, `dsl.if()`）

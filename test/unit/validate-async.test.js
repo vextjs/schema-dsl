@@ -219,11 +219,11 @@ describe('validateAsync', function() {
       }
     });
 
-    it('应该支持 format 选项', async function() {
+    it('应该支持 validateFormats 选项', async function() {
       const schema = dsl({ name: 'string!' });
 
       try {
-        await validateAsync(schema, {}, { format: false });
+        await validateAsync(schema, {}, { validateFormats: false });
         expect.fail('应该抛出错误');
       } catch (error) {
         expect(error).to.be.instanceof(ValidationError);

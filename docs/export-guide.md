@@ -3,7 +3,7 @@
 > **用途**: Schema 到数据库 DDL 的完整导出指南  
 > **阅读时间**: 10分钟
 
-> ⚠️ **重要提示**: 并非所有 SchemaIO 特性都能导出到数据库。请先阅读 [导出限制说明](export-limitations.md) 了解哪些特性不支持导出。
+> ⚠️ **重要提示**: 并非所有 SchemaI-DSL 特性都能导出到数据库。请先阅读 [导出限制说明](export-limitations.md) 了解哪些特性不支持导出。
 
 ---
 
@@ -21,7 +21,7 @@
 
 ## 概述
 
-SchemaIO 支持将 JSON Schema 导出为多种数据库的 DDL 语句，实现"一次定义，多处使用"。
+SchemaI-DSL 支持将 JSON Schema 导出为多种数据库的 DDL 语句，实现"一次定义，多处使用"。
 
 ### 支持的数据库
 

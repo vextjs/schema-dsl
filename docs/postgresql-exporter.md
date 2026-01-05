@@ -20,7 +20,7 @@
 
 ## 概述
 
-`PostgreSQLExporter` 将 SchemaIO 生成的 JSON Schema 转换为 PostgreSQL 的 DDL 语句，支持丰富的 PostgreSQL 特性。
+`PostgreSQLExporter` 将 SchemaI-DSL 生成的 JSON Schema 转换为 PostgreSQL 的 DDL 语句，支持丰富的 PostgreSQL 特性。
 
 ### 核心功能
 

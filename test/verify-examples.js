@@ -23,8 +23,7 @@ const results = {
 
 // 需要跳过的文件（需要特殊环境）
 const skipFiles = [
-  'i18n-full-demo.js',  // 需要 Express
-  'middleware-usage.js'  // 需要 Express/Koa
+  // 所有依赖已安装，无需跳过
 ];
 
 jsFiles.forEach((file, index) => {

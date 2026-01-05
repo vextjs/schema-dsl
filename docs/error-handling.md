@@ -23,7 +23,7 @@
 
 ### 基础结构
 
-SchemaIO 验证返回的错误对象结构：
+SchemaI-DSL 验证返回的错误对象结构：
 
 ```javascript
 const { dsl, validate } = require('schema-dsl');
@@ -165,7 +165,7 @@ Locale.setMessages({
 
 ### 内置错误码（简化版）
 
-SchemaIO 对 ajv 的错误关键字进行了简化映射，使其更易用：
+SchemaI-DSL 对 ajv 的错误关键字进行了简化映射，使其更易用：
 
 #### 字符串错误码
 

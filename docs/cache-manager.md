@@ -19,7 +19,7 @@
 
 ## 概述
 
-`CacheManager` 是 SchemaIO 的内部缓存系统，用于缓存编译后的 Schema 验证函数，避免重复编译带来的性能开销。
+`CacheManager` 是 SchemaI-DSL 的内部缓存系统，用于缓存编译后的 Schema 验证函数，避免重复编译带来的性能开销。
 
 ### 核心功能
 

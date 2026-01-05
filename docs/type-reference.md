@@ -8,7 +8,7 @@
 
 ### 基本类型
 
-| 类型 | SchemaIO | JSON Schema | 说明 |
+| 类型 | SchemaI-DSL | JSON Schema | 说明 |
 |------|----------|-------------|------|
 | 字符串 | `string` | `{ type: 'string' }` | 文本类型 |
 | 数字 | `number` | `{ type: 'number' }` | 浮点数 |
@@ -23,7 +23,7 @@
 
 ### 格式类型（基于 string）
 
-| 类型 | SchemaIO | JSON Schema format | 说明 |
+| 类型 | SchemaI-DSL | JSON Schema format | 说明 |
 |------|----------|-------------------|------|
 | 邮箱 | `email` | `email` | 邮箱地址 |
 | URL | `url` | `uri` | 网址 |
@@ -38,7 +38,7 @@
 
 ### 特殊类型
 
-| 类型 | SchemaIO | JSON Schema | 说明 |
+| 类型 | SchemaI-DSL | JSON Schema | 说明 |
 |------|----------|-------------|------|
 | 二进制 | `binary` | `contentEncoding: base64` | Base64编码 |
 | ObjectId | `objectId` | `pattern: ^[0-9a-fA-F]{24}$` | MongoDB ObjectId |
@@ -156,7 +156,7 @@ const schema = dsl({
 
 ### 完整对照表
 
-| joi | SchemaIO DSL | 说明 |
+| joi | SchemaI-DSL | 说明 |
 |-----|--------------|------|
 | `Joi.string()` | `'string'` | 字符串 |
 | `Joi.string().email()` | `'email'` | 邮箱 |
@@ -206,7 +206,7 @@ const schema = dsl({
 
 ### Q2: 为什么 `integer` 不是 `number().integer()`？
 
-A: SchemaIO 使用 JSON Schema 标准，`integer` 是独立类型。
+A: SchemaI-DSL 使用 JSON Schema 标准，`integer` 是独立类型。
 
 ### Q3: 不支持简写吗？
 

@@ -1,6 +1,6 @@
 # 常见问题排查指南
 
-> **用途**: 快速解决 SchemaIO 使用中的常见问题  
+> **用途**: 快速解决 SchemaI-DSL 使用中的常见问题  
 > **更新**: 2025-12-26  
 
 ---
@@ -378,7 +378,7 @@ db.createCollection('users', {
 
 **解决方案**:
 ```javascript
-// SchemaIO 默认会自动安装 String 扩展
+// SchemaI-DSL 默认会自动安装 String 扩展
 // 如果未生效，手动安装：
 const { installStringExtensions } = require('schema-dsl');
 installStringExtensions();

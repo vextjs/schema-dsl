@@ -413,13 +413,13 @@ uninstallStringExtensions();
 
 ### Q: 支持TypeScript吗？
 
-**A**: 支持！SchemaIO提供完整的TypeScript类型定义。
+**A**: 支持！SchemaI-DSL提供完整的TypeScript类型定义。
 
 ---
 
 ## 🎉 恭喜！
 
-你已经掌握了SchemaIO的核心用法！
+你已经掌握了SchemaI-DSL的核心用法！
 
 **核心要点**:
 1. ✅ DSL语法简洁直观
@@ -737,13 +737,13 @@ uninstallStringExtensions();
 
 ### Q: 支持TypeScript吗？
 
-**A**: 支持！SchemaIO提供完整的TypeScript类型定义。
+**A**: 支持！SchemaI-DSL提供完整的TypeScript类型定义。
 
 ---
 
 ## 🎉 恭喜！
 
-你已经掌握了SchemaIO的核心用法！
+你已经掌握了SchemaI-DSL的核心用法！
 
 **核心要点**:
 1. ✅ DSL语法简洁直观

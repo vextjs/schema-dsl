@@ -20,7 +20,7 @@
 
 ## 概述
 
-SchemaIO 插件系统允许你扩展核心功能，添加自定义验证器、格式化器、导出器等。
+SchemaI-DSL 插件系统允许你扩展核心功能，添加自定义验证器、格式化器、导出器等。
 
 ### 特性
 
@@ -342,7 +342,7 @@ pluginManager.register({
 安装插件。
 
 **参数**:
-- `schema-dsl` (Object) - SchemaIO 实例
+- `schema-dsl` (Object) - SchemaI-DSL 实例
 - `pluginName` (String, optional) - 插件名称
 - `options` (Object, optional) - 安装选项
 
@@ -354,7 +354,7 @@ pluginManager.register({
 
 **参数**:
 - `pluginName` (String) - 插件名称
-- `schema-dsl` (Object) - SchemaIO 实例
+- `schema-dsl` (Object) - SchemaI-DSL 实例
 
 **返回**: `this`
 
@@ -398,7 +398,7 @@ pluginManager.register({
 清空所有插件。
 
 **参数**:
-- `schema-dsl` (Object) - SchemaIO 实例
+- `schema-dsl` (Object) - SchemaI-DSL 实例
 
 **返回**: `this`
 

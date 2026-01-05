@@ -79,7 +79,7 @@ const schema = dsl({
 
 ### 3. 使用预设验证器
 
-SchemaIO 提供了常用的预设验证器，开箱即用：
+SchemaI-DSL 提供了常用的预设验证器，开箱即用：
 
 ```javascript
 const schema = dsl({
@@ -639,7 +639,7 @@ setInterval(() => {
 
 ## 性能基准参考
 
-基于 SchemaIO 的性能测试：
+基于 SchemaI-DSL 的性能测试：
 
 | 操作 | 性能指标 |
 |------|---------|
@@ -655,7 +655,7 @@ setInterval(() => {
 
 ## 总结
 
-遵循这些最佳实践，你的 SchemaIO 代码将具备：
+遵循这些最佳实践，你的 SchemaI-DSL 代码将具备：
 
 ✅ **高性能** - 通过预编译和缓存  
 ✅ **高安全性** - 避免常见安全陷阱  

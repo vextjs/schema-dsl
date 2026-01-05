@@ -20,12 +20,12 @@
 
 ## 基础问题
 
-### Q: SchemaIO 和 Joi、Yup 有什么区别？
+### Q: SchemaI-DSL 和 Joi、Yup 有什么区别？
 
-**A**: SchemaIO 采用 DSL 语法，更简洁：
+**A**: SchemaI-DSL 采用 DSL 语法，更简洁：
 
 ```javascript
-// SchemaIO - 简洁
+// SchemaI-DSL - 简洁
 const schema = dsl({
   username: 'string:3-32!',
   email: 'email!'
@@ -46,7 +46,7 @@ const schema = Joi.object({
 
 ---
 
-### Q: 如何安装 SchemaIO？
+### Q: 如何安装 SchemaI-DSL？
 
 ```bash
 npm install schema-dsl
@@ -299,7 +299,7 @@ app.post('/api/users', (req, res) => {
 
 ### Q: 缓存如何工作？
 
-**A**: SchemaIO 内置 LRU 缓存：
+**A**: SchemaI-DSL 内置 LRU 缓存：
 
 ```javascript
 const validator = new Validator({
@@ -523,7 +523,7 @@ MySQL 会生成 `COMMENT`，PostgreSQL 会生成 `COMMENT ON COLUMN`。
 
 ## TypeScript 支持
 
-### Q: SchemaIO 支持 TypeScript 吗？
+### Q: SchemaI-DSL 支持 TypeScript 吗？
 
 **A**: 支持，类型定义在 `index.d.ts`：
 

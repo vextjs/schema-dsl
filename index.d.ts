@@ -331,11 +331,8 @@ declare module 'schema-dsl' {
      * });
      * ```
      */
-    when(refField: string, options: {
-      is: any;
-      then: DslBuilder | JSONSchema;
-      otherwise?: DslBuilder | JSONSchema;
-    }): this;
+    // ⚠️ DEPRECATED: .when() method removed - use dsl.if() instead
+    // when(refField: string, options: { is: any; then: DslBuilder | JSONSchema; otherwise?: DslBuilder | JSONSchema; }): this;
 
     /**
      * 设置默认值
@@ -2787,6 +2784,266 @@ declare module 'schema-dsl' {
    * ```
    */
   export const VERSION: string;
+
+  /**
+   * 链式条件构建器
+   *
+   * @description 提供流畅的条件判断 API，类似 JavaScript if-else 语句
+   *
+   * @example
+   * ```typescript
+   * import { dsl } from 'schema-dsl';
+   *
+   * // 简单条件 + 错误消息
+   * const schema = dsl({
+   *   email: dsl.if((data) => data.age >= 18)
+   *     .message('未成年用户不能注册')
+   * });
+   *
+   * // 多条件 and
+   * const schema2 = dsl({
+   *   email: dsl.if((data) => data.age >= 18)
+   *     .and((data) => data.userType === 'admin')
+   *     .then('email!')
+   * });
+   *
+   * // 多条件 or
+   * const schema3 = dsl({
+   *   status: dsl.if((data) => data.age < 18)
+   *     .or((data) => data.isBlocked)
+   *     .message('不允许注册')
+   * });
+   * ```
+   */
+  export class ConditionalBuilder {
+    /**
+     * 开始条件判断
+     * @param condition - 条件函数，接收完整数据对象
+     * @returns 当前实例（支持链式调用）
+     */
+    if(condition: (data: any) => boolean): this;
+
+    /**
+     * 添加 AND 条件（与前一个条件组合）
+     * @param condition - 条件函数
+     * @returns 当前实例（支持链式调用）
+     */
+    and(condition: (data: any) => boolean): this;
+
+    /**
+     * 添加 OR 条件（与前一个条件组合）
+     * @param condition - 条件函数
+     * @returns 当前实例（支持链式调用）
+     */
+    or(condition: (data: any) => boolean): this;
+
+    /**
+     * 添加 else-if 分支
+     * @param condition - 条件函数
+     * @returns 当前实例（支持链式调用）
+     */
+    elseIf(condition: (data: any) => boolean): this;
+
+    /**
+     * 设置错误消息（支持多语言 key）
+     * 条件为 true 时自动抛出此错误
+     * @param msg - 错误消息或多语言 key
+     * @returns 当前实例（支持链式调用）
+     *
+     * @example
+     * ```typescript
+     * // 如果是未成年人（条件为true），抛出错误
+     * dsl.if((data) => data.age < 18)
+     *   .message('未成年用户不能注册')
+     * ```
+     */
+    message(msg: string): this;
+
+    /**
+     * 设置满足条件时的 Schema
+     * @param schema - DSL 字符串或 Schema 对象
+     * @returns 当前实例（支持链式调用）
+     */
+    then(schema: string | DslBuilder | JSONSchema): this;
+
+    /**
+     * 设置默认 Schema（所有条件都不满足时）
+     * 可选：不写 else 就是不验证
+     * @param schema - DSL 字符串、Schema 对象或 null
+     * @returns 当前实例（支持链式调用）
+     */
+    else(schema: string | DslBuilder | JSONSchema | null): this;
+
+    /**
+     * 快捷验证方法 - 返回完整验证结果
+     * @param data - 待验证的数据（任意类型）
+     * @param options - 验证选项（可选）
+     * @returns 验证结果 { valid, errors, data }
+     *
+     * @example
+     * ```typescript
+     * // 一行代码验证
+     * const result = dsl.if(d => d.age < 18)
+     *   .message('未成年')
+     *   .validate({ age: 16 });
+     *
+     * // 复用验证器
+     * const validator = dsl.if(d => d.age < 18).message('未成年');
+     * const r1 = validator.validate({ age: 16 });
+     * const r2 = validator.validate({ age: 20 });
+     * ```
+     */
+    validate<T = any>(data: T, options?: ValidateOptions): ValidationResult<T>;
+
+    /**
+     * 异步验证方法 - 失败自动抛出异常
+     * @param data - 待验证的数据
+     * @param options - 验证选项（可选）
+     * @returns 验证通过返回数据，失败抛出异常
+     * @throws ValidationError 验证失败抛出异常
+     *
+     * @example
+     * ```typescript
+     * // 异步验证，失败自动抛错
+     * try {
+     *   const data = await dsl.if(d => d.age < 18)
+     *     .message('未成年')
+     *     .validateAsync({ age: 16 });
+     * } catch (error) {
+     *   console.log(error.message);
+     * }
+     *
+     * // Express 中间件
+     * app.post('/register', async (req, res, next) => {
+     *   try {
+     *     await dsl.if(d => d.age < 18)
+     *       .message('未成年用户不能注册')
+     *       .validateAsync(req.body);
+     *     // 验证通过，继续处理...
+     *   } catch (error) {
+     *     next(error);
+     *   }
+     * });
+     * ```
+     */
+    validateAsync<T = any>(data: T, options?: ValidateOptions): Promise<T>;
+
+    /**
+     * 断言方法 - 同步验证，失败直接抛错
+     * @param data - 待验证的数据
+     * @param options - 验证选项（可选）
+     * @returns 验证通过返回数据
+     * @throws Error 验证失败抛出错误
+     *
+     * @example
+     * ```typescript
+     * // 断言验证，失败直接抛错
+     * try {
+     *   dsl.if(d => d.age < 18)
+     *     .message('未成年')
+     *     .assert({ age: 16 });
+     * } catch (error) {
+     *   console.log(error.message);
+     * }
+     *
+     * // 函数中快速断言
+     * function registerUser(userData: any) {
+     *   dsl.if(d => d.age < 18)
+     *     .message('未成年用户不能注册')
+     *     .assert(userData);
+     *
+     *   // 验证通过，继续处理...
+     *   return createUser(userData);
+     * }
+     * ```
+     */
+    assert<T = any>(data: T, options?: ValidateOptions): T;
+
+    /**
+     * 快捷检查方法 - 只返回 boolean
+     * @param data - 待验证的数据
+     * @returns 验证是否通过
+     *
+     * @example
+     * ```typescript
+     * // 快速判断
+     * const isValid = dsl.if(d => d.age < 18)
+     *   .message('未成年')
+     *   .check({ age: 16 });
+     * // => false
+     *
+     * // 断言场景
+     * if (!validator.check(userData)) {
+     *   console.log('验证失败');
+     * }
+     * ```
+     */
+    check(data: any): boolean;
+  }
+
+  /**
+   * dsl 函数扩展：条件判断（支持两种方式）
+   */
+  export interface DslFunction {
+    /**
+     * 方式一：函数条件（运行时动态判断）
+     *
+     * 创建链式条件构建器，在验证时根据实际数据动态判断
+     *
+     * @param condition - 条件函数，接收完整数据对象
+     * @returns ConditionalBuilder 实例
+     *
+     * @example 简单条件 + 错误消息
+     * ```typescript
+     * const schema = dsl({
+     *   age: 'number!',
+     *   status: dsl.if((data) => data.age < 18)
+     *     .message('未成年用户不能注册')
+     * });
+     * ```
+     *
+     * @example 条件 + then/else（动态Schema）
+     * ```typescript
+     * const schema = dsl({
+     *   userType: 'string!',
+     *   email: dsl.if((data) => data.userType === 'admin')
+     *     .then('email!')  // 管理员必填
+     *     .else('email')   // 普通用户可选
+     * });
+     * ```
+     *
+     * @example 多条件组合
+     * ```typescript
+     * const schema = dsl({
+     *   email: dsl.if((data) => data.age >= 18)
+     *     .and((data) => data.userType === 'admin')
+     *     .then('email!')
+     *     .else('email')
+     * });
+     * ```
+     */
+    if(condition: (data: any) => boolean): ConditionalBuilder;
+
+    /**
+     * 方式二：字段条件（Schema 定义时静态判断）
+     *
+     * 基于字段值的静态布尔条件判断
+     *
+     * @param conditionField - 条件字段名
+     * @param thenSchema - 条件为 true 时的 Schema
+     * @param elseSchema - 条件为 false 时的 Schema
+     * @returns 条件结构对象
+     *
+     * @example 基于字段值的条件
+     * ```typescript
+     * const schema = dsl({
+     *   isVip: 'boolean',
+     *   discount: dsl.if('isVip', 'number:0-50', 'number:0-10')
+     * });
+     * ```
+     */
+    if(conditionField: string, thenSchema: string | DslBuilder | JSONSchema, elseSchema?: string | DslBuilder | JSONSchema): any;
+  }
 
   /**
    * 默认导出（dsl函数）

@@ -18,7 +18,7 @@
 
 ## 基本原理
 
-SchemaIO 的 `Validator` 支持在验证时动态指定语言，无需全局切换。
+SchemaI-DSL 的 `Validator` 支持在验证时动态指定语言，无需全局切换。
 
 ### 核心方法
 
@@ -593,6 +593,6 @@ const schema = dsl({
 ---
 
 **最后更新**: 2025-12-25  
-**作者**: SchemaIO Team
+**作者**: SchemaI-DSL Team
 
 

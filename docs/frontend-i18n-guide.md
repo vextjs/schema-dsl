@@ -250,7 +250,7 @@ Locale.addLocale('de-DE', {
 **A**: 后端返回错误消息已经是本地化的，前端无需处理。如果需要前端验证：
 
 ```javascript
-// 前端可以使用相同的 SchemaIO（浏览器版）
+// 前端可以使用相同的 SchemaI-DSL（浏览器版）
 import { dsl, validate } from 'schema-dsl/browser';
 
 const schema = dsl({ /* ... */ });

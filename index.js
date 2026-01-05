@@ -15,6 +15,7 @@ const ErrorFormatter = require('./lib/core/ErrorFormatter');
 const CacheManager = require('./lib/core/CacheManager');
 const DslBuilder = require('./lib/core/DslBuilder');
 const PluginManager = require('./lib/core/PluginManager');
+const ConditionalBuilder = require('./lib/core/ConditionalBuilder');
 
 // ========== 错误消息系统 ==========
 const ErrorCodes = require('./lib/core/ErrorCodes');
@@ -29,7 +30,23 @@ const dsl = require('./lib/adapters/DslAdapter');
 
 // 挂载静态方法 (v2.1.0)
 dsl.match = dsl.DslAdapter.match;
-dsl.if = dsl.DslAdapter.if;
+
+// ✅ 智能 dsl.if：根据参数类型选择实现
+dsl.if = function(...args) {
+  // 如果第一个参数是函数 → 使用新的 ConditionalBuilder（链式API）
+  if (typeof args[0] === 'function') {
+    return ConditionalBuilder.start(args[0]);
+  }
+
+  // 如果第一个参数是字符串且有3个参数 → 使用原有的字段条件实现
+  // dsl.if('fieldName', thenSchema, elseSchema)
+  if (typeof args[0] === 'string' && args.length >= 2) {
+    return dsl.DslAdapter.if(args[0], args[1], args[2]);
+  }
+
+  // 其他情况 → 调用 ConditionalBuilder 让它抛出正确的错误
+  return ConditionalBuilder.start(args[0]);
+};
 
 /**
  * 全局配置

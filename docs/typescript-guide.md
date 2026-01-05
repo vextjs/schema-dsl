@@ -479,12 +479,11 @@ const schema = dsl({
 const schema = dsl({
   userType: dsl('string!').label('用户类型'),
   
-  companyName: dsl('string')
-    .when('userType', {
-      is: 'company',
-      then: dsl('string!').label('公司名称'),  // 企业用户必填
-      otherwise: dsl('string').label('公司名称')  // 个人用户可选
-    })
+  // 使用 dsl.match() 根据 userType 字段动态验证
+  companyName: dsl.match('userType', {
+    'company': 'string!',  // 企业用户必填
+    '_default': 'string'   // 个人用户可选
+  })
 });
 ```
 

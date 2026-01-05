@@ -514,6 +514,6 @@ const schema = {
 ---
 
 **最后更新**: 2025-12-29
-**维护者**: SchemaIO Team
+**维护者**: SchemaI-DSL Team
 
 
