@@ -11,6 +11,7 @@
 
 | 版本               | 日期 | 变更摘要 | 详细 |
 |------------------|------|---------|------|
+| [v1.1.1](#v111)  | 2026-01-06 | 🎉 新功能：ConditionalBuilder 独立消息支持 | [查看详情](#v111) |
 | [v1.1.0](#v110)  | 2026-01-05 | 🎉 重大功能：跨类型联合验证 + 插件系统增强 | [查看详情](#v110) |
 | [v1.0.9](#v109)  | 2026-01-04 | 🎉 重大改进：多语言支持完善 + TypeScript 类型完整 | [查看详情](#v109) |
 | [v1.0.8](#v108) | 2026-01-04 | 优化：错误消息过滤增强 | [查看详情](#v108) |
@@ -25,6 +26,140 @@
 
 ---
 
+## [v1.1.1] - 2026-01-06
+
+### 🎉 新功能
+
+#### ConditionalBuilder 独立消息支持 - `.and()/.or()` 后可调用 `.message()`
+
+**每个条件都可以有自己的错误消息**
+
+现在支持在 `.and()` 和 `.or()` 后调用 `.message()` 设置独立的错误消息，让错误提示更精确。
+
+**基础用法**：
+
+```javascript
+const { dsl } = require('schema-dsl');
+
+// ✅ v1.1.1 新功能：每个条件独立消息
+dsl.if(d => !d)
+  .message('ACCOUNT_NOT_FOUND')
+  .and(d => d.tradable_credits < amount)
+  .message('INSUFFICIENT_TRADABLE_CREDITS')
+  .assert(account);
+
+// 工作原理：
+// - 第一个条件失败 → 返回 'ACCOUNT_NOT_FOUND'
+// - 第二个条件失败 → 返回 'INSUFFICIENT_TRADABLE_CREDITS'
+// - 所有条件通过 → 验证成功
+```
+
+**特性**：
+- ✅ 支持多个 `.and()` 条件各有独立消息
+- ✅ 支持 `.or()` 条件独立消息
+- ✅ 自动检测启用链式检查模式
+- ✅ 100% 向后兼容，不影响现有代码
+- ✅ 完整的 TypeScript 类型支持
+
+**实际应用示例**：
+
+```javascript
+// 多层验证，每层都有清晰的错误消息
+dsl.if(d => !d)
+  .message('ACCOUNT_NOT_FOUND')
+  .and(d => d.status !== 'active')
+  .message('ACCOUNT_INACTIVE')
+  .and(d => d.tradable_credits < amount)
+  .message('INSUFFICIENT_TRADABLE_CREDITS')
+  .assert(account);
+```
+
+**文档链接**：
+- [条件 API 文档](./docs/conditional-api.md)
+- [README FAQ Q7](./README.md#q7-如何合并多个-dslif-验证)
+
+---
+
+#### I18nError 多语言错误抛出机制
+
+**统一的多语言错误抛出**
+
+新增 `I18nError` 类和 `dsl.error` 快捷方法，提供统一的多语言错误抛出机制。
+
+**基础用法**：
+
+```javascript
+const { I18nError, dsl } = require('schema-dsl');
+
+// 方式1：直接抛出
+I18nError.throw('account.notFound');
+// 中文: "账户不存在"
+// 英文: "Account not found"
+
+// 方式2：带参数插值
+I18nError.throw('account.insufficientBalance', {
+  balance: 50,
+  required: 100
+});
+// 输出: "余额不足，当前余额50，需要100"
+
+// 方式3：断言风格（推荐）
+I18nError.assert(account, 'account.notFound');
+I18nError.assert(
+  account.balance >= 100,
+  'account.insufficientBalance',
+  { balance: account.balance, required: 100 }
+);
+
+// 方式4：快捷方法
+dsl.error.throw('user.noPermission');
+dsl.error.assert(user.role === 'admin', 'user.noPermission');
+```
+
+**特性**：
+- ✅ 统一的错误代码格式：`{模块}.{错误类型}`
+- ✅ 自动多语言翻译（支持中英文）
+- ✅ 参数插值支持
+- ✅ Express/Koa 集成（toJSON 方法）
+- ✅ 与 `.message()` 和 `.label()` 使用相同的多语言机制
+
+**内置错误代码**：
+- 通用: `error.notFound`, `error.forbidden`, `error.unauthorized`
+- 账户: `account.notFound`, `account.insufficientBalance`, `account.insufficientCredits`
+- 用户: `user.notFound`, `user.noPermission`, `user.notVerified`
+- 订单: `order.notPaid`, `order.paymentMissing`, `order.addressMissing`
+
+**Express/Koa 集成**：
+
+```javascript
+app.use((error, req, res, next) => {
+  if (error instanceof I18nError) {
+    return res.status(error.statusCode).json(error.toJSON());
+  }
+  next(error);
+});
+```
+
+**文档链接**：
+- [使用示例](./examples/i18n-error.examples.js)
+- [README FAQ Q8](./README.md#q8-如何统一抛出多语言错误v111)
+
+---
+
+### 📝 测试
+
+- **新增**: 52 个测试用例（24个独立消息 + 28个 I18nError）
+- **总计**: 921 个测试全部通过 (100%)
+
+### 📖 文档
+
+- **新增**: docs/conditional-api.md 新增 600+ 行功能说明
+- **新增**: examples/i18n-error.examples.js I18nError 使用示例
+- **更新**: README.md FAQ Q7/Q8 添加新功能说明
+- **更新**: index.d.ts TypeScript 类型注释和示例（I18nError + dsl.error）
+
+---
+
 ## [v1.1.0] - 2026-01-05
 
 ### 🎉 新功能
@@ -33,22 +168,7 @@
 
 **一个字段支持多种类型**
 
-现在可以使用 `types:` 前缀定义跨类型联合验证，支持字段匹配多种不同的数据类型。
-
-**基础用法**：
-
-```javascript
-const { dsl, validate } = require('schema-dsl');
-
-// 字段可以是字符串或数字
-const schema = dsl({
-  value: 'types:string|number'
-});
-
-validate(schema, { value: 'hello' });  // ✅ 通过
-validate(schema, { value: 123 });      // ✅ 通过
-validate(schema, { value: true });     // ❌ 失败
-```
+...existing content...
 
 **带约束的联合类型**：
 

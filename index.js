@@ -22,6 +22,10 @@ const ErrorCodes = require('./lib/core/ErrorCodes');
 const MessageTemplate = require('./lib/core/MessageTemplate');
 const Locale = require('./lib/core/Locale');
 
+// ========== 错误类 ==========
+const ValidationError = require('./lib/errors/ValidationError');
+const I18nError = require('./lib/errors/I18nError');
+
 // ========== String 扩展 ==========
 const { installStringExtensions, uninstallStringExtensions } = require('./lib/core/StringExtensions');
 
@@ -46,6 +50,36 @@ dsl.if = function(...args) {
 
   // 其他情况 → 调用 ConditionalBuilder 让它抛出正确的错误
   return ConditionalBuilder.start(args[0]);
+};
+
+// ✅ dsl.error：统一的多语言错误抛出（v1.1.1+）
+dsl.error = {
+  /**
+   * 创建多语言错误（不抛出）
+   * @param {string} code - 错误代码（多语言 key）
+   * @param {Object} params - 错误参数
+   * @param {number} statusCode - HTTP 状态码
+   * @returns {I18nError} 错误实例
+   */
+  create: (code, params, statusCode) => I18nError.create(code, params, statusCode),
+
+  /**
+   * 抛出多语言错误
+   * @param {string} code - 错误代码（多语言 key）
+   * @param {Object} params - 错误参数
+   * @param {number} statusCode - HTTP 状态码
+   * @throws {I18nError} 直接抛出错误
+   */
+  throw: (code, params, statusCode) => I18nError.throw(code, params, statusCode),
+
+  /**
+   * 断言方法 - 条件不满足时抛错
+   * @param {boolean} condition - 条件表达式
+   * @param {string} code - 错误代码（多语言 key）
+   * @param {Object} params - 错误参数
+   * @param {number} statusCode - HTTP 状态码
+   */
+  assert: (condition, code, params, statusCode) => I18nError.assert(condition, code, params, statusCode)
 };
 
 /**
@@ -182,8 +216,6 @@ installStringExtensions(dsl);
 
 // ========== 导出 ==========
 
-// 导入 ValidationError
-const ValidationError = require('./lib/errors/ValidationError');
 
 // 导入 validateAsync
 const { validateAsync } = require('./lib/adapters/DslAdapter');
@@ -214,6 +246,7 @@ module.exports = {
 
   // 错误类 (v2.1.0 新增)
   ValidationError,
+  I18nError,                   // v1.1.1 新增：多语言错误类
 
   // 错误消息系统
   ErrorCodes,

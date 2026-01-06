@@ -1249,6 +1249,86 @@ declare module 'schema-dsl' {
      * 
      * JavaScript 用户请直接使用 `dsl.if()`
      * TypeScript 用户可以使用 `dsl['if']()` 或 `dsl._if()`
+     *
+     * @alias _if
+     */
+    export const _if: (condition: any, thenSchema: any, elseSchema?: any) => any;
+
+    /**
+     * 多语言错误快捷方法 (v1.1.1+)
+     *
+     * @description 统一的多语言错误抛出机制
+     *
+     * @example
+     * ```typescript
+     * import { dsl } from 'schema-dsl';
+     *
+     * // 创建错误
+     * const error = dsl.error.create('account.notFound');
+     *
+     * // 直接抛出
+     * dsl.error.throw('account.notFound');
+     *
+     * // 断言风格
+     * dsl.error.assert(account, 'account.notFound');
+     * dsl.error.assert(
+     *   account.balance >= 100,
+     *   'account.insufficientBalance',
+     *   { balance: account.balance, required: 100 }
+     * );
+     * ```
+     */
+    export const error: {
+      /**
+       * 创建多语言错误（不抛出）
+       * @param code - 错误代码（多语言 key）
+       * @param params - 错误参数
+       * @param statusCode - HTTP 状态码
+       * @returns 错误实例
+       */
+      create(
+        code: string,
+        params?: Record<string, any>,
+        statusCode?: number
+      ): I18nError;
+
+      /**
+       * 抛出多语言错误
+       * @param code - 错误代码（多语言 key）
+       * @param params - 错误参数
+       * @param statusCode - HTTP 状态码
+       * @throws I18nError
+       */
+      throw(
+        code: string,
+        params?: Record<string, any>,
+        statusCode?: number
+      ): never;
+
+      /**
+       * 断言方法 - 条件不满足时抛错
+       * @param condition - 条件表达式
+       * @param code - 错误代码（多语言 key）
+       * @param params - 错误参数
+       * @param statusCode - HTTP 状态码
+       * @throws I18nError 条件为 false 时抛出
+       */
+      assert(
+        condition: any,
+        code: string,
+        params?: Record<string, any>,
+        statusCode?: number
+      ): asserts condition;
+    };
+  }
+
+  /**
+   * 条件规则的别名（用于 TypeScript）
+   *
+   * @description 因为 TypeScript 中 `if` 是保留字，提供 `_if` 作为别名
+   *
+   * JavaScript 用户请直接使用 `dsl.if()`
+   * TypeScript 用户可以使用 `dsl['if']()` 或 `dsl._if()`
      */
     export { _if as if };
 
@@ -1570,6 +1650,161 @@ declare module 'schema-dsl' {
      * @returns 错误数量
      */
     getErrorCount(): number;
+  }
+
+  /**
+   * I18nError - 多语言错误类
+   *
+   * @version 1.1.1
+   *
+   * @description 统一的多语言错误抛出机制，支持：
+   * - 多语言 key 自动翻译
+   * - 参数插值（如 {{#balance}}, {{#required}}）
+   * - 自定义错误代码
+   * - Express/Koa 集成
+   *
+   * @example 基础用法
+   * ```typescript
+   * import { I18nError } from 'schema-dsl';
+   *
+   * // 直接抛出
+   * throw I18nError.create('account.notFound');
+   * // 中文: "账户不存在"
+   * // 英文: "Account not found"
+   * ```
+   *
+   * @example 带参数
+   * ```typescript
+   * I18nError.throw('account.insufficientBalance', {
+   *   balance: 50,
+   *   required: 100
+   * });
+   * // 输出: "余额不足，当前余额50，需要100"
+   * ```
+   *
+   * @example 断言风格
+   * ```typescript
+   * function getAccount(id: string) {
+   *   const account = db.findAccount(id);
+   *   I18nError.assert(account, 'account.notFound');
+   *   I18nError.assert(
+   *     account.balance >= 100,
+   *     'account.insufficientBalance',
+   *     { balance: account.balance, required: 100 }
+   *   );
+   *   return account;
+   * }
+   * ```
+   *
+   * @example Express 集成
+   * ```typescript
+   * app.use((error, req, res, next) => {
+   *   if (error instanceof I18nError) {
+   *     return res.status(error.statusCode).json(error.toJSON());
+   *   }
+   *   next(error);
+   * });
+   * ```
+   */
+  export class I18nError extends Error {
+    /** 错误名称（固定为 'I18nError'） */
+    readonly name: 'I18nError';
+
+    /** 错误消息（已翻译） */
+    message: string;
+
+    /** 错误代码（多语言 key） */
+    code: string;
+
+    /** 错误参数（用于插值） */
+    params: Record<string, any>;
+
+    /** HTTP 状态码 */
+    statusCode: number;
+
+    /** 使用的语言环境 */
+    locale: string;
+
+    /**
+     * 构造函数
+     * @param code - 错误代码（多语言 key）
+     * @param params - 错误参数（用于插值）
+     * @param statusCode - HTTP 状态码（默认 400）
+     * @param locale - 语言环境（默认使用当前语言）
+     */
+    constructor(
+      code: string,
+      params?: Record<string, any>,
+      statusCode?: number,
+      locale?: string
+    );
+
+    /**
+     * 静态工厂方法 - 创建错误（不抛出）
+     * @param code - 错误代码
+     * @param params - 错误参数
+     * @param statusCode - HTTP 状态码
+     * @returns 错误实例
+     */
+    static create(
+      code: string,
+      params?: Record<string, any>,
+      statusCode?: number
+    ): I18nError;
+
+    /**
+     * 静态工厂方法 - 直接抛出错误
+     * @param code - 错误代码
+     * @param params - 错误参数
+     * @param statusCode - HTTP 状态码
+     * @throws I18nError
+     */
+    static throw(
+      code: string,
+      params?: Record<string, any>,
+      statusCode?: number
+    ): never;
+
+    /**
+     * 断言方法 - 条件不满足时抛错
+     * @param condition - 条件表达式
+     * @param code - 错误代码
+     * @param params - 错误参数
+     * @param statusCode - HTTP 状态码
+     * @throws I18nError 条件为 false 时抛出
+     */
+    static assert(
+      condition: any,
+      code: string,
+      params?: Record<string, any>,
+      statusCode?: number
+    ): asserts condition;
+
+    /**
+     * 检查错误是否为指定代码
+     * @param code - 错误代码
+     * @returns 是否匹配
+     */
+    is(code: string): boolean;
+
+    /**
+     * 转为 JSON 格式（用于 API 响应）
+     * @returns JSON 对象
+     */
+    toJSON(): {
+      error: string;
+      code: string;
+      message: string;
+      params: Record<string, any>;
+      statusCode: number;
+      locale: string;
+    };
+
+    /**
+     * 转为字符串
+     * @returns 格式化的错误信息
+     */
+    toString(): string;
   }
 
   /**
@@ -2893,15 +3128,74 @@ declare module 'schema-dsl' {
 
     /**
      * 添加 AND 条件（与前一个条件组合）
+     *
+     * @version 1.1.1 支持为每个 .and() 条件设置独立的错误消息
+     *
      * @param condition - 条件函数
      * @returns 当前实例（支持链式调用）
+     *
+     * @example 基础用法（传统 AND 逻辑）
+     * ```typescript
+     * // 所有条件都为 true 才失败
+     * dsl.if(d => d.age >= 18)
+     *   .and(d => d.userType === 'admin')
+     *   .then('email!')
+     * ```
+     *
+     * @example v1.1.0+ 独立消息（推荐）
+     * ```typescript
+     * // 每个条件都有自己的错误消息
+     * dsl.if(d => !d)
+     *   .message('ACCOUNT_NOT_FOUND')
+     *   .and(d => d.balance < 100)
+     *   .message('INSUFFICIENT_BALANCE')
+     *   .assert(account);
+     *
+     * // 工作原理：链式检查模式
+     * // - 第一个条件失败 → 返回 'ACCOUNT_NOT_FOUND'
+     * // - 第二个条件失败 → 返回 'INSUFFICIENT_BALANCE'
+     * // - 所有条件通过 → 验证成功
+     * ```
+     *
+     * @example 多个 .and() 条件
+     * ```typescript
+     * dsl.if(d => !d)
+     *   .message('NOT_FOUND')
+     *   .and(d => d.status !== 'active')
+     *   .message('INACTIVE')
+     *   .and(d => d.balance < 100)
+     *   .message('INSUFFICIENT')
+     *   .assert(account);
+     * // 依次检查，第一个失败的返回其消息
+     * ```
      */
     and(condition: (data: any) => boolean): this;
 
     /**
      * 添加 OR 条件（与前一个条件组合）
+     *
+     * @version 1.1.1 支持为 .or() 条件设置独立的错误消息
+     *
      * @param condition - 条件函数
      * @returns 当前实例（支持链式调用）
+     *
+     * @example 基础用法
+     * ```typescript
+     * // 任一条件为 true 就失败
+     * dsl.if((data) => data.age < 18)
+     *   .or((data) => data.isBlocked)
+     *   .message('不允许注册')
+     * ```
+     *
+     * @example v1.1.0+ 独立消息
+     * ```typescript
+     * dsl.if(d => d.age < 18)
+     *   .message('未成年用户不能注册')
+     *   .or(d => d.isBlocked)
+     *   .message('账户已被封禁')
+     *   .assert(data);
+     * // 哪个条件为 true 就返回哪个消息
+     * ```
      */
     or(condition: (data: any) => boolean): this;
 
@@ -2914,15 +3208,44 @@ declare module 'schema-dsl' {
 
     /**
      * 设置错误消息（支持多语言 key）
+     *
+     * @version 1.1.1 支持为 .and() 和 .or() 条件设置独立消息
+     *
      * 条件为 true 时自动抛出此错误
+     *
      * @param msg - 错误消息或多语言 key
      * @returns 当前实例（支持链式调用）
      *
-     * @example
+     * @example 基础用法
      * ```typescript
      * // 如果是未成年人（条件为true），抛出错误
      * dsl.if((data) => data.age < 18)
      *   .message('未成年用户不能注册')
+     * ```
+     *
+     * @example v1.1.0+ 为 .and() 设置独立消息
+     * ```typescript
+     * dsl.if((data) => !data)
+     *   .message('账户不存在')
+     *   .and((data) => data.balance < 100)
+     *   .message('余额不足')
+     *   .assert(account);
+     * // 每个条件都有自己的错误消息
+     * ```
+     *
+     * @example 链式检查模式说明
+     * ```typescript
+     * // 启用条件：
+     * // 1. 使用 .message() 模式（不是 .then()/.else()）
+     * // 2. root 条件有 .message()
+     * // 3. 有 .and() 条件
+     * // 4. 没有 .or() 条件
+     *
+     * // ✅ 启用链式检查
+     * dsl.if(d => !d).message('A').and(d => d < 100).message('B')
+     *
+     * // ❌ 不启用（有 .or()）
+     * dsl.if(d => !d).message('A').and(d => d < 100).or(d => d > 200).message('B')
      * ```
      */
     message(msg: string): this;

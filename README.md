@@ -181,12 +181,13 @@ if (result.valid) {
 |------|-----------|------|
 | **基本验证** | ✅ | string、number、boolean、date、email、url... |
 | **高级验证** | ✅ | 正则、自定义、条件、嵌套、数组... |
-| **🆕 跨类型联合** | ✅ | `types:string|number` 一个字段支持多种类型 (v1.1.0+) |
+| **🆕 跨类型联合** | ✅ | `types:string|number` 一个字段支持多种类型 (v1.1.1) |
 | **错误格式化** | ✅ | 自动多语言翻译 |
+| **🆕 多语言错误** | ✅ | `I18nError` 统一的多语言错误抛出 (v1.1.1) |
 | **数据库导出** | ✅ | MongoDB、MySQL、PostgreSQL |
 | **TypeScript** | ✅ | 完整类型定义 |
 | **性能优化** | ✅ | WeakMap 缓存、智能编译 |
-| **插件系统** | ✅ | 支持自定义类型注册 (v1.1.0+) |
+| **插件系统** | ✅ | 支持自定义类型注册 (v1.1.1) |
 | **文档生成** | ✅ | Markdown、HTML |
 
 ### 🆕 v1.1.0 新特性：跨类型联合验证
@@ -1244,7 +1245,147 @@ const schema = dsl({
 | `if (data > 0)` | `'number:0-!'` |
 | `if (data.length >= 3)` | `'string:3-!'` |
 
+---
+
+### Q7: 如何合并多个 dsl.if() 验证？
+
+**原代码（多个独立验证）**：
+```javascript
+dsl.if(d => !d)
+  .message('ACCOUNT_NOT_FOUND')
+  .assert(account);
+
+dsl.if(d => d.tradable_credits < amount)
+  .message('INSUFFICIENT_TRADABLE_CREDITS')
+  .assert(account.tradable_credits);
+```
+
+**✅ 方案1：使用 .and() 链式合并（v1.1.1 推荐）**
+```javascript
+// ✅ 每个条件都有独立的错误消息
+dsl.if(d => !d)
+  .message('ACCOUNT_NOT_FOUND')
+  .and(d => d.tradable_credits < amount)
+  .message('INSUFFICIENT_TRADABLE_CREDITS')
+  .assert(account);
+
+// 工作原理：
+// - 第一个条件失败 → 返回 'ACCOUNT_NOT_FOUND'
+// - 第二个条件失败 → 返回 'INSUFFICIENT_TRADABLE_CREDITS'
+// - 所有条件通过 → 验证成功
+```
+
+**✅ 方案2：使用 .elseIf() 分支验证**
+```javascript
+// ✅ 按优先级检查，找到第一个失败的
+dsl.if(d => !d)
+  .message('ACCOUNT_NOT_FOUND')
+  .elseIf(d => d.tradable_credits < amount)
+  .message('INSUFFICIENT_TRADABLE_CREDITS')
+  .assert(account);
+```
+
+**✅ 方案3：保持独立验证**（最清晰）
+```javascript
+// ✅ 两个独立的验证器
+dsl.if(d => !d).message('ACCOUNT_NOT_FOUND').assert(account);
+dsl.if(d => d.tradable_credits < amount)
+  .message('INSUFFICIENT_TRADABLE_CREDITS')
+  .assert(account.tradable_credits);
+```
+
+**⚠️ 注意事项**：
+- `.and()` 用于组合多个条件，每个条件可以有**独立的** `.message()` (v1.1.1)
+- 如果 `.and()` 后不调用 `.message()`，则使用前一个条件的消息
+- `.elseIf()` 按顺序检查，找到第一个失败的就停止（if-else-if 逻辑）
+
+**何时使用**：
+- ✅ 使用 `.and()` - 多个条件，每个有不同错误消息（v1.1.1）
+- ✅ 使用 `.elseIf()` - 不同分支有不同验证规则
+- ✅ 独立验证 - 最清晰，最可靠
+
+**实际应用示例**：
+```javascript
+// 账户验证：检查存在性 + 余额 + 状态
+dsl.if(d => !d)
+  .message('ACCOUNT_NOT_FOUND')
+  .and(d => d.status !== 'active')
+  .message('ACCOUNT_INACTIVE')
+  .and(d => d.tradable_credits < amount)
+  .message('INSUFFICIENT_TRADABLE_CREDITS')
+  .assert(account);
+
+// 每个失败条件都有清晰的错误消息！
+```
+
 📖 更多示例请查看 [完整文档](./docs/INDEX.md)
+
+---
+
+### Q8: 如何统一抛出多语言错误？(v1.1.1+)
+
+**问题**: 业务代码中抛出的错误无法多语言，与 `.message()` 和 `.label()` 不一致
+
+**✅ 解决方案：使用 `I18nError` 或 `dsl.error`**
+
+```javascript
+const { I18nError, dsl } = require('schema-dsl');
+
+// 方式1：直接抛出
+I18nError.throw('account.notFound');
+// 中文: "账户不存在"
+// 英文: "Account not found"
+
+// 方式2：带参数插值
+I18nError.throw('account.insufficientBalance', {
+  balance: 50,
+  required: 100
+});
+// 输出: "余额不足，当前余额50，需要100"
+
+// 方式3：断言风格（推荐）
+I18nError.assert(account, 'account.notFound');
+I18nError.assert(
+  account.balance >= 100,
+  'account.insufficientBalance',
+  { balance: account.balance, required: 100 }
+);
+
+// 方式4：快捷方法
+dsl.error.throw('user.noPermission');
+dsl.error.assert(user.role === 'admin', 'user.noPermission');
+```
+
+**Express/Koa 集成**:
+```javascript
+// 错误处理中间件
+app.use((error, req, res, next) => {
+  if (error instanceof I18nError) {
+    return res.status(error.statusCode).json(error.toJSON());
+  }
+  next(error);
+});
+
+// 业务代码中使用
+app.post('/withdraw', (req, res) => {
+  const account = getAccount(req.user.id);
+  I18nError.assert(account, 'account.notFound');
+  I18nError.assert(
+    account.balance >= req.body.amount,
+    'account.insufficientBalance',
+    { balance: account.balance, required: req.body.amount }
+  );
+  // ...
+});
+```
+
+**内置错误代码**:
+- 通用: `error.notFound`, `error.forbidden`, `error.unauthorized`
+- 账户: `account.notFound`, `account.insufficientBalance`
+- 用户: `user.notFound`, `user.noPermission`
+- 订单: `order.notPaid`, `order.paymentMissing`
+
+📖 完整文档请查看 [examples/i18n-error.examples.js](./examples/i18n-error.examples.js)
 
 ---
 
