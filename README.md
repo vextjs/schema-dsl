@@ -776,86 +776,6 @@ const vipSchema = dsl({
 validate(vipSchema, { isVip: true, discount: 30 });
 
 // ❌ 非 VIP 用户折扣超过 10
-```
-
-### 🆕 链式条件判断 - dsl.if() (v1.1.0)
-
-**运行时动态条件判断，类似 JavaScript if-else 语句**
-
-```javascript
-const { dsl, validate } = require('schema-dsl');
-
-// 1. 简单条件 + 错误消息
-const schema1 = dsl({
-  age: 'number!',
-  status: dsl.if((data) => data.age >= 18)
-    .message('未成年用户不能注册')  // 不满足自动抛错
-});
-
-validate(schema1, { age: 16, status: 'active' });
-// => { valid: false, errors: [{ message: '未成年用户不能注册' }] }
-
-
-// 2. 条件 + then/else（动态Schema）
-const schema2 = dsl({
-  userType: 'string!',
-  email: dsl.if((data) => data.userType === 'admin')
-    .then('email!')  // 管理员必填
-    .else('email')   // 普通用户可选
-});
-
-
-// 3. 多条件 AND
-const schema3 = dsl({
-  age: 'number!',
-  userType: 'string!',
-  email: dsl.if((data) => data.age >= 18)
-    .and((data) => data.userType === 'admin')
-    .then('email!')
-    .else('email')
-});
-
-
-// 4. 多条件 OR
-const schema4 = dsl({
-  age: 'number!',
-  status: 'string!',
-  reason: dsl.if((data) => data.age < 18)
-    .or((data) => data.status === 'blocked')
-    .message('不允许注册')
-});
-
-
-// 5. elseIf 多分支
-const schema5 = dsl({
-  userType: 'string!',
-  permissions: dsl.if((data) => data.userType === 'admin')
-    .then('array<string>!')
-    .elseIf((data) => data.userType === 'vip')
-    .then('array<string>')
-    .else(null)  // 游客不验证
-});
-
-
-// 6. else 可选（不写 else 就不验证）
-const schema6 = dsl({
-  userType: 'string!',
-  vipLevel: dsl.if((data) => data.userType === 'vip')
-    .then('enum:gold|silver|bronze!')
-    // 不写 else，非 vip 用户不验证
-});
-```
-
-**核心特性**:
-- ✅ **运行时执行** - 在验证时根据实际数据判断（不是Schema定义时）
-- ✅ **多条件组合** - 支持 and/or 逻辑组合
-- ✅ **elseIf 分支** - 支持多层条件判断
-- ✅ **else 可选** - 不写 else 就不验证
-- ✅ **简化设计** - message 自动抛错，无需 throwError()
-
-📖 [完整链式条件判断文档](./docs/conditional-api.md)
-
----
 validate(vipSchema, { isVip: false, discount: 15 });
 
 
@@ -1179,240 +1099,152 @@ try {
 
 ---
 
-## 🎯 适用场景
+## ❓ 常见问题 FAQ
 
-### ✅ 特别适合
+### Q1: 如何判断数据不能为空？（类似 `if(!data)`）
 
-- 🚀 **快速开发** - API 开发、表单验证，追求开发效率
-- 🌍 **国际化项目** - 需要完整的多语言错误消息支持
-- 🗄️ **全栈开发** - 需要从 Schema 自动生成数据库表结构
-- 📋 **配置驱动** - 验证规则需要从配置文件或数据库动态读取
-- 🏢 **中小型项目** - Node.js + Express/Koa/Egg.js 后端项目
-
-### 💡 使用场景示例
-
-**RESTful API 开发**
+**方案1：使用必填标记**（推荐）
 ```javascript
-// 统一的验证中间件
-const validateMiddleware = (schema) => {
-  return async (req, res, next) => {
-    try {
-      req.body = await validateAsync(schema, req.body);
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-};
-
-app.post('/api/users', 
-  validateMiddleware(createUserSchema), 
-  userController.create
-);
+const schema = dsl({
+  username: 'string!',  // 必填，不能为空
+  email: 'email!'
+});
 ```
 
-**表单验证**
+**方案2：使用条件验证 + 抛错**
 ```javascript
-// 前端也可以使用（支持浏览器）
-const formSchema = dsl({
-  username: 'string:3-32!',
-  email: 'email!',
-  password: 'string:8-32!',
-  confirmPassword: 'string!'
+// 验证失败自动抛错
+dsl.if(d => !d)
+  .message('数据不能为空')
+  .assert(data);
+```
+
+**方案3：异步验证**
+```javascript
+// Express/Koa 推荐
+await dsl.if(d => !d)
+  .message('数据不能为空')
+  .validateAsync(data);
+```
+
+---
+
+### Q2: 如何判断数据是否是对象？（类似 `typeof data === 'object'`）
+
+**方案1：使用内置 object 类型**（推荐）
+```javascript
+const schema = dsl({
+  data: 'object!'  // 必须是对象（排除 null 和 array）
 });
 
-const result = validate(formSchema, formData);
-if (!result.valid) {
-  // 显示错误消息
-  showErrors(result.errors);
-}
+validate(schema, { data: { name: 'John' } });  // ✅ 通过
+validate(schema, { data: 'string' });          // ❌ 失败
+validate(schema, { data: [] });                // ❌ 失败
 ```
 
-**动态配置验证**
+**方案2：条件验证 + 抛错**
 ```javascript
-// 从数据库读取验证规则
-const rules = await db.validationRules.find({ formId: 'user-register' });
+dsl.if(d => typeof d !== 'object' || d === null || Array.isArray(d))
+  .message('data 必须是一个对象')
+  .assert(data);
+```
 
-// 动态构建 Schema
-const dynamicSchema = dsl(
-  rules.reduce((schema, rule) => {
-    schema[rule.field] = rule.dsl;
-    return schema;
-  }, {})
-);
+**方案3：带结构验证**
+```javascript
+const schema = dsl({
+  data: {
+    name: 'string!',
+    age: 'integer!',
+    email: 'email'
+  }
+});
+
+await validateAsync(schema, input);  // 验证对象结构
 ```
 
 ---
 
-## ⚡ 性能对比
+### Q3: 如何验证嵌套对象？
 
-**测试环境**: Node.js 18, 10,000 次验证
-
-| 库名 | 速度 (ops/sec) | 相对速度 |
-|------|---------------|---------|
-| Ajv | 2,000,000 | 🥇 最快 |
-| Zod | 526,316 | 🥈 很快 |
-| **schema-dsl** | **277,778** | 🥉 **快** |
-| Joi | 97,087 | 中等 |
-| Yup | 60,241 | 较慢 |
-
-**结论**:
-- ✅ 比 Joi 快 **2.86倍**
-- ✅ 比 Yup 快 **4.61倍**  
-- ✅ 对 99% 的应用场景足够快（27万+次/秒）
-- ⚠️ 如果需要极致性能（100万+次/秒），推荐使用 Ajv
-
----
-
-## 🆚 与其他库对比
-
-### 选择建议
-
-| 项目需求 | 推荐方案 | 原因 |
-|---------|---------|------|
-| 快速开发，减少代码量 | **schema-dsl** | 代码量最少，学习成本最低 |
-| TypeScript 强类型推断 | Zod | 最佳的 TypeScript 支持 |
-| 极致性能要求 | Ajv | 性能最强 |
-| 企业级成熟方案 | Joi | 社区最大，经过大规模验证 |
-| 多语言 + 数据库导出 | **schema-dsl** | 独家功能 |
-
-### 详细对比
-
-<table>
-<tr>
-<th>特性</th>
-<th>schema-dsl</th>
-<th>Joi</th>
-<th>Yup</th>
-<th>Zod</th>
-<th>Ajv</th>
-</tr>
-<tr>
-<td><strong>语法简洁度</strong></td>
-<td>⭐⭐⭐⭐⭐<br>一行代码</td>
-<td>⭐⭐<br>链式调用冗长</td>
-<td>⭐⭐<br>链式调用冗长</td>
-<td>⭐⭐⭐<br>相对简洁</td>
-<td>⭐⭐<br>JSON 配置繁琐</td>
-</tr>
-<tr>
-<td><strong>学习成本</strong></td>
-<td>⭐⭐⭐⭐⭐<br>5分钟</td>
-<td>⭐⭐⭐<br>30分钟</td>
-<td>⭐⭐⭐<br>30分钟</td>
-<td>⭐⭐⭐⭐<br>15分钟</td>
-<td>⭐⭐⭐<br>20分钟</td>
-</tr>
-<tr>
-<td><strong>性能（简单验证）</strong></td>
-<td>⭐⭐⭐⭐<br>55.6万/秒</td>
-<td>⭐⭐⭐<br>23.3万/秒</td>
-<td>⭐⭐<br>18.9万/秒</td>
-<td>⭐⭐⭐⭐⭐<br>100万/秒</td>
-<td>⭐⭐⭐⭐⭐<br>250万/秒</td>
-</tr>
-<tr>
-<td><strong>性能（复杂验证）</strong></td>
-<td>⭐⭐⭐⭐⭐<br>62.5万/秒</td>
-<td>⭐⭐⭐<br>12.5万/秒</td>
-<td>⭐⭐<br>5.5万/秒</td>
-<td>⭐⭐⭐⭐<br>38.5万/秒</td>
-<td>⭐⭐⭐⭐⭐<br>250万/秒</td>
-</tr>
-<tr>
-<td><strong>TypeScript 支持</strong></td>
-<td>⭐⭐⭐<br>.d.ts 类型定义</td>
-<td>⭐⭐⭐<br>.d.ts 类型定义</td>
-<td>⭐⭐⭐<br>.d.ts 类型定义</td>
-<td>⭐⭐⭐⭐⭐<br>完美类型推断</td>
-<td>⭐⭐<br>基础支持</td>
-</tr>
-<tr>
-<td><strong>数据库导出</strong></td>
-<td>✅ MongoDB<br>✅ MySQL<br>✅ PostgreSQL</td>
-<td>❌</td>
-<td>❌</td>
-<td>❌</td>
-<td>❌</td>
-</tr>
-<tr>
-<td><strong>多语言支持</strong></td>
-<td>✅ 完整支持<br>可自定义语言包</td>
-<td>⚠️ 基础支持</td>
-<td>⚠️ 基础支持</td>
-<td>⚠️ 基础支持</td>
-<td>⚠️ 基础支持</td>
-</tr>
-<tr>
-<td><strong>文档生成</strong></td>
-<td>✅ Markdown<br>✅ HTML</td>
-<td>❌</td>
-<td>❌</td>
-<td>❌</td>
-<td>❌</td>
-</tr>
-<tr>
-<td><strong>社区规模</strong></td>
-<td>⭐⭐⭐<br>成长中</td>
-<td>⭐⭐⭐⭐⭐<br>最大</td>
-<td>⭐⭐⭐⭐<br>很大</td>
-<td>⭐⭐⭐⭐<br>快速增长</td>
-<td>⭐⭐⭐⭐<br>成熟</td>
-</tr>
-</table>
-
----
-
-## 📚 完整文档
-
-### 核心文档
-- [快速开始](./docs/quick-start.md) - 5分钟上手指南
-- [DSL 语法完整参考](./docs/dsl-syntax.md) - 所有语法详解
-- [API 文档](./docs/api-reference.md) - 完整 API 说明
-- [**TypeScript 使用指南**](./docs/typescript-guide.md) - TypeScript 最佳实践 ⭐
-
-### 功能指南
-- [String 扩展方法](./docs/string-extensions.md) - 链式调用详解
-- [Schema 复用](./docs/schema-utils.md) - omit/pick/extend/partial
-- [异步验证](./docs/validate-async.md) - validateAsync 使用指南
-- [错误处理](./docs/error-handling.md) - ValidationError 详解
-- [多语言支持](./docs/i18n.md) - 国际化配置指南
-- [插件开发](./docs/plugin-system.md) - 自定义插件教程
-
-### 导出功能
-- [MongoDB 导出](./docs/mongodb-exporter.md) - MongoDB Schema 生成
-- [MySQL 导出](./docs/mysql-exporter.md) - MySQL DDL 生成
-- [PostgreSQL 导出](./docs/postgresql-exporter.md) - PostgreSQL DDL 生成
-- [Markdown 导出](./docs/markdown-exporter.md) - API 文档生成
-
-### 集成示例
-- [Express 集成](./examples/express-integration.js)
-
----
-
-## 💻 示例代码
-
-项目包含 30+ 完整示例，涵盖所有功能：
-
-```bash
-# 安装依赖（首次运行）
-npm install
-
-# 查看所有示例
-ls examples/
-
-# 运行基础示例
-node examples/simple-example.js
-
-# 运行数据库导出示例
-node examples/export-demo.js
-
-# 运行 Express 集成示例
-node examples/express-integration.js
-
-# 🆕 v1.0.3 新增：运行 slug 类型示例
-node examples/slug.examples.js
+```javascript
+const schema = dsl({
+  user: {
+    profile: 'object!',  // profile 必须是对象
+    settings: {
+      theme: 'string',
+      notifications: 'object!'  // 嵌套对象验证
+    }
+  }
+});
 ```
+
+---
+
+### Q4: 如何在 Express/Koa 中使用？
+
+```javascript
+app.post('/api/user', async (req, res) => {
+  try {
+    // 1. 验证请求体是对象
+    await dsl.if(d => typeof d !== 'object' || d === null)
+      .message('请求体必须是对象')
+      .validateAsync(req.body);
+    
+    // 2. 验证字段
+    const schema = dsl({
+      username: 'string:3-32!',
+      email: 'email!',
+      password: 'string:8-!'
+    });
+    
+    const validData = await validateAsync(schema, req.body);
+    
+    // 继续处理...
+    res.json({ success: true, data: validData });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+```
+
+---
+
+### Q5: 如何自定义错误消息？
+
+```javascript
+const schema = dsl({
+  username: dsl('string:3-32!')
+    .label('用户名')
+    .messages({
+      minLength: '用户名至少需要 {{#limit}} 个字符',
+      required: '用户名不能为空'
+    }),
+  
+  email: dsl('email!')
+    .label('邮箱地址')
+    .messages({
+      format: '请输入有效的邮箱地址',
+      required: '邮箱不能为空'
+    })
+});
+```
+
+---
+
+### Q6: 类型对照表
+
+| JavaScript 条件 | schema-dsl 写法 |
+|----------------|----------------|
+| `if (!data)` | `'string!'` 或 `.assert(data)` |
+| `if (typeof data === 'object')` | `'object!'` |
+| `if (typeof data === 'string')` | `'string!'` |
+| `if (typeof data === 'number')` | `'number!'` |
+| `if (Array.isArray(data))` | `'array!'` |
+| `if (data === null)` | `'null!'` |
+| `if (data > 0)` | `'number:0-!'` |
+| `if (data.length >= 3)` | `'string:3-!'` |
+
+📖 更多示例请查看 [完整文档](./docs/INDEX.md)
 
 ---
 
