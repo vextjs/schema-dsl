@@ -11,9 +11,37 @@
 [![Build Status](https://github.com/vextjs/schema-dsl/workflows/CI/badge.svg)](https://github.com/vextjs/schema-dsl/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-[快速开始](#-快速开始) · [在线体验](https://runkit.com/npm/schema-dsl) · [完整文档](./docs/INDEX.md) · [示例代码](./examples)
+[快速开始](#-快速开始) · [在线体验](https://runkit.com/npm/schema-dsl) · [完整文档](./docs/INDEX.md) · [示例代码](./examples) · [性能测试](./docs/performance-benchmark-report.md)
 
 </div>
+
+---
+
+## 🗺️ 文档导航
+
+**新手入门**:
+- [快速开始](#-快速开始) - 5 分钟上手
+- [功能总览](#-功能总览) - 了解所有功能
+- [DSL 语法速查](#-dsl-语法速查) - 语法参考
+
+**核心功能**:
+- [基础验证](#1-基础验证javascript) - 表单验证
+- [批量验证](#批量验证) - 性能优化
+- [嵌套对象](#嵌套对象验证) - 复杂结构
+- [条件验证](#条件验证---一行代码搞定) - 动态规则
+- [多语言](#4-多语言支持) - 国际化
+
+**框架集成**:
+- [Express](#2-express-集成---自动错误处理)
+- [Koa](#koa-集成)
+- [Fastify](#fastify-集成)
+
+**高级功能**:
+- [数据库导出](#3-数据库-schema-导出) - 独家功能
+- [插件系统](#6-插件系统) - 扩展功能
+- [TypeScript](#15-typescript-用法-) - 类型支持
+
+**完整文档**: [docs/INDEX.md](./docs/INDEX.md) - 40+ 篇详细文档
 
 ---
 
@@ -227,7 +255,53 @@ const registerSchema = dsl({
 
 ---
 
-## 📦 安装
+## � 功能总览
+
+> 让 AI 和开发者快速了解所有功能
+
+### 核心功能速查表
+
+| 分类 | 功能 | 代码示例 | 文档链接 |
+|------|------|---------|----------|
+| **基础验证** | DSL 语法 | `'string:3-32!'` | [DSL 语法](./docs/dsl-syntax.md) |
+| | 链式调用 | `'string!'.label('用户名')` | [String 扩展](./docs/string-extensions.md) |
+| | TypeScript | `dsl('string!')` | [TS 指南](./docs/typescript-guide.md) |
+| **高级验证** | 条件验证 | `dsl.if()/dsl.match()` | [条件 API](./docs/conditional-api.md) |
+| | 嵌套对象 | `{ user: { name: 'string!' } }` | [验证指南](./docs/validation-guide.md) |
+| | 数组验证 | `'array:1-10<string>'` | [类型参考](./docs/type-reference.md) |
+| | 联合类型 | `'types:string\|number'` | [联合类型](./docs/union-types.md) |
+| | 正则验证 | `.pattern(/^[A-Z]+$/)` | [自定义扩展](./docs/custom-extensions-guide.md) |
+| | 自定义验证 | `.custom((v) => ...)` | [自定义扩展](./docs/custom-extensions-guide.md) |
+| **Schema 工具** | 复用字段 | `SchemaUtils.pick()` | [SchemaUtils](./docs/schema-utils.md) |
+| | 批量验证 | `validateBatch(schema, array)` | [批量验证](#批量验证) |
+| | 字段库 | `createLibrary()` | [SchemaUtils](./docs/schema-utils.md) |
+| **框架集成** | Express | `validateAsync + try/catch` | [Express 示例](./examples/express-integration.js) |
+| | Koa | `validateAsync + ctx.throw` | [中间件示例](./examples/middleware-usage.js) |
+| | Fastify | `preValidation hook` | [中间件示例](./examples/middleware-usage.js) |
+| **多语言** | 配置语言 | `dsl.config({ i18n })` | [i18n 指南](./docs/i18n-user-guide.md) |
+| | 错误抛出 | `I18nError.throw()` | [I18nError 示例](./examples/i18n-error.examples.js) |
+| **数据库** | MongoDB | `MongoDBExporter.export()` | [MongoDB 导出](./docs/mongodb-exporter.md) |
+| | MySQL | `MySQLExporter.export()` | [MySQL 导出](./docs/mysql-exporter.md) |
+| | PostgreSQL | `PostgreSQLExporter.export()` | [PostgreSQL 导出](./docs/postgresql-exporter.md) |
+| **插件** | 自定义格式 | `pluginManager.register()` | [插件系统](./docs/plugin-system.md) |
+| **性能** | 缓存配置 | `config({ cache })` | [缓存管理](./docs/cache-manager.md) |
+
+### 常见使用场景
+
+| 场景 | 代码示例 | 完整示例 |
+|------|---------|----------|
+| **API 参数验证** | [Express 集成](#2-express-集成---自动错误处理) | [完整代码](./examples/express-integration.js) |
+| **用户注册表单** | [基础验证](#1-基础验证javascript) | [完整代码](./examples/user-registration/) |
+| **批量数据处理** | [批量验证](#批量验证) | [完整代码](./examples/simple-example.js) |
+| **多语言应用** | [多语言支持](#4-多语言支持) | [完整代码](./examples/i18n-full-demo.js) |
+| **数据库建表** | [数据库导出](#3-数据库-schema-导出) | [完整代码](./examples/export-demo.js) |
+| **复杂嵌套结构** | [嵌套对象](#嵌套对象验证) | [验证指南](./docs/validation-guide.md) |
+| **正则格式验证** | [正则验证](#正则验证) | [自定义扩展](./docs/custom-extensions-guide.md) |
+| **业务逻辑验证** | [自定义验证器](#自定义验证器) | [自定义扩展](./docs/custom-extensions-guide.md) |
+
+---
+
+## �📦 安装
 
 ```bash
 npm install schema-dsl
@@ -557,7 +631,463 @@ const r3 = ageValidator.check({ age: 20 });         // 快速判断
 
 ---
 
-## 📖 DSL 语法速查
+## � 进阶功能
+
+### 批量验证
+
+**场景**: 验证 1000 条用户数据，性能提升 50 倍
+
+```javascript
+const { dsl, SchemaUtils, Validator } = require('schema-dsl');
+
+const userSchema = dsl({
+  username: 'string:3-32!',
+  email: 'email!',
+  age: 'number:18-120'
+});
+
+// 批量数据
+const users = [
+  { username: 'user1', email: 'user1@example.com', age: 25 },
+  { username: 'u2', email: 'invalid', age: 15 },  // 两个错误
+  { username: 'user3', email: 'user3@example.com', age: 30 }
+];
+
+// 批量验证
+const validator = new Validator();
+const result = SchemaUtils.validateBatch(userSchema, users, validator);
+
+console.log(result.summary);
+/*
+{
+  total: 3,
+  valid: 2,
+  invalid: 1,
+  duration: 5  // 毫秒
+}
+*/
+
+console.log(result.errors);
+/*
+[
+  { index: 1, errors: [
+    { path: 'username', message: '...' },
+    { path: 'age', message: '...' }
+  ]}
+]
+*/
+
+// 只获取有效数据
+const validUsers = result.results
+  .filter(r => r.valid)
+  .map(r => r.data);
+```
+
+📖 **详细文档**: [SchemaUtils.validateBatch](./docs/schema-utils.md#validatebatch---批量验证)
+
+---
+
+### 嵌套对象验证
+
+**场景**: 验证复杂的用户资料
+
+```javascript
+const { dsl, validate } = require('schema-dsl');
+
+const profileSchema = dsl({
+  user: {
+    basic: {
+      name: 'string:2-50!',
+      email: 'email!',
+      phone: 'string:11!'
+    },
+    address: {
+      country: 'string!',
+      city: 'string!',
+      street: 'string',
+      zipCode: 'string:6'
+    },
+    preferences: {
+      language: 'zh-CN|en-US|ja-JP',
+      timezone: 'string',
+      notifications: {
+        email: 'boolean',
+        sms: 'boolean',
+        push: 'boolean'
+      }
+    }
+  },
+  metadata: {
+    source: 'web|mobile|api',
+    createdAt: 'datetime!',
+    tags: 'array:0-10<string>'
+  }
+});
+
+const result = validate(profileSchema, {
+  user: {
+    basic: {
+      name: 'John Doe',
+      email: 'john@example.com',
+      phone: '13800138000'
+    },
+    address: {
+      country: 'China',
+      city: 'Beijing',
+      zipCode: '100000'
+    },
+    preferences: {
+      language: 'zh-CN',
+      timezone: 'Asia/Shanghai',
+      notifications: {
+        email: true,
+        sms: false,
+        push: true
+      }
+    }
+  },
+  metadata: {
+    source: 'web',
+    createdAt: new Date().toISOString(),
+    tags: ['vip', 'active']
+  }
+});
+
+console.log(result.valid);  // true
+```
+
+📖 **详细文档**: [嵌套对象验证](./docs/validation-guide.md#嵌套对象验证)
+
+---
+
+### 数组高级验证
+
+**场景**: 验证订单商品列表
+
+```javascript
+const { dsl, validate } = require('schema-dsl');
+
+// 方式 1: 简单数组
+const schema1 = dsl({
+  tags: 'array:1-10<string>',  // 1-10 个字符串
+  scores: 'array<number:0-100>'  // 数字数组，每个 0-100
+});
+
+// 方式 2: 对象数组
+const orderSchema = dsl({
+  orderId: 'string!',
+  items: 'array:1-100!',  // 必填，1-100 个商品
+  // 注意：数组元素的验证需要单独定义
+  _itemSchema: {  // 约定：用 _ 前缀标记辅助 schema
+    productId: 'string!',
+    name: 'string:1-100!',
+    quantity: 'integer:1-999!',
+    price: 'number:>0!'
+  }
+});
+
+// 验证订单
+const order = {
+  orderId: 'ORD-12345',
+  items: [
+    { productId: 'P001', name: 'iPhone', quantity: 2, price: 5999.00 },
+    { productId: 'P002', name: 'AirPods', quantity: 1, price: 1299.00 }
+  ]
+};
+
+// 先验证订单结构
+const result1 = validate(orderSchema, order);
+if (!result1.valid) {
+  console.log('订单结构错误:', result1.errors);
+}
+
+// 再验证每个商品
+const itemSchema = dsl(orderSchema._itemSchema);
+for (const [index, item] of order.items.entries()) {
+  const result = validate(itemSchema, item);
+  if (!result.valid) {
+    console.log(`商品 ${index} 错误:`, result.errors);
+  }
+}
+```
+
+📖 **详细文档**: [数组验证](./docs/validation-guide.md#数组验证)
+
+---
+
+### 正则验证
+
+**场景**: 自定义格式验证
+
+```javascript
+const { dsl, validate } = require('schema-dsl');
+
+const schema = dsl({
+  // 车牌号
+  licensePlate: 'string!'
+    .pattern(/^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领][A-Z][A-HJ-NP-Z0-9]{4,5}[A-HJ-NP-Z0-9挂学警港澳]$/)
+    .label('车牌号')
+    .messages({
+      pattern: '请输入有效的中国车牌号'
+    }),
+  
+  // 身份证号（简化版）
+  idCard: 'string:18!'
+    .pattern(/^[1-9]\\d{5}(18|19|20)\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}[\\dXx]$/)
+    .label('身份证号')
+    .messages({
+      pattern: '请输入有效的 18 位身份证号'
+    }),
+  
+  // 自定义代码格式
+  inviteCode: 'string:8!'
+    .pattern(/^[A-Z]{3}\\d{5}$/)
+    .label('邀请码')
+    .messages({
+      pattern: '邀请码格式：3个大写字母 + 5个数字（如 ABC12345）'
+    })
+});
+
+const result = validate(schema, {
+  licensePlate: '京A12345',
+  idCard: '110101199003071234',
+  inviteCode: 'ABC12345'
+});
+
+console.log(result.valid);  // true
+```
+
+📖 **详细文档**: [正则验证](./docs/validation-guide.md#正则验证) | [String 扩展](./docs/string-extensions.md)
+
+---
+
+### 自定义验证器
+
+**场景**: 业务逻辑验证
+
+```javascript
+const { dsl, validate, validateAsync } = require('schema-dsl');
+
+// 同步自定义验证
+const schema1 = dsl({
+  username: 'string:3-32!'
+    .custom((value) => {
+      // 不能以数字开头
+      if (/^\\d/.test(value)) {
+        return '用户名不能以数字开头';
+      }
+      // 禁用敏感词
+      const blocked = ['admin', 'root', 'system'];
+      if (blocked.includes(value.toLowerCase())) {
+        return '该用户名不可用';
+      }
+    })
+    .label('用户名')
+});
+
+// 异步自定义验证（检查唯一性）
+const schema2 = dsl({
+  email: 'email!'
+    .custom(async (value) => {
+      const exists = await checkEmailExists(value);
+      if (exists) {
+        return '该邮箱已被注册';
+      }
+    })
+    .label('邮箱')
+});
+
+// 多字段联合验证
+const schema3 = dsl({
+  password: 'string:8-32!',
+  confirmPassword: 'string:8-32!'
+})
+  .custom((data) => {
+    if (data.password !== data.confirmPassword) {
+      return { confirmPassword: '两次密码不一致' };
+    }
+  });
+
+// 使用
+const result = validate(schema1, { username: 'admin' });
+console.log(result.errors);  // [{ path: 'username', message: '该用户名不可用' }]
+
+// 模拟数据库查询
+async function checkEmailExists(email) {
+  // 实际项目中查询数据库
+  return email === 'exists@example.com';
+}
+```
+
+📖 **详细文档**: [自定义验证器](./docs/custom-extensions-guide.md) | [验证指南](./docs/validation-guide.md)
+
+---
+
+### 框架集成
+
+#### Koa 集成
+
+```javascript
+const Koa = require('koa');
+const { dsl, validateAsync, ValidationError } = require('schema-dsl');
+
+const app = new Koa();
+
+const createUserSchema = dsl({
+  username: 'string:3-32!',
+  email: 'email!',
+  password: 'string:8-32!'
+});
+
+// 路由
+app.use(async (ctx) => {
+  if (ctx.path === '/api/users' && ctx.method === 'POST') {
+    try {
+      // 验证请求体
+      const validData = await validateAsync(createUserSchema, ctx.request.body);
+      
+      // 业务逻辑
+      const user = await createUser(validData);
+      
+      ctx.body = { success: true, data: user };
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        ctx.status = 400;
+        ctx.body = {
+          success: false,
+          message: 'Validation failed',
+          errors: error.errors
+        };
+      } else {
+        throw error;
+      }
+    }
+  }
+});
+
+app.listen(3000);
+
+// 模拟用户创建函数
+async function createUser(data) {
+  return { id: '123', ...data };
+}
+```
+
+#### Fastify 集成
+
+```javascript
+const fastify = require('fastify')();
+const { dsl, validateAsync, ValidationError } = require('schema-dsl');
+
+const createUserSchema = dsl({
+  username: 'string:3-32!',
+  email: 'email!',
+  password: 'string:8-32!'
+});
+
+// 使用 preValidation hook
+fastify.post('/api/users', {
+  preValidation: async (request, reply) => {
+    try {
+      request.body = await validateAsync(createUserSchema, request.body);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        reply.code(400).send({
+          success: false,
+          message: 'Validation failed',
+          errors: error.errors
+        });
+      } else {
+        throw error;
+      }
+    }
+  }
+}, async (request, reply) => {
+  // 验证通过，继续处理
+  const user = await createUser(request.body);
+  return { success: true, data: user };
+});
+
+fastify.listen({ port: 3000 });
+
+// 模拟用户创建函数
+async function createUser(data) {
+  return { id: '123', ...data };
+}
+```
+
+📖 **详细文档**: [中间件使用示例](./examples/middleware-usage.js) | [Express 集成](./examples/express-integration.js)
+
+---
+
+### 字段库复用
+
+**场景**: 大型项目的字段管理
+
+```javascript
+// fields/common.js - 定义字段库
+const { dsl } = require('schema-dsl');
+
+module.exports = {
+  // 基础字段
+  email: () => 'email!'.label('邮箱地址'),
+  phone: (country = 'cn') => 'string:11!'.phoneNumber(country).label('手机号'),
+  username: () => 'string:3-32!'.username().label('用户名'),
+  password: (strength = 'medium') => 'string:8-32!'.password(strength).label('密码'),
+  
+  // 组合字段
+  userAuth: () => ({
+    username: 'string:3-32!'.username().label('用户名'),
+    password: 'string:8-32!'.password('strong').label('密码')
+  }),
+  
+  userProfile: () => ({
+    nickname: 'string:2-20!'.label('昵称'),
+    bio: 'string:-500',
+    avatar: 'url',
+    birthday: 'date'
+  }),
+  
+  address: () => ({
+    country: 'string!',
+    province: 'string!',
+    city: 'string!',
+    district: 'string',
+    street: 'string',
+    zipCode: 'string:6'
+  })
+};
+
+// schemas/user.js - 使用字段库
+const { dsl } = require('schema-dsl');
+const fields = require('../fields/common');
+
+// 注册 Schema
+exports.registerSchema = dsl({
+  ...fields.userAuth(),  // 展开用户认证字段
+  email: fields.email(),
+  phone: fields.phone(),
+  agree: 'boolean!'
+});
+
+// 个人资料 Schema
+exports.profileSchema = dsl({
+  ...fields.userProfile(),  // 展开用户资料字段
+  ...fields.address()       // 展开地址字段
+});
+
+// 登录 Schema
+exports.loginSchema = dsl({
+  account: 'types:email|phone!',  // 邮箱或手机号
+  password: fields.password('strong')
+});
+```
+
+📖 **详细文档**: [SchemaUtils 完整指南](./docs/schema-utils.md) | [字段库复用](./docs/schema-utils.md#字段库复用大型项目) | [最佳实践](./docs/best-practices.md)
+
+---
+
+## �📖 DSL 语法速查
 
 ### 基础类型
 
@@ -574,6 +1104,21 @@ dsl({
   age: 'number!',               // 必填数字
   price: 'number:0-9999.99',    // 范围 0-9999.99
   score: 'integer:0-100',       // 整数 0-100
+  
+  // 🆕 v1.1.2: 数字比较运算符
+  minAge: 'number:>=18',        // 大于等于 18
+  maxScore: 'number:<=100',     // 小于等于 100
+  positiveNum: 'number:>0',     // 大于 0（不包括0）
+  temperature: 'number:<100',   // 小于 100（不包括100）
+  exactValue: 'number:=50',     // 等于 50
+  negativeOk: 'number:>-10',    // 支持负数：大于 -10
+  priceLimit: 'number:<=99.99', // 支持小数：小于等于 99.99
+  
+  // 💡 比较运算符 vs 范围语法
+  // 'number:18-120'  → 18 <= x <= 120 (包括边界)
+  // 'number:>=18'    → x >= 18 (语义更清晰)
+  // 'number:>0'      → x > 0 (不包括0，范围语法无法表达)
+  // 'number:<100'    → x < 100 (不包括100，范围语法无法表达)
   
   // 布尔值
   active: 'boolean!',
@@ -1441,11 +1986,84 @@ npm run coverage
 
 ## 🔗 相关链接
 
-- [npm 包](https://www.npmjs.com/package/schema-dsl)
-- [GitHub 仓库](https://github.com/vextjs/schema-dsl)
-- [问题反馈](https://github.com/vextjs/schema-dsl/issues)
-- [更新日志](./CHANGELOG.md)
-- [贡献指南](./CONTRIBUTING.md)
+### 📦 快速入口
+- [npm 包](https://www.npmjs.com/package/schema-dsl) - 安装和版本历史
+- [GitHub 仓库](https://github.com/vextjs/schema-dsl) - 源代码和 Star ⭐
+- [在线体验](https://runkit.com/npm/schema-dsl) - RunKit 演练场
+- [问题反馈](https://github.com/vextjs/schema-dsl/issues) - Bug 报告和功能请求
+- [讨论区](https://github.com/vextjs/schema-dsl/discussions) - 社区交流
+
+### 📖 核心文档
+- [完整文档索引](./docs/INDEX.md) - 40+ 篇文档导航
+- [快速开始](./docs/quick-start.md) - 5 分钟入门
+- [DSL 语法](./docs/dsl-syntax.md) - 语法完整指南（2815 行）
+- [API 参考](./docs/api-reference.md) - API 完整文档
+- [TypeScript 指南](./docs/typescript-guide.md) - TS 用户必读
+- [最佳实践](./docs/best-practices.md) - 避免常见坑
+- [常见问题](./docs/faq.md) - FAQ 合集
+- [故障排查](./docs/troubleshooting.md) - 问题诊断
+
+### 🎯 功能文档
+- [字符串扩展](./docs/string-extensions.md) - String 扩展方法
+- [SchemaUtils 工具](./docs/schema-utils.md) - Schema 复用工具
+- [条件验证 API](./docs/conditional-api.md) - dsl.if/dsl.match
+- [验证指南](./docs/validation-guide.md) - 高级验证技巧
+- [类型参考](./docs/type-reference.md) - 所有内置类型
+- [枚举类型](./docs/enum.md) - 枚举验证详解
+- [联合类型](./docs/union-types.md) - v1.1.0 新特性
+- [数字运算符](./docs/number-operators.md) - v1.1.2 新特性
+- [错误处理](./docs/error-handling.md) - 错误处理策略
+
+### 🌍 多语言支持
+- [多语言用户指南](./docs/i18n-user-guide.md) - 完整使用教程
+- [多语言配置详解](./docs/i18n.md) - 配置说明
+- [前端集成指南](./docs/frontend-i18n-guide.md) - 前端使用
+- [添加自定义语言](./docs/add-custom-locale.md) - 扩展新语言
+- [动态语言配置](./docs/dynamic-locale.md) - 动态切换
+- [Label vs Description](./docs/label-vs-description.md) - 最佳实践
+
+### 🗄️ 数据库导出
+- [导出指南](./docs/export-guide.md) - 完整导出教程
+- [MongoDB 导出器](./docs/mongodb-exporter.md) - MongoDB Schema 导出
+- [MySQL 导出器](./docs/mysql-exporter.md) - MySQL DDL 生成
+- [PostgreSQL 导出器](./docs/postgresql-exporter.md) - PostgreSQL DDL 生成
+- [Markdown 导出器](./docs/markdown-exporter.md) - API 文档生成
+- [⚠️ 导出限制说明](./docs/export-limitations.md) - **必读！了解哪些特性无法导出**
+
+### 🔌 插件和扩展
+- [插件系统](./docs/plugin-system.md) - 插件开发和使用
+- [插件类型注册](./docs/plugin-type-registration.md) - 自定义类型
+- [自定义扩展指南](./docs/custom-extensions-guide.md) - 添加自定义验证
+
+### 📊 性能和设计
+- [性能基准测试报告](./docs/performance-benchmark-report.md) - 性能对比数据
+- [设计理念](./docs/design-philosophy.md) - 架构和权衡
+- [缓存管理器](./docs/cache-manager.md) - 缓存配置和优化
+
+### 💻 示例代码
+- [examples/](./examples/) - 所有示例代码目录
+- [Express 集成](./examples/express-integration.js) - Express 完整示例
+- [中间件使用](./examples/middleware-usage.js) - Koa/Fastify 示例
+- [用户注册](./examples/user-registration/) - 完整注册流程
+- [密码重置](./examples/password-reset/) - 密码重置流程
+- [条件验证](./examples/conditional-example.js) - 条件验证示例
+- [dsl.match 示例](./examples/dsl-match-example.js) - match 用法
+- [多语言完整示例](./examples/i18n-full-demo.js) - i18n 完整演示
+- [I18nError 示例](./examples/i18n-error.examples.js) - 多语言错误
+- [数据库导出](./examples/export-demo.js) - 导出示例
+- [Markdown 导出](./examples/markdown-export.js) - 文档生成
+- [插件系统](./examples/plugin-system.examples.js) - 插件示例
+- [联合类型](./examples/union-type-example.js) - 联合类型示例
+- [Slug 验证](./examples/slug.examples.js) - URL slug 示例
+- [字符串扩展](./examples/string-extensions.js) - String 扩展示例
+- [批量操作](./examples/batch-operations.examples.js) - 批量验证
+- [简单示例](./examples/simple-example.js) - 快速上手
+
+### 📝 版本和贡献
+- [更新日志](./CHANGELOG.md) - 详细版本历史
+- [贡献指南](./CONTRIBUTING.md) - 如何参与贡献
+- [状态文档](./STATUS.md) - 项目状态和路线图
+- [安全策略](./SECURITY.md) - 安全问题报告
 
 ---
 
