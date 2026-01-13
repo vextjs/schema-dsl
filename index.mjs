@@ -1,4 +1,4 @@
-import schema-dsl from './index.js';
+import schemaDsl from './index.js';
 
 export const {
   dsl,
@@ -26,5 +26,5 @@ export const {
   uninstallStringExtensions
 } = schema-dsl;
 
-export default schema-dsl;
+export default schemaDsl;
 

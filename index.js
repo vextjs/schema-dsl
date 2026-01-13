@@ -59,18 +59,20 @@ dsl.error = {
    * @param {string} code - 错误代码（多语言 key）
    * @param {Object} params - 错误参数
    * @param {number} statusCode - HTTP 状态码
+   * @param {string} locale - 语言环境（可选，不传则使用全局语言）
    * @returns {I18nError} 错误实例
    */
-  create: (code, params, statusCode) => I18nError.create(code, params, statusCode),
+  create: (code, params, statusCode, locale) => I18nError.create(code, params, statusCode, locale),
 
   /**
    * 抛出多语言错误
    * @param {string} code - 错误代码（多语言 key）
    * @param {Object} params - 错误参数
    * @param {number} statusCode - HTTP 状态码
+   * @param {string} locale - 语言环境（可选，不传则使用全局语言）
    * @throws {I18nError} 直接抛出错误
    */
-  throw: (code, params, statusCode) => I18nError.throw(code, params, statusCode),
+  throw: (code, params, statusCode, locale) => I18nError.throw(code, params, statusCode, locale),
 
   /**
    * 断言方法 - 条件不满足时抛错
@@ -78,8 +80,9 @@ dsl.error = {
    * @param {string} code - 错误代码（多语言 key）
    * @param {Object} params - 错误参数
    * @param {number} statusCode - HTTP 状态码
+   * @param {string} locale - 语言环境（可选，不传则使用全局语言）
    */
-  assert: (condition, code, params, statusCode) => I18nError.assert(condition, code, params, statusCode)
+  assert: (condition, code, params, statusCode, locale) => I18nError.assert(condition, code, params, statusCode, locale)
 };
 
 /**

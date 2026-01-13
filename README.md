@@ -17,6 +17,29 @@
 
 ---
 
+## ⚡ TL;DR（30秒快速理解）
+
+**schema-dsl 是什么？**  
+最简洁的数据验证库，一行DSL代替10行链式调用，性能超越Zod/Joi/Yup。
+
+**核心优势：**
+- 🎯 **极简语法**: `'string:3-32!'` 代替 8行 Joi 代码（减少 65% 代码量）
+- 🚀 **性能第一**: 2,879,606 ops/s，比 Zod 快 1.58倍，比 Joi 快 9.61倍
+- 🌍 **完整多语言**: 内置5种语言，支持运行时动态切换（v1.1.0+）
+- 🎨 **独家功能**: 从验证规则直接生成 MongoDB/MySQL/PostgreSQL Schema
+
+**3行代码上手：**
+```javascript
+const { dsl, validate } = require('schema-dsl');
+const schema = dsl({ email: 'email!', age: 'number:18-' });
+const result = validate(schema, { email: 'test@example.com', age: 25 });
+console.log(result.valid);  // true
+```
+
+**5分钟教程**: [快速开始](#-快速开始) | **完整文档**: [docs/INDEX.md](./docs/INDEX.md) | **在线体验**: [RunKit](https://runkit.com/npm/schema-dsl)
+
+---
+
 ## 🗺️ 文档导航
 
 **新手入门**:
@@ -42,6 +65,128 @@
 - [TypeScript](#15-typescript-用法-) - 类型支持
 
 **完整文档**: [docs/INDEX.md](./docs/INDEX.md) - 40+ 篇详细文档
+
+---
+
+## 🆕 最新特性（v1.1.0+）
+
+### 🔗 跨类型联合验证
+
+**一行代码支持多种类型，告别繁琐的类型判断**
+
+```javascript
+const schema = dsl({
+  contact: 'types:email|phone!',      // 邮箱或手机号
+  price: 'types:number:0-|string:1-20',  // 数字价格或"面议"
+  status: 'types:active|inactive|null'   // 枚举或空值
+});
+
+validate(schema, { contact: 'test@example.com' });  // ✅ 通过
+validate(schema, { contact: '13800138000' });       // ✅ 通过
+validate(schema, { contact: 12345 });               // ❌ 失败
+```
+
+**实际场景**:
+- ✅ 用户注册：支持邮箱或手机号登录
+- ✅ 商品价格：数字或"面议"字符串
+- ✅ 可选字段：允许null值
+
+📖 [完整文档](./docs/union-types.md)
+
+---
+
+### 🌍 运行时多语言支持
+
+**无需修改全局设置，每次调用指定语言**
+
+```javascript
+// 根据请求头动态返回不同语言的错误
+app.post('/api/account', (req, res) => {
+  const locale = req.headers['accept-language'] || 'en-US';
+  
+  try {
+    dsl.error.assert(account, 'account.notFound', {}, 404, locale);
+    // 中文请求返回: "账户不存在"
+    // 英文请求返回: "Account not found"
+  } catch (error) {
+    res.status(error.statusCode).json(error.toJSON());
+  }
+});
+```
+
+**适用场景**:
+- ✅ 多语言 API（根据请求头动态返回）
+- ✅ 微服务架构（错误传递保持原语言）
+- ✅ 国际化应用（同一请求多种语言）
+
+📖 [运行时多语言文档](./docs/runtime-locale-support.md)
+
+---
+
+### ⚡ 其他新特性
+
+- ✅ **统一错误抛出**: `I18nError` 类，支持多语言错误消息
+- ✅ **插件系统增强**: 自定义类型注册更简单
+- ✅ **TypeScript 类型完善**: 0个类型错误（v1.1.4）
+
+[查看完整更新日志](./CHANGELOG.md)
+
+---
+
+## 📦 功能清单（AI友好格式）
+
+> 方便AI快速理解所有功能
+
+### 核心功能
+
+```json
+{
+  "validation": {
+    "basic": ["string", "number", "boolean", "date", "email", "url", "phone", "idCard"],
+    "advanced": ["regex", "custom", "conditional", "nested", "array"],
+    "unionTypes": "v1.1.0+ 跨类型联合验证 (types:string|number)"
+  },
+  "i18n": {
+    "supported": ["zh-CN", "en-US", "ja-JP", "es-ES", "fr-FR"],
+    "features": ["配置加载", "运行时切换", "自定义消息", "参数插值"],
+    "runtime": "v1.1.0+ 运行时指定语言 (dsl.error.create(code, params, statusCode, locale))"
+  },
+  "database": {
+    "export": ["MongoDB", "MySQL", "PostgreSQL"],
+    "unique": "从验证规则直接生成数据库Schema"
+  },
+  "framework": {
+    "integration": ["Express", "Koa", "Fastify"],
+    "async": "validateAsync() 失败自动抛出 ValidationError"
+  },
+  "api": {
+    "main": ["dsl()", "validate()", "validateAsync()"],
+    "utils": ["SchemaUtils.pick()", "SchemaUtils.omit()", "SchemaUtils.partial()"],
+    "conditional": ["dsl.if()", "dsl.match()"],
+    "errors": ["ValidationError", "I18nError"]
+  },
+  "performance": {
+    "opsPerSecond": 2879606,
+    "vs": {
+      "Zod": "1.58x faster",
+      "Joi": "9.61x faster",
+      "Yup": "27.07x faster"
+    },
+    "optimization": ["WeakMap缓存", "智能编译", "批量验证优化"]
+  }
+}
+```
+
+### API速查
+
+| API | 用途 | 返回值 | 文档 |
+|-----|------|--------|------|
+| `dsl(schema)` | 创建Schema | Schema对象 | [DSL语法](./docs/dsl-syntax.md) |
+| `validate(schema, data)` | 同步验证 | `{valid, errors, data}` | [验证指南](./docs/validation-guide.md) |
+| `validateAsync(schema, data)` | 异步验证 | Promise（失败抛错） | [异步验证](./docs/validate-async.md) |
+| `dsl.if(condition)` | 条件验证 | ConditionalBuilder | [条件API](./docs/conditional-api.md) |
+| `SchemaUtils.pick()` | 选择字段 | 新Schema | [SchemaUtils](./docs/schema-utils.md) |
+| `I18nError.throw()` | 抛出多语言错误 | never | [I18nError示例](./examples/i18n-error.examples.js) |
 
 ---
 
@@ -137,9 +282,48 @@ validate(schema, { username: 'ab' }, { locale: 'ja-JP' });
 // => "usernameは3文字以上である必要があります"
 ```
 
+**🆕 运行时多语言支持（v1.1.0+）**
+
+无需修改全局设置，可在每次调用时指定语言：
+
+```javascript
+const { dsl, I18nError } = require('schema-dsl');
+
+// 方式1: 业务错误 - 运行时指定语言
+const error1 = dsl.error.create('account.notFound', {}, 404, 'zh-CN');
+console.log(error1.message);  // "账户不存在"
+
+const error2 = dsl.error.create('account.notFound', {}, 404, 'en-US');
+console.log(error2.message);  // "Account not found"
+
+// 方式2: 断言风格 - 根据请求头动态指定
+app.post('/api/withdraw', (req, res) => {
+  const locale = req.headers['accept-language'] || 'en-US';
+  const account = getAccount(req.user.id);
+  
+  // 根据请求头返回对应语言的错误
+  I18nError.assert(account, 'account.notFound', {}, 404, locale);
+  I18nError.assert(
+    account.balance >= req.body.amount,
+    'account.insufficientBalance',
+    { balance: account.balance, required: req.body.amount },
+    400,
+    locale
+  );
+  
+  // 验证通过，继续处理...
+});
+```
+
+**适用场景**：
+- ✅ 多语言 API（根据请求头返回不同语言）
+- ✅ 微服务架构（错误在服务间传递时保持语言）
+- ✅ 同一请求中需要多种语言的错误消息
+
 **内置语言**: 中文、英文、日语、法语、西班牙语
 
-📖 [完整多语言文档](./docs/i18n.md)
+📖 [完整多语言文档](./docs/i18n.md)  
+📖 [运行时多语言支持](./docs/runtime-locale-support.md)
 
 ### 🎨 数据库 Schema 导出
 
@@ -1901,6 +2085,40 @@ dsl.error.throw('user.noPermission');
 dsl.error.assert(user.role === 'admin', 'user.noPermission');
 ```
 
+**🆕 运行时指定语言（v1.1.0+）**
+
+无需修改全局语言设置，每次调用时指定：
+
+```javascript
+// 根据请求头动态返回不同语言
+app.post('/api/account', (req, res, next) => {
+  const locale = req.headers['accept-language'] || 'en-US';
+  const account = getAccount(req.user.id);
+  
+  try {
+    // 第5个参数指定语言
+    dsl.error.assert(account, 'account.notFound', {}, 404, locale);
+    dsl.error.assert(
+      account.balance >= 100,
+      'account.insufficientBalance',
+      { balance: account.balance, required: 100 },
+      400,
+      locale
+    );
+    // 验证通过...
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 同一请求中使用不同语言
+const error1 = dsl.error.create('account.notFound', {}, 404, 'zh-CN');
+console.log(error1.message);  // "账户不存在"
+
+const error2 = dsl.error.create('account.notFound', {}, 404, 'en-US');
+console.log(error2.message);  // "Account not found"
+```
+
 **Express/Koa 集成**:
 ```javascript
 // 错误处理中间件
@@ -1930,7 +2148,8 @@ app.post('/withdraw', (req, res) => {
 - 用户: `user.notFound`, `user.noPermission`
 - 订单: `order.notPaid`, `order.paymentMissing`
 
-📖 完整文档请查看 [examples/i18n-error.examples.js](./examples/i18n-error.examples.js)
+📖 完整文档请查看 [examples/i18n-error.examples.js](./examples/i18n-error.examples.js)  
+📖 运行时多语言支持请查看 [docs/runtime-locale-support.md](./docs/runtime-locale-support.md)
 
 ---
 

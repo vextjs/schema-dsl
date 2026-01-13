@@ -285,13 +285,24 @@ export class DslBuilder {
 
   /**
    * 构造函数
-   * @param dslString - DSL字符串（如 'email!', 'string:3-32!', 'types:string|number'）
+   * @param dslString - DSL字符串（如 'email!', 'string:3-32!', 'string?', 'types:string|number'）
    *
    * @example 基础类型
    * ```typescript
-   * const builder = new DslBuilder('email!');
-   * const builder2 = new DslBuilder('string:3-32');
-   * const builder3 = new DslBuilder('types:string|number');
+   * const builder = new DslBuilder('email!');      // 必填邮箱
+   * const builder2 = new DslBuilder('string:3-32'); // 可选字符串（默认）
+   * const builder3 = new DslBuilder('string?');     // 显式可选字符串
+   * const builder4 = new DslBuilder('email?');      // 显式可选邮箱
+   * const builder5 = new DslBuilder('types:string|number'); // 联合类型
+   * ```
+   *
+   * @example 必填与可选标记
+   * ```typescript
+   * new DslBuilder('string!')      // 必填字符串
+   * new DslBuilder('string')       // 可选字符串（默认）
+   * new DslBuilder('string?')      // 显式可选字符串
+   * new DslBuilder('email?')       // 可选邮箱
+   * new DslBuilder('string:3-32?') // 可选字符串，长度3-32
    * ```
    *
    * @example 数字类型比较运算符 (v1.1.2+)
@@ -317,6 +328,7 @@ export class DslBuilder {
    * // 配合必填标记
    * new DslBuilder('number:>=18!')     // 必填且 >= 18
    * new DslBuilder('number:>0!')       // 必填且 > 0
+   * new DslBuilder('number:>0?')       // 可选且 > 0（当有值时）
    * ```
    */
   constructor(dslString: string);
@@ -1254,12 +1266,26 @@ export namespace dsl {
      * @param code - 错误代码（多语言 key）
      * @param params - 错误参数
      * @param statusCode - HTTP 状态码
+     * @param locale - 语言环境（可选，不传则使用全局语言）
      * @returns 错误实例
+     *
+     * @example 全局语言
+     * ```typescript
+     * Locale.setLocale('zh-CN');
+     * const error = dsl.error.create('account.notFound');
+     * ```
+     *
+     * @example 运行时指定语言
+     * ```typescript
+     * const error1 = dsl.error.create('account.notFound', {}, 404, 'zh-CN');
+     * const error2 = dsl.error.create('account.notFound', {}, 404, 'en-US');
+     * ```
      */
     create(
       code: string,
       params?: Record<string, any>,
-      statusCode?: number
+      statusCode?: number,
+      locale?: string
     ): I18nError;
 
     /**
@@ -1267,12 +1293,25 @@ export namespace dsl {
      * @param code - 错误代码（多语言 key）
      * @param params - 错误参数
      * @param statusCode - HTTP 状态码
+     * @param locale - 语言环境（可选，不传则使用全局语言）
      * @throws I18nError
+     *
+     * @example 全局语言
+     * ```typescript
+     * Locale.setLocale('zh-CN');
+     * dsl.error.throw('account.notFound');
+     * ```
+     *
+     * @example 运行时指定语言
+     * ```typescript
+     * dsl.error.throw('account.notFound', {}, 404, 'en-US');
+     * ```
      */
     throw(
       code: string,
       params?: Record<string, any>,
-      statusCode?: number
+      statusCode?: number,
+      locale?: string
     ): never;
 
     /**
@@ -1281,13 +1320,26 @@ export namespace dsl {
      * @param code - 错误代码（多语言 key）
      * @param params - 错误参数
      * @param statusCode - HTTP 状态码
+     * @param locale - 语言环境（可选，不传则使用全局语言）
      * @throws I18nError 条件为 false 时抛出
+     *
+     * @example 全局语言
+     * ```typescript
+     * Locale.setLocale('zh-CN');
+     * dsl.error.assert(account, 'account.notFound');
+     * ```
+     *
+     * @example 运行时指定语言
+     * ```typescript
+     * dsl.error.assert(account, 'account.notFound', {}, 404, 'en-US');
+     * ```
      */
     assert(
       condition: any,
       code: string,
       params?: Record<string, any>,
-      statusCode?: number
+      statusCode?: number,
+      locale?: string
     ): asserts condition;
   };
 }
@@ -1679,12 +1731,30 @@ export class I18nError extends Error {
    * @param code - 错误代码
    * @param params - 错误参数
    * @param statusCode - HTTP 状态码
+   * @param locale - 语言环境（可选，不传则使用全局语言）
    * @returns 错误实例
+   *
+   * @example 全局语言
+   * ```typescript
+   * Locale.setLocale('zh-CN');
+   * const error = I18nError.create('account.notFound');
+   * // message: "账户不存在"
+   * ```
+   *
+   * @example 运行时指定语言
+   * ```typescript
+   * const error1 = I18nError.create('account.notFound', {}, 404, 'zh-CN');
+   * // message: "账户不存在"
+   *
+   * const error2 = I18nError.create('account.notFound', {}, 404, 'en-US');
+   * // message: "Account not found"
+   * ```
    */
   static create(
     code: string,
     params?: Record<string, any>,
-    statusCode?: number
+    statusCode?: number,
+    locale?: string
   ): I18nError;
 
   /**
@@ -1692,12 +1762,25 @@ export class I18nError extends Error {
    * @param code - 错误代码
    * @param params - 错误参数
    * @param statusCode - HTTP 状态码
+   * @param locale - 语言环境（可选，不传则使用全局语言）
    * @throws I18nError
+   *
+   * @example 全局语言
+   * ```typescript
+   * Locale.setLocale('zh-CN');
+   * I18nError.throw('account.notFound');
+   * ```
+   *
+   * @example 运行时指定语言
+   * ```typescript
+   * I18nError.throw('account.notFound', {}, 404, 'en-US');
+   * ```
    */
   static throw(
     code: string,
     params?: Record<string, any>,
-    statusCode?: number
+    statusCode?: number,
+    locale?: string
   ): never;
 
   /**
@@ -1706,13 +1789,46 @@ export class I18nError extends Error {
    * @param code - 错误代码
    * @param params - 错误参数
    * @param statusCode - HTTP 状态码
+   * @param locale - 语言环境（可选，不传则使用全局语言）
    * @throws I18nError 条件为 false 时抛出
+   *
+   * @example 全局语言
+   * ```typescript
+   * Locale.setLocale('zh-CN');
+   * I18nError.assert(account, 'account.notFound');
+   * ```
+   *
+   * @example 运行时指定语言
+   * ```typescript
+   * I18nError.assert(account, 'account.notFound', {}, 404, 'en-US');
+   * ```
+   */
+  /**
+   * 断言方法 - 条件不满足时抛错
+   * @param condition - 条件表达式
+   * @param code - 错误代码
+   * @param params - 错误参数
+   * @param statusCode - HTTP 状态码
+   * @param locale - 语言环境（可选，不传则使用全局语言）
+   * @throws I18nError 条件为 false 时抛出
+   *
+   * @example 全局语言
+   * ```typescript
+   * Locale.setLocale('zh-CN');
+   * I18nError.assert(account, 'account.notFound');
+   * ```
+   *
+   * @example 运行时指定语言
+   * ```typescript
+   * I18nError.assert(account, 'account.notFound', {}, 404, 'en-US');
+   * ```
    */
   static assert(
     condition: any,
     code: string,
     params?: Record<string, any>,
-    statusCode?: number
+    statusCode?: number,
+    locale?: string
   ): asserts condition;
 
   /**
