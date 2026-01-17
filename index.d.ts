@@ -1,8 +1,63 @@
-// Type definitions for schema-dsl v1.1.2
+// Type definitions for schema-dsl v1.1.5
 // Project: https://github.com/vextjs/schema-dsl
 // Definitions by: schema-dsl Team
 
 // ========== 核心类型 ==========
+
+/**
+ * 错误消息配置（字符串或对象）
+ *
+ * @description v1.1.5 新增：支持对象格式配置错误代码和消息
+ *
+ * @example 字符串格式（向后兼容）
+ * ```typescript
+ * const messages = {
+ *   'user.notFound': '用户不存在'
+ * };
+ * ```
+ *
+ * @example 对象格式（v1.1.5 新增）
+ * ```typescript
+ * const messages = {
+ *   'account.notFound': {
+ *     code: 'ACCOUNT_NOT_FOUND',
+ *     message: '账户不存在'
+ *   }
+ * };
+ * ```
+ *
+ * @since v1.1.5
+ */
+export type ErrorMessageConfig =
+  | string  // 向后兼容：'账户不存在'
+  | {       // 新格式：{ code, message }
+      /** 错误代码（可选，默认使用 key） */
+      code?: string;
+      /** 错误消息（必需） */
+      message: string;
+    };
+
+/**
+ * 语言包定义
+ *
+ * @description 语言包对象，key 为错误代码，value 为错误消息配置
+ *
+ * @example
+ * ```typescript
+ * const zhCN: LocaleMessages = {
+ *   'user.notFound': '用户不存在',
+ *   'account.notFound': {
+ *     code: 'ACCOUNT_NOT_FOUND',
+ *     message: '账户不存在'
+ *   }
+ * };
+ * ```
+ *
+ * @since v1.1.5
+ */
+export interface LocaleMessages {
+  [key: string]: ErrorMessageConfig;
+}
 
 /**
  * JSON Schema 对象
@@ -1700,7 +1755,10 @@ export class I18nError extends Error {
   /** 错误消息（已翻译） */
   message: string;
 
-  /** 错误代码（多语言 key） */
+  /** 原始 key（v1.1.5 新增） */
+  originalKey: string;
+
+  /** 错误代码（从对象提取或使用 key） */
   code: string;
 
   /** 错误参数（用于插值） */
@@ -1841,9 +1899,26 @@ export class I18nError extends Error {
   /**
    * 转为 JSON 格式（用于 API 响应）
    * @returns JSON 对象
+   *
+   * @example
+   * ```typescript
+   * const json = error.toJSON();
+   * // {
+   * //   error: 'I18nError',
+   * //   originalKey: 'account.notFound',  // v1.1.5 新增
+   * //   code: 'ACCOUNT_NOT_FOUND',
+   * //   message: '账户不存在',
+   * //   params: {},
+   * //   statusCode: 400,
+   * //   locale: 'zh-CN'
+   * // }
+   * ```
+   *
+   * @since v1.1.5 - 新增 originalKey 字段
    */
   toJSON(): {
     error: string;
+    originalKey: string;  // v1.1.5 新增
     code: string;
     message: string;
     params: Record<string, any>;

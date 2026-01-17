@@ -68,9 +68,68 @@ console.log(result.valid);  // true
 
 ---
 
-## 🆕 最新特性（v1.1.0+）
+## 🆕 最新特性（v1.1.5）
 
-### 🔗 跨类型联合验证
+### 🎯 错误配置对象格式支持（v1.1.5）
+
+**统一错误代码，多语言共享，前端友好**
+
+```javascript
+// 语言包配置（支持对象格式）
+const locales = {
+  'zh-CN': {
+    'account.notFound': {
+      code: 40001,              // 统一的数字错误代码
+      message: '账户不存在'
+    },
+    'account.insufficientBalance': {
+      code: 40002,
+      message: '余额不足，当前{{#balance}}，需要{{#required}}'
+    }
+  },
+  'en-US': {
+    'account.notFound': {
+      code: 40001,              // 相同的数字 code
+      message: 'Account not found'
+    },
+    'account.insufficientBalance': {
+      code: 40002,
+      message: 'Insufficient balance: {{#balance}}, required: {{#required}}'
+    }
+  }
+};
+
+// 使用
+try {
+  dsl.error.throw('account.notFound');
+} catch (error) {
+  console.log(error.code);         // 40001 (统一数字代码)
+  console.log(error.originalKey);  // 'account.notFound' (原始key)
+  console.log(error.message);      // 中文: "账户不存在" / 英文: "Account not found"
+  
+  // 增强的 error.is() - 两种方式都支持
+  if (error.is('account.notFound')) { }  // ✅ 使用 originalKey
+  if (error.is(40001)) { }               // ✅ 使用数字 code
+}
+
+// 前端统一处理
+switch (error.code) {
+  case 40001: showNotFoundPage(); break;     // 不受语言影响
+  case 40002: showTopUpDialog(); break;
+}
+```
+
+**核心优势**:
+- 🎯 **统一错误代码**: 不同语言使用相同的数字 `code`，便于前端统一处理
+- 🔄 **完全向后兼容**: 字符串格式自动转换，现有代码无需修改
+- 📊 **更好的错误追踪**: `originalKey` 和 `code` 分离，便于日志分析
+- 🌍 **多语言友好**: 前端可以用统一的数字 code 处理，不受语言影响
+
+📖 [完整文档](./docs/error-handling.md#v115-新功能对象格式错误配置) · [变更日志](./changelogs/v1.1.5.md)
+
+---
+
+### 🔗 跨类型联合验证（v1.1.0）
 
 **一行代码支持多种类型，告别繁琐的类型判断**
 
@@ -125,8 +184,9 @@ app.post('/api/account', (req, res) => {
 
 ### ⚡ 其他新特性
 
-- ✅ **统一错误抛出**: `I18nError` 类，支持多语言错误消息
-- ✅ **插件系统增强**: 自定义类型注册更简单
+- ✅ **错误配置对象格式**: 支持 `{ code, message }` 统一错误代码（v1.1.5）
+- ✅ **统一错误抛出**: `I18nError` 类，支持多语言错误消息（v1.1.1）
+- ✅ **插件系统增强**: 自定义类型注册更简单（v1.1.0）
 - ✅ **TypeScript 类型完善**: 0个类型错误（v1.1.4）
 
 [查看完整更新日志](./CHANGELOG.md)
@@ -2084,6 +2144,91 @@ I18nError.assert(
 dsl.error.throw('user.noPermission');
 dsl.error.assert(user.role === 'admin', 'user.noPermission');
 ```
+
+**🆕 对象格式错误配置（v1.1.5）**
+
+支持统一的数字错误代码，便于前端处理：
+
+```javascript
+// 语言包配置（lib/locales/zh-CN.js）
+module.exports = {
+  // 字符串格式（向后兼容）
+  'user.notFound': '用户不存在',
+  
+  // 对象格式（v1.1.5 新增）- 使用数字错误码
+  'account.notFound': {
+    code: 40001,              // 数字错误代码
+    message: '账户不存在'
+  },
+  'account.insufficientBalance': {
+    code: 40002,
+    message: '余额不足，当前{{#balance}}，需要{{#required}}'
+  },
+  'order.notPaid': {
+    code: 50001,
+    message: '订单未支付'
+  }
+};
+
+// lib/locales/en-US.js
+module.exports = {
+  'account.notFound': {
+    code: 40001,              // 相同的数字 code
+    message: 'Account not found'
+  },
+  'account.insufficientBalance': {
+    code: 40002,
+    message: 'Insufficient balance: {{#balance}}, required: {{#required}}'
+  },
+  'order.notPaid': {
+    code: 50001,
+    message: 'Order not paid'
+  }
+};
+
+// 使用
+try {
+  dsl.error.throw('account.notFound');
+} catch (error) {
+  error.code          // 40001 (数字代码)
+  error.originalKey   // 'account.notFound' (原始key)
+  error.message       // '账户不存在'
+  
+  // 两种判断方式
+  error.is('account.notFound')  // ✅ 使用 originalKey
+  error.is(40001)               // ✅ 使用数字 code
+}
+
+// 前端统一处理（不受语言影响）
+try {
+  await api.getAccount(id);
+} catch (error) {
+  switch (error.code) {
+    case 40001:
+      router.push('/account-not-found');
+      break;
+    case 40002:
+      showTopUpDialog(error.params.balance, error.params.required);
+      break;
+    case 50001:
+      showPaymentDialog();
+      break;
+  }
+}
+```
+
+**优势**：
+- ✅ 多语言共享相同的数字 `code`，前端统一处理
+- ✅ 完全向后兼容，字符串格式自动转换
+- ✅ `originalKey` 便于调试和日志追踪
+- ✅ 数字 code 更简洁，易于管理和文档化
+
+**错误码规范建议**：
+- `4xxxx` - 客户端错误（账户、权限、参数等）
+- `5xxxx` - 业务逻辑错误（订单、支付、库存等）
+- `6xxxx` - 系统错误（数据库、服务不可用等）
+
+📖 详细说明: [错误处理文档](./docs/error-handling.md#v115-新功能对象格式错误配置)
 
 **🆕 运行时指定语言（v1.1.0+）**
 

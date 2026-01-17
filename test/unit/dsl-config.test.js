@@ -30,13 +30,14 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
 
       // 验证中文
       Locale.setLocale('zh-CN');
-      expect(Locale.getMessage('username')).to.equal('用户名');
-      expect(Locale.getMessage('email')).to.equal('邮箱地址');
+      // v1.1.5: getMessage 返回对象
+      expect(Locale.getMessage('username').message).to.equal('用户名');
+      expect(Locale.getMessage('email').message).to.equal('邮箱地址');
 
       // 验证英文
       Locale.setLocale('en-US');
-      expect(Locale.getMessage('username')).to.equal('Username');
-      expect(Locale.getMessage('email')).to.equal('Email Address');
+      expect(Locale.getMessage('username').message).to.equal('Username');
+      expect(Locale.getMessage('email').message).to.equal('Email Address');
     });
 
     it('应该在 Schema 中使用用户语言包的 label', () => {
@@ -271,7 +272,8 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
 
       // 验证 i18n
       Locale.setLocale('zh-CN');
-      expect(Locale.getMessage('test')).to.equal('测试');
+      // v1.1.5: getMessage 返回对象
+      expect(Locale.getMessage('test').message).to.equal('测试');
 
       // 验证 cache
       const { getDefaultValidator } = require('../../index');

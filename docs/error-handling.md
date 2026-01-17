@@ -688,16 +688,261 @@ if (!result.valid) {
 
 ---
 
+## v1.1.5 新功能：对象格式错误配置
+
+### 概述
+
+从 v1.1.5 开始，语言包支持对象格式 `{ code, message }`，实现统一的错误代码管理。
+
+### 基础用法
+
+**语言包配置**:
+```javascript
+// lib/locales/zh-CN.js (或自定义语言包)
+module.exports = {
+  // 字符串格式（向后兼容）
+  'user.notFound': '用户不存在',
+  
+  // 对象格式（v1.1.5 新增）✨ - 使用数字错误码
+  'account.notFound': {
+    code: 40001,
+    message: '账户不存在'
+  },
+  'account.insufficientBalance': {
+    code: 40002,
+    message: '余额不足，当前余额{{#balance}}，需要{{#required}}'
+  },
+  'order.notPaid': {
+    code: 50001,
+    message: '订单未支付'
+  }
+};
+```
+
+**使用示例**:
+```javascript
+const { dsl } = require('schema-dsl');
+
+try {
+  dsl.error.throw('account.notFound');
+} catch (error) {
+  console.log(error.originalKey);  // 'account.notFound'
+  console.log(error.code);         // 40001 ✨ 数字错误码
+  console.log(error.message);      // '账户不存在'
+}
+```
+
+### 核心特性
+
+#### 1. originalKey 字段（新增）
+
+保留原始的 key，便于调试和日志追踪：
+
+```javascript
+try {
+  dsl.error.throw('account.notFound');
+} catch (error) {
+  error.originalKey  // 'account.notFound' (原始 key)
+  error.code         // 40001 (数字错误码)
+}
+```
+
+#### 2. 多语言共享 code
+
+不同语言使用相同的数字 `code`，便于前端统一处理：
+
+```javascript
+// zh-CN.js
+'account.notFound': {
+  code: 40001,  // ← 数字 code 一致
+  message: '账户不存在'
+}
+
+// en-US.js
+'account.notFound': {
+  code: 40001,  // ← 数字 code 一致
+  message: 'Account not found'
+}
+
+// 前端处理 - 不受语言影响
+switch (error.code) {
+  case 40001:
+    redirectToLogin();
+    break;
+  case 40002:
+    showTopUpDialog();
+    break;
+  case 50001:
+    showPaymentDialog();
+    break;
+}
+#### 3. 增强的 error.is() 方法
+
+同时支持 `originalKey` 和数字 `code` 判断：
+
+```javascript
+try {
+  dsl.error.throw('account.notFound');
+} catch (error) {
+  // 两种方式都可以
+  if (error.is('account.notFound')) { }  // ✅ 使用 originalKey
+  if (error.is(40001)) { }               // ✅ 使用数字 code
+}
+```
+
+#### 4. toJSON 包含 originalKey
+
+```javascript
+const json = error.toJSON();
+// {
+//   error: 'I18nError',
+//   originalKey: 'account.notFound',  // ✨ v1.1.5 新增
+//   code: 'ACCOUNT_NOT_FOUND',
+//   message: '账户不存在',
+//   params: {},
+//   statusCode: 400,
+//   locale: 'zh-CN'
+// }
+```
+
+### 向后兼容
+
+**完全向后兼容** ✅ - 字符串格式自动转换：
+
+```javascript
+// 字符串格式（原有）
+'user.notFound': '用户不存在'
+
+// 自动转换为对象
+dsl.error.throw('user.notFound');
+// error.code = 'user.notFound' (使用 key 作为 code)
+// error.originalKey = 'user.notFound'
+// error.message = '用户不存在'
+```
+
+### 最佳实践
+
+#### 1. 何时使用对象格式
+
+**推荐使用对象格式**:
+- ✅ 需要在多语言中统一处理的错误
+- ✅ 需要前端统一判断的错误
+- ✅ 核心业务错误（账户、订单、支付等）
+
+**可以使用字符串格式**:
+- ✅ 简单的验证错误
+- ✅ 内部错误（不暴露给前端）
+- ✅ 不需要统一处理的错误
+
+#### 2. 错误代码命名规范
+
+推荐使用**数字错误码**，按模块分段：
+
+```javascript
+// 错误码规范（5位数字）
+// 4xxxx - 客户端错误
+// 5xxxx - 业务逻辑错误  
+// 6xxxx - 系统错误
+
+'account.notFound': {
+  code: 40001,  // ✅ 推荐：账户模块，序号001
+  message: '账户不存在'
+}
+
+'account.insufficientBalance': {
+  code: 40002,  // 账户模块，序号002
+  message: '余额不足'
+}
+
+'order.notPaid': {
+  code: 50001,  // ✅ 订单模块，序号001
+  message: '订单未支付'
+}
+
+'order.cancelled': {
+  code: 50002,  // 订单模块，序号002
+  message: '订单已取消'
+}
+
+'database.connectionError': {
+  code: 60001,  // ✅ 系统错误
+  message: '数据库连接失败'
+}
+```
+
+**错误码分段建议**：
+- `40001-49999` - 客户端错误（账户、权限、参数验证等）
+- `50001-59999` - 业务逻辑错误（订单、支付、库存等）
+- `60001-69999` - 系统错误（数据库、服务不可用等）
+
+#### 3. 前端统一错误处理
+
+```javascript
+// API 调用
+try {
+  const response = await fetch('/api/account');
+  const data = await response.json();
+} catch (error) {
+  // 使用数字 code 统一处理，不受语言影响
+  switch (error.code) {
+    case 40001:  // ACCOUNT_NOT_FOUND
+      showNotFoundPage();
+      break;
+    case 40002:  // INSUFFICIENT_BALANCE
+      showTopUpDialog(error.params);
+      break;
+    case 50001:  // ORDER_NOT_PAID
+      showPaymentDialog();
+      break;
+    case 60001:  // SYSTEM_ERROR
+      showSystemErrorPage();
+      break;
+    default:
+      showGenericError(error.message);
+  }
+}
+```
+
+**更优雅的方式 - 错误码映射**：
+```javascript
+// errorCodeMap.js
+const ERROR_HANDLERS = {
+  40001: () => router.push('/account-not-found'),
+  40002: (error) => showDialog('topup', error.params),
+  50001: (error) => showDialog('payment', error.params),
+  60001: () => showSystemErrorPage(),
+};
+
+// 统一错误处理
+function handleError(error) {
+  const handler = ERROR_HANDLERS[error.code];
+  if (handler) {
+    handler(error);
+  } else {
+    showGenericError(error.message);
+  }
+}
+```
+
+### 更多信息
+
+- [v1.1.5 完整变更日志](../changelogs/v1.1.5.md)
+- [升级指南](../changelogs/v1.1.5.md#升级指南)
+- [最佳实践](../changelogs/v1.1.5.md#最佳实践)
+
+---
+
 ## 相关文档
 
 - [API 参考文档](./api-reference.md)
 - [DSL 语法指南](./dsl-syntax.md)
 - [String 扩展文档](./string-extensions.md)
 - [多语言配置](./dynamic-locale.md)
+- [v1.1.5 变更日志](../changelogs/v1.1.5.md)
 
 ---
 
-
-**最后更新**: 2025-12-25
+**最后更新**: 2026-01-17  
+**版本**: v1.1.5
 
 

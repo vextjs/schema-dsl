@@ -20,7 +20,8 @@ describe('I18nError - 多语言错误类', () => {
       expect(error).to.be.instanceof(I18nError);
       expect(error).to.be.instanceof(Error);
       expect(error.name).to.equal('I18nError');
-      expect(error.code).to.equal('account.notFound');
+      expect(error.originalKey).to.equal('account.notFound');  // v1.1.5 新增
+      expect(error.code).to.equal('ACCOUNT_NOT_FOUND');  // v1.1.5: 从对象格式提取
       expect(error.message).to.equal('账户不存在');
       expect(error.statusCode).to.equal(400);
       expect(error.locale).to.equal('zh-CN');
@@ -72,7 +73,8 @@ describe('I18nError - 多语言错误类', () => {
       const error = I18nError.create('account.notFound');
 
       expect(error).to.be.instanceof(I18nError);
-      expect(error.code).to.equal('account.notFound');
+      expect(error.originalKey).to.equal('account.notFound');  // v1.1.5
+      expect(error.code).to.equal('ACCOUNT_NOT_FOUND');  // v1.1.5
     });
 
     it('应该支持参数和状态码', () => {
@@ -156,7 +158,8 @@ describe('I18nError - 多语言错误类', () => {
 
       expect(json).to.deep.equal({
         error: 'I18nError',
-        code: 'account.insufficientBalance',
+        originalKey: 'account.insufficientBalance',  // v1.1.5 新增
+        code: 'INSUFFICIENT_BALANCE',  // v1.1.5: 从对象格式提取
         message: error.message,
         params: { balance: 50, required: 100 },
         statusCode: 402,
@@ -171,7 +174,8 @@ describe('I18nError - 多语言错误类', () => {
 
       const str = error.toString();
 
-      expect(str).to.equal('I18nError [account.notFound]: 账户不存在');
+      // v1.1.5: toString 使用 code（ACCOUNT_NOT_FOUND）而非 originalKey
+      expect(str).to.equal('I18nError [ACCOUNT_NOT_FOUND]: 账户不存在');
     });
   });
 
@@ -218,11 +222,11 @@ describe('I18nError - 多语言错误类', () => {
 
       // 测试账户不存在
       expect(() => getAccount(null)).to.throw(I18nError)
-        .with.property('code', 'account.notFound');
+        .with.property('code', 'ACCOUNT_NOT_FOUND');  // v1.1.5: 对象格式
 
       // 测试余额不足
       expect(() => getAccount('123')).to.throw(I18nError)
-        .with.property('code', 'account.insufficientBalance');
+        .with.property('code', 'INSUFFICIENT_BALANCE');  // v1.1.5: 对象格式
     });
 
     it('场景2: 用户权限验证', () => {
@@ -262,7 +266,7 @@ describe('I18nError - 多语言错误类', () => {
       errorHandler(error, req, res, () => {});
 
       expect(res.statusCode).to.equal(404);
-      expect(res.jsonData).to.have.property('code', 'account.notFound');
+      expect(res.jsonData).to.have.property('code', 'ACCOUNT_NOT_FOUND');  // v1.1.5
       expect(res.jsonData).to.have.property('message', '账户不存在');
     });
 
@@ -333,5 +337,70 @@ describe('I18nError - 多语言错误类', () => {
       expect(error.message).to.include('100');
     });
   });
-});
 
+  // ========== v1.1.5 新功能测试 ==========
+  describe('v1.1.5 - 对象格式支持', () => {
+    it('应该支持对象格式配置（带 code 和 message）', () => {
+      const error = new I18nError('account.notFound');
+
+      expect(error.originalKey).to.equal('account.notFound');
+      expect(error.code).to.equal('ACCOUNT_NOT_FOUND');
+      expect(error.message).to.equal('账户不存在');
+    });
+
+    it('应该支持字符串格式（向后兼容）', () => {
+      const error = new I18nError('user.notFound');
+
+      expect(error.originalKey).to.equal('user.notFound');
+      expect(error.code).to.equal('user.notFound');  // 字符串格式使用 key 作为 code
+      expect(error.message).to.equal('用户不存在');
+    });
+
+    it('对象格式应该支持参数插值', () => {
+      const error = new I18nError('account.insufficientBalance', {
+        balance: 50,
+        required: 100
+      });
+
+      expect(error.originalKey).to.equal('account.insufficientBalance');
+      expect(error.code).to.equal('INSUFFICIENT_BALANCE');
+      expect(error.message).to.include('50');
+      expect(error.message).to.include('100');
+    });
+
+    it('toJSON 应该包含 originalKey 字段', () => {
+      const error = new I18nError('account.notFound');
+      const json = error.toJSON();
+
+      expect(json).to.have.property('originalKey', 'account.notFound');
+      expect(json).to.have.property('code', 'ACCOUNT_NOT_FOUND');
+    });
+
+    it('多语言应该共享相同的 code', () => {
+      // 中文
+      Locale.setLocale('zh-CN');
+      const errorZh = new I18nError('account.notFound');
+      expect(errorZh.code).to.equal('ACCOUNT_NOT_FOUND');
+      expect(errorZh.message).to.equal('账户不存在');
+
+      // 英文
+      Locale.setLocale('en-US');
+      const errorEn = new I18nError('account.notFound');
+      expect(errorEn.code).to.equal('ACCOUNT_NOT_FOUND');  // code 相同
+      expect(errorEn.message).to.equal('Account not found');  // message 不同
+
+      // 恢复中文
+      Locale.setLocale('zh-CN');
+    });
+
+    it('应该支持混合使用对象格式和字符串格式', () => {
+      // 对象格式
+      const error1 = new I18nError('account.notFound');
+      expect(error1.code).to.equal('ACCOUNT_NOT_FOUND');
+
+      // 字符串格式
+      const error2 = new I18nError('user.notFound');
+      expect(error2.code).to.equal('user.notFound');
+    });
+  });
+});
