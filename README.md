@@ -68,7 +68,52 @@ console.log(result.valid);  // true
 
 ---
 
-## 🆕 最新特性（v1.1.5）
+## 🆕 最新特性（v1.1.8）
+
+### 🎯 智能参数识别 - 简化语法支持（v1.1.8）
+
+**API 更简洁，从4个参数减少到2个参数**
+
+```javascript
+const { dsl, Locale } = require('schema-dsl');
+
+// 配置语言包
+Locale.addLocale('zh-CN', {
+  'account.notFound': {
+    code: 40001,
+    message: '账户不存在'
+  }
+});
+
+Locale.addLocale('en-US', {
+  'account.notFound': {
+    code: 40001,
+    message: 'Account not found'
+  }
+});
+
+// ✅ 新增：简化语法（推荐）
+dsl.error.throw('account.notFound', 'zh-CN');
+dsl.error.throw('account.notFound', 'zh-CN', 404);
+
+// ✅ 标准语法（完全兼容）
+dsl.error.throw('account.notFound', {}, 404, 'zh-CN');
+dsl.error.throw('account.notFound', { id: '123' }, 404, 'zh-CN');
+
+// 所有方法都支持
+dsl.error.create('account.notFound', 'zh-CN');
+dsl.error.assert(account, 'account.notFound', 'zh-CN');
+```
+
+**核心优势**:
+- 🎯 **参数更少**: 无需参数对象时从4个参数减少到2个
+- 🎯 **智能识别**: 自动判断第2个参数是语言还是参数对象
+- 🎯 **完全兼容**: 现有代码无需修改，渐进式增强
+- 🎯 **降低错误**: 不再需要传递空对象 `{}`
+
+📖 [完整文档](./docs/error-handling.md) · [实现原理](./docs/i18n-implementation-analysis.md) · [变更日志](./changelogs/v1.1.8.md)
+
+---
 
 ### 🎯 错误配置对象格式支持（v1.1.5）
 

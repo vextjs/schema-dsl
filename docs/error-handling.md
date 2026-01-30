@@ -1,7 +1,7 @@
 # schema-dsl 错误处理完整指南
 
-
-> **更新**: 2025-12-25  
+> **更新**: 2026-01-30  
+> **版本**: v1.1.8+  
 > **适用**: 企业级应用开发  
 
 ---
@@ -9,13 +9,105 @@
 ## 📋 目录
 
 1. [错误对象结构](#错误对象结构)
-2. [错误消息定制](#错误消息定制)
-3. [错误码系统](#错误码系统)
-4. [多层级错误处理](#多层级错误处理)
-5. [API响应设计](#api响应设计)
-6. [前端错误展示](#前端错误展示)
-7. [错误日志记录](#错误日志记录)
-8. [最佳实践](#最佳实践)
+2. [I18nError - 多语言错误抛出](#i18nerror---多语言错误抛出) 🆕
+   - [智能参数识别（v1.1.8）](#智能参数识别v118)
+   - [简化语法](#简化语法)
+   - [所有调用方式](#所有调用方式)
+3. [错误消息定制](#错误消息定制)
+4. [错误码系统](#错误码系统)
+5. [多层级错误处理](#多层级错误处理)
+6. [API响应设计](#api响应设计)
+7. [前端错误展示](#前端错误展示)
+8. [错误日志记录](#错误日志记录)
+9. [最佳实践](#最佳实践)
+
+---
+
+## I18nError - 多语言错误抛出
+
+### 智能参数识别（v1.1.8）
+
+**v1.1.8 新增**：支持简化语法，智能识别第2个参数类型
+
+#### 简化语法
+
+```javascript
+const { dsl, Locale } = require('schema-dsl');
+
+// 配置语言包
+Locale.addLocale('zh-CN', {
+  'account.notFound': {
+    code: 40001,
+    message: '账户不存在'
+  }
+});
+
+Locale.addLocale('en-US', {
+  'account.notFound': {
+    code: 40001,
+    message: 'Account not found'
+  }
+});
+
+// ✅ 新增：简化语法（推荐）
+dsl.error.throw('account.notFound', 'zh-CN');
+dsl.error.throw('account.notFound', 'zh-CN', 404);
+
+// ✅ 标准语法（完全兼容）
+dsl.error.throw('account.notFound', {}, 404, 'zh-CN');
+dsl.error.throw('account.notFound', { id: '123' }, 404, 'zh-CN');
+```
+
+#### 智能识别规则
+
+```javascript
+// 规则：自动判断第2个参数类型
+typeof params === 'string'  → 识别为语言参数
+typeof params === 'object'  → 识别为参数对象
+params === null/undefined   → 使用默认值
+```
+
+#### 所有调用方式
+
+```javascript
+// 1. 简化语法 - 只传语言
+dsl.error.throw('account.notFound', 'zh-CN');
+dsl.error.create('account.notFound', 'en-US');
+dsl.error.assert(account, 'account.notFound', 'zh-CN');
+
+// 2. 简化语法 - 语言 + 状态码
+dsl.error.throw('account.notFound', 'zh-CN', 404);
+dsl.error.assert(account, 'account.notFound', 'zh-CN', 404);
+
+// 3. 标准语法 - 带参数对象
+dsl.error.throw('account.insufficientBalance', 
+  { balance: 50, required: 100 }, 
+  400, 
+  'zh-CN'
+);
+
+// 4. 省略所有参数 - 使用全局语言
+dsl.error.throw('account.notFound');
+```
+
+#### 实际应用
+
+```javascript
+// Express API
+app.get('/api/account/:id', async (req, res) => {
+  try {
+    const account = await findAccount(req.params.id);
+    const locale = req.headers['accept-language'] || 'zh-CN';
+    
+    // 🎯 简化语法：只需2个参数
+    dsl.error.assert(account, 'account.notFound', locale);
+    
+    res.json(account);
+  } catch (error) {
+    res.status(error.statusCode).json(error.toJSON());
+  }
+});
+```
 
 ---
 

@@ -1,7 +1,7 @@
 # 变更日志 (CHANGELOG)
 
 > **说明**: 版本概览摘要，详细变更见 [changelogs/](./changelogs/) 目录  
-> **最后更新**: 2026-01-27
+> **最后更新**: 2026-01-30
 
 ---
 
@@ -9,6 +9,7 @@
 
 | 版本 | 日期 | 变更摘要 | 详细 |
 |------|------|---------|------|
+| [v1.1.8](./changelogs/v1.1.8.md) | 2026-01-30 | 🚀 新功能：智能参数识别 - 支持简化语法 `dsl.error.throw('key', 'locale')` | [查看](./changelogs/v1.1.8.md) |
 | [v1.1.7](./changelogs/v1.1.7.md) | 2026-01-27 | 🐛 Bug修复：错误消息路径显示优化 - 所有错误类型的 message 只显示字段名 | [查看](./changelogs/v1.1.7.md) |
 | [v1.1.6](./changelogs/v1.1.6.md) | 2026-01-23 | 🐛 Bug修复：enum和additionalProperties错误消息模板变量未替换 | [查看](./changelogs/v1.1.6.md) |
 | [v1.1.5](./changelogs/v1.1.5.md) | 2026-01-17 | 🚀 新功能：错误配置对象格式支持 - 语言包支持 `{ code, message }` 对象格式 | [查看](./changelogs/v1.1.5.md) |
@@ -29,7 +30,7 @@
 | [v1.0.0](./changelogs/v1.0.0.md) | 2025-12-29 | 初始发布版本 | [查看](./changelogs/v1.0.0.md) |
 
 > 💡 **提示**: 重要版本的详细变更记录在 [changelogs/](./changelogs/) 目录中。  
-> 当前已有详细文档的版本：v1.1.7, v1.1.6, v1.1.5, v1.1.4, v1.1.3, v1.1.2, v1.1.1, v1.1.0, v1.0.9, v1.0.0  
+> 当前已有详细文档的版本：v1.1.8, v1.1.7, v1.1.6, v1.1.5, v1.1.4, v1.1.3, v1.1.2, v1.1.1, v1.1.0, v1.0.9, v1.0.0  
 > 其他版本的详细变更信息请参考项目提交历史或联系维护者。
 
 ---
@@ -38,30 +39,45 @@
 
 | 版本系列 | 版本数 | 主要改进方向 |
 |---------|-------|------------|
-| v1.1.x | 8 | Bug修复、错误消息优化、错误配置增强、TypeScript类型完善、多语言支持、数字运算符、联合类型 |
+| v1.1.x | 9 | 智能参数识别、Bug修复、错误消息优化、错误配置增强、TypeScript类型完善、多语言支持、数字运算符、联合类型 |
 | v1.0.x | 10 | 核心功能、验证器、测试覆盖、文档完善 |
 
 ---
 
 ## 里程碑版本
 
+### v1.1.8 - 智能参数识别 🚀
+
+**发布日期**: 2026-01-30  
+**重要性**: ⭐⭐⭐⭐⭐
+
+**主要改进**:
+- 🚀 新增智能参数识别功能，支持简化语法 `dsl.error.throw('key', 'locale')`
+- ✅ 从4个参数减少到2个参数（不需要参数对象时）
+- ✅ 智能识别第2个参数类型：字符串→语言参数，对象→参数对象
+- ✅ 所有方法都支持：create、throw、assert
+- ✅ 完全向后兼容，现有代码无需修改
+- ✅ 新增 17 个测试用例，100%通过率
+
+**技术细节**:
+- 新增 `normalizeParams()` 工具函数
+- 修改文件：`lib/errors/I18nError.js`、`index.js`
+- 参数识别逻辑：typeof 检查 + Array.isArray 排除
+- 零性能损失，运行时开销可忽略不计
+
+**使用示例**:
+```javascript
+// 之前：必须传递空对象
+dsl.error.throw('account.notFound', {}, 404, 'zh-CN');
+
+// 现在：直接传语言参数
+dsl.error.throw('account.notFound', 'zh-CN', 404);
+```
+
 ### v1.1.7 - 错误消息路径显示优化 🐛
 
 **发布日期**: 2026-01-27  
 **重要性**: ⭐⭐⭐⭐
-
-**主要改进**:
-- 🐛 修复嵌套对象错误消息显示完整路径的问题（如 `user/profile/age should be number` → `age should be number`）
-- ✅ 统一所有错误类型的 label 生成逻辑，message 只显示字段名而非完整路径
-- ✅ path 保留完整路径用于定位（符合 JSON Pointer RFC 6901 标准）
-- ✅ 修复范围：required、type、minLength、maxLength、pattern、format、enum、minimum、maximum、minItems、maxItems、additionalProperties 等所有错误类型
-- ✅ 新增 6 个测试用例，测试总数 983 个
-
-**技术细节**:
-- 修改文件：`lib/core/ErrorFormatter.js`
-- 从完整路径中提取最后一级字段名作为 label
-- 遵循 JSON Pointer (RFC 6901) 标准使用 `/` 作为路径分隔符
-- 测试修复：添加 `beforeEach` 钩子重置语言为英文，避免测试污染
 
 ### v1.1.6 - ErrorFormatter Bug修复 🐛
 

@@ -1,4 +1,4 @@
-// Type definitions for schema-dsl v1.1.5
+// Type definitions for schema-dsl v1.1.8
 // Project: https://github.com/vextjs/schema-dsl
 // Definitions by: schema-dsl Team
 
@@ -1318,11 +1318,28 @@ export namespace dsl {
   export const error: {
     /**
      * 创建多语言错误（不抛出）
+     *
      * @param code - 错误代码（多语言 key）
-     * @param params - 错误参数
+     * @param paramsOrLocale - 错误参数对象 或 语言代码（智能识别，v1.1.8+）
      * @param statusCode - HTTP 状态码
-     * @param locale - 语言环境（可选，不传则使用全局语言）
+     * @param locale - 语言环境（仅当第2个参数是对象时有效）
      * @returns 错误实例
+     *
+     * @example 简化语法（v1.1.8+）
+     * ```typescript
+     * // 直接传语言参数
+     * const error = dsl.error.create('account.notFound', 'zh-CN');
+     * const error = dsl.error.create('account.notFound', 'en-US', 404);
+     * ```
+     *
+     * @example 标准语法（完全兼容）
+     * ```typescript
+     * // 带参数对象
+     * const error = dsl.error.create('account.notFound', { id: '123' }, 404, 'zh-CN');
+     *
+     * // 空参数对象
+     * const error = dsl.error.create('account.notFound', {}, 404, 'zh-CN');
+     * ```
      *
      * @example 全局语言
      * ```typescript
@@ -1338,18 +1355,35 @@ export namespace dsl {
      */
     create(
       code: string,
-      params?: Record<string, any>,
+      paramsOrLocale?: Record<string, any> | string,
       statusCode?: number,
       locale?: string
     ): I18nError;
 
     /**
      * 抛出多语言错误
+     *
      * @param code - 错误代码（多语言 key）
-     * @param params - 错误参数
+     * @param paramsOrLocale - 错误参数对象 或 语言代码（智能识别，v1.1.8+）
      * @param statusCode - HTTP 状态码
-     * @param locale - 语言环境（可选，不传则使用全局语言）
+     * @param locale - 语言环境（仅当第2个参数是对象时有效）
      * @throws I18nError
+     *
+     * @example 简化语法（v1.1.8+）
+     * ```typescript
+     * // 直接传语言参数
+     * dsl.error.throw('account.notFound', 'zh-CN');
+     * dsl.error.throw('account.notFound', 'en-US', 404);
+     * ```
+     *
+     * @example 标准语法（完全兼容）
+     * ```typescript
+     * // 带参数对象
+     * dsl.error.throw('account.notFound', { id: '123' }, 404, 'zh-CN');
+     *
+     * // 空参数对象
+     * dsl.error.throw('account.notFound', {}, 404, 'zh-CN');
+     * ```
      *
      * @example 全局语言
      * ```typescript
@@ -1364,19 +1398,36 @@ export namespace dsl {
      */
     throw(
       code: string,
-      params?: Record<string, any>,
+      paramsOrLocale?: Record<string, any> | string,
       statusCode?: number,
       locale?: string
     ): never;
 
     /**
      * 断言方法 - 条件不满足时抛错
+     *
      * @param condition - 条件表达式
      * @param code - 错误代码（多语言 key）
-     * @param params - 错误参数
+     * @param paramsOrLocale - 错误参数对象 或 语言代码（智能识别，v1.1.8+）
      * @param statusCode - HTTP 状态码
-     * @param locale - 语言环境（可选，不传则使用全局语言）
+     * @param locale - 语言环境（仅当第3个参数是对象时有效）
      * @throws I18nError 条件为 false 时抛出
+     *
+     * @example 简化语法（v1.1.8+）
+     * ```typescript
+     * // 直接传语言参数
+     * dsl.error.assert(account, 'account.notFound', 'zh-CN');
+     * dsl.error.assert(account, 'account.notFound', 'en-US', 404);
+     * ```
+     *
+     * @example 标准语法（完全兼容）
+     * ```typescript
+     * // 带参数对象
+     * dsl.error.assert(account, 'account.notFound', { id: '123' }, 404, 'zh-CN');
+     *
+     * // 空参数对象
+     * dsl.error.assert(account, 'account.notFound', {}, 404, 'zh-CN');
+     * ```
      *
      * @example 全局语言
      * ```typescript
@@ -1392,7 +1443,7 @@ export namespace dsl {
     assert(
       condition: any,
       code: string,
-      params?: Record<string, any>,
+      paramsOrLocale?: Record<string, any> | string,
       statusCode?: number,
       locale?: string
     ): asserts condition;
@@ -1786,11 +1837,25 @@ export class I18nError extends Error {
 
   /**
    * 静态工厂方法 - 创建错误（不抛出）
+   *
    * @param code - 错误代码
-   * @param params - 错误参数
+   * @param paramsOrLocale - 错误参数对象 或 语言代码（智能识别，v1.1.8+）
    * @param statusCode - HTTP 状态码
-   * @param locale - 语言环境（可选，不传则使用全局语言）
+   * @param locale - 语言环境（仅当第2个参数是对象时有效）
    * @returns 错误实例
+   *
+   * @example 简化语法（v1.1.8+）
+   * ```typescript
+   * // 直接传语言参数
+   * const error = I18nError.create('account.notFound', 'zh-CN');
+   * const error = I18nError.create('account.notFound', 'en-US', 404);
+   * ```
+   *
+   * @example 标准语法（完全兼容）
+   * ```typescript
+   * // 带参数对象
+   * const error = I18nError.create('account.notFound', { id: '123' }, 404, 'zh-CN');
+   * ```
    *
    * @example 全局语言
    * ```typescript
@@ -1810,18 +1875,32 @@ export class I18nError extends Error {
    */
   static create(
     code: string,
-    params?: Record<string, any>,
+    paramsOrLocale?: Record<string, any> | string,
     statusCode?: number,
     locale?: string
   ): I18nError;
 
   /**
    * 静态工厂方法 - 直接抛出错误
+   *
    * @param code - 错误代码
-   * @param params - 错误参数
+   * @param paramsOrLocale - 错误参数对象 或 语言代码（智能识别，v1.1.8+）
    * @param statusCode - HTTP 状态码
-   * @param locale - 语言环境（可选，不传则使用全局语言）
+   * @param locale - 语言环境（仅当第2个参数是对象时有效）
    * @throws I18nError
+   *
+   * @example 简化语法（v1.1.8+）
+   * ```typescript
+   * // 直接传语言参数
+   * I18nError.throw('account.notFound', 'zh-CN');
+   * I18nError.throw('account.notFound', 'en-US', 404);
+   * ```
+   *
+   * @example 标准语法（完全兼容）
+   * ```typescript
+   * // 带参数对象
+   * I18nError.throw('account.notFound', { id: '123' }, 404, 'zh-CN');
+   * ```
    *
    * @example 全局语言
    * ```typescript
@@ -1836,39 +1915,33 @@ export class I18nError extends Error {
    */
   static throw(
     code: string,
-    params?: Record<string, any>,
+    paramsOrLocale?: Record<string, any> | string,
     statusCode?: number,
     locale?: string
   ): never;
 
   /**
    * 断言方法 - 条件不满足时抛错
+   *
    * @param condition - 条件表达式
    * @param code - 错误代码
-   * @param params - 错误参数
+   * @param paramsOrLocale - 错误参数对象 或 语言代码（智能识别，v1.1.8+）
    * @param statusCode - HTTP 状态码
-   * @param locale - 语言环境（可选，不传则使用全局语言）
+   * @param locale - 语言环境（仅当第3个参数是对象时有效）
    * @throws I18nError 条件为 false 时抛出
    *
-   * @example 全局语言
+   * @example 简化语法（v1.1.8+）
    * ```typescript
-   * Locale.setLocale('zh-CN');
-   * I18nError.assert(account, 'account.notFound');
+   * // 直接传语言参数
+   * I18nError.assert(account, 'account.notFound', 'zh-CN');
+   * I18nError.assert(account, 'account.notFound', 'en-US', 404);
    * ```
    *
-   * @example 运行时指定语言
+   * @example 标准语法（完全兼容）
    * ```typescript
-   * I18nError.assert(account, 'account.notFound', {}, 404, 'en-US');
+   * // 带参数对象
+   * I18nError.assert(account, 'account.notFound', { id: '123' }, 404, 'zh-CN');
    * ```
-   */
-  /**
-   * 断言方法 - 条件不满足时抛错
-   * @param condition - 条件表达式
-   * @param code - 错误代码
-   * @param params - 错误参数
-   * @param statusCode - HTTP 状态码
-   * @param locale - 语言环境（可选，不传则使用全局语言）
-   * @throws I18nError 条件为 false 时抛出
    *
    * @example 全局语言
    * ```typescript
@@ -1884,7 +1957,7 @@ export class I18nError extends Error {
   static assert(
     condition: any,
     code: string,
-    params?: Record<string, any>,
+    paramsOrLocale?: Record<string, any> | string,
     statusCode?: number,
     locale?: string
   ): asserts condition;

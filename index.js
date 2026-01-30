@@ -53,36 +53,61 @@ dsl.if = function(...args) {
 };
 
 // ✅ dsl.error：统一的多语言错误抛出（v1.1.1+）
+// v1.1.8: 支持简化语法，智能参数识别
 dsl.error = {
   /**
    * 创建多语言错误（不抛出）
    * @param {string} code - 错误代码（多语言 key）
-   * @param {Object} params - 错误参数
+   * @param {Object|string} paramsOrLocale - 错误参数对象 或 语言代码（智能识别）
    * @param {number} statusCode - HTTP 状态码
-   * @param {string} locale - 语言环境（可选，不传则使用全局语言）
+   * @param {string} locale - 语言环境（仅当第2个参数是对象时有效）
    * @returns {I18nError} 错误实例
+   *
+   * @example
+   * // 简化语法
+   * dsl.error.create('account.notFound', 'zh-CN');
+   *
+   * @example
+   * // 标准语法
+   * dsl.error.create('account.notFound', { id: '123' }, 404, 'zh-CN');
    */
-  create: (code, params, statusCode, locale) => I18nError.create(code, params, statusCode, locale),
+  create: (code, paramsOrLocale, statusCode, locale) => I18nError.create(code, paramsOrLocale, statusCode, locale),
 
   /**
    * 抛出多语言错误
    * @param {string} code - 错误代码（多语言 key）
-   * @param {Object} params - 错误参数
+   * @param {Object|string} paramsOrLocale - 错误参数对象 或 语言代码（智能识别）
    * @param {number} statusCode - HTTP 状态码
-   * @param {string} locale - 语言环境（可选，不传则使用全局语言）
+   * @param {string} locale - 语言环境（仅当第2个参数是对象时有效）
    * @throws {I18nError} 直接抛出错误
+   *
+   * @example
+   * // 简化语法
+   * dsl.error.throw('account.notFound', 'zh-CN');
+   *
+   * @example
+   * // 标准语法
+   * dsl.error.throw('account.notFound', { id: '123' }, 404, 'zh-CN');
    */
-  throw: (code, params, statusCode, locale) => I18nError.throw(code, params, statusCode, locale),
+  throw: (code, paramsOrLocale, statusCode, locale) => I18nError.throw(code, paramsOrLocale, statusCode, locale),
 
   /**
    * 断言方法 - 条件不满足时抛错
    * @param {boolean} condition - 条件表达式
    * @param {string} code - 错误代码（多语言 key）
-   * @param {Object} params - 错误参数
+   * @param {Object|string} paramsOrLocale - 错误参数对象 或 语言代码（智能识别）
    * @param {number} statusCode - HTTP 状态码
-   * @param {string} locale - 语言环境（可选，不传则使用全局语言）
+   * @param {string} locale - 语言环境（仅当第3个参数是对象时有效）
+   *
+   * @example
+   * // 简化语法
+   * dsl.error.assert(account, 'account.notFound', 'zh-CN');
+   *
+   * @example
+   * // 标准语法
+   * dsl.error.assert(account, 'account.notFound', { id: '123' }, 404, 'zh-CN');
    */
-  assert: (condition, code, params, statusCode, locale) => I18nError.assert(condition, code, params, statusCode, locale)
+  assert: (condition, code, paramsOrLocale, statusCode, locale) => I18nError.assert(condition, code, paramsOrLocale, statusCode, locale)
 };
 
 /**

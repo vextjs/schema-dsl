@@ -1,15 +1,33 @@
 # 运行时多语言支持 - schema-dsl
 
-**版本**: v1.1.4+  
-**更新日期**: 2026-01-13
+**版本**: v1.1.8+  
+**更新日期**: 2026-01-30
 
 ---
 
 ## 📋 概述
 
-schema-dsl 的 `dsl.error` 和 `I18nError` 现在支持**运行时指定语言**，无需修改全局语言设置。
+schema-dsl 的 `dsl.error` 和 `I18nError` 支持**运行时指定语言**，无需修改全局语言设置。
 
 这对于 **API 开发**特别有用，可以根据每个请求的语言偏好（如 `Accept-Language` 请求头）动态返回对应语言的错误消息。
+
+### 🆕 智能参数识别（v1.1.8）
+
+**v1.1.8 新增**：支持简化语法，从4个参数减少到2个参数
+
+```javascript
+// ✅ 新增：简化语法（推荐）
+dsl.error.throw('account.notFound', 'zh-CN');
+dsl.error.throw('account.notFound', 'zh-CN', 404);
+
+// ✅ 标准语法（完全兼容）
+dsl.error.throw('account.notFound', {}, 404, 'zh-CN');
+```
+
+**智能识别规则**：
+- 第2个参数是 `string` → 识别为语言参数
+- 第2个参数是 `object` → 识别为参数对象
+- 第2个参数是 `null/undefined/数组` → 使用默认值
 
 ### 🎨 支持的模板语法（v1.1.4+）
 
@@ -35,14 +53,47 @@ Locale.addLocale('zh-CN', {
 
 **向后兼容**：
 - ✅ 现有的 `{{#variable}}` 格式完全兼容
-- ✅ 所有单元测试通过（921个测试）
+- ✅ 所有单元测试通过
 - ✅ 无破坏性变更
 
 ---
 
-## 🎯 两种使用方式
+## 🎯 三种使用方式
 
-### 方式 1: 全局语言设置（传统方式）
+### 方式 1: 简化语法（v1.1.8 推荐）⭐
+
+```javascript
+const { dsl, Locale } = require('schema-dsl');
+
+// 配置语言包
+Locale.addLocale('zh-CN', {
+  'account.notFound': {
+    code: 40001,
+    message: '账户不存在'
+  }
+});
+
+Locale.addLocale('en-US', {
+  'account.notFound': {
+    code: 40001,
+    message: 'Account not found'
+  }
+});
+
+// ✅ 简化语法：直接传语言参数
+const error1 = dsl.error.create('account.notFound', 'zh-CN');
+console.log(error1.message);  // "账户不存在"
+
+const error2 = dsl.error.create('account.notFound', 'en-US');
+console.log(error2.message);  // "Account not found"
+```
+
+**适用场景**：
+- 不需要参数插值
+- API 开发中最常见
+- 代码最简洁
+
+### 方式 2: 全局语言设置（传统方式）
 
 ```javascript
 const { dsl, Locale } = require('schema-dsl');
