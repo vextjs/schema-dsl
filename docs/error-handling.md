@@ -10,9 +10,15 @@
 
 1. [错误对象结构](#错误对象结构)
 2. [I18nError - 多语言错误抛出](#i18nerror---多语言错误抛出) 🆕
+   - [📖 概述](#-概述)
+   - [🚀 快速开始](#-快速开始)
+   - [📚 核心 API](#-核心-api)
+   - [🔧 配置语言包](#-配置语言包)
+   - [🌐 默认语言机制](#-默认语言机制)
    - [智能参数识别（v1.1.8）](#智能参数识别v118)
-   - [简化语法](#简化语法)
-   - [所有调用方式](#所有调用方式)
+   - [🌐 实际场景](#-实际场景)
+   - [📦 错误对象结构](#-错误对象结构)
+   - [❓ 常见问题](#-常见问题)
 3. [错误消息定制](#错误消息定制)
 4. [错误码系统](#错误码系统)
 5. [多层级错误处理](#多层级错误处理)
@@ -24,6 +30,381 @@
 ---
 
 ## I18nError - 多语言错误抛出
+
+### 📖 概述
+
+`I18nError` 是 schema-dsl 提供的**统一多语言错误抛出机制**，专为企业级应用设计。
+
+**核心价值**:
+- ✅ **多语言支持**: 一套代码，自动适配中文/英文/日文等
+- ✅ **统一错误码**: 跨语言使用相同数字 code，前端处理不受语言影响
+- ✅ **参数插值**: 支持 `{{#balance}}` 等动态参数
+- ✅ **框架集成**: 与 Express/Koa 无缝集成
+- ✅ **TypeScript 支持**: 完整的类型定义
+
+**适用场景**:
+- API 业务逻辑错误（账户不存在、余额不足、权限不足等）
+- 多语言用户场景（国际化应用）
+- 需要统一错误码的系统
+
+**与 ValidationError 的区别**:
+- `ValidationError`: 表单验证错误（字段级错误）
+- `I18nError`: 业务逻辑错误（应用级错误）
+
+---
+
+### 🚀 快速开始
+
+#### 5分钟上手
+
+```javascript
+const { I18nError, Locale } = require('schema-dsl');
+
+// 步骤1：配置语言包
+Locale.addLocale('zh-CN', {
+  'account.notFound': {
+    code: 40001,
+    message: '账户不存在'
+  }
+});
+
+Locale.addLocale('en-US', {
+  'account.notFound': {
+    code: 40001,
+    message: 'Account not found'
+  }
+});
+
+// 步骤2：设置默认语言
+Locale.setLocale('zh-CN');
+
+// 步骤3：使用 I18nError
+try {
+  I18nError.throw('account.notFound');
+} catch (error) {
+  console.log(error.message);  // "账户不存在"
+  console.log(error.code);     // 40001
+}
+```
+
+---
+
+### 📚 核心 API
+
+#### I18nError.create()
+
+**创建错误对象（不抛出）**
+
+```javascript
+/**
+ * @param {string} code - 错误代码（多语言 key）
+ * @param {Object|string} paramsOrLocale - 参数对象 或 语言代码（智能识别）
+ * @param {number} statusCode - HTTP 状态码（默认 400）
+ * @param {string} locale - 语言环境（可选）
+ * @returns {I18nError} 错误实例
+ */
+I18nError.create(code, paramsOrLocale?, statusCode?, locale?)
+```
+
+**使用示例**:
+```javascript
+// 基础用法
+const error = I18nError.create('account.notFound');
+
+// 带参数
+const error = I18nError.create('account.insufficientBalance', {
+  balance: 50,
+  required: 100
+});
+
+// 指定状态码
+const error = I18nError.create('user.notFound', {}, 404);
+
+// 运行时指定语言（v1.1.8+）
+const error = I18nError.create('account.notFound', 'en-US', 404);
+```
+
+---
+
+#### I18nError.throw()
+
+**直接抛出错误**
+
+```javascript
+/**
+ * @param {string} code - 错误代码
+ * @param {Object|string} paramsOrLocale - 参数对象 或 语言代码
+ * @param {number} statusCode - HTTP 状态码
+ * @param {string} locale - 语言环境
+ * @throws {I18nError}
+ */
+I18nError.throw(code, paramsOrLocale?, statusCode?, locale?)
+```
+
+**使用示例**:
+```javascript
+// 直接抛错
+I18nError.throw('user.noPermission');
+
+// 带参数和状态码
+I18nError.throw('account.insufficientBalance', { balance: 50, required: 100 }, 400);
+
+// 简化语法（v1.1.8+）
+I18nError.throw('account.notFound', 'zh-CN', 404);
+```
+
+---
+
+#### I18nError.assert()
+
+**断言风格 - 条件不满足时抛错**
+
+```javascript
+/**
+ * @param {any} condition - 条件表达式（falsy 时抛错）
+ * @param {string} code - 错误代码
+ * @param {Object|string} paramsOrLocale - 参数对象 或 语言代码
+ * @param {number} statusCode - HTTP 状态码
+ * @param {string} locale - 语言环境
+ * @throws {I18nError} 条件为 false 时抛出
+ */
+I18nError.assert(condition, code, paramsOrLocale?, statusCode?, locale?)
+```
+
+**使用示例**:
+```javascript
+function getAccount(id) {
+  const account = db.findAccount(id);
+  
+  // 断言：账户必须存在
+  I18nError.assert(account, 'account.notFound', { id });
+  
+  // 断言：余额必须充足
+  I18nError.assert(
+    account.balance >= 100,
+    'account.insufficientBalance',
+    { balance: account.balance, required: 100 }
+  );
+  
+  return account;
+}
+```
+
+---
+
+#### dsl.error 快捷方法
+
+`dsl.error` 是 `I18nError` 的快捷访问方式，提供相同的三个方法：
+
+```javascript
+const { dsl } = require('schema-dsl');
+
+// 等价于 I18nError.create()
+dsl.error.create('account.notFound');
+
+// 等价于 I18nError.throw()
+dsl.error.throw('order.notPaid');
+
+// 等价于 I18nError.assert()
+dsl.error.assert(order, 'order.notFound');
+```
+
+**推荐使用场景**:
+- ✅ 与 `dsl()` 函数一起使用时（风格统一）
+- ✅ 导入较少依赖时（只需 `dsl`）
+
+---
+
+### 🔧 配置语言包
+
+#### 方式1：使用 Locale.addLocale()（推荐）
+
+```javascript
+const { Locale } = require('schema-dsl');
+
+Locale.addLocale('zh-CN', {
+  // 字符串格式（简单场景）
+  'user.notFound': '用户不存在',
+  
+  // 对象格式（推荐，v1.1.5+）
+  'account.notFound': {
+    code: 40001,  // 数字错误码
+    message: '账户不存在'
+  },
+  'account.insufficientBalance': {
+    code: 40002,
+    message: '余额不足，当前{{#balance}}元，需要{{#required}}元'
+  }
+});
+
+Locale.addLocale('en-US', {
+  'user.notFound': 'User not found',
+  'account.notFound': {
+    code: 40001,  // 相同的错误码
+    message: 'Account not found'
+  },
+  'account.insufficientBalance': {
+    code: 40002,
+    message: 'Insufficient balance: {{#balance}}, required {{#required}}'
+  }
+});
+```
+
+---
+
+#### 方式2：使用 dsl.config()（批量配置）
+
+```javascript
+const { dsl } = require('schema-dsl');
+
+dsl.config({
+  i18n: {
+    'zh-CN': {
+      'payment.failed': {
+        code: 50001,
+        message: '支付失败：{{#reason}}'
+      }
+    },
+    'en-US': {
+      'payment.failed': {
+        code: 50001,
+        message: 'Payment failed: {{#reason}}'
+      }
+    }
+  }
+});
+```
+
+---
+
+#### 方式3：从目录加载（大型项目）
+
+**目录结构**:
+```
+project/
+├── lib/
+│   └── locales/
+│       ├── zh-CN.js
+│       ├── en-US.js
+│       └── ja-JP.js
+└── app.js
+```
+
+**配置**:
+```javascript
+const path = require('path');
+
+dsl.config({
+  i18n: path.join(__dirname, 'lib/locales')
+});
+```
+
+**语言包文件** (`lib/locales/zh-CN.js`):
+```javascript
+module.exports = {
+  'account.notFound': {
+    code: 40001,
+    message: '账户不存在'
+  },
+  'account.insufficientBalance': {
+    code: 40002,
+    message: '余额不足，当前{{#balance}}元，需要{{#required}}元'
+  },
+  'user.noPermission': {
+    code: 40003,
+    message: '您没有权限执行此操作'
+  }
+};
+```
+
+---
+
+### 🌐 默认语言机制
+
+#### 默认语言设置
+
+**默认值**: `'en-US'`（英文）
+
+**全局设置**:
+```javascript
+const { Locale } = require('schema-dsl');
+
+// 设置默认语言为中文
+Locale.setLocale('zh-CN');
+
+// 获取当前语言
+console.log(Locale.getLocale());  // 'zh-CN'
+```
+
+---
+
+#### 语言优先级规则
+
+```javascript
+运行时 locale 参数 > 全局 Locale.currentLocale > 默认 'en-US'
+```
+
+**示例**:
+```javascript
+// 场景1：使用全局语言
+Locale.setLocale('zh-CN');
+I18nError.throw('account.notFound');  // 使用中文 'zh-CN'
+
+// 场景2：运行时覆盖
+Locale.setLocale('zh-CN');
+I18nError.throw('account.notFound', 'en-US');  // 覆盖为英文 'en-US'
+
+// 场景3：参数对象 + 运行时语言
+I18nError.throw('account.insufficientBalance', 
+  { balance: 50, required: 100 },  // 参数对象
+  400, 
+  'ja-JP'  // 运行时指定日文
+);
+```
+
+---
+
+#### 实际应用 - API 多语言响应
+
+```javascript
+const express = require('express');
+const { I18nError } = require('schema-dsl');
+
+const app = express();
+
+// 中间件：提取客户端语言
+app.use((req, res, next) => {
+  req.locale = req.headers['accept-language']?.split(',')[0] || 'zh-CN';
+  next();
+});
+
+// API 路由
+app.get('/api/account/:id', async (req, res) => {
+  try {
+    const account = await findAccount(req.params.id);
+    
+    // 🎯 运行时指定语言（根据客户端请求）
+    I18nError.assert(account, 'account.notFound', req.locale, 404);
+    
+    res.json({ success: true, data: account });
+  } catch (error) {
+    if (error instanceof I18nError) {
+      res.status(error.statusCode).json(error.toJSON());
+    } else {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+});
+```
+
+**效果**:
+- 客户端请求头 `Accept-Language: zh-CN` → 返回中文错误
+- 客户端请求头 `Accept-Language: en-US` → 返回英文错误
+- 无需修改业务代码，自动适配
+
+---
+
+### 智能参数识别（v1.1.8）
 
 ### 智能参数识别（v1.1.8）
 
@@ -108,6 +489,551 @@ app.get('/api/account/:id', async (req, res) => {
   }
 });
 ```
+
+---
+
+### 🌐 实际场景
+
+#### Express 完整集成
+
+```javascript
+const express = require('express');
+const { I18nError, Locale } = require('schema-dsl');
+
+const app = express();
+app.use(express.json());
+
+// ========== 配置语言包 ==========
+Locale.addLocale('zh-CN', {
+  'account.notFound': {
+    code: 40001,
+    message: '账户不存在'
+  },
+  'account.insufficientBalance': {
+    code: 40002,
+    message: '余额不足，当前{{#balance}}元，需要{{#required}}元'
+  }
+});
+
+Locale.addLocale('en-US', {
+  'account.notFound': {
+    code: 40001,
+    message: 'Account not found'
+  },
+  'account.insufficientBalance': {
+    code: 40002,
+    message: 'Insufficient balance: {{#balance}}, required {{#required}}'
+  }
+});
+
+// ========== 中间件：提取语言 ==========
+app.use((req, res, next) => {
+  req.locale = req.headers['accept-language']?.split(',')[0] || 'zh-CN';
+  next();
+});
+
+// ========== 错误处理中间件 ==========
+app.use((error, req, res, next) => {
+  if (error instanceof I18nError) {
+    return res.status(error.statusCode).json({
+      success: false,
+      error: error.toJSON()
+    });
+  }
+  
+  // 其他错误
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error'
+  });
+});
+
+// ========== 业务路由 ==========
+app.get('/api/account/:id', async (req, res, next) => {
+  try {
+    const account = await findAccount(req.params.id);
+    
+    // 使用运行时语言
+    I18nError.assert(account, 'account.notFound', req.locale, 404);
+    
+    res.json({ success: true, data: account });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/account/transfer', async (req, res, next) => {
+  try {
+    const { fromId, toId, amount } = req.body;
+    const account = await findAccount(fromId);
+    
+    I18nError.assert(account, 'account.notFound', req.locale, 404);
+    I18nError.assert(
+      account.balance >= amount,
+      'account.insufficientBalance',
+      { balance: account.balance, required: amount },
+      400,
+      req.locale
+    );
+    
+    await transferMoney(fromId, toId, amount);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+```
+
+---
+
+#### Koa 完整集成
+
+```javascript
+const Koa = require('koa');
+const { I18nError, Locale } = require('schema-dsl');
+
+const app = new Koa();
+
+// ========== 配置语言包 ==========
+Locale.addLocale('zh-CN', {
+  'user.noPermission': {
+    code: 40003,
+    message: '您没有权限执行此操作'
+  }
+});
+
+// ========== 中间件：提取语言 ==========
+app.use(async (ctx, next) => {
+  ctx.locale = ctx.headers['accept-language']?.split(',')[0] || 'zh-CN';
+  await next();
+});
+
+// ========== 错误处理中间件 ==========
+app.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (error) {
+    if (error instanceof I18nError) {
+      ctx.status = error.statusCode;
+      ctx.body = {
+        success: false,
+        error: error.toJSON()
+      };
+    } else {
+      ctx.status = 500;
+      ctx.body = { success: false, message: 'Internal Server Error' };
+    }
+  }
+});
+
+// ========== 业务路由 ==========
+app.use(async (ctx) => {
+  if (ctx.path === '/api/admin/users' && ctx.method === 'GET') {
+    const user = await getCurrentUser(ctx);
+    
+    I18nError.assert(user.role === 'admin', 'user.noPermission', ctx.locale, 403);
+    
+    ctx.body = { success: true, data: await getUsers() };
+  }
+});
+```
+
+---
+
+#### 原生 Node.js HTTP Server
+
+```javascript
+const http = require('http');
+const { I18nError, Locale } = require('schema-dsl');
+
+// 配置语言包
+Locale.addLocale('zh-CN', {
+  'order.notPaid': {
+    code: 50001,
+    message: '订单未支付'
+  }
+});
+
+const server = http.createServer((req, res) => {
+  try {
+    // 提取语言
+    const locale = req.headers['accept-language']?.split(',')[0] || 'zh-CN';
+    
+    // 业务逻辑
+    const order = getOrder(req.url);
+    I18nError.assert(order && order.paid, 'order.notPaid', locale, 400);
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, data: order }));
+  } catch (error) {
+    if (error instanceof I18nError) {
+      res.writeHead(error.statusCode, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        error: error.toJSON()
+      }));
+    } else {
+      res.writeHead(500);
+      res.end('Internal Server Error');
+    }
+  }
+});
+
+server.listen(3000);
+```
+
+---
+
+#### TypeScript 支持
+
+```typescript
+import { I18nError, Locale } from 'schema-dsl';
+
+// 类型安全的语言包配置
+interface ErrorMessages {
+  [key: string]: {
+    code: number;
+    message: string;
+  };
+}
+
+const zhCN: ErrorMessages = {
+  'account.notFound': {
+    code: 40001,
+    message: '账户不存在'
+  }
+};
+
+Locale.addLocale('zh-CN', zhCN);
+
+// 使用类型守卫
+function handleError(error: unknown): void {
+  if (error instanceof I18nError) {
+    console.log(`错误码: ${error.code}`);
+    console.log(`错误消息: ${error.message}`);
+    console.log(`HTTP状态: ${error.statusCode}`);
+    console.log(`语言: ${error.locale}`);
+  }
+}
+
+// 业务函数
+async function getAccount(id: string): Promise<Account> {
+  const account = await findAccount(id);
+  
+  I18nError.assert(account, 'account.notFound', { id }, 404);
+  
+  return account;
+}
+```
+
+---
+
+### 📦 错误对象结构
+
+#### toJSON() 输出格式
+
+```javascript
+try {
+  I18nError.throw('account.notFound', {}, 404);
+} catch (error) {
+  console.log(error.toJSON());
+}
+```
+
+**输出**:
+```json
+{
+  "error": "I18nError",
+  "originalKey": "account.notFound",
+  "code": 40001,
+  "message": "账户不存在",
+  "params": {},
+  "statusCode": 404,
+  "locale": "zh-CN"
+}
+```
+
+**字段说明**:
+- `error`: 固定为 `"I18nError"`
+- `originalKey`: 原始错误 key（v1.1.5 新增，用于日志追踪）
+- `code`: 错误代码（数字或字符串）
+- `message`: 已翻译的错误消息
+- `params`: 参数对象
+- `statusCode`: HTTP 状态码
+- `locale`: 使用的语言
+
+---
+
+#### 错误对象属性
+
+```javascript
+try {
+  I18nError.throw('account.insufficientBalance', 
+    { balance: 50, required: 100 }, 
+    400, 
+    'zh-CN'
+  );
+} catch (error) {
+  console.log(error.name);          // 'I18nError'
+  console.log(error.message);       // '余额不足，当前50元，需要100元'
+  console.log(error.originalKey);   // 'account.insufficientBalance'
+  console.log(error.code);          // 40002
+  console.log(error.params);        // { balance: 50, required: 100 }
+  console.log(error.statusCode);    // 400
+  console.log(error.locale);        // 'zh-CN'
+  console.log(error.stack);         // 堆栈跟踪
+}
+```
+
+---
+
+#### is() 方法 - 错误类型判断
+
+```javascript
+try {
+  I18nError.throw('account.notFound');
+} catch (error) {
+  if (error instanceof I18nError) {
+    // 使用 originalKey 判断
+    if (error.is('account.notFound')) {
+      console.log('账户不存在错误');
+    }
+    
+    // 使用数字 code 判断（v1.1.5+）
+    if (error.is(40001)) {
+      console.log('账户不存在错误（通过数字码判断）');
+    }
+  }
+}
+```
+
+---
+
+### ❓ 常见问题
+
+#### Q1: 如何动态切换语言？
+
+**A**: 有两种方式：
+
+```javascript
+// 方式1：全局切换（影响所有后续调用）
+Locale.setLocale('en-US');
+I18nError.throw('account.notFound');  // 使用英文
+
+// 方式2：运行时指定（只影响当次调用）
+I18nError.throw('account.notFound', 'en-US');  // 使用英文
+I18nError.throw('account.notFound', 'zh-CN');  // 使用中文
+```
+
+**推荐**: 在 API 中根据客户端请求头动态指定（见上面的 Express 示例）
+
+---
+
+#### Q2: 字符串格式和对象格式有什么区别？
+
+**A**: 
+
+| 格式 | 优势 | 适用场景 |
+|------|------|---------|
+| 字符串 | 简单快捷 | 内部错误、不需要统一码 |
+| 对象 | 统一错误码、跨语言一致 | 暴露给前端的错误、国际化 |
+
+```javascript
+// 字符串格式
+'user.notFound': '用户不存在'
+
+// 对象格式（推荐）
+'user.notFound': {
+  code: 40001,  // 统一的数字码
+  message: '用户不存在'
+}
+```
+
+**建议**: 优先使用对象格式，便于前端统一处理。
+
+---
+
+#### Q3: 参数插值如何使用？
+
+**A**: 使用 `{{#参数名}}` 语法：
+
+```javascript
+// 语言包配置
+Locale.addLocale('zh-CN', {
+  'account.insufficientBalance': {
+    code: 40002,
+    message: '余额不足，当前{{#balance}}元，需要{{#required}}元'
+  }
+});
+
+// 使用
+I18nError.throw('account.insufficientBalance', {
+  balance: 50,
+  required: 100
+});
+// 输出: "余额不足，当前50元，需要100元"
+```
+
+**注意**: 参数名必须用 `{{#参数名}}` 格式（井号必须有）。
+
+---
+
+#### Q4: 与 dsl.if 的 message() 有什么区别？
+
+**A**: 
+
+- `dsl.if().message()`: 用于**数据验证错误**（Schema 验证）
+- `I18nError`: 用于**业务逻辑错误**（API 业务逻辑）
+
+```javascript
+// dsl.if - 数据验证
+dsl.if(d => !d).message('user.notFound').assert(user);
+
+// I18nError - 业务逻辑
+I18nError.assert(user.role === 'admin', 'user.noPermission');
+```
+
+**可以混合使用**:
+```javascript
+function validateAndProcess(user) {
+  // 步骤1：数据验证（使用 dsl.if）
+  dsl.if(d => !d).message('user.notFound').assert(user);
+  
+  // 步骤2：业务逻辑验证（使用 I18nError）
+  I18nError.assert(user.role === 'admin', 'user.noPermission');
+}
+```
+
+---
+
+#### Q5: 如何获取所有可用语言？
+
+**A**: 
+
+```javascript
+const { Locale } = require('schema-dsl');
+
+const locales = Locale.getAvailableLocales();
+console.log(locales);  // ['en-US', 'zh-CN', 'ja-JP', ...]
+```
+
+---
+
+#### Q6: 如何在前端统一处理错误码？
+
+**A**: 使用数字 `code` 字段：
+
+```javascript
+// 前端错误处理
+async function apiCall() {
+  try {
+    const response = await fetch('/api/account');
+    const data = await response.json();
+  } catch (error) {
+    // 根据数字 code 统一处理（不受语言影响）
+    switch (error.code) {
+      case 40001:
+        router.push('/login');  // 账户不存在 → 跳转登录
+        break;
+      case 40002:
+        showTopUpDialog();      // 余额不足 → 显示充值弹窗
+        break;
+      case 40003:
+        showError('权限不足');   // 权限不足
+        break;
+      default:
+        showError(error.message);
+    }
+  }
+}
+```
+
+**优势**: 前端逻辑不受后端语言切换影响。
+
+---
+
+#### Q7: 默认语言是什么？如何修改？
+
+**A**: 
+
+- **默认语言**: `'en-US'`（英文）
+- **修改方式**: 
+
+```javascript
+const { Locale } = require('schema-dsl');
+
+// 启动时设置默认语言
+Locale.setLocale('zh-CN');
+
+// 获取当前默认语言
+console.log(Locale.getLocale());  // 'zh-CN'
+```
+
+**建议**: 在应用启动时（app.js 入口）设置默认语言。
+
+---
+
+#### Q8: 如何处理未配置的错误 key？
+
+**A**: 如果错误 key 未在语言包中配置，会直接返回原始 key：
+
+```javascript
+// 未配置 'custom.error'
+I18nError.throw('custom.error');
+// message: 'custom.error'（原样返回）
+```
+
+**建议**: 
+1. 使用 TypeScript 定义错误 key 类型，避免拼写错误
+2. 在开发环境检查是否所有错误 key 都已配置
+
+---
+
+#### Q9: 支持哪些内置语言？
+
+**A**: 
+
+| 语言代码 | 语言名称 | 支持状态 |
+|---------|---------|---------|
+| `en-US` | 英语（美国） | ✅ 内置 |
+| `zh-CN` | 简体中文 | ✅ 内置 |
+| `ja-JP` | 日语 | ✅ 可扩展 |
+| `fr-FR` | 法语 | ✅ 可扩展 |
+| `es-ES` | 西班牙语 | ✅ 可扩展 |
+
+**自定义语言**: 使用 `Locale.addLocale()` 添加任意语言。
+
+---
+
+#### Q10: 如何在日志中记录错误详情？
+
+**A**: 
+
+```javascript
+const winston = require('winston');
+
+app.use((error, req, res, next) => {
+  if (error instanceof I18nError) {
+    // 记录详细日志
+    winston.error('业务错误', {
+      originalKey: error.originalKey,  // 原始 key（便于追踪）
+      code: error.code,                // 错误码
+      message: error.message,          // 已翻译的消息
+      params: error.params,            // 参数
+      statusCode: error.statusCode,
+      locale: error.locale,
+      url: req.url,
+      method: req.method,
+      ip: req.ip
+    });
+    
+    return res.status(error.statusCode).json(error.toJSON());
+  }
+  next(error);
+});
+```
+
+**推荐**: 使用 `originalKey` 而非 `message`，因为 `message` 会随语言变化。
 
 ---
 
