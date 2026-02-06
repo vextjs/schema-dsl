@@ -204,6 +204,79 @@ function getDefaultValidator() {
 }
 
 /**
+ * 智能类型转换：只转换字符串→数字（当schema要求number且能转换时）
+ * @private
+ * @param {*} data - 原始数据
+ * @param {Object} schema - JSON Schema对象
+ * @returns {*} 转换后的数据
+ */
+function smartCoerceTypes(data, schema) {
+  if (!data || typeof data !== 'object') return data;
+
+  // 获取 schema 对象
+  const schemaObj = schema.toSchema ? schema.toSchema() : schema;
+  const properties = schemaObj.properties || {};
+
+  // 处理数组
+  if (Array.isArray(data)) {
+    return data.map(item => smartCoerceTypes(item, schema));
+  }
+
+  // 处理对象
+  const result = { ...data };
+
+  Object.keys(result).forEach(key => {
+    const value = result[key];
+    const fieldSchema = properties[key];
+
+    if (!fieldSchema) return;
+
+    // ⚠️ 关键修复：如果字段有 enum 约束，不进行类型转换
+    // 原因：枚举验证需要严格匹配类型
+    // 例如：数字枚举 [1,2,3] 不应该接受字符串 "1"
+    if (fieldSchema.enum) {
+      return; // 跳过枚举字段的转换
+    }
+
+    // 核心规则：只有同时满足以下三个条件才转换
+    // 1. 值是字符串
+    // 2. Schema 要求 number 类型
+    // 3. 能正常转换为有效数字
+    // 4. 不是枚举字段（已在上面检查）
+    if (fieldSchema.type === 'number' && typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed !== '') {
+        const num = Number(trimmed);
+        if (!isNaN(num)) {
+          result[key] = num;
+        }
+      }
+    }
+    // 处理嵌套对象
+    else if (fieldSchema.type === 'object' && typeof value === 'object' && value !== null) {
+      result[key] = smartCoerceTypes(value, fieldSchema);
+    }
+    // 处理数组元素
+    else if (fieldSchema.type === 'array' && Array.isArray(value)) {
+      if (fieldSchema.items && fieldSchema.items.type === 'number') {
+        result[key] = value.map(item => {
+          if (typeof item === 'string') {
+            const trimmed = item.trim();
+            if (trimmed !== '') {
+              const num = Number(trimmed);
+              return !isNaN(num) ? num : item;
+            }
+          }
+          return item;
+        });
+      }
+    }
+  });
+
+  return result;
+}
+
+/**
  * 便捷验证方法（使用默认Validator）
  * @param {Object} schema - JSON Schema对象
  * @param {*} data - 待验证数据
@@ -211,6 +284,7 @@ function getDefaultValidator() {
  * @param {boolean} [options.format=true] - 是否格式化错误
  * @param {string} [options.locale] - 动态指定语言（如 'zh-CN', 'en-US'）
  * @param {Object} [options.messages] - 自定义错误消息
+ * @param {boolean} [options.coerce=true] - 是否启用智能类型转换（字符串→数字）
  * @returns {Object} 验证结果
  *
  * @example
@@ -218,13 +292,24 @@ function getDefaultValidator() {
  *
  * const schema = dsl({ email: 'email!' });
  *
- * // 基本验证
- * const result1 = validate(schema, { email: 'test@example.com' });
+ * // 基本验证（默认启用智能转换）
+ * const result1 = validate(schema, { userId: '123', age: '25' });
+ * // userId 和 age 自动转为数字
+ *
+ * // 禁用智能转换
+ * const result2 = validate(schema, data, { coerce: false });
  *
  * // 指定语言
- * const result2 = validate(schema, { email: 'invalid' }, { locale: 'zh-CN' });
+ * const result3 = validate(schema, { email: 'invalid' }, { locale: 'zh-CN' });
  */
-function validate(schema, data, options) {
+function validate(schema, data, options = {}) {
+  // 默认启用智能转换（只转换字符串→数字）
+  const shouldCoerce = options.coerce !== false;
+
+  if (shouldCoerce) {
+    data = smartCoerceTypes(data, schema);
+  }
+
   return getDefaultValidator().validate(schema, data, options);
 }
 
