@@ -1,7 +1,7 @@
 # 添加自定义语言包指南
 
-**版本**: v1.0.9  
-**最后更新**: 2026-01-04
+**版本**: v1.2.3  
+**最后更新**: 2026-03-03
 
 ---
 
@@ -10,6 +10,94 @@
 本指南将教你如何为 schema-dsl 添加自定义语言包或扩展现有语言。
 
 ---
+
+## 🏗️ 多人协作：子目录拆分语言包（v1.2.3 新增）⭐
+
+> **适用场景**：多人/多模块开发，避免所有语言 key 堆在同一文件产生 Git 冲突和 code 码冲突。
+
+### 目录结构
+
+```bash
+project/
+├── locales/
+│   ├── core/               # 公共 code 段：1000-1999（框架层维护）
+│   │   ├── zh-CN.js
+│   │   └── en-US.js
+│   ├── account/            # 账户模块 code 段：10000-10999（开发者A）
+│   │   ├── zh-CN.js
+│   │   └── en-US.js
+│   ├── order/              # 订单模块 code 段：20000-20999（开发者B）
+│   │   ├── zh-CN.js
+│   │   └── en-US.js
+│   └── payment/            # 支付模块 code 段：30000-30999（开发者C）
+│       ├── zh-CN.js
+│       └── en-US.js
+└── app.js
+```
+
+### 每个模块独立维护自己的语言文件
+
+```javascript
+// locales/account/zh-CN.js — 开发者A 独立维护，互不干扰
+module.exports = {
+  'account.notFound': { code: 10001, message: '账户不存在' },
+  'account.locked':   { code: 10002, message: '账户已锁定' },
+};
+
+// locales/order/zh-CN.js — 开发者B 独立维护
+module.exports = {
+  'order.notFound': { code: 20001, message: '订单不存在' },
+  'order.notPaid':  { code: 20002, message: '订单未支付' },
+};
+```
+
+### 应用启动：一行配置，自动递归合并
+
+```javascript
+// app.js
+const { dsl, validate } = require('schema-dsl');
+const path = require('path');
+
+// 自动递归扫描 locales/ 下所有子目录，同语言文件合并为一个完整语言包
+dsl.config({
+  i18n: path.join(__dirname, 'locales')
+});
+```
+
+> - 子目录名（`account/`、`order/`）仅作为**模块组织层**，不影响最终语言 key 命名
+> - 加载顺序：按文件系统字母序递归扫描
+> - 同语言 key 出现重复时：默认打 `WARN` 日志，可开启严格模式阻断启动
+
+### 严格模式：key 冲突时阻断启动（推荐 CI 环境）
+
+```javascript
+dsl.config({
+  i18n: path.join(__dirname, 'locales'),
+  strict: true   // 同名 key 冲突时直接抛 Error，防止静默覆盖
+});
+
+// 冲突示例输出：
+// Error: [schema-dsl] i18n key 冲突 in locale 'zh-CN'
+//   冲突 key: account.notFound
+//   来源文件: /project/locales/account/zh-CN.js
+```
+
+### Code 段划分建议
+
+多人开发时建议在项目根目录维护一份 `locales/CODE-SEGMENTS.md`，约定各模块的 code 号段：
+
+| 模块 | code 范围 | 负责人 |
+|------|----------|--------|
+| core（公共） | 1000–1999 | 框架组 |
+| account | 10000–10999 | 开发者A |
+| order | 20000–20999 | 开发者B |
+| payment | 30000–30999 | 开发者C |
+
+> `CODE-SEGMENTS.md` / `CODE-SEGMENTS.js` 等非语言文件会被自动跳过，无需担心被误加载。
+
+---
+
+
 
 ## 🚀 快速开始
 

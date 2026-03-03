@@ -111,11 +111,82 @@ dsl.error = {
 };
 
 /**
+ * 从目录递归加载语言包（内部函数）
+ *
+ * 支持子目录递归扫描，子目录名作为模块组织层（不影响语言 key）。
+ * 同名 key 冲突时：strict 模式抛错，默认模式打 WARN 日志。
+ *
+ * @param {string} dirPath - 目录绝对路径
+ * @param {Object} options - 配置选项
+ * @param {boolean} [options.strict=false] - 严格模式：同名 key 冲突时抛出 Error
+ * @private
+ */
+function loadLocalesFromDir(dirPath, options = {}) {
+  const fs = require('fs');
+  const path = require('path');
+
+  if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
+    console.warn('[schema-dsl] i18n path does not exist or is not a directory:', dirPath);
+    return;
+  }
+
+  // 语言代码格式校验：zh-CN / en-US / zh / en 等
+  const LOCALE_NAME_RE = /^[a-z]{2,3}(-[A-Z]{2,4})?$/;
+
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+  entries.forEach(entry => {
+    const fullPath = path.join(dirPath, entry.name);
+
+    if (entry.isDirectory()) {
+      // 递归进入子目录（子目录名仅作模块组织层，不影响语言 key）
+      loadLocalesFromDir(fullPath, options);
+    } else if (entry.isFile()) {
+      const ext = path.extname(entry.name);
+      if (ext !== '.js' && ext !== '.json') return;
+
+      const localeName = path.basename(entry.name, ext);
+
+      // 文件名格式校验：只加载符合语言代码格式的文件
+      if (!LOCALE_NAME_RE.test(localeName)) {
+        // 仅 debug 级别，不影响正常运行
+        return;
+      }
+
+      let messages;
+      try {
+        messages = require(path.resolve(fullPath));
+      } catch (e) {
+        console.warn('[schema-dsl] Failed to load locale file:', fullPath, e.message);
+        return;
+      }
+
+      // 冲突检测：检查 messages 的每个 key 是否已存在于当前语言包
+      const existing = Locale.locales[localeName] || {};
+      const conflictKeys = Object.keys(messages).filter(k => Object.prototype.hasOwnProperty.call(existing, k));
+
+      if (conflictKeys.length > 0) {
+        const keyList = conflictKeys.join(', ');
+        const msg = `[schema-dsl] i18n key 冲突 in locale '${localeName}'\n  冲突 key: ${keyList}\n  来源文件: ${fullPath}`;
+        if (options.strict) {
+          throw new Error(msg);
+        } else {
+          console.warn(msg);
+        }
+      }
+
+      Locale.addLocale(localeName, messages);
+    }
+  });
+}
+
+/**
  * 全局配置
  * @param {Object} options - 配置选项
  * @param {Object} options.patterns - 验证规则扩展 (phone, idCard, creditCard)
- * @param {string|Object} options.i18n - 多语言配置（目录路径或语言包对象）
+ * @param {string|Object} options.i18n - 多语言配置（目录路径、对象语言包、或含 localesPath 的对象）
  * @param {Object} options.cache - 缓存配置
+ * @param {boolean} [options.strict=false] - 严格模式：i18n 目录扫描时 key 冲突直接抛错（默认 false）
  */
 dsl.config = function (options = {}) {
   const patterns = require('./lib/config/patterns');
@@ -127,31 +198,24 @@ dsl.config = function (options = {}) {
     if (options.patterns.creditCard) Object.assign(patterns.creditCard, options.patterns.creditCard);
   }
 
-  // 多语言支持 (v1.0.1 优化)
+  // 多语言支持 (v1.0.1 优化；v1.2.3 增强：递归子目录 + 冲突检测)
   if (options.i18n) {
-    // 方式 1: 传入目录路径（字符串）
+    // 方式 1: 传入目录路径（字符串）→ 递归扫描
     if (typeof options.i18n === 'string') {
-      const fs = require('fs');
-      const path = require('path');
-
-      if (fs.existsSync(options.i18n) && fs.statSync(options.i18n).isDirectory()) {
-        const files = fs.readdirSync(options.i18n);
-        files.forEach(file => {
-          if (file.endsWith('.js') || file.endsWith('.json')) {
-            const localeName = path.basename(file, path.extname(file));
-            const messages = require(path.resolve(options.i18n, file));
-            Locale.addLocale(localeName, messages);
-          }
-        });
-      } else {
-        console.warn('[schema-dsl] i18n path does not exist:', options.i18n);
-      }
+      loadLocalesFromDir(options.i18n, options);
     }
-    // 方式 2: 直接传入对象
+    // 方式 2: 传入对象
     else if (typeof options.i18n === 'object') {
-      Object.keys(options.i18n).forEach(locale => {
-        Locale.addLocale(locale, options.i18n[locale]);
-      });
+      // 方式 2a: 含 localesPath 字段 → 走目录扫描（兼容文档记载用法）
+      if (options.i18n.localesPath) {
+        loadLocalesFromDir(options.i18n.localesPath, options);
+      }
+      // 方式 2b: 直接传语言包对象 { 'zh-CN': {...}, 'en-US': {...} }（原有逻辑，不变）
+      else {
+        Object.keys(options.i18n).forEach(locale => {
+          Locale.addLocale(locale, options.i18n[locale]);
+        });
+      }
     }
   }
 
@@ -388,7 +452,7 @@ module.exports = {
   CONSTANTS,
 
   // 版本信息
-  VERSION: '1.0.4'
+  VERSION: '1.2.3'
 };
 
 

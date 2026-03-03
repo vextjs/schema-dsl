@@ -2931,13 +2931,13 @@ export class MarkdownExporter {
 /**
  * i18n 配置选项
  *
- * @description 支持两种配置方式
+ * @description 支持三种配置方式（v1.2.3 新增 localesPath 对象形态 + 递归子目录）
  *
  * @example
  * ```typescript
- * // 方式1: 直接传字符串路径
+ * // 方式1: 直接传字符串路径（支持递归子目录，v1.2.3+）
  * dsl.config({
- *   i18n: './i18n/dsl'
+ *   i18n: './locales'
  * });
  *
  * // 方式2: 传入语言包对象
@@ -2947,9 +2947,17 @@ export class MarkdownExporter {
  *     'en-US': { required: 'Required' }
  *   }
  * });
+ *
+ * // 方式3: 含 localesPath 的对象（v1.2.3 修复真正生效）
+ * dsl.config({
+ *   i18n: { localesPath: './i18n/labels' }
+ * });
  * ```
  */
-export type I18nConfig = string | Record<string, ErrorMessages>;
+export type I18nConfig =
+  | string
+  | Record<string, ErrorMessages>
+  | { localesPath: string };
 
 /**
  * 缓存配置选项（v2.3.0+）
