@@ -9,42 +9,45 @@
  */
 
 // ========== 核心层 ==========
-const JSONSchemaCore = require('./lib/core/JSONSchemaCore');
-const Validator = require('./lib/core/Validator');
-const ErrorFormatter = require('./lib/core/ErrorFormatter');
-const CacheManager = require('./lib/core/CacheManager');
-const DslBuilder = require('./lib/core/DslBuilder');
-const PluginManager = require('./lib/core/PluginManager');
-const ConditionalBuilder = require('./lib/core/ConditionalBuilder');
+const JSONSchemaCore = require("./lib/core/JSONSchemaCore");
+const Validator = require("./lib/core/Validator");
+const ErrorFormatter = require("./lib/core/ErrorFormatter");
+const CacheManager = require("./lib/core/CacheManager");
+const DslBuilder = require("./lib/core/DslBuilder");
+const PluginManager = require("./lib/core/PluginManager");
+const ConditionalBuilder = require("./lib/core/ConditionalBuilder");
 
 // ========== 错误消息系统 ==========
-const ErrorCodes = require('./lib/core/ErrorCodes');
-const MessageTemplate = require('./lib/core/MessageTemplate');
-const Locale = require('./lib/core/Locale');
+const ErrorCodes = require("./lib/core/ErrorCodes");
+const MessageTemplate = require("./lib/core/MessageTemplate");
+const Locale = require("./lib/core/Locale");
 
 // ========== 错误类 ==========
-const ValidationError = require('./lib/errors/ValidationError');
-const I18nError = require('./lib/errors/I18nError');
+const ValidationError = require("./lib/errors/ValidationError");
+const I18nError = require("./lib/errors/I18nError");
 
 // ========== String 扩展 ==========
-const { installStringExtensions, uninstallStringExtensions } = require('./lib/core/StringExtensions');
+const {
+  installStringExtensions,
+  uninstallStringExtensions,
+} = require("./lib/core/StringExtensions");
 
 // ========== 适配器层 ==========
-const dsl = require('./lib/adapters/DslAdapter');
+const dsl = require("./lib/adapters/DslAdapter");
 
 // 挂载静态方法 (v2.1.0)
 dsl.match = dsl.DslAdapter.match;
 
 // ✅ 智能 dsl.if：根据参数类型选择实现
-dsl.if = function(...args) {
+dsl.if = function (...args) {
   // 如果第一个参数是函数 → 使用新的 ConditionalBuilder（链式API）
-  if (typeof args[0] === 'function') {
+  if (typeof args[0] === "function") {
     return ConditionalBuilder.start(args[0]);
   }
 
   // 如果第一个参数是字符串且有3个参数 → 使用原有的字段条件实现
   // dsl.if('fieldName', thenSchema, elseSchema)
-  if (typeof args[0] === 'string' && args.length >= 2) {
+  if (typeof args[0] === "string" && args.length >= 2) {
     return dsl.DslAdapter.if(args[0], args[1], args[2]);
   }
 
@@ -71,7 +74,8 @@ dsl.error = {
    * // 标准语法
    * dsl.error.create('account.notFound', { id: '123' }, 404, 'zh-CN');
    */
-  create: (code, paramsOrLocale, statusCode, locale) => I18nError.create(code, paramsOrLocale, statusCode, locale),
+  create: (code, paramsOrLocale, statusCode, locale) =>
+    I18nError.create(code, paramsOrLocale, statusCode, locale),
 
   /**
    * 抛出多语言错误
@@ -89,7 +93,8 @@ dsl.error = {
    * // 标准语法
    * dsl.error.throw('account.notFound', { id: '123' }, 404, 'zh-CN');
    */
-  throw: (code, paramsOrLocale, statusCode, locale) => I18nError.throw(code, paramsOrLocale, statusCode, locale),
+  throw: (code, paramsOrLocale, statusCode, locale) =>
+    I18nError.throw(code, paramsOrLocale, statusCode, locale),
 
   /**
    * 断言方法 - 条件不满足时抛错
@@ -107,7 +112,8 @@ dsl.error = {
    * // 标准语法
    * dsl.error.assert(account, 'account.notFound', { id: '123' }, 404, 'zh-CN');
    */
-  assert: (condition, code, paramsOrLocale, statusCode, locale) => I18nError.assert(condition, code, paramsOrLocale, statusCode, locale)
+  assert: (condition, code, paramsOrLocale, statusCode, locale) =>
+    I18nError.assert(condition, code, paramsOrLocale, statusCode, locale),
 };
 
 /**
@@ -122,11 +128,14 @@ dsl.error = {
  * @private
  */
 function loadLocalesFromDir(dirPath, options = {}) {
-  const fs = require('fs');
-  const path = require('path');
+  const fs = require("fs");
+  const path = require("path");
 
   if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
-    console.warn('[schema-dsl] i18n path does not exist or is not a directory:', dirPath);
+    console.warn(
+      "[schema-dsl] i18n path does not exist or is not a directory:",
+      dirPath,
+    );
     return;
   }
 
@@ -135,7 +144,7 @@ function loadLocalesFromDir(dirPath, options = {}) {
 
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
-  entries.forEach(entry => {
+  entries.forEach((entry) => {
     const fullPath = path.join(dirPath, entry.name);
 
     if (entry.isDirectory()) {
@@ -143,7 +152,7 @@ function loadLocalesFromDir(dirPath, options = {}) {
       loadLocalesFromDir(fullPath, options);
     } else if (entry.isFile()) {
       const ext = path.extname(entry.name);
-      if (ext !== '.js' && ext !== '.json') return;
+      if (ext !== ".js" && ext !== ".cjs" && ext !== ".json") return;
 
       const localeName = path.basename(entry.name, ext);
 
@@ -157,16 +166,22 @@ function loadLocalesFromDir(dirPath, options = {}) {
       try {
         messages = require(path.resolve(fullPath));
       } catch (e) {
-        console.warn('[schema-dsl] Failed to load locale file:', fullPath, e.message);
+        console.warn(
+          "[schema-dsl] Failed to load locale file:",
+          fullPath,
+          e.message,
+        );
         return;
       }
 
       // 冲突检测：检查 messages 的每个 key 是否已存在于当前语言包
       const existing = Locale.locales[localeName] || {};
-      const conflictKeys = Object.keys(messages).filter(k => Object.prototype.hasOwnProperty.call(existing, k));
+      const conflictKeys = Object.keys(messages).filter((k) =>
+        Object.prototype.hasOwnProperty.call(existing, k),
+      );
 
       if (conflictKeys.length > 0) {
-        const keyList = conflictKeys.join(', ');
+        const keyList = conflictKeys.join(", ");
         const msg = `[schema-dsl] i18n key 冲突 in locale '${localeName}'\n  冲突 key: ${keyList}\n  来源文件: ${fullPath}`;
         if (options.strict) {
           throw new Error(msg);
@@ -189,30 +204,33 @@ function loadLocalesFromDir(dirPath, options = {}) {
  * @param {boolean} [options.strict=false] - 严格模式：i18n 目录扫描时 key 冲突直接抛错（默认 false）
  */
 dsl.config = function (options = {}) {
-  const patterns = require('./lib/config/patterns');
+  const patterns = require("./lib/config/patterns");
 
   // patterns 配置
   if (options.patterns) {
-    if (options.patterns.phone) Object.assign(patterns.phone, options.patterns.phone);
-    if (options.patterns.idCard) Object.assign(patterns.idCard, options.patterns.idCard);
-    if (options.patterns.creditCard) Object.assign(patterns.creditCard, options.patterns.creditCard);
+    if (options.patterns.phone)
+      Object.assign(patterns.phone, options.patterns.phone);
+    if (options.patterns.idCard)
+      Object.assign(patterns.idCard, options.patterns.idCard);
+    if (options.patterns.creditCard)
+      Object.assign(patterns.creditCard, options.patterns.creditCard);
   }
 
   // 多语言支持 (v1.0.1 优化；v1.2.3 增强：递归子目录 + 冲突检测)
   if (options.i18n) {
     // 方式 1: 传入目录路径（字符串）→ 递归扫描
-    if (typeof options.i18n === 'string') {
+    if (typeof options.i18n === "string") {
       loadLocalesFromDir(options.i18n, options);
     }
     // 方式 2: 传入对象
-    else if (typeof options.i18n === 'object') {
+    else if (typeof options.i18n === "object") {
       // 方式 2a: 含 localesPath 字段 → 走目录扫描（兼容文档记载用法）
       if (options.i18n.localesPath) {
         loadLocalesFromDir(options.i18n.localesPath, options);
       }
       // 方式 2b: 直接传语言包对象 { 'zh-CN': {...}, 'en-US': {...} }（原有逻辑，不变）
       else {
-        Object.keys(options.i18n).forEach(locale => {
+        Object.keys(options.i18n).forEach((locale) => {
           Locale.addLocale(locale, options.i18n[locale]);
         });
       }
@@ -244,10 +262,10 @@ dsl.config = function (options = {}) {
 };
 
 // ========== 导出器层 ==========
-const exporters = require('./lib/exporters');
+const exporters = require("./lib/exporters");
 
 // ========== 初始化默认语言包 ==========
-const defaultLocales = require('./lib/locales');
+const defaultLocales = require("./lib/locales");
 Object.entries(defaultLocales).forEach(([locale, messages]) => {
   Locale.addLocale(locale, messages);
 });
@@ -275,7 +293,7 @@ function getDefaultValidator() {
  * @returns {*} 转换后的数据
  */
 function smartCoerceTypes(data, schema) {
-  if (!data || typeof data !== 'object') return data;
+  if (!data || typeof data !== "object") return data;
 
   // 获取 schema 对象
   const schemaObj = schema.toSchema ? schema.toSchema() : schema;
@@ -283,13 +301,13 @@ function smartCoerceTypes(data, schema) {
 
   // 处理数组
   if (Array.isArray(data)) {
-    return data.map(item => smartCoerceTypes(item, schema));
+    return data.map((item) => smartCoerceTypes(item, schema));
   }
 
   // 处理对象
   const result = { ...data };
 
-  Object.keys(result).forEach(key => {
+  Object.keys(result).forEach((key) => {
     const value = result[key];
     const fieldSchema = properties[key];
 
@@ -307,9 +325,9 @@ function smartCoerceTypes(data, schema) {
     // 2. Schema 要求 number 类型
     // 3. 能正常转换为有效数字
     // 4. 不是枚举字段（已在上面检查）
-    if (fieldSchema.type === 'number' && typeof value === 'string') {
+    if (fieldSchema.type === "number" && typeof value === "string") {
       const trimmed = value.trim();
-      if (trimmed !== '') {
+      if (trimmed !== "") {
         const num = Number(trimmed);
         if (!isNaN(num)) {
           result[key] = num;
@@ -317,16 +335,20 @@ function smartCoerceTypes(data, schema) {
       }
     }
     // 处理嵌套对象
-    else if (fieldSchema.type === 'object' && typeof value === 'object' && value !== null) {
+    else if (
+      fieldSchema.type === "object" &&
+      typeof value === "object" &&
+      value !== null
+    ) {
       result[key] = smartCoerceTypes(value, fieldSchema);
     }
     // 处理数组元素
-    else if (fieldSchema.type === 'array' && Array.isArray(value)) {
-      if (fieldSchema.items && fieldSchema.items.type === 'number') {
-        result[key] = value.map(item => {
-          if (typeof item === 'string') {
+    else if (fieldSchema.type === "array" && Array.isArray(value)) {
+      if (fieldSchema.items && fieldSchema.items.type === "number") {
+        result[key] = value.map((item) => {
+          if (typeof item === "string") {
             const trimmed = item.trim();
-            if (trimmed !== '') {
+            if (trimmed !== "") {
               const num = Number(trimmed);
               return !isNaN(num) ? num : item;
             }
@@ -378,24 +400,22 @@ function validate(schema, data, options = {}) {
 }
 
 // ========== 工具函数 ==========
-const { TypeConverter, SchemaHelper } = require('./lib/utils');
-const SchemaUtils = require('./lib/utils/SchemaUtils');
+const { TypeConverter, SchemaHelper } = require("./lib/utils");
+const SchemaUtils = require("./lib/utils/SchemaUtils");
 
 // ========== 验证器扩展 ==========
-const { CustomKeywords } = require('./lib/validators');
+const { CustomKeywords } = require("./lib/validators");
 
 // ========== 常量 ==========
-const CONSTANTS = require('./lib/config/constants');
+const CONSTANTS = require("./lib/config/constants");
 
 // ========== 自动安装 String 扩展 ==========
 installStringExtensions(dsl);
 
-
 // ========== 导出 ==========
 
-
 // 导入 validateAsync
-const { validateAsync } = require('./lib/adapters/DslAdapter');
+const { validateAsync } = require("./lib/adapters/DslAdapter");
 
 module.exports = {
   // 统一DSL API
@@ -414,15 +434,15 @@ module.exports = {
   Validator,
 
   // 便捷方法（推荐）
-  validate,                    // 便捷验证（单例）
-  validateAsync,               // v2.1.0 新增：异步验证
-  getDefaultValidator,         // 获取单例Validator
+  validate, // 便捷验证（单例）
+  validateAsync, // v2.1.0 新增：异步验证
+  getDefaultValidator, // 获取单例Validator
   ErrorFormatter,
   CacheManager,
 
   // 错误类 (v2.1.0 新增)
   ValidationError,
-  I18nError,                   // v1.1.1 新增：多语言错误类
+  I18nError, // v1.1.1 新增：多语言错误类
 
   // 错误消息系统
   ErrorCodes,
@@ -442,7 +462,7 @@ module.exports = {
   // 工具函数
   TypeConverter,
   SchemaHelper,
-  SchemaUtils,                 // v2.0.1新增：Schema工具类
+  SchemaUtils, // v2.0.1新增：Schema工具类
 
   // 验证器扩展
   CustomKeywords,
@@ -451,7 +471,5 @@ module.exports = {
   CONSTANTS,
 
   // 版本信息
-  VERSION: '1.2.3'
+  VERSION: "1.2.3",
 };
-
-
