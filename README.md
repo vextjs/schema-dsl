@@ -289,6 +289,8 @@ app.post('/api/account', (req, res) => {
 | `dsl(schema)` | 创建Schema | Schema对象 | [DSL语法](./docs/dsl-syntax.md) |
 | `validate(schema, data)` | 同步验证 | `{valid, errors, data}` | [验证指南](./docs/validation-guide.md) |
 | `validateAsync(schema, data)` | 异步验证 | Promise（失败抛错） | [异步验证](./docs/validate-async.md) |
+| `builder.toSchema()` | 转为 JSON Schema（含内部标记） | JSON Schema 对象 | [API参考](./docs/api-reference.md#toschema) |
+| `builder.toJsonSchema()` | 转为纯净 JSON Schema（v1.2.5） | JSON Schema 对象 | [API参考](./docs/api-reference.md#tojsonschema) |
 | `dsl.if(condition)` | 条件验证 | ConditionalBuilder | [条件API](./docs/conditional-api.md) |
 | `SchemaUtils.pick()` | 选择字段 | 新Schema | [SchemaUtils](./docs/schema-utils.md) |
 | `I18nError.throw()` | 抛出多语言错误 | never | [I18nError示例](./examples/i18n-error.examples.js) |

@@ -263,14 +263,59 @@ dsl('number!').phone('cn')  // 自动纠正为 string
 
 #### `.toSchema()`
 
-转换为 JSON Schema 对象。
+转换为 JSON Schema 对象（含内部标记）。
 
-**返回**: **Object** - JSON Schema对象
+**返回**: **Object** - JSON Schema 对象（包含 `_required`、`_customMessages`、`_label` 等 schema-dsl 内部字段）
 
 **示例**:
 ```javascript
 const schema = dsl('email!').label('邮箱').toSchema();
 // { type: 'string', format: 'email', _label: '邮箱', _required: true }
+```
+
+---
+
+#### `.toJsonSchema()` <sup>v1.2.5+</sup>
+
+转换为纯净的 JSON Schema 对象（无内部标记）。
+
+与 `toSchema()` 不同，`toJsonSchema()` 会自动清理所有 schema-dsl 内部标记：
+- **下划线前缀字段**：`_required`、`_customMessages`、`_label`、`_customValidators`、`_whenConditions`
+- **自定义验证关键字**：`exactLength`、`alphanum`、`lowercase`、`uppercase`、`trim`、`jsonString`、`port`、`requiredAll`、`strictSchema`、`noSparse`、`includesRequired`、`dateFormat`、`dateGreater`、`dateLess`、`precision`、`multipleOf`
+
+返回的对象可直接嵌入 OpenAPI / JSON Schema 等标准文档中，无需下游再做清理。
+
+**返回**: **Object** - 纯净的 JSON Schema 对象
+
+**适用场景**:
+- 生成 OpenAPI 文档
+- 导出给外部系统消费
+- 任何需要标准 JSON Schema 的场景
+
+**示例**:
+```javascript
+// 对比 toSchema() 与 toJsonSchema()
+const builder = dsl('string:3-32!').label('用户名').messages({ min: '至少3个字符' });
+
+builder.toSchema();
+// { type: 'string', minLength: 3, maxLength: 32, _required: true, _label: '用户名', _customMessages: { min: '至少3个字符' } }
+
+builder.toJsonSchema();
+// { type: 'string', minLength: 3, maxLength: 32 }
+// 注意：不含 _required、_label、_customMessages 等内部字段
+
+// enum 示例
+const enumBuilder = dsl('enum:admin,user,guest!');
+enumBuilder.toJsonSchema();
+// { type: 'string', enum: ['admin', 'user', 'guest'] }
+
+// 用于 OpenAPI 文档生成
+const schema = dsl({
+  username: 'string:3-32!',
+  email: 'email!',
+  age: 'number:0-120'
+});
+// 遍历各字段调用 toJsonSchema() 即可获得标准 JSON Schema
 ```
 
 ---
@@ -534,14 +579,29 @@ dsl('number!').phone('cn')  // 自动纠正为 string
 
 #### `.toSchema()`
 
-转换为 JSON Schema 对象。
+转换为 JSON Schema 对象（含内部标记）。
 
-**返回**: **Object** - JSON Schema对象
+**返回**: **Object** - JSON Schema 对象（包含 `_required`、`_customMessages` 等 schema-dsl 内部字段）
 
 **示例**:
 ```javascript
 const schema = dsl('email!').label('邮箱').toSchema();
 // { type: 'string', format: 'email', _label: '邮箱', _required: true }
+```
+
+---
+
+#### `.toJsonSchema()` <sup>v1.2.5+</sup>
+
+转换为纯净的 JSON Schema 对象（无内部标记）。详见 [DslBuilder 类 - toJsonSchema()](#tojsonschema-supv125sup)。
+
+**返回**: **Object** - 纯净的 JSON Schema 对象
+
+**示例**:
+```javascript
+const schema = dsl('email!').label('邮箱').toJsonSchema();
+// { type: 'string', format: 'email' }
+// 注意：不含 _label、_required 等内部字段
 ```
 
 ---
@@ -801,5 +861,5 @@ console.log(result.valid); // true
 
 ---
 
-**最后更新**: 2025-12-29
+**最后更新**: 2026-03-09
 
