@@ -9,6 +9,8 @@
 
 | 版本 | 日期 | 变更摘要 | 详细 |
 |------|------|---------|------|
+| [v1.2.5](./changelogs/v1.2.5.md) | 2026-03-09 | 🚀 新功能：`DslBuilder.toJsonSchema()` — 输出纯净 JSON Schema（自动清理 `_required`/`_customMessages` 等内部标记），下游（如 vext OpenAPI）无需再手动清理 | [查看](./changelogs/v1.2.5.md) |
+| [v1.2.4](./changelogs/v1.2.4.md) | 2026-03-09 | 🐛 P1 Bug修复：`enum:a,b,c` 逗号分隔格式解析完全失效 - DslBuilder 和 DslAdapter 均只检测管道符 `\|`，导致最常用的逗号分隔枚举格式被静默忽略 | [查看](./changelogs/v1.2.4.md) |
 | [v1.2.3](./changelogs/v1.2.3.md) | 2026-03-03 | 🚀 新功能：i18n 子目录合并 - 多人协作独立维护语言文件，自动递归合并 + 冲突检测 | [查看](./changelogs/v1.2.3.md) |
 | [v1.2.2](./changelogs/v1.2.2.md) | 2026-02-06 | 🚀 重大功能：智能类型转换 - 字符串数字自动转换，完美支持 Web API | [查看](./changelogs/v1.2.2.md) |
 | [v1.1.8](./changelogs/v1.1.8.md) | 2026-01-30 | 🚀 新功能：智能参数识别 - 支持简化语法 `dsl.error.throw('key', 'locale')` | [查看](./changelogs/v1.1.8.md) |

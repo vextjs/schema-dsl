@@ -29,8 +29,9 @@
  * @since v1.1.5
  */
 export type ErrorMessageConfig =
-  | string  // 向后兼容：'账户不存在'
-  | {       // 新格式：{ code, message }
+  | string // 向后兼容：'账户不存在'
+  | {
+      // 新格式：{ code, message }
       /** 错误代码（可选，默认使用 key） */
       code?: string;
       /** 错误消息（必需） */
@@ -61,10 +62,10 @@ export interface LocaleMessages {
 
 /**
  * JSON Schema 对象
- * 
+ *
  * @description JSON Schema draft-07 规范的类型定义
  * @see https://json-schema.org/draft-07/schema
- * 
+ *
  * @example
  * ```typescript
  * const schema: JSONSchema = {
@@ -114,13 +115,13 @@ export interface JSONSchema {
 
 /**
  * 验证结果
- * 
+ *
  * @description validate()方法的返回值类型
- * 
+ *
  * @example
  * ```typescript
  * const result: ValidationResult = schema.validate({ username: 'test' });
- * 
+ *
  * if (result.valid) {
  *   console.log('验证通过', result.data);
  * } else {
@@ -139,9 +140,9 @@ export interface ValidationResult<T = any> {
 
 /**
  * 验证错误
- * 
+ *
  * @description 详细的验证错误信息
- * 
+ *
  * @example
  * ```typescript
  * const error: ValidationError = {
@@ -196,9 +197,9 @@ export interface ValidateOptions {
 
 /**
  * 错误消息对象
- * 
+ *
  * @description 自定义错误消息的配置对象
- * 
+ *
  * @example
  * ```typescript
  * const messages: ErrorMessages = {
@@ -207,7 +208,7 @@ export interface ValidateOptions {
  *   email: '邮箱格式不正确',
  *   required: '这是必填项'
  * };
- * 
+ *
  * const schema = dsl({ email: 'email!' }, { messages });
  * ```
  */
@@ -250,15 +251,15 @@ export interface ErrorMessages {
 
 /**
  * DSL Builder 类
- * 
+ *
  * @description 提供链式API来构建Schema定义
- * 
+ *
  * @example
  * ```typescript
  * // 基础用法
  * const builder = new DslBuilder('email!');
  * builder.pattern(/custom/).label('邮箱地址');
- * 
+ *
  * // 链式调用
  * const schema = new DslBuilder('string:3-32!')
  *   .pattern(/^[a-zA-Z0-9_]+$/, '只能包含字母、数字和下划线')
@@ -271,6 +272,36 @@ export interface ErrorMessages {
  * ```
  */
 export class DslBuilder {
+  /**
+   * 转为纯净 JSON Schema（无内部标记）
+   *
+   * 与 toSchema() 不同，toJsonSchema() 会自动清理 schema-dsl 内部标记字段
+   * （_required、_customMessages、_label、_customValidators、_whenConditions 等下划线前缀字段）
+   * 以及非标准验证关键字（exactLength、alphanum、lowercase 等），
+   * 返回符合 JSON Schema 标准的纯净对象。
+   *
+   * 适用场景：
+   *   - 生成 OpenAPI 文档（无需下游手动清理）
+   *   - 导出给外部系统消费
+   *   - 任何需要标准 JSON Schema 的场景
+   *
+   * @returns 纯净的 JSON Schema 对象（无内部标记）
+   * @since v1.2.5
+   *
+   * @example
+   * ```typescript
+   * const builder = dsl('string:1-50!');
+   * const schema = builder.toJsonSchema();
+   * // { type: 'string', minLength: 1, maxLength: 50 }
+   * // 注意：不含 _required、_customMessages 等内部字段
+   *
+   * const enumBuilder = dsl('enum:admin,user,guest!');
+   * const enumSchema = enumBuilder.toJsonSchema();
+   * // { type: 'string', enum: ['admin', 'user', 'guest'] }
+   * ```
+   */
+  toJsonSchema(): JSONSchema;
+
   /**
    * 注册自定义类型（供插件使用）
    * @param name - 类型名称
@@ -293,7 +324,10 @@ export class DslBuilder {
    * const schema2 = dsl({ contact: 'types:email|phone-cn' });
    * ```
    */
-  static registerType(name: string, schema: JSONSchema | (() => JSONSchema)): void;
+  static registerType(
+    name: string,
+    schema: JSONSchema | (() => JSONSchema),
+  ): void;
 
   /**
    * 检查类型是否已注册
@@ -393,7 +427,7 @@ export class DslBuilder {
    * @param regex - 正则表达式或字符串
    * @param message - 自定义错误消息
    * @returns 当前实例（支持链式调用）
-   * 
+   *
    * @example
    * ```typescript
    * builder
@@ -407,7 +441,7 @@ export class DslBuilder {
    * 设置字段标签
    * @param text - 字段的显示名称
    * @returns 当前实例（支持链式调用）
-   * 
+   *
    * @example
    * ```typescript
    * builder.label('用户邮箱');
@@ -419,7 +453,7 @@ export class DslBuilder {
    * 自定义错误消息
    * @param messages - 错误消息对象
    * @returns 当前实例（支持链式调用）
-   * 
+   *
    * @example
    * ```typescript
    * builder.messages({
@@ -434,7 +468,7 @@ export class DslBuilder {
    * 设置描述
    * @param text - 字段描述文本
    * @returns 当前实例（支持链式调用）
-   * 
+   *
    * @example
    * ```typescript
    * builder.description('用户的注册邮箱');
@@ -446,19 +480,19 @@ export class DslBuilder {
    * 添加自定义验证器
    * @param validator - 验证函数
    * @returns 当前实例（支持链式调用）
-   * 
+   *
    * @example
    * ```typescript
    * builder.custom((value) => {
    *   return value.includes('@');
    * });
-   * 
+   *
    * // 异步验证
    * builder.custom(async (value) => {
    *   const exists = await checkEmailExists(value);
    *   return !exists;
    * });
-   * 
+   *
    * // 返回错误对象
    * builder.custom((value) => {
    *   if (!value.includes('@')) {
@@ -468,14 +502,18 @@ export class DslBuilder {
    * });
    * ```
    */
-  custom(validator: (value: any) => boolean | Promise<boolean> | { error: string; message: string }): this;
+  custom(
+    validator: (
+      value: any,
+    ) => boolean | Promise<boolean> | { error: string; message: string },
+  ): this;
 
   /**
    * 条件验证
    * @param refField - 参考字段
    * @param options - 条件选项
    * @returns 当前实例（支持链式调用）
-   * 
+   *
    * @example
    * ```typescript
    * // 当userType=admin时，email必填
@@ -496,7 +534,7 @@ export class DslBuilder {
    * 设置默认值
    * @param value - 默认值
    * @returns 当前实例（支持链式调用）
-   * 
+   *
    * @example
    * ```typescript
    * builder.default('user@example.com');
@@ -507,7 +545,7 @@ export class DslBuilder {
   /**
    * 转为JSON Schema
    * @returns JSON Schema对象
-   * 
+   *
    * @example
    * ```typescript
    * const schema = builder.toSchema();
@@ -522,7 +560,7 @@ export class DslBuilder {
    * @param data - 要验证的数据
    * @param context - 验证上下文（可选）
    * @returns 验证结果的Promise
-   * 
+   *
    * @example
    * ```typescript
    * const result = await builder.validate({ email: 'test@example.com' });
@@ -537,17 +575,17 @@ export class DslBuilder {
    * 用户名验证（自动设置合理约束）
    * @param preset - 预设配置
    * @returns 当前实例（支持链式调用）
-   * 
+   *
    * @example
    * ```typescript
    * // 预设方式
    * builder.username('short');  // 3-16字符
    * builder.username('medium'); // 3-32字符
    * builder.username('long');   // 3-64字符
-   * 
+   *
    * // 范围字符串
    * builder.username('5-20');
-   * 
+   *
    * // 详细配置
    * builder.username({
    *   minLength: 5,
@@ -557,13 +595,25 @@ export class DslBuilder {
    * });
    * ```
    */
-  username(preset?: 'short' | 'medium' | 'long' | string | { minLength?: number; maxLength?: number; allowUnderscore?: boolean; allowNumber?: boolean }): this;
+  username(
+    preset?:
+      | "short"
+      | "medium"
+      | "long"
+      | string
+      | {
+          minLength?: number;
+          maxLength?: number;
+          allowUnderscore?: boolean;
+          allowNumber?: boolean;
+        },
+  ): this;
 
   /**
    * 密码强度验证
    * @param strength - 密码强度等级
    * @returns 当前实例（支持链式调用）
-   * 
+   *
    * @example
    * ```typescript
    * builder.password('weak');       // 6+ 字符
@@ -572,13 +622,13 @@ export class DslBuilder {
    * builder.password('veryStrong'); // 12+ 字符，包含大小写+数字+特殊字符
    * ```
    */
-  password(strength?: 'weak' | 'medium' | 'strong' | 'veryStrong'): this;
+  password(strength?: "weak" | "medium" | "strong" | "veryStrong"): this;
 
   /**
    * 手机号验证
    * @param country - 国家代码
    * @returns 当前实例（支持链式调用）
-   * 
+   *
    * @example
    * ```typescript
    * builder.phone('cn');            // 中国大陆 (11位)
@@ -588,7 +638,7 @@ export class DslBuilder {
    * builder.phone('international'); // 国际号码
    * ```
    */
-  phone(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): this;
+  phone(country?: "cn" | "us" | "uk" | "hk" | "tw" | "international"): this;
 
   /**
    * 设置格式
@@ -614,7 +664,9 @@ export class DslBuilder {
    * builder.phoneNumber('cn');  // 等同于 phone('cn')
    * ```
    */
-  phoneNumber(country?: 'cn' | 'us' | 'uk' | 'hk' | 'tw' | 'international'): this;
+  phoneNumber(
+    country?: "cn" | "us" | "uk" | "hk" | "tw" | "international",
+  ): this;
 
   /**
    * 身份证验证
@@ -626,7 +678,7 @@ export class DslBuilder {
    * builder.idCard('cn');  // 中国身份证18位
    * ```
    */
-  idCard(country?: 'cn'): this;
+  idCard(country?: "cn"): this;
 
   /**
    * URL Slug 验证（只能包含小写字母、数字和连字符）
@@ -651,7 +703,9 @@ export class DslBuilder {
    * builder.creditCard('amex');
    * ```
    */
-  creditCard(type?: 'visa' | 'mastercard' | 'amex' | 'discover' | 'jcb' | 'unionpay'): this;
+  creditCard(
+    type?: "visa" | "mastercard" | "amex" | "discover" | "jcb" | "unionpay",
+  ): this;
 
   /**
    * 车牌号验证
@@ -663,7 +717,7 @@ export class DslBuilder {
    * builder.licensePlate('cn');  // 中国车牌号
    * ```
    */
-  licensePlate(country?: 'cn' | 'us' | 'uk'): this;
+  licensePlate(country?: "cn" | "us" | "uk"): this;
 
   /**
    * 邮政编码验证
@@ -676,7 +730,7 @@ export class DslBuilder {
    * builder.postalCode('us');  // 美国邮政编码
    * ```
    */
-  postalCode(country?: 'cn' | 'us' | 'uk'): this;
+  postalCode(country?: "cn" | "us" | "uk"): this;
 
   /**
    * 护照号码验证
@@ -688,7 +742,7 @@ export class DslBuilder {
    * builder.passport('cn');  // 中国护照号
    * ```
    */
-  passport(country?: 'cn' | 'us' | 'uk'): this;
+  passport(country?: "cn" | "us" | "uk"): this;
 
   /**
    * String 最小长度（使用AJV原生minLength）
@@ -860,7 +914,15 @@ export class DslBuilder {
    * dsl('string!').dateFormat('YYYY-MM-DD');
    * ```
    */
-  dateFormat(fmt: 'YYYY-MM-DD' | 'YYYY/MM/DD' | 'DD-MM-YYYY' | 'DD/MM/YYYY' | 'ISO8601' | string): this;
+  dateFormat(
+    fmt:
+      | "YYYY-MM-DD"
+      | "YYYY/MM/DD"
+      | "DD-MM-YYYY"
+      | "DD/MM/YYYY"
+      | "ISO8601"
+      | string,
+  ): this;
 
   /**
    * Date 必须晚于指定日期
@@ -1044,18 +1106,21 @@ export class DslBuilder {
 
 /**
  * DSL 定义对象
- * 
+ *
  * @description 支持多种类型的Schema定义
  */
-export type DslDefinition = string | DslBuilder | {
-  [key: string]: DslDefinition;
-};
+export type DslDefinition =
+  | string
+  | DslBuilder
+  | {
+      [key: string]: DslDefinition;
+    };
 
 /**
  * SchemaIO 配置选项
- * 
+ *
  * @description 用于配置验证器和错误消息的选项
- * 
+ *
  * @example
  * ```typescript
  * const options: SchemaIOOptions = {
@@ -1087,22 +1152,22 @@ export interface SchemaIOOptions {
 
 /**
  * dsl() 函数（主入口）
- * 
+ *
  * @description schema-dsl 的核心函数，用于创建 Schema 定义
- * 
+ *
  * @example
  * ```typescript
  * // 1. 字符串：返回 DslBuilder（用于进一步配置）
  * const builder = dsl('email!');
  * builder.label('邮箱地址').messages({ required: '必填' });
- * 
+ *
  * // 2. 对象：返回 JSON Schema（用于验证）
  * const schema = dsl({
  *   username: 'string:3-32!',
  *   email: 'email!',
  *   age: 'number:18-100'
  * });
- * 
+ *
  * // 3. 带选项的对象
  * const schema = dsl({
  *   username: 'string:3-32!'
@@ -1112,31 +1177,37 @@ export interface SchemaIOOptions {
  *     min: '至少需要 {{#limit}} 个字符'
  *   }
  * });
- * 
+ *
  * // 4. 验证数据（使用顶层 validate 函数）
  * const result = validate(schema, { username: 'test' });
  * ```
  */
 export function dsl(definition: string): DslBuilder;
-export function dsl(definition: Record<string, DslDefinition>, options?: SchemaIOOptions): JSONSchema;
-export function dsl(definition: string | Record<string, DslDefinition>, options?: SchemaIOOptions): DslBuilder | JSONSchema;
+export function dsl(
+  definition: Record<string, DslDefinition>,
+  options?: SchemaIOOptions,
+): JSONSchema;
+export function dsl(
+  definition: string | Record<string, DslDefinition>,
+  options?: SchemaIOOptions,
+): DslBuilder | JSONSchema;
 
 /**
  * 全局配置
- * 
+ *
  * @description dsl命名空间的全局配置和工具方法
- * 
+ *
  * @remark 注意：dsl() 返回的是 JSONSchema 对象，不是类实例
  * 验证时使用顶层函数 validate(schema, data) 而非 schema.validate(data)
  */
 export namespace dsl {
   /**
    * 条件规则 (if / _if)
-   * 
+   *
    * @description 支持两种方式的条件判断
-   * 
+   *
    * 注意：在 TypeScript 中因为 if 是保留字，请使用 dsl['if'] 或 dsl._if
-   * 
+   *
    * @example TypeScript 用法
    * ```typescript
    * // 使用字符串索引访问
@@ -1144,13 +1215,13 @@ export namespace dsl {
    *   isVip: 'boolean',
    *   discount: dsl['if']('isVip', 'number:10-50!', 'number:0-10')
    * });
-   * 
+   *
    * // 或使用 _if 别名
    * const schema2 = dsl({
    *   email: dsl._if(d => d.age >= 18).then('email!').else('email')
    * });
    * ```
-   * 
+   *
    * @example JavaScript 用法
    * ```javascript
    * // JavaScript 中可以直接使用 dsl.if
@@ -1161,13 +1232,17 @@ export namespace dsl {
    */
   export { _if as if };
   export function _if(condition: (data: any) => boolean): ConditionalBuilder;
-  export function _if(conditionField: string, thenSchema: string | DslBuilder | JSONSchema, elseSchema?: string | DslBuilder | JSONSchema): any;
+  export function _if(
+    conditionField: string,
+    thenSchema: string | DslBuilder | JSONSchema,
+    elseSchema?: string | DslBuilder | JSONSchema,
+  ): any;
 
   /**
    * 全局配置
-   * 
+   *
    * @description 配置全局的验证规则和语言包
-   * 
+   *
    * @example
    * ```typescript
    * // 方式 1: 使用 i18n 配置（推荐，v1.0.4+）
@@ -1210,23 +1285,32 @@ export namespace dsl {
     /** 自定义验证规则 */
     patterns?: {
       /** 手机号规则 */
-      phone?: Record<string, { pattern: RegExp; min?: number; max?: number; key?: string }>;
+      phone?: Record<
+        string,
+        { pattern: RegExp; min?: number; max?: number; key?: string }
+      >;
       /** 身份证号规则 */
-      idCard?: Record<string, { pattern: RegExp; min?: number; max?: number; key?: string }>;
+      idCard?: Record<
+        string,
+        { pattern: RegExp; min?: number; max?: number; key?: string }
+      >;
       /** 信用卡号规则 */
       creditCard?: Record<string, { pattern: RegExp; msg?: string }>;
     };
     /** 手机号规则（兼容旧版） */
-    phone?: Record<string, { pattern: RegExp; min?: number; max?: number; key?: string }>;
+    phone?: Record<
+      string,
+      { pattern: RegExp; min?: number; max?: number; key?: string }
+    >;
     /** 语言包配置（兼容旧版，推荐使用 i18n.locales） */
     locales?: Record<string, ErrorMessages> | string;
   }): void;
 
   /**
    * 匹配规则
-   * 
+   *
    * @description 根据值匹配不同的Schema定义
-   * 
+   *
    * @example
    * ```typescript
    * const schema = dsl({
@@ -1242,16 +1326,16 @@ export namespace dsl {
 
   /**
    * 条件规则 (if)
-   * 
+   *
    * @description 根据条件字段的值选择不同的Schema
-   * 
+   *
    * JavaScript 中使用: `dsl.if(condition, thenSchema, elseSchema)`
    * TypeScript 中使用: `dsl['if'](condition, thenSchema, elseSchema)` 或 `dsl._if(...)`
-   * 
+   *
    * @param condition - 条件字段名
    * @param thenSchema - 条件为 true 时的 Schema
    * @param elseSchema - 条件为 false 时的 Schema（可选）
-   * 
+   *
    * @example
    * ```typescript
    * // TypeScript 中因为 if 是保留字，需要用字符串索引或 _if
@@ -1259,14 +1343,14 @@ export namespace dsl {
    *   isVip: 'boolean',
    *   discount: dsl['if']('isVip', 'number:10-50!', 'number:0-10')
    * });
-   * 
+   *
    * // 或者使用 _if 别名
    * const schema2 = dsl({
    *   age: 'number',
    *   license: dsl._if('age', 'boolean!', 'boolean')
    * });
    * ```
-   * 
+   *
    * @example
    * ```javascript
    * // JavaScript 中可以直接使用 dsl.if
@@ -1279,17 +1363,17 @@ export namespace dsl {
 
   /**
    * 便捷验证方法（dsl命名空间别名）
-   * 
+   *
    * @description 与顶层 validate 函数相同
    */
-  export const validate: typeof import('./index').validate;
+  export const validate: typeof import("./index").validate;
 
   /**
    * 异步验证方法（dsl命名空间别名）
-   * 
+   *
    * @description 与顶层 validateAsync 函数相同
    */
-  export const validateAsync: typeof import('./index').validateAsync;
+  export const validateAsync: typeof import("./index").validateAsync;
 
   /**
    * 多语言错误快捷方法 (v1.1.1+)
@@ -1357,7 +1441,7 @@ export namespace dsl {
       code: string,
       paramsOrLocale?: Record<string, any> | string,
       statusCode?: number,
-      locale?: string
+      locale?: string,
     ): I18nError;
 
     /**
@@ -1400,7 +1484,7 @@ export namespace dsl {
       code: string,
       paramsOrLocale?: Record<string, any> | string,
       statusCode?: number,
-      locale?: string
+      locale?: string,
     ): never;
 
     /**
@@ -1445,7 +1529,7 @@ export namespace dsl {
       code: string,
       paramsOrLocale?: Record<string, any> | string,
       statusCode?: number,
-      locale?: string
+      locale?: string,
     ): asserts condition;
   };
 }
@@ -1454,7 +1538,7 @@ export namespace dsl {
 
 /**
  * Validator 选项
- * 
+ *
  * @description 验证器的配置选项
  */
 export interface ValidatorOptions {
@@ -1472,24 +1556,24 @@ export interface ValidatorOptions {
 
 /**
  * 验证器类
- * 
+ *
  * @description 基于ajv的JSON Schema验证器
- * 
+ *
  * @example
  * ```typescript
  * // 创建验证器
  * const validator = new Validator({ allErrors: true });
- * 
+ *
  * // 验证数据
  * const schema = dsl({ email: 'email!' }).toJsonSchema();
  * const result = validator.validate(schema, { email: 'test@example.com' });
- * 
+ *
  * if (result.valid) {
  *   console.log('验证通过');
  * } else {
  *   console.log('错误:', result.errors);
  * }
- * 
+ *
  * // 获取底层ajv实例
  * const ajv = validator.getAjv();
  * ```
@@ -1525,7 +1609,11 @@ export class Validator {
    * });
    * ```
    */
-  validate<T = any>(schema: JSONSchema, data: any, options?: ValidateOptions): ValidationResult<T>;
+  validate<T = any>(
+    schema: JSONSchema,
+    data: any,
+    options?: ValidateOptions,
+  ): ValidationResult<T>;
 
   /**
    * 获取底层ajv实例
@@ -1537,7 +1625,7 @@ export class Validator {
    * 添加自定义格式
    * @param name - 格式名称
    * @param validator - 验证函数或正则表达式
-   * 
+   *
    * @example
    * ```typescript
    * validator.addFormat('phone-cn', /^1[3-9]\d{9}$/);
@@ -1560,7 +1648,7 @@ export class Validator {
  * 便捷验证方法（同步）
  *
  * @description 使用默认的单例Validator，无需new
- * 
+ *
  * @example
  * ```typescript
  * import { dsl, validate } from 'schema-dsl';
@@ -1583,15 +1671,15 @@ export class Validator {
 
 /**
  * 全局配置函数
- * 
+ *
  * @description dsl.config 的顶层导出别名，两种方式等效
- * 
+ *
  * @example
  * ```typescript
  * import { config } from 'schema-dsl';
  * // 或
  * import { dsl } from 'schema-dsl';
- * 
+ *
  * // 两种方式都可以
  * config({ i18n: './locales' });
  * dsl.config({ i18n: './locales' });
@@ -1602,7 +1690,7 @@ export const config: typeof dsl.config;
 export function validate<T = any>(
   schema: JSONSchema | DslBuilder,
   data: any,
-  options?: ValidateOptions
+  options?: ValidateOptions,
 ): ValidationResult<T>;
 
 /**
@@ -1647,7 +1735,7 @@ export function validate<T = any>(
 export function validateAsync<T = any>(
   schema: JSONSchema | DslBuilder,
   data: any,
-  options?: ValidatorOptions
+  options?: ValidatorOptions,
 ): Promise<T>;
 
 /**
@@ -1688,7 +1776,7 @@ export function validateAsync<T = any>(
  */
 export class ValidationError extends Error {
   /** 错误名称（固定为 'ValidationError'） */
-  readonly name: 'ValidationError';
+  readonly name: "ValidationError";
 
   /** 错误消息 */
   message: string;
@@ -1801,7 +1889,7 @@ export class ValidationError extends Error {
  */
 export class I18nError extends Error {
   /** 错误名称（固定为 'I18nError'） */
-  readonly name: 'I18nError';
+  readonly name: "I18nError";
 
   /** 错误消息（已翻译） */
   message: string;
@@ -1832,7 +1920,7 @@ export class I18nError extends Error {
     code: string,
     params?: Record<string, any>,
     statusCode?: number,
-    locale?: string
+    locale?: string,
   );
 
   /**
@@ -1877,7 +1965,7 @@ export class I18nError extends Error {
     code: string,
     paramsOrLocale?: Record<string, any> | string,
     statusCode?: number,
-    locale?: string
+    locale?: string,
   ): I18nError;
 
   /**
@@ -1917,7 +2005,7 @@ export class I18nError extends Error {
     code: string,
     paramsOrLocale?: Record<string, any> | string,
     statusCode?: number,
-    locale?: string
+    locale?: string,
   ): never;
 
   /**
@@ -1959,7 +2047,7 @@ export class I18nError extends Error {
     code: string,
     paramsOrLocale?: Record<string, any> | string,
     statusCode?: number,
-    locale?: string
+    locale?: string,
   ): asserts condition;
 
   /**
@@ -1991,7 +2079,7 @@ export class I18nError extends Error {
    */
   toJSON(): {
     error: string;
-    originalKey: string;  // v1.1.5 新增
+    originalKey: string; // v1.1.5 新增
     code: string;
     message: string;
     params: Record<string, any>;
@@ -2008,9 +2096,9 @@ export class I18nError extends Error {
 
 /**
  * 获取默认Validator实例（单例）
- * 
+ *
  * @description 获取全局共享的Validator实例
- * 
+ *
  * @example
  * ```typescript
  * import { getDefaultValidator } from 'schema-dsl';
@@ -2037,14 +2125,14 @@ export interface MongoDBExporterOptions {
 
 /**
  * MongoDB 导出器
- * 
+ *
  * @description 将JSON Schema导出为MongoDB验证规则
- * 
+ *
  * @example
  * ```typescript
  * const exporter = new MongoDBExporter({ strict: true });
  * const mongoSchema = exporter.export(jsonSchema);
- * 
+ *
  * // 生成MongoDB命令
  * const command = exporter.generateCommand('users', jsonSchema);
  * console.log(command);
@@ -2090,9 +2178,9 @@ export interface MySQLExporterOptions {
 
 /**
  * MySQL 导出器
- * 
+ *
  * @description 将JSON Schema导出为MySQL CREATE TABLE语句
- * 
+ *
  * @example
  * ```typescript
  * const exporter = new MySQLExporter();
@@ -2101,7 +2189,7 @@ export interface MySQLExporterOptions {
  *   engine: 'InnoDB',
  *   charset: 'utf8mb4'
  * });
- * 
+ *
  * console.log(sql);
  * // CREATE TABLE `users` (
  * //   `id` INT PRIMARY KEY AUTO_INCREMENT,
@@ -2137,9 +2225,9 @@ export interface PostgreSQLExporterOptions {
 
 /**
  * PostgreSQL 导出器
- * 
+ *
  * @description 将JSON Schema导出为PostgreSQL CREATE TABLE语句
- * 
+ *
  * @example
  * ```typescript
  * const exporter = new PostgreSQLExporter();
@@ -2147,7 +2235,7 @@ export interface PostgreSQLExporterOptions {
  *   tableName: 'users',
  *   schemaName: 'public'
  * });
- * 
+ *
  * console.log(sql);
  * // CREATE TABLE public.users (
  * //   id SERIAL PRIMARY KEY,
@@ -2173,13 +2261,13 @@ export class PostgreSQLExporter {
 
 /**
  * 导出器命名空间
- * 
+ *
  * @description 统一的导出器访问入口
- * 
+ *
  * @example
  * ```typescript
  * import { exporters } from 'schema-dsl';
- * 
+ *
  * const mongoExporter = new exporters.MongoDBExporter();
  * const mysqlExporter = new exporters.MySQLExporter();
  * const pgExporter = new exporters.PostgreSQLExporter();
@@ -2190,19 +2278,19 @@ export class PostgreSQLExporter {
 
 /**
  * 类型转换工具
- * 
+ *
  * @description 提供多种Schema类型之间的转换
- * 
+ *
  * @example
  * ```typescript
  * // 转换为JSON Schema类型
  * const jsonType = TypeConverter.toJSONSchemaType('email');
  * // { type: 'string', format: 'email' }
- * 
+ *
  * // 转换为MongoDB类型
  * const mongoType = TypeConverter.toMongoDBType('string');
  * // 'String'
- * 
+ *
  * // 转换为MySQL类型
  * const mysqlType = TypeConverter.toMySQLType('string', { maxLength: 255 });
  * // 'VARCHAR(255)'
@@ -2229,7 +2317,10 @@ export class TypeConverter {
    * @param constraints - 约束条件
    * @returns MySQL类型字符串
    */
-  static toMySQLType(jsonSchemaType: string, constraints?: Record<string, any>): string;
+  static toMySQLType(
+    jsonSchemaType: string,
+    constraints?: Record<string, any>,
+  ): string;
 
   /**
    * 转换为PostgreSQL类型
@@ -2237,24 +2328,30 @@ export class TypeConverter {
    * @param constraints - 约束条件
    * @returns PostgreSQL类型字符串
    */
-  static toPostgreSQLType(jsonSchemaType: string, constraints?: Record<string, any>): string;
+  static toPostgreSQLType(
+    jsonSchemaType: string,
+    constraints?: Record<string, any>,
+  ): string;
 
   /**
    * 规范化属性名
    * @param name - 原属性名
    * @param style - 命名风格
    * @returns 规范化后的属性名
-   * 
+   *
    * @example
    * ```typescript
    * TypeConverter.normalizePropertyName('userName', 'snake_case');
    * // 'user_name'
-   * 
+   *
    * TypeConverter.normalizePropertyName('user_name', 'camelCase');
    * // 'userName'
    * ```
    */
-  static normalizePropertyName(name: string, style?: 'snake_case' | 'camelCase'): string;
+  static normalizePropertyName(
+    name: string,
+    style?: "snake_case" | "camelCase",
+  ): string;
 
   /**
    * 将format转换为正则表达式
@@ -2281,14 +2378,14 @@ export class TypeConverter {
 
 /**
  * Schema 辅助工具
- * 
+ *
  * @description 提供Schema的基础操作方法
- * 
+ *
  * @example
  * ```typescript
  * // 合并Schema
  * const merged = SchemaHelper.merge(schema1, schema2);
- * 
+ *
  * // 克隆Schema
  * const cloned = SchemaHelper.clone(schema);
  * ```
@@ -2312,9 +2409,9 @@ export class SchemaHelper {
 
 /**
  * Schema 工具类 (v2.0.1+)
- * 
+ *
  * @description 提供高级Schema操作和工具方法
- * 
+ *
  * @example
  * ```typescript
  * // 创建可复用的Schema片段
@@ -2323,13 +2420,13 @@ export class SchemaHelper {
  *   street: 'string!',
  *   zip: 'string'
  * }));
- * 
+ *
  * // 创建Schema库
  * const library = SchemaUtils.createLibrary({
  *   user: () => ({ username: 'string!', email: 'email!' }),
  *   address: addressFragment
  * });
- * 
+ *
  * // 使用Schema库
  * const schema = dsl({
  *   user: library.user(),
@@ -2365,14 +2462,17 @@ export class SchemaUtils {
    * @param extensions - 扩展字段
    * @returns 扩展后的Schema
    */
-  static extend(baseSchema: JSONSchema, extensions: Record<string, any>): JSONSchema;
+  static extend(
+    baseSchema: JSONSchema,
+    extensions: Record<string, any>,
+  ): JSONSchema;
 
   /**
    * 挑选Schema的部分字段
    * @param schema - 原Schema
    * @param fields - 要挑选的字段列表
    * @returns 新Schema
-   * 
+   *
    * @example
    * ```typescript
    * const userSchema = dsl({
@@ -2381,7 +2481,7 @@ export class SchemaUtils {
    *   password: 'string!',
    *   age: 'number'
    * });
-   * 
+   *
    * const loginSchema = SchemaUtils.pick(userSchema, ['username', 'password']);
    * ```
    */
@@ -2392,7 +2492,7 @@ export class SchemaUtils {
    * @param schema - 原Schema
    * @param fields - 要排除的字段列表
    * @returns 新Schema
-   * 
+   *
    * @example
    * ```typescript
    * const publicUserSchema = SchemaUtils.omit(userSchema, ['password']);
@@ -2413,7 +2513,7 @@ export class SchemaUtils {
    * @param dataArray - 数据数组
    * @param validator - Validator实例
    * @returns 批量验证结果
-   * 
+   *
    * @example
    * ```typescript
    * const results = SchemaUtils.validateBatch(
@@ -2421,7 +2521,7 @@ export class SchemaUtils {
    *   [data1, data2, data3],
    *   validator
    * );
-   * 
+   *
    * console.log(results.summary);
    * // {
    * //   total: 3,
@@ -2432,9 +2532,19 @@ export class SchemaUtils {
    * // }
    * ```
    */
-  static validateBatch(schema: JSONSchema, dataArray: any[], validator: Validator): {
+  static validateBatch(
+    schema: JSONSchema,
+    dataArray: any[],
+    validator: Validator,
+  ): {
     results: Array<{ index: number; valid: boolean; errors: any; data: any }>;
-    summary: { total: number; valid: number; invalid: number; duration: number; averageTime: number };
+    summary: {
+      total: number;
+      valid: number;
+      invalid: number;
+      duration: number;
+      averageTime: number;
+    };
   };
 
   /**
@@ -2443,7 +2553,10 @@ export class SchemaUtils {
    * @param maxDepth - 最大深度（默认10）
    * @returns 检查结果
    */
-  static validateNestingDepth(schema: JSONSchema, maxDepth?: number): {
+  static validateNestingDepth(
+    schema: JSONSchema,
+    maxDepth?: number,
+  ): {
     valid: boolean;
     depth: number;
     path: string;
@@ -2456,7 +2569,10 @@ export class SchemaUtils {
    * @param options - 导出选项
    * @returns Markdown字符串
    */
-  static toMarkdown(schema: JSONSchema, options?: { title?: string; locale?: string }): string;
+  static toMarkdown(
+    schema: JSONSchema,
+    options?: { title?: string; locale?: string },
+  ): string;
 
   /**
    * 导出为HTML文档
@@ -2478,16 +2594,16 @@ export class SchemaUtils {
 
 /**
  * 错误代码常量
- * 
+ *
  * @description 预定义的错误代码和消息
- * 
+ *
  * @example
  * ```typescript
  * import { ErrorCodes } from 'schema-dsl';
- * 
+ *
  * console.log(ErrorCodes.min);
  * // { code: 'MIN_LENGTH', message: 'Must be at least {{#limit}} characters', zhCN: '至少需要 {{#limit}} 个字符' }
- * 
+ *
  * console.log(ErrorCodes.email);
  * // { code: 'INVALID_EMAIL', message: 'Invalid email format', zhCN: '邮箱格式不正确' }
  * ```
@@ -2515,25 +2631,25 @@ export const ErrorCodes: {
 
 /**
  * 多语言支持
- * 
+ *
  * @description 提供国际化支持的工具类
- * 
+ *
  * @example
  * ```typescript
  * import { Locale } from 'schema-dsl';
- * 
+ *
  * // 设置语言
  * Locale.setLocale('zh-CN');
- * 
+ *
  * // 获取当前语言
  * console.log(Locale.getLocale()); // 'zh-CN'
- * 
+ *
  * // 添加自定义语言包
  * Locale.addLocale('ja-JP', {
  *   required: '必須項目です',
  *   min: '{{#limit}}文字以上必要です'
  * });
- * 
+ *
  * // 获取可用语言列表
  * console.log(Locale.getAvailableLocales()); // ['zh-CN', 'en-US', 'ja-JP', ...]
  * ```
@@ -2543,7 +2659,9 @@ export class Locale {
    * 设置当前语言
    * @param lang - 语言代码
    */
-  static setLocale(lang: 'en-US' | 'zh-CN' | 'ja-JP' | 'fr-FR' | 'es-ES' | string): void;
+  static setLocale(
+    lang: "en-US" | "zh-CN" | "ja-JP" | "fr-FR" | "es-ES" | string,
+  ): void;
 
   /**
    * 获取当前语言
@@ -3051,16 +3169,16 @@ export const exporters: {
 
 /**
  * 安装 String 扩展
- * 
+ *
  * @description 将DSL方法添加到String.prototype，使字符串支持链式调用
- * 
+ *
  * @example
  * ```typescript
  * import { installStringExtensions } from 'schema-dsl';
- * 
+ *
  * // 安装扩展
  * installStringExtensions();
- * 
+ *
  * // 现在可以在字符串上使用DSL方法
  * const schema = dsl({
  *   email: 'email!'.label('邮箱地址').messages({ required: '必填' })
@@ -3071,16 +3189,16 @@ export function installStringExtensions(): void;
 
 /**
  * 卸载 String 扩展
- * 
+ *
  * @description 从String.prototype移除DSL方法
- * 
+ *
  * @example
  * ```typescript
  * import { uninstallStringExtensions } from 'schema-dsl';
- * 
+ *
  * // 卸载扩展
  * uninstallStringExtensions();
- * 
+ *
  * // 字符串不再支持DSL方法
  * ```
  */
@@ -3253,19 +3371,19 @@ export const VERSION: string;
  *     .message('不允许注册')
  * });
  * ```
- * 
+ *
  * @internal
  * 注意：此类不应直接导入使用。请通过 dsl.if() 或 dsl['if']() 返回实例。
- * 
+ *
  * @example 正确用法
  * ```typescript
  * import { dsl } from 'schema-dsl';
- * 
+ *
  * // TypeScript
  * const builder = dsl['if'](d => d.age > 18);
  * // 或
  * const builder2 = dsl._if(d => d.age > 18);
- * 
+ *
  * // JavaScript
  * const builder3 = dsl.if(d => d.age > 18);
  * ```
@@ -3526,11 +3644,11 @@ export class ConditionalBuilder {
 
 /**
  * 默认导出（dsl函数）
- * 
+ *
  * @example
  * ```typescript
  * import schema-dsl from 'schema-dsl';
- * 
+ *
  * const schema = schema-dsl({
  *   username: 'string:3-32!',
  *   email: 'email!'
