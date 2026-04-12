@@ -1,0 +1,16 @@
+// --- 核心类型 ---
+export type { JSONSchema, SchemaIOOptions } from './schema.js'
+export type {
+  DslFn,
+  DslField,
+  DslDefinition,
+  DslInput,
+  IDslBuilder,
+  DslIfFn,
+  DslErrorNamespace,
+} from './dsl.js'
+export type { ValidateOptions, ValidationResult, ValidationErrorItem, AjvError } from './validate.js'
+export type { DslConfigOptions, I18nConfig, CacheOptions, ValidatorOptions } from './config.js'
+export type { ErrorMessages, ErrorCodeMap } from './error.js'
+export type { Plugin, HookFn, HookName, HookContext, PluginManagerOptions } from './plugin.js'
+export type { IConditionalBuilder } from './conditional.js'

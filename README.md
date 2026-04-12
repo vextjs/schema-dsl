@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 # 🎯 schema-dsl
 
@@ -11,7 +11,7 @@
 [![Build Status](https://github.com/vextjs/schema-dsl/workflows/CI/badge.svg)](https://github.com/vextjs/schema-dsl/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-[快速开始](#-快速开始) · [在线体验](https://runkit.com/npm/schema-dsl) · [完整文档](./docs/INDEX.md) · [示例代码](./examples) · [性能测试](./docs/performance-benchmark-report.md)
+[快速开始](#-快速开始) · [在线体验](https://runkit.com/npm/schema-dsl) · [完整文档](./docs/INDEX.md) · [示例代码](./examples) · [性能测试](./docs/cache-manager.md)
 
 </div>
 
@@ -111,7 +111,7 @@ dsl.error.assert(account, 'account.notFound', 'zh-CN');
 - 🎯 **完全兼容**: 现有代码无需修改，渐进式增强
 - 🎯 **降低错误**: 不再需要传递空对象 `{}`
 
-📖 [完整文档](./docs/error-handling.md) · [实现原理](./docs/i18n-implementation-analysis.md) · [变更日志](./changelogs/v1.1.8.md)
+📖 [完整文档](./docs/error-handling.md) · [变更日志](./CHANGELOG.md)
 
 ---
 
@@ -170,7 +170,7 @@ switch (error.code) {
 - 📊 **更好的错误追踪**: `originalKey` 和 `code` 分离，便于日志分析
 - 🌍 **多语言友好**: 前端可以用统一的数字 code 处理，不受语言影响
 
-📖 [完整文档](./docs/error-handling.md#v115-新功能对象格式错误配置) · [变更日志](./changelogs/v1.1.5.md)
+📖 [完整文档](./docs/error-handling.md#v115-新功能对象格式错误配置) · [变更日志](./CHANGELOG.md)
 
 ---
 
@@ -542,7 +542,7 @@ const registerSchema = dsl({
 });
 ```
 
-📖 [完整文档](./docs/union-types.md) | [插件开发指南](./docs/plugin-type-registration.md)
+📖 [完整文档](./docs/union-types.md) | [插件开发指南](./docs/plugin-system.md)
 
 ---
 
@@ -1543,7 +1543,7 @@ dsl({
 - 如果你期望精确长度，无需修改（新版本行为正确）
 
 **查看详细文档**: 
-- [完整验证规则参考](./docs/validation-rules-v1.0.2.md)
+- [完整验证规则参考](./docs/validation-guide.md)
 - [更新日志](./CHANGELOG.md)
 
 ### 高级特性
@@ -2197,7 +2197,7 @@ dsl.error.assert(user.role === 'admin', 'user.noPermission');
 支持统一的数字错误代码，便于前端处理：
 
 ```javascript
-// 语言包配置（lib/locales/zh-CN.js）
+// 语言包配置（src/locales/zh-CN.ts）
 module.exports = {
   // 字符串格式（向后兼容）
   'user.notFound': '用户不存在',
@@ -2217,7 +2217,7 @@ module.exports = {
   }
 };
 
-// lib/locales/en-US.js
+// src/locales/en-US.ts
 module.exports = {
   'account.notFound': {
     code: 40001,              // 相同的数字 code
@@ -2443,37 +2443,25 @@ npm run coverage
 
 ### 🔌 插件和扩展
 - [插件系统](./docs/plugin-system.md) - 插件开发和使用
-- [插件类型注册](./docs/plugin-type-registration.md) - 自定义类型
+- [插件类型注册](./docs/plugin-system.md) - 自定义类型
 - [自定义扩展指南](./docs/custom-extensions-guide.md) - 添加自定义验证
 
 ### 📊 性能和设计
-- [性能基准测试报告](./docs/performance-benchmark-report.md) - 性能对比数据
+- [性能基准测试报告](./docs/cache-manager.md) - 性能对比数据
 - [设计理念](./docs/design-philosophy.md) - 架构和权衡
 - [缓存管理器](./docs/cache-manager.md) - 缓存配置和优化
 
 ### 💻 示例代码
-- [examples/](./examples/) - 所有示例代码目录
-- [Express 集成](./examples/express-integration.js) - Express 完整示例
-- [中间件使用](./examples/middleware-usage.js) - Koa/Fastify 示例
-- [用户注册](./examples/user-registration/) - 完整注册流程
-- [密码重置](./examples/password-reset/) - 密码重置流程
-- [条件验证](./examples/conditional-example.js) - 条件验证示例
-- [dsl.match 示例](./examples/dsl-match-example.js) - match 用法
-- [多语言完整示例](./examples/i18n-full-demo.js) - i18n 完整演示
-- [I18nError 示例](./examples/i18n-error.examples.js) - 多语言错误
-- [数据库导出](./examples/export-demo.js) - 导出示例
-- [Markdown 导出](./examples/markdown-export.js) - 文档生成
-- [插件系统](./examples/plugin-system.examples.js) - 插件示例
-- [联合类型](./examples/union-type-example.js) - 联合类型示例
-- [Slug 验证](./examples/slug.examples.js) - URL slug 示例
-- [字符串扩展](./examples/string-extensions.js) - String 扩展示例
-- [批量操作](./examples/batch-operations.examples.js) - 批量验证
-- [简单示例](./examples/simple-example.js) - 快速上手
+
+> v2.0.0 已移除 `examples/` 目录（原 CJS 风格示例）。请参考：
+> - **`test/`** — 1013 个测试用例，覆盖所有功能的实际用法
+> - **`docs/`** — 45 个功能文档，含大量代码示例
+> - 本 README 内联示例（下方各章节）
 
 ### 📝 版本和贡献
 - [更新日志](./CHANGELOG.md) - 详细版本历史
 - [贡献指南](./CONTRIBUTING.md) - 如何参与贡献
-- [状态文档](./STATUS.md) - 项目状态和路线图
+
 - [安全策略](./SECURITY.md) - 安全问题报告
 
 ---
