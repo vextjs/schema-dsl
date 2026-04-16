@@ -29,3 +29,13 @@ Thumbs.db
 .git/
 .github/
 .gitignore
+
+# DevCodex AI context data (session memory, reports, profile, etc. - do not commit)
+.devcodex/
+
+
+# npm auth (never commit tokens)
+.npmrc
+
+# DevCodex AI session memory (auto-generated, do not commit)
+.devcodex/.memory/
