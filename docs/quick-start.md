@@ -28,6 +28,10 @@
 npm install schema-dsl
 ```
 
+> **Node.js 要求**：`>=18.0.0`
+> 
+> 当前 TypeScript 重构版以 `Node.js >=18.0.0` 为唯一运行时基线，不再承诺旧 Node 版本兼容。
+
 ---
 
 ## 📖 5分钟快速入门

@@ -52,7 +52,9 @@ const schema = Joi.object({
 npm install schema-dsl
 ```
 
-**Node.js 版本要求**：>= 18.0.0
+**Node.js 版本要求**：`>=18.0.0`
+
+当前 TypeScript 重构版以 `Node.js >=18.0.0` 为唯一运行时基线，不再承诺旧 Node 版本兼容。
 
 ---
 
@@ -64,8 +66,11 @@ npm install schema-dsl
 // CommonJS
 const { dsl, validate } = require('schema-dsl');
 
-// ES Modules
+// ES Modules（named import）
 import { dsl, validate } from 'schema-dsl';
+
+// ES Modules（default import）
+import dslDefault from 'schema-dsl';
 ```
 
 ### Q: i18n 目录加载支持哪些语言包文件格式？

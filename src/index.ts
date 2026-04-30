@@ -494,6 +494,8 @@ _dslWithNS.error = {
  */
 export const dsl = _dslWithNS
 
+export default dsl
+
 export const config = _dslConfig
 
 export function installStringExtensions(dslFunction: Parameters<typeof _install>[0] = _dslWithNS as unknown as Parameters<typeof _install>[0]): void {

@@ -21,11 +21,12 @@
 
 ### ✅ 向后兼容性
 
-- **100% 兼容 v1.2.5 全部 API**（经过 12 轮深度审查，1013 个测试用例验证）
+- 当前版本在 **`Node.js >=18.0.0`** 基线下保留 v1 主要公共 API 兼容入口
 - `require('schema-dsl')` 仍然有效（main 字段指向 `dist/index.cjs`）
-- `import { dsl } from 'schema-dsl'` 仍然有效（ESM exports）
+- `import dsl from 'schema-dsl'` 与 `import { dsl } from 'schema-dsl'` 均有效（ESM default + named exports）
+- 当前验证基线：`1026` 个测试用例通过
 - `ValidationErrorItem` 新增 `type` 和 `expected` 字段（向后兼容追加，不破坏现有代码）
-- 下游项目 monSQLize（CJS）、vext（ESM）完全兼容，无需任何修改
+- 下游项目使用前提：运行时需满足 `Node.js >=18.0.0`
 
 ### 🔧 新增特性
 

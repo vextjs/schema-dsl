@@ -90,12 +90,14 @@ static registerAll(ajv) {
 
 在 `src/locales/zh-CN.ts` 中：
 
-```javascript
-module.exports = {
+```typescript
+const zhCN = {
   // ...existing messages...
   'phone.location.unknown': '未知的归属地: {{#location}}',
   'phone.location.mismatch': '手机号归属地不匹配，期望{{#expected}}'
 };
+
+export default zhCN;
 ```
 
 ---
@@ -139,8 +141,10 @@ validate(schema, { mobile: '13012345678' });
 
 创建 `src/config/patterns/custom.ts`：
 
-```javascript
-module.exports = {
+```typescript
+import type { PatternConfig } from '../patterns';
+
+export const custom: Record<string, PatternConfig> = {
   /**
    * 微信号验证
    */
@@ -167,10 +171,12 @@ module.exports = {
 
 在 `src/config/patterns.ts`（或对应聚合导出文件）中：
 
-```javascript
-module.exports = {
+```typescript
+import { custom } from './patterns/custom';
+
+export const PATTERNS = {
   // ...existing patterns...
-  custom: require('./custom')
+  custom
 };
 ```
 
@@ -208,12 +214,14 @@ wechat() {
 
 创建 `src/locales/ko-KR.ts`（韩语）：
 
-```javascript
-module.exports = {
+```typescript
+const koKR = {
   required: '{{#label}}은(는) 필수 항목입니다',
   type: '{{#label}}은(는) {{#expected}} 유형이어야 합니다',
   // ...其他73个键
 };
+
+export default koKR;
 ```
 
 2. **配置加载**

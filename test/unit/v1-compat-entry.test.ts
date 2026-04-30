@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import {
+import defaultDsl, {
   dsl,
   config,
   CONSTANTS,
@@ -19,6 +19,10 @@ import {
 import type { DslConditionMarker } from '../../src/index.js'
 
 describe('v1 entry compatibility', () => {
+  it('ESM default export 应该指向 dsl 主入口', () => {
+    expect(defaultDsl).toBe(dsl)
+  })
+
   it('应该导出 v1 主入口 legacy 符号', () => {
     expect(typeof config).toBe('function')
     expect(CONSTANTS).toHaveProperty('VALIDATION')

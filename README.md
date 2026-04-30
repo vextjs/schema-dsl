@@ -13,7 +13,8 @@
 
 ---
 
-> **当前源码版本**：`2.0.0-beta.1`（TypeScript 重构版）。本文中标注的 `v1.x` 表示该功能首次引入的历史版本；当前重构版保留这些 v1 公共 API 兼容入口。
+> **当前源码版本**：`2.0.0-beta.1`（TypeScript 重构版）。本文中标注的 `v1.x` 表示该功能首次引入的历史版本；当前重构版保留这些 v1 公共 API 兼容入口。  
+> **运行时要求**：`Node.js >=18.0.0`（当前版本不再以旧 Node 兼容为目标）。
 
 ---
 
@@ -551,19 +552,19 @@ npm run coverage
 
 ### 🔌 插件和扩展
 - [插件系统](./docs/plugin-system.md) - 插件开发和使用
-- [插件类型注册](./docs/plugin-system.md) - 自定义类型
+- [插件类型注册](./docs/plugin-type-registration.md) - 自定义类型
 - [自定义扩展指南](./docs/custom-extensions-guide.md) - 添加自定义验证
 
 ### 📊 性能和设计
-- [性能基准测试报告](./docs/cache-manager.md) - 性能对比数据
+- [性能优化指南](./docs/performance-guide.md) - 性能测试命令与优化建议
 - [设计理念](./docs/design-philosophy.md) - 架构和权衡
 - [缓存管理器](./docs/cache-manager.md) - 缓存配置和优化
 
 ### 💻 示例代码
 
 > 当前仓库保留 `examples/` 目录（可直接运行的 smoke 示例），并同时维护测试与文档示例：
-> - **`examples/`** — 包含 `export-demo.js` 等可运行示例
-> - **`test/`** — 1,018 个测试用例，覆盖所有功能的实际用法
+> - **`examples/`** — 包含 `export-demo.ts` 等 TypeScript 示例（编译输出到 `.tmp/` 后可直接运行）
+> - **`test/`** — 1,026 个测试用例，覆盖所有功能的实际用法
 > - **`docs/`** — 57 个功能文档，含大量代码示例
 > - 本 README 内联示例（下方各章节）
 
