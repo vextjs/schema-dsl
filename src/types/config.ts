@@ -8,6 +8,8 @@ export interface CacheOptions {
   maxSize?: number
   /** 缓存过期时间（毫秒，0 表示不过期）*/
   ttl?: number
+  /** 是否启用缓存 */
+  enabled?: boolean
   /** 是否启用统计（默认 false）*/
   statsEnabled?: boolean
 }
@@ -16,9 +18,10 @@ export interface CacheOptions {
  * I18n 配置类型
  */
 export type I18nConfig =
-  | string                          // 语言包目录路径
+  | string                          // 语言包目录路径（Node >=18：.js/.cjs/.json/.jsonc/.json5）
   | Record<string, ErrorMessages>   // 内联语言包
-  | { localesPath: string }         // 语言包目录对象形式
+  | { localesPath: string }         // 语言包目录对象形式（Node >=18：.js/.cjs/.json/.jsonc/.json5）
+  | { locales: Record<string, ErrorMessages> } // v1/文档兼容包装层
 
 /**
  * dsl.config() 选项

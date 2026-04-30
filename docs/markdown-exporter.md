@@ -306,13 +306,15 @@ const mongoSchema = exporters.MongoDBExporter.export(schema, {
 });
 
 // 导出为 MySQL DDL
-const mysqlDDL = exporters.MySQLExporter.export(schema, {
-  tableName: 'users'
-});
+const mysqlDDL = exporters.MySQLExporter.export('users', schema);
+
+// 导出为 PostgreSQL DDL
+const pgDDL = exporters.PostgreSQLExporter.export('users', schema);
 
 console.log('Markdown 文档:\n', markdown);
 console.log('\nMongoDB Schema:\n', mongoSchema);
 console.log('\nMySQL DDL:\n', mysqlDDL);
+console.log('\nPostgreSQL DDL:\n', pgDDL);
 ```
 
 ---
@@ -392,6 +394,6 @@ console.log('✅ 文档已生成');
 
 ---
 
-**文档更新日期**: 2025-12-29  
-**版本**: v2.2.0
+**文档更新日期**: 2026-04-30  
+**版本**: v2.0.0-beta.1
 

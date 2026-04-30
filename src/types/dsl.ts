@@ -1,5 +1,6 @@
 import type { JSONSchema } from './schema.js'
 import type { DslConfigOptions } from './config.js'
+import type { IConditionalBuilder } from './conditional.js'
 
 /**
  * DslBuilder 接口定义（链式 API 形状）
@@ -33,10 +34,23 @@ export interface DslDefinition {
 }
 
 /**
+ * v1 条件字段标记（由 dsl.if / dsl.match 创建，parseObject 阶段编译为 allOf 条件 Schema）
+ */
+export interface DslConditionMarker {
+  _isIf?: true
+  _isMatch?: true
+  condition?: string
+  field?: string
+  then?: unknown
+  else?: unknown
+  map?: Record<string, unknown>
+}
+
+/**
  * DSL 字段类型（递归定义）
  * 字符串 | DslBuilder 实例 | 嵌套对象
  */
-export type DslField = string | IDslBuilder | DslDefinition
+export type DslField = string | IDslBuilder | DslDefinition | DslConditionMarker
 
 /**
  * DslBuilder 构造参数（字符串或嵌套定义）
@@ -46,7 +60,8 @@ export type DslInput = string | DslDefinition
 /**
  * if/conditional 函数类型
  */
-export type DslIfFn = (condition: (data: unknown) => boolean) => import('./conditional.js').IConditionalBuilder
+export type DslIfFn = (condition: (data: unknown) => boolean) => IConditionalBuilder
+export type DslFieldIfFn = (condition: string, thenSchema: unknown, elseSchema?: unknown) => DslConditionMarker
 
 /**
  * dsl.error 命名空间
@@ -63,7 +78,7 @@ export interface DslFn {
   (def: string): IDslBuilder
   (def: DslDefinition): JSONSchema
   config: (options: DslConfigOptions) => void
-  if: DslIfFn
-  match: (value: unknown, cases: Record<string, unknown>) => unknown
+  if: DslIfFn & DslFieldIfFn
+  match: (value: unknown, cases: Record<string, unknown>) => DslConditionMarker
   error: DslErrorNamespace
 }

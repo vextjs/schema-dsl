@@ -311,8 +311,8 @@ const schema = dsl({
 ## 📚 相关文档
 
 - [DSL 语法完整指南](./dsl-syntax.md)
-- [TypeScript 类型定义](../index.d.ts)
-- [单元测试](../test/unit/dsl-adapter.test.js)
+- [TypeScript 类型定义](../dist/index.d.ts)
+- [单元测试](../test/unit/adapters/DslAdapter.test.ts)
 
 ---
 

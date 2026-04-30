@@ -13,12 +13,15 @@ export const VERSION: string = (pkg as { version: string }).version
 
 // ==================== 核心类 ====================
 export { Validator } from './core/Validator.js'
+export { JSONSchemaCore } from './core/JSONSchemaCore.js'
 export { DslBuilder } from './core/DslBuilder.js'
 export { ConditionalBuilder } from './core/ConditionalBuilder.js'
 export { Locale } from './core/Locale.js'
 export { CacheManager } from './core/CacheManager.js'
 export { ErrorFormatter } from './core/ErrorFormatter.js'
+export { MessageTemplate } from './core/MessageTemplate.js'
 export { renderTemplate } from './core/TemplateEngine.js'
+export { PluginManager } from './core/PluginManager.js'
 
 // ==================== 解析层 ====================
 export { DslParser } from './parser/DslParser.js'
@@ -34,7 +37,7 @@ export { ValidationError } from './errors/ValidationError.js'
 export { I18nError } from './errors/I18nError.js'
 
 // ==================== String 扩展 ====================
-export { installStringExtensions, uninstallStringExtensions } from './core/StringExtensions.js'
+export { uninstallStringExtensions } from './core/StringExtensions.js'
 
 // ==================== 导出器 ====================
 export {
@@ -53,6 +56,7 @@ export { CustomKeywords } from './validators/CustomKeywords.js'
 
 // ==================== 常量 ====================
 export { VALIDATION, CACHE, FORMATS, PATTERN_IPV4, PATTERN_IPV6 } from './config/constants.js'
+export { ErrorCodes } from './core/ErrorCodes.js'
 export { PATTERNS } from './config/patterns.js'
 
 // ==================== 类型导出 ====================
@@ -65,6 +69,7 @@ export type {
   DslInput,
   DslFn,
   DslIfFn,
+  DslConditionMarker,
   DslErrorNamespace,
 } from './types/dsl.js'
 
@@ -94,14 +99,22 @@ import { ConditionalBuilder as _ConditionalBuilder } from './core/ConditionalBui
 import { Locale as _Locale } from './core/Locale.js'
 import { installStringExtensions as _install } from './core/StringExtensions.js'
 import { PATTERNS as _PATTERNS } from './config/patterns.js'
+import * as _CONSTANTS from './config/constants.js'
+import * as _exporters from './exporters/index.js'
 import { Validator as _Validator } from './core/Validator.js'
 import { I18nError as _I18nError } from './errors/I18nError.js'
+import type { LocaleMessage as _LocaleMessage } from './locales/types.js'
 import type { JSONSchema as _JSONSchema } from './types/schema.js'
-import type { IDslBuilder as _IDslBuilder, DslDefinition as _DslDefinition } from './types/dsl.js'
+import type { IDslBuilder as _IDslBuilder, DslDefinition as _DslDefinition, DslConditionMarker as _DslConditionMarker } from './types/dsl.js'
 import type { DslConfigOptions as _DslConfigOptions } from './types/config.js'
+import type { ValidationResult as _ValidationResult } from './types/validate.js'
+import JSON5 from 'json5'
 import { createRequire } from 'node:module'
-import { readdirSync, statSync } from 'node:fs'
+import { readdirSync, statSync, readFileSync } from 'node:fs'
 import { join, basename, extname } from 'node:path'
+
+export const CONSTANTS = _CONSTANTS
+export const exporters = _exporters
 
 // Import all default locales for automatic initialization
 import * as _locales from './locales/index.js'
@@ -201,6 +214,38 @@ function smartCoerceTypes(data: unknown, schema: _JSONSchema): unknown {
 
 // ==================== i18n 目录扫描 ====================
 
+const _LOCALE_NAME_RE = /^[a-z]{2,3}(-[A-Z]{2,4})?$/
+const _LOCALE_REQUIRE_EXTENSIONS = new Set(['.js', '.cjs', '.json'])
+const _LOCALE_TEXT_EXTENSIONS = new Set(['.jsonc', '.json5'])
+
+function _normalizeLocaleModule(moduleValue: unknown): Record<string, _LocaleMessage> | null {
+  if (!moduleValue || typeof moduleValue !== 'object' || Array.isArray(moduleValue)) return null
+
+  const raw = moduleValue as Record<string, unknown>
+  const keys = Object.keys(raw)
+  const defaultValue = raw['default']
+  const nonMetaKeys = keys.filter(key => key !== '__esModule' && key !== 'default')
+
+  if (defaultValue && typeof defaultValue === 'object' && !Array.isArray(defaultValue) && nonMetaKeys.length === 0) {
+    return defaultValue as Record<string, _LocaleMessage>
+  }
+
+  return raw as Record<string, _LocaleMessage>
+}
+
+function _loadLocaleFile(fullPath: string, ext: string, _require: NodeRequire): Record<string, _LocaleMessage> | null {
+  if (_LOCALE_TEXT_EXTENSIONS.has(ext)) {
+    const rawText = readFileSync(fullPath, 'utf8')
+    return _normalizeLocaleModule(JSON5.parse(rawText) as Record<string, _LocaleMessage>)
+  }
+
+  if (_LOCALE_REQUIRE_EXTENSIONS.has(ext)) {
+    return _normalizeLocaleModule(_require(fullPath) as Record<string, _LocaleMessage>)
+  }
+
+  return null
+}
+
 function _loadLocalesFromDir(dirPath: string, strict = false): void {
   let _require: NodeRequire
   try {
@@ -231,12 +276,15 @@ function _loadLocalesFromDir(dirPath: string, strict = false): void {
       }
       if (stat.isDirectory()) {
         scanDir(fullPath)
-      } else if (extname(entry) === '.js') {
-        const locale = basename(entry, '.js')
+      } else {
+        const ext = extname(entry).toLowerCase()
+        if (!_LOCALE_REQUIRE_EXTENSIONS.has(ext) && !_LOCALE_TEXT_EXTENSIONS.has(ext)) continue
+
+        const locale = basename(entry, ext)
         // Only load files that look like locale identifiers (e.g., zh-CN, en-US, zh, en)
-        if (/^[a-z]{2}(-[A-Z]{2})?$/.test(locale)) {
+        if (_LOCALE_NAME_RE.test(locale)) {
           try {
-            const messages = _require(fullPath) as Record<string, string>
+            const messages = _loadLocaleFile(fullPath, ext, _require)
             if (messages && typeof messages === 'object') {
               // Conflict detection
               if (!registeredKeys.has(locale)) registeredKeys.set(locale, new Map())
@@ -256,7 +304,7 @@ function _loadLocalesFromDir(dirPath: string, strict = false): void {
                 }
                 localeKeys.set(key, fullPath)
               }
-              _Locale.addLocale(locale, messages)
+              _Locale.addLocale(locale, messages as Record<string, _LocaleMessage>)
             }
           } catch (err) {
             // Re-throw in strict mode; silently skip in default mode
@@ -306,6 +354,12 @@ function _dslConfig(options: Partial<_DslConfigOptions> = {}): void {
     } else if (typeof options.i18n === 'object' && 'localesPath' in options.i18n) {
       // { localesPath: string } form
       _loadLocalesFromDir((options.i18n as { localesPath: string }).localesPath, strict)
+    } else if (typeof options.i18n === 'object' && 'locales' in options.i18n) {
+      // v1 / docs compat: { locales: { locale: messages } }
+      const locales = (options.i18n as { locales: Record<string, Record<string, string>> }).locales
+      for (const [locale, messages] of Object.entries(locales ?? {})) {
+        _Locale.addLocale(locale, messages)
+      }
     } else if (typeof options.i18n === 'object' && !Array.isArray(options.i18n)) {
       // Inline { locale: messages } mapping
       for (const [locale, messages] of Object.entries(options.i18n)) {
@@ -339,33 +393,33 @@ export function resetDefaultValidator(): void {
  * 便捷验证函数（使用默认 Validator 单例）
  * 当 options.coerce !== false 时，自动进行字符串→数字类型转换
  */
-export function validate(
+export function validate<T = unknown>(
   schema: _JSONSchema,
-  data: unknown,
+  data: T,
   options: Record<string, unknown> = {},
-): unknown {
+): _ValidationResult<T> {
   const shouldCoerce = options['coerce'] !== false
   // O5a：schema 无可转换字段时跳过整个 coerce 循环（零开销）
   const coercedData = shouldCoerce && _hasCoercibleFields(schema as _JSONSchema)
     ? smartCoerceTypes(data, schema as _JSONSchema)
     : data
-  return _getDefaultValidator().validate(schema, coercedData, options)
+  return _getDefaultValidator().validate(schema, coercedData as T, options)
 }
 
 /**
  * 便捷异步验证函数
  */
-export async function validateAsync(
+export async function validateAsync<T = unknown>(
   schema: _JSONSchema,
-  data: unknown,
+  data: T,
   options: Record<string, unknown> = {},
-): Promise<unknown> {
+): Promise<T> {
   const shouldCoerce = options['coerce'] !== false
   // O5a：schema 无可转换字段时跳过整个 coerce 循环（零开销）
   const coercedData = shouldCoerce && _hasCoercibleFields(schema as _JSONSchema)
     ? smartCoerceTypes(data, schema as _JSONSchema)
     : data
-  return _getDefaultValidator().validateAsync(schema, coercedData, options)
+  return _getDefaultValidator().validateAsync(schema, coercedData as T, options)
 }
 
 // ==================== dsl 主函数 ====================
@@ -386,65 +440,39 @@ const _dslWithNS = _dslFn as {
   (def: string): _IDslBuilder
   (def: _DslDefinition): _JSONSchema
   config: (options?: Partial<_DslConfigOptions>) => void
-  if: (condition: string | ((data: unknown) => boolean), thenSchema?: unknown, elseSchema?: unknown) => ReturnType<typeof _ConditionalBuilder.start> | _JSONSchema
-  match: (value: unknown, cases: Record<string, unknown>) => unknown
+  if: {
+    (condition: string, thenSchema: unknown, elseSchema?: unknown): _DslConditionMarker
+    (condition: (data: unknown) => boolean): ReturnType<typeof _ConditionalBuilder.start>
+  }
+  match: (value: unknown, cases: Record<string, unknown>) => _DslConditionMarker
   error: {
-    create: (...args: any[]) => any
-    throw: (...args: any[]) => any
-    assert: (...args: any[]) => any
-    [key: string]: any
+    create: typeof _I18nError.create
+    throw: typeof _I18nError.throw
+    assert: typeof _I18nError.assert
+    [key: string]: unknown
   }
 }
 
 _dslWithNS.config = _dslConfig
 
-_dslWithNS.if = (condition: string | ((data: unknown) => boolean), thenSchema?: unknown, elseSchema?: unknown) => {
+function _dslIf(condition: string, thenSchema: unknown, elseSchema?: unknown): _DslConditionMarker
+function _dslIf(condition: (data: unknown) => boolean): ReturnType<typeof _ConditionalBuilder.start>
+function _dslIf(condition: string | ((data: unknown) => boolean), thenSchema?: unknown, elseSchema?: unknown): _DslConditionMarker | ReturnType<typeof _ConditionalBuilder.start> {
   // When only a string is passed (no thenSchema), it's invalid — condition must be a function
   // When a string + thenSchema are passed, the string is a field name reference (v1 compat)
   if (typeof condition !== 'function' && thenSchema === undefined) {
     throw new Error('Condition must be a function')
   }
-  const builder = _ConditionalBuilder.start(condition as (data: unknown) => boolean)
-  // v1 compat: dsl.if(field, thenSchema, elseSchema) returns builder (has toSchema)
-  if (thenSchema !== undefined) {
-    builder.then(thenSchema as string)
-    if (elseSchema !== undefined) {
-      builder.else(elseSchema as string)
-    }
+  if (typeof condition === 'string') {
+    return _DslAdapter.if(condition, thenSchema, elseSchema) as _DslConditionMarker
   }
-  return builder
+  return _ConditionalBuilder.start(condition)
 }
 
-_dslWithNS.match = (field: unknown, cases: Record<string, unknown>): unknown => {
-  const fieldName = String(field)
-  // Build conditional schema: for each case key, create if(data[field] === key) → then(caseSchema)
-  const entries = Object.entries(cases)
-  const defaultEntry = cases['_default']
-  const nonDefaultEntries = entries.filter(([k]) => k !== '_default')
+_dslWithNS.if = _dslIf
 
-  if (nonDefaultEntries.length === 0) {
-    // Only _default or empty → return default schema directly (empty = no validation / any value)
-    return defaultEntry ?? true
-  }
-
-  // Build if/elseIf chain
-  const builder = new _ConditionalBuilder()
-  nonDefaultEntries.forEach(([key, schema], idx) => {
-    const condFn = (data: unknown) => (data as Record<string, unknown>)[fieldName] === key
-    if (idx === 0) {
-      builder.if(condFn)
-    } else {
-      builder.elseIf(condFn)
-    }
-    builder.then(schema as string)
-  })
-
-  // Set else (default) if provided
-  if (defaultEntry !== undefined) {
-    builder.else(defaultEntry as string)
-  }
-
-  return builder
+_dslWithNS.match = (field: unknown, cases: Record<string, unknown>): _DslConditionMarker => {
+  return _DslAdapter.match(String(field), cases) as _DslConditionMarker
 }
 
 _dslWithNS.error = {
@@ -452,9 +480,6 @@ _dslWithNS.error = {
   throw: _I18nError.throw.bind(_I18nError),
   assert: _I18nError.assert.bind(_I18nError),
 }
-
-// String extensions are NOT auto-installed at module load.
-// Call installStringExtensions(dsl) manually if you need them.
 
 /**
  * dsl — 主 API 入口
@@ -468,3 +493,13 @@ _dslWithNS.error = {
  * const schema = dsl({ email: 'email!', name: 'string:2-32!' })
  */
 export const dsl = _dslWithNS
+
+export const config = _dslConfig
+
+export function installStringExtensions(dslFunction: Parameters<typeof _install>[0] = _dslWithNS as unknown as Parameters<typeof _install>[0]): void {
+  _install(dslFunction)
+}
+
+// v1 compatibility: requiring/importing the package installs String.prototype extensions.
+installStringExtensions()
+

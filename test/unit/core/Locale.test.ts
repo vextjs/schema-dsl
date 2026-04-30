@@ -27,19 +27,32 @@ describe('Locale', () => {
     it('注册自定义语言包后可查找', () => {
       Locale.addLocale('custom-test', { greeting: 'Hello' })
       const msg = Locale.getMessage('greeting', {}, 'custom-test')
-      expect(msg).toBe('Hello')
+      expect(msg).toEqual({ code: 'greeting', message: 'Hello' })
+      expect(Locale.getMessageText('greeting', {}, 'custom-test')).toBe('Hello')
     })
   })
 
   describe('getMessage()', () => {
     it('caller 自定义消息优先级最高', () => {
       const msg = Locale.getMessage('required', { required: '这是自定义' })
-      expect(msg).toBe('这是自定义')
+      expect(msg).toEqual({ code: 'required', message: '这是自定义' })
     })
 
     it('未注册 key fallback 返回 key 本身', () => {
       const msg = Locale.getMessage('no_such_key_xyz_abc')
       expect(msg).toBe('no_such_key_xyz_abc')
+    })
+
+    it('v1 兼容：对象消息保留 code 与 message', () => {
+      Locale.addLocale('compat-locale', {
+        'account.notFound': { code: 40001, message: '账户不存在' },
+      })
+
+      expect(Locale.getMessage('account.notFound', {}, 'compat-locale')).toEqual({
+        code: 40001,
+        message: '账户不存在',
+      })
+      expect(Locale.getMessageText('account.notFound', {}, 'compat-locale')).toBe('账户不存在')
     })
   })
 

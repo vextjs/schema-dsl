@@ -1,7 +1,7 @@
 import { MemoryCache } from 'cache-hub'
 import { CACHE } from '../config/constants.js'
 
-type AjvValidateFn = object
+type CacheValue = unknown
 
 export interface CacheStats {
   hits: number
@@ -71,10 +71,10 @@ export class CacheManager {
    * 获取缓存的 AJV 编译函数
    * @returns 命中返回函数；未命中返回 null（BD-04：undefined → null）
    */
-  get(key: string): AjvValidateFn | null {
+  get(key: string): CacheValue | null {
     if (!this._enabled || key == null) return null
     try {
-      const result = this._cache.get(String(key)) as AjvValidateFn | undefined
+      const result = this._cache.get(String(key)) as CacheValue | undefined
       return result !== undefined ? result : null
     } catch {
       return null
@@ -84,7 +84,7 @@ export class CacheManager {
   /**
    * 写入缓存
    */
-  set(key: string, value: AjvValidateFn, ttl?: number): void {
+  set(key: string, value: CacheValue, ttl?: number): void {
     if (!this._enabled || key == null) return
     try {
       this._cache.set(String(key), value, ttl ?? this._ttl)

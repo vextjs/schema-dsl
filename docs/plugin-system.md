@@ -12,7 +12,7 @@
 - [快速开始](#快速开始)
 - [插件开发](#插件开发)
 - [钩子系统](#钩子系统)
-- [官方插件](#官方插件)
+- [插件示例](#插件示例)
 - [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
 
@@ -204,41 +204,46 @@ module.exports = {
 
 ---
 
-## 官方插件
+## 插件示例
 
-### 1. custom-validator
+当前仓库**没有**发布 `schema-dsl/plugins/*` 这类内置插件入口；推荐方式是直接注册本地插件对象或你自己封装的模块。
 
-添加业务特定的验证规则。
+### 1. 自定义验证插件
 
 ```javascript
-const customValidator = require('schema-dsl/plugins/custom-validator');
+const customValidatorPlugin = {
+  name: 'custom-validator',
+  install() {
+    // 在这里注册自定义关键字、Hook 或业务规则
+  },
+};
 
-pluginManager.register(customValidator);
-pluginManager.install(schema-dsl);
+pluginManager.register(customValidatorPlugin);
 ```
 
-**功能**:
-- `unique` - 唯一性验证（异步）
+**适合放入的能力**:
 - `passwordStrength` - 密码强度验证
 - `idCard` - 身份证号验证
+- 业务字段的一致性检查
 
-### 2. custom-format
-
-添加常用的格式验证。
+### 2. 自定义格式插件
 
 ```javascript
-const customFormat = require('schema-dsl/plugins/custom-format');
+const customFormatPlugin = {
+  name: 'custom-format',
+  install() {
+    // 在这里注册额外格式或 pattern
+  },
+};
 
-pluginManager.register(customFormat);
-pluginManager.install(schema-dsl);
+pluginManager.register(customFormatPlugin);
 ```
 
-**格式**:
+**常见扩展方向**:
 - `phone-cn` - 中国手机号
 - `postal-code-cn` - 邮政编码
 - `wechat` - 微信号
 - `qq` - QQ号
-- `bank-card` - 银行卡号
 - `license-plate` - 车牌号
 
 ---
@@ -524,7 +529,7 @@ pluginManager.list(); // 是否在列表中?
 
 ## 完整示例
 
-见 [examples/plugin-system.examples.js](../examples/plugin-system.examples.js)
+见 [examples/plugin-system.examples.ts](../examples/plugin-system.examples.ts)
 
 ---
 

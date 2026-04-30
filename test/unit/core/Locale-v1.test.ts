@@ -2,7 +2,7 @@
  * Locale 测试 — v2 迁移（v1 Locale.test.js）
  *
  * v2 变更：
- * - getMessage() 统一返回 string（v1 返回 {message: string} 对象）
+ * - getMessage() 恢复 v1 的 { code, message } 对象形态；字符串断言使用 getMessageText()
  * - 默认 locale 是 'zh-CN'（不是 'en-US'）
  * - reset() 重置为 'zh-CN'
  * - addLocale() 存储为 `${locale}:${key}` 格式，不增加 getAvailableLocales() 结果
@@ -36,10 +36,9 @@ describe('Locale', () => {
       })
 
       Locale.setLocale('zh-CN')
-      // v2: getMessage 返回 string
       const result = Locale.getMessage('string.min')
-      expect(typeof result).toBe('string')
-      expect(result).toBe('{{#label}}太短了')
+      expect(result).toEqual({ code: 'string.min', message: '{{#label}}太短了' })
+      expect(Locale.getMessageText('string.min')).toBe('{{#label}}太短了')
     })
 
     it('应该支持多个语言包', () => {
@@ -47,10 +46,10 @@ describe('Locale', () => {
       Locale.addLocale('ja-JP', { 'string.min': '日本語メッセージ' })
 
       Locale.setLocale('zh-CN')
-      expect(Locale.getMessage('string.min')).toBe('中文消息')
+      expect(Locale.getMessageText('string.min')).toBe('中文消息')
 
       Locale.setLocale('ja-JP')
-      expect(Locale.getMessage('string.min')).toBe('日本語メッセージ')
+      expect(Locale.getMessageText('string.min')).toBe('日本語メッセージ')
     })
   })
 
@@ -60,18 +59,17 @@ describe('Locale', () => {
         'string.min': '全局消息: {{#label}}',
       })
 
-      // v2: getMessage 返回 string
       const result = Locale.getMessage('string.min')
-      expect(typeof result).toBe('string')
-      expect(result).toBe('全局消息: {{#label}}')
+      expect(result).toEqual({ code: 'string.min', message: '全局消息: {{#label}}' })
+      expect(Locale.getMessageText('string.min')).toBe('全局消息: {{#label}}')
     })
 
     it('应该合并多次设置', () => {
       Locale.setMessages({ 'string.min': '消息1' })
       Locale.setMessages({ 'string.max': '消息2' })
 
-      expect(Locale.getMessage('string.min')).toBe('消息1')
-      expect(Locale.getMessage('string.max')).toBe('消息2')
+      expect(Locale.getMessageText('string.min')).toBe('消息1')
+      expect(Locale.getMessageText('string.max')).toBe('消息2')
     })
   })
 
@@ -83,7 +81,7 @@ describe('Locale', () => {
 
       const customMessages = { 'string.min': '自定义消息' }
       const result = Locale.getMessage('string.min', customMessages)
-      expect(result).toBe('自定义消息')
+      expect(result).toEqual({ code: 'string.min', message: '自定义消息' })
     })
 
     it('优先级2: addLocale 语言包消息（高于 setMessages）', () => {
@@ -91,7 +89,7 @@ describe('Locale', () => {
       Locale.setLocale('zh-CN')
 
       const result = Locale.getMessage('string.min')
-      expect(result).toBe('语言包消息')
+      expect(result).toEqual({ code: 'string.min', message: '语言包消息' })
     })
 
     it('优先级3: 全局自定义消息（setMessages）', () => {
@@ -101,21 +99,21 @@ describe('Locale', () => {
 
       const result = Locale.getMessage('string.min')
       // setMessages 存为 locale-agnostic key，优先于内置
-      expect(result).toBe('全局消息')
+      expect(result).toEqual({ code: 'string.min', message: '全局消息' })
     })
 
     it('优先级4: 内置语言包消息（zh-CN）', () => {
       Locale.setLocale('zh-CN')
       const result = Locale.getMessage('min')
-      expect(typeof result).toBe('string')
-      expect(result).toContain('长度不能少于')
+      expect(result).toEqual(expect.objectContaining({ code: 'min' }))
+      expect(Locale.getMessageText('min')).toContain('长度不能少于')
     })
 
     it('优先级4: 内置语言包消息（en-US）', () => {
       Locale.setLocale('en-US')
       const result = Locale.getMessage('min')
-      expect(typeof result).toBe('string')
-      expect(result).toContain('length must be at least')
+      expect(result).toEqual(expect.objectContaining({ code: 'min' }))
+      expect(Locale.getMessageText('min')).toContain('length must be at least')
     })
 
     it('未知错误码应该返回原字符串（v2 行为）', () => {

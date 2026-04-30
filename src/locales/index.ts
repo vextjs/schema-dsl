@@ -72,7 +72,7 @@ export function getMessageString(
 export function getMessageCode(
   key: LocaleKey,
   locale: string = DEFAULT_LOCALE
-): string | undefined {
+): string | number | undefined {
   const msg = getMessage(key, locale)
   if (typeof msg === 'object') return msg.code
   return undefined

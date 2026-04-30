@@ -277,9 +277,9 @@ const schema = dsl({
 
 ### 示例代码
 
-- [String扩展完整示例](../examples/string-extensions.js)
+- [String扩展完整示例](../examples/string-extensions.ts)
 - [用户注册示例](../examples/user-registration/)
-- [数据库导出示例](../examples/export-demo.js)
+- [数据库导出示例](../examples/export-demo.ts)
 
 ### 高级功能
 
@@ -697,9 +697,9 @@ const schema = dsl({
 
 ### 示例代码
 
-- [String扩展完整示例](../examples/string-extensions.js)
+- [String扩展完整示例](../examples/string-extensions.ts)
 - [用户注册示例](../examples/user-registration/)
-- [数据库导出示例](../examples/export-demo.js)
+- [数据库导出示例](../examples/export-demo.ts)
 
 ### 高级功能
 

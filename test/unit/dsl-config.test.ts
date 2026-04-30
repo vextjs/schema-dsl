@@ -2,7 +2,7 @@
  * dsl.config() 和多语言配置测试 — v2 迁移（v1 dsl-config.test.js）
  *
  * v2 变更：
- * - Locale.getMessage() 返回 string（v1 返回 {message: string}）
+ * - Locale.getMessage() 保持 v1 的 { code, message } 形态；字符串断言使用 Locale.getMessageText()
  * - getDefaultValidator() 不导出，改为 new Validator()
  * - validate(schema, data, {locale}) 不自动应用 Locale 消息（跳过相关测试）
  */
@@ -30,14 +30,35 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
         },
       })
 
-      // v2: getMessage() 返回 string，非对象
+      // 字符串断言使用 getMessageText()
       Locale.setLocale('zh-CN')
-      expect(Locale.getMessage('username')).toBe('用户名')
-      expect(Locale.getMessage('email')).toBe('邮箱地址')
+      expect(Locale.getMessageText('username')).toBe('用户名')
+      expect(Locale.getMessageText('email')).toBe('邮箱地址')
 
       Locale.setLocale('en-US')
-      expect(Locale.getMessage('username')).toBe('Username')
-      expect(Locale.getMessage('email')).toBe('Email Address')
+      expect(Locale.getMessageText('username')).toBe('Username')
+      expect(Locale.getMessageText('email')).toBe('Email Address')
+    })
+
+    it('应该兼容 locales 包装层写法', () => {
+      dsl.config({
+        i18n: {
+          locales: {
+            'zh-CN': {
+              username: '用户名'
+            },
+            'en-US': {
+              username: 'Username'
+            }
+          }
+        }
+      })
+
+      Locale.setLocale('zh-CN')
+      expect(Locale.getMessageText('username')).toBe('用户名')
+
+      Locale.setLocale('en-US')
+      expect(Locale.getMessageText('username')).toBe('Username')
     })
 
     it('应该处理语言包路径不存在的情况（不应抛出错误）', () => {
@@ -67,7 +88,7 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
         dsl.config({
           cache: {
             enabled: false,
-          },
+          } as any,
         })
       }).not.toThrow()
     })

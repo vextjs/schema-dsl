@@ -1,3 +1,4 @@
+
 /**
  * DslAdapter — DSL 解析适配器（薄封装层）
  *
@@ -10,6 +11,8 @@
 import type { JSONSchema } from '../types/schema.js'
 import type { DslDefinition } from '../types/dsl.js'
 import { DslParser } from '../parser/DslParser.js'
+
+type DslMarker = Record<string, unknown>
 
 export const DslAdapter = {
   /**
@@ -45,6 +48,21 @@ export const DslAdapter = {
   parseObject(dslObj: DslDefinition): JSONSchema {
     return DslParser.parseObject(dslObj)
   },
+
+  /**
+   * 创建 Match 结构（v1 compat）。实际 JSON Schema 在 parseObject 阶段按目标字段构建。
+   */
+  match(field: string, map: Record<string, unknown>): DslMarker {
+    return { _isMatch: true, field, map }
+  },
+
+  /**
+   * 创建 If 结构（v1 compat）。实际 JSON Schema 在 parseObject 阶段按目标字段构建。
+   */
+  if(condition: string, thenSchema: unknown, elseSchema?: unknown): DslMarker {
+    return { _isIf: true, condition, then: thenSchema, else: elseSchema }
+  },
+
   /**
    * toCore() — v1 compat: returns { schema } wrapper
    */

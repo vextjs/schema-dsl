@@ -1237,7 +1237,7 @@ validate(contactSchema, 'user@example.com');  // ✅ 作为邮箱验证
 validate(contactSchema, '13800138000');       // ✅ 作为手机号验证
 ```
 
-**完整示例**: 参见 `examples/conditional-non-object.js`
+**完整示例**: 参见 `test/unit/conditional-non-object.test.ts`
 
 ---
 

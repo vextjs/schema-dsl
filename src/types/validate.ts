@@ -1,6 +1,9 @@
 /**
  * 验证选项
  */
+import type { CacheOptions } from './config.js'
+import type { ErrorMessages } from './error.js'
+
 export interface ValidateOptions {
   /** 是否格式化错误（默认 true）*/
   format?: boolean
@@ -9,13 +12,13 @@ export interface ValidateOptions {
   /** 动态指定语言（如 'zh-CN', 'en-US', 'ja-JP', 'es-ES', 'fr-FR'）*/
   locale?: string
   /** 自定义错误消息 */
-  messages?: import('./error.js').ErrorMessages
+  messages?: ErrorMessages
   /** 是否启用智能类型强制（自动转换字符串→数字等）*/
   smartCoerce?: boolean
   /** 是否删除额外属性 */
   removeAdditional?: boolean | 'all' | 'failing'
   /** 是否启用缓存 */
-  cache?: boolean | import('./config.js').CacheOptions
+  cache?: boolean | CacheOptions
   /** 是否启用严格模式 */
   strict?: boolean
   [key: string]: unknown

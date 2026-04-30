@@ -1,6 +1,6 @@
 # CacheManager 缓存管理器
 
-> **模块**: `lib/core/CacheManager.js`  
+> **模块**: `src/core/CacheManager.ts`（公开导出：`require('schema-dsl').CacheManager`）  
 
 > **用途**: 高性能 Schema 编译缓存，支持 LRU 淘汰和 TTL 过期
 
@@ -34,7 +34,7 @@
 ## 快速开始
 
 ```javascript
-const CacheManager = require('schema-dsl/lib/core/CacheManager');
+const { CacheManager } = require('schema-dsl');
 
 // 创建缓存实例
 const cache = new CacheManager({
@@ -162,9 +162,10 @@ console.log(stats);
 //   sets: 100,       // 设置次数
 //   deletes: 5,      // 删除次数
 //   clears: 1,       // 清空次数
-//   hitRate: 0.833,  // 命中率 (83.3%)
+//   hitRate: '83.33', // 命中率百分比字符串
 //   size: 80,        // 当前缓存数量
-//   maxSize: 100     // 最大容量
+//   maxSize: 100,    // 最大容量
+//   enabled: true    // 是否启用缓存
 // }
 ```
 
@@ -180,12 +181,12 @@ cache.resetStats();
 
 ---
 
-### `getSize()`
+### `size()`
 
 获取当前缓存条目数量。
 
 ```javascript
-console.log(`当前缓存: ${cache.getSize()} 条`);
+console.log(`当前缓存: ${cache.size()} 条`);
 ```
 
 ---
@@ -235,12 +236,12 @@ function analyzeCachePerformance(cache) {
   console.log('=== 缓存性能分析 ===');
   console.log(`命中次数: ${stats.hits}`);
   console.log(`未命中次数: ${stats.misses}`);
-  console.log(`命中率: ${(stats.hitRate * 100).toFixed(1)}%`);
+  console.log(`命中率: ${stats.hitRate}%`);
   console.log(`缓存使用率: ${(stats.size / stats.maxSize * 100).toFixed(1)}%`);
   console.log(`淘汰次数: ${stats.evictions}`);
 
   // 性能建议
-  if (stats.hitRate < 0.5) {
+  if (Number(stats.hitRate) < 50) {
     console.log('⚠️ 命中率较低，考虑增加缓存大小');
   }
   if (stats.evictions > stats.sets * 0.5) {
@@ -254,13 +255,13 @@ function analyzeCachePerformance(cache) {
 ```javascript
 function printCacheDashboard(cache) {
   const stats = cache.getStats();
-  const hitRate = (stats.hitRate * 100).toFixed(1);
+  const hitRate = `${stats.hitRate}%`;
   const usage = (stats.size / stats.maxSize * 100).toFixed(1);
 
   console.log('┌─────────────────────────────┐');
   console.log('│     缓存状态仪表板          │');
   console.log('├─────────────────────────────┤');
-  console.log(`│ 命中率:     ${hitRate.padStart(6)}%          │`);
+  console.log(`│ 命中率:   ${hitRate.padStart(8)}          │`);
   console.log(`│ 使用率:     ${usage.padStart(6)}%          │`);
   console.log(`│ 当前条目:   ${String(stats.size).padStart(6)}           │`);
   console.log(`│ 最大容量:   ${String(stats.maxSize).padStart(6)}           │`);
@@ -293,7 +294,7 @@ const cache = new CacheManager({
 ```javascript
 setInterval(() => {
   const stats = cache.getStats();
-  if (stats.hitRate < 0.8) {
+  if (Number(stats.hitRate) < 80) {
     console.warn('缓存命中率低于80%');
   }
 }, 60000);

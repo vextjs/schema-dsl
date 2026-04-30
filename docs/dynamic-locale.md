@@ -45,7 +45,7 @@ const path = require('path');
 // ========== 应用启动时配置（只执行一次）==========
 
 // 方式一：传入目录路径（推荐）⭐
-// 自动扫描目录下的所有 .js 和 .json 文件
+// Node >=18：自动扫描目录下的 .js（CommonJS）、.cjs、.json、.jsonc、.json5 文件
 dsl.config({
   i18n: path.join(__dirname, 'locales')
 });
@@ -264,7 +264,7 @@ app.post('/users', (req, res) => {
 });
 ```
 
-完整示例请参考 `examples/middleware-usage.js`。
+完整示例请参考 `examples/middleware-usage.ts`。
 
 ### 3.2 Koa 中间件
 

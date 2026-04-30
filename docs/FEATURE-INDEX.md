@@ -1,7 +1,7 @@
 # schema-dsl 功能索引
 
 
-> **更新时间**: 2025-12-25  
+> **更新时间**: 2026-04-30  
 > **用途**: 快速查找所有功能及其文档位置  
 
 ---
@@ -43,7 +43,7 @@ const schema = dsl({
 - 📖 [快速开始](./quick-start.md)
 - 📖 [DSL语法指南](./dsl-syntax.md)
 
-**代码位置**: `lib/adapters/DslAdapter.js`
+**代码位置**: `src/index.ts` / `src/adapters/DslAdapter.ts`
 
 ---
 
@@ -89,7 +89,7 @@ const userSchema = dsl({
 - 📖 [API参考 - DslBuilder类](./api-reference.md#dslbuilder-类)
 - 📖 [String扩展文档](./string-extensions.md)
 
-**代码位置**: `lib/core/DslBuilder.js`
+**代码位置**: `src/core/DslBuilder.ts`
 
 ---
 
@@ -112,7 +112,7 @@ const schema = dsl({
 - 📖 [README](../README.md)
 
 
-**代码位置**: `lib/core/StringExtensions.js`
+**代码位置**: `src/core/StringExtensions.ts`
 
 ---
 
@@ -148,7 +148,7 @@ console.log(result.errors);  // 错误列表
 - 📖 [validate方法详解](./validate.md)
 - 📖 [快速开始](./quick-start.md)
 
-**代码位置**: `lib/core/Validator.js`
+**代码位置**: `src/core/Validator.ts`
 
 ---
 
@@ -168,7 +168,7 @@ const result = validate(schema, { email: 'test@example.com' });
 - 📖 [API参考 - validate()函数](./api-reference.md)
 - 📖 [快速开始](./quick-start.md#1-hello-world30秒)
 
-**代码位置**: `index.js` (单例实现)
+**代码位置**: `src/index.ts`（默认单例导出）
 
 ---
 
@@ -197,10 +197,10 @@ console.log(command);
 ```
 
 **文档位置**:
-- 📖 [README - 数据库导出](../README.md#️-数据库导出)
-- 📖 [示例代码](../examples/export-demo.js)
+- 📖 [数据库导出指南](./export-guide.md)
+- 📖 [示例代码](../examples/export-demo.ts)
 
-**代码位置**: `lib/exporters/MongoDBExporter.js`
+**代码位置**: `src/exporters/MongoDBExporter.ts`
 
 ---
 
@@ -227,10 +227,10 @@ console.log(ddl);
 ```
 
 **文档位置**:
-- 📖 [README - 数据库导出](../README.md#mysql-ddl)
-- 📖 [示例代码](../examples/export-demo.js)
+- 📖 [数据库导出指南](./export-guide.md)
+- 📖 [示例代码](../examples/export-demo.ts)
 
-**代码位置**: `lib/exporters/MySQLExporter.js`
+**代码位置**: `src/exporters/MySQLExporter.ts`
 
 ---
 
@@ -257,10 +257,10 @@ console.log(ddl);
 ```
 
 **文档位置**:
-- 📖 [README - 数据库导出](../README.md#postgresql-ddl)
-- 📖 [示例代码](../examples/export-demo.js)
+- 📖 [数据库导出指南](./export-guide.md)
+- 📖 [示例代码](../examples/export-demo.ts)
 
-**代码位置**: `lib/exporters/PostgreSQLExporter.js`
+**代码位置**: `src/exporters/PostgreSQLExporter.ts`
 
 ---
 
@@ -298,7 +298,7 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 **文档位置**:
 - 📖 [API参考 - SchemaUtils](./api-reference.md#工具函数)
 
-**代码位置**: `lib/utils/SchemaUtils.js`
+**代码位置**: `src/utils/SchemaUtils.ts`
 
 ---
 
@@ -307,15 +307,17 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 **功能**: 类型转换工具（JSON Schema ↔ 数据库类型）
 
 **可用方法**:
-- ✅ `toMongoType(jsonSchemaType)` - 转为MongoDB BSON类型
-- ✅ `toMySQLType(jsonSchemaProperty)` - 转为MySQL数据类型
-- ✅ `toPostgreSQLType(jsonSchemaProperty)` - 转为PostgreSQL数据类型
+- ✅ `toJSONSchemaType(nativeType)` - 转为 JSON Schema `type` 字符串
+- ✅ `toMongoDBType(jsonSchemaType)` - 转为 MongoDB BSON 类型
+- ✅ `toMySQLType(jsonSchemaType, schema?)` - 转为 MySQL 数据类型
+- ✅ `toPostgreSQLType(jsonSchemaType, schema?)` - 转为 PostgreSQL 数据类型
+- ✅ `normalizePropertyName(name)` - 规范化属性名
 - ✅ `formatToRegex(format)` - 格式验证转正则
 
 **文档位置**:
-- 📖 [API参考 - TypeConverter](./api-reference.md#typeconverter)
+- 📖 [TypeConverter 文档](./type-converter.md)
 
-**代码位置**: `lib/utils/TypeConverter.js`
+**代码位置**: `src/utils/TypeConverter.ts`
 
 ---
 
@@ -324,16 +326,22 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 **功能**: Schema分析和辅助工具
 
 **可用方法**:
-- ✅ `validate(schema)` - 验证Schema有效性
+- ✅ `isValidSchema(schema)` - 验证 Schema 有效性
+- ✅ `generateSchemaId(schema)` - 生成基于内容的 Schema ID
 - ✅ `getFieldPaths(schema)` - 提取字段路径
-- ✅ `flatten(schema)` - 扁平化Schema
-- ✅ `clone(schema)` - 克隆Schema
-- ✅ `getComplexity(schema)` - 评估复杂度
+- ✅ `flattenSchema(schema)` - 扁平化 Schema
+- ✅ `cloneSchema(schema)` - 克隆 Schema
+- ✅ `extractRequiredFields(schema)` - 提取 required 字段
+- ✅ `compareSchemas(schema1, schema2)` - 比较 Schema
+- ✅ `simplifySchema(schema)` - 精简 Schema
+- ✅ `isValidPropertyName(name)` - 校验属性名
+- ✅ `getSchemaComplexity(schema)` - 评估复杂度
+- ✅ `summarizeSchema(schema)` - 生成摘要
 
 **文档位置**:
-- 📖 [API参考 - SchemaHelper](./api-reference.md#schemahelper)
+- 📖 [SchemaHelper 文档](./schema-helper.md)
 
-**代码位置**: `lib/utils/SchemaHelper.js`
+**代码位置**: `src/utils/SchemaHelper.ts`
 
 ---
 
@@ -353,7 +361,7 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 - 📖 [API参考 - ErrorFormatter](./api-reference.md)
 - 📖 [错误处理文档](./error-handling.md)
 
-**代码位置**: `lib/core/ErrorFormatter.js`
+**代码位置**: `src/core/ErrorFormatter.ts`
 
 ---
 
@@ -361,7 +369,7 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 
 **功能**: 错误码定义
 
-**代码位置**: `lib/core/ErrorCodes.js`
+**代码位置**: `src/core/ErrorCodes.ts`
 
 ---
 
@@ -377,7 +385,7 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 **文档位置**:
 - 📖 [API参考 - MessageTemplate](./api-reference.md)
 
-**代码位置**: `lib/core/MessageTemplate.js`
+**代码位置**: `src/core/MessageTemplate.ts`
 
 ---
 
@@ -397,11 +405,14 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 **支持语言**:
 - ✅ en-US（英语）
 - ✅ zh-CN（中文）
+- ✅ ja-JP（日语）
+- ✅ es-ES（西班牙语）
+- ✅ fr-FR（法语）
 
 **文档位置**:
 - 📖 [API参考 - Locale](./api-reference.md)
 
-**代码位置**: `lib/core/Locale.js`
+**代码位置**: `src/core/Locale.ts`
 
 ---
 
@@ -420,9 +431,9 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 - ✅ `size()` - 缓存大小
 
 **文档位置**:
-- 📖 [API参考 - CacheManager](./api-reference.md)
+- 📖 [CacheManager 文档](./cache-manager.md)
 
-**代码位置**: `lib/core/CacheManager.js`
+**代码位置**: `src/core/CacheManager.ts`
 
 ---
 
@@ -449,9 +460,9 @@ const schema = {
 ```
 
 **文档位置**:
-- 📖 [README - 自定义验证](../README.md#-自定义验证)
+- 📖 [错误处理文档](./error-handling.md)
 
-**代码位置**: `lib/validators/CustomKeywords.js`
+**代码位置**: `src/validators/CustomKeywords.ts`
 
 ---
 
@@ -460,15 +471,15 @@ const schema = {
 ### 完整示例目录
 
 **基础示例**:
-- 📄 [dsl-style.js](../examples/dsl-style.js) - DSL基础用法
-- 📄 [string-extensions.js](../examples/string-extensions.js) - String扩展示例
+- 📄 [dsl-style.ts](../examples/dsl-style.ts) - DSL基础用法
+- 📄 [string-extensions.ts](../examples/string-extensions.ts) - String扩展示例
 
 **场景示例**:
 - 📁 [user-registration/](../examples/user-registration/) - 用户注册表单验证
 - 📁 [password-reset/](../examples/password-reset/) - 密码重置流程
 
 **导出示例**:
-- 📄 [export-demo.js](../examples/export-demo.js) - 数据库导出示例
+- 📄 [export-demo.ts](../examples/export-demo.ts) - 数据库导出示例
 
 ---
 
@@ -481,24 +492,24 @@ const schema = {
 3. ✅ Validator类 - `docs/validate.md`
 4. ✅ API参考 - `docs/api-reference.md`
 5. ✅ 快速开始 - `docs/quick-start.md`
-6. ✅ 数据库导出 - `README.md` + `examples/export-demo.js`
+6. ✅ 数据库导出 - `README.md` + `examples/export-demo.ts`
 7. ✅ 自定义验证 - `README.md`
-8. ✅ Schema工具 - `examples/schema-utils-chaining.examples.js`
+8. ✅ Schema工具 - `docs/schema-utils.md` + `docs/schema-helper.md`
 
 ### ⚠️ 文档需要补充
 
-1. ⚠️ ErrorFormatter - 缺少独立文档
-2. ⚠️ CacheManager - 缺少独立文档
-3. ⚠️ TypeConverter - 缺少独立文档
-4. ⚠️ SchemaHelper - 缺少独立文档
-5. ⚠️ 错误处理 - 需要完整文档
+1. ⚠️ ErrorFormatter - 仍主要散落在 API 参考与错误处理文档中
+2. ⚠️ PluginManager - 可补一份更聚焦的 API/Hook 速查
+3. ⚠️ 性能与基准测试 - 可继续补充独立诊断手册
+4. ⚠️ 示例运行方式 - 可补充统一的 TypeScript 示例编译说明
+5. ⚠️ 错误处理 - 可继续补充更完整的框架集成案例
 
 ### 📝 计划补充
 
-- [ ] 创建 `docs/error-handling.md` - 错误处理完整指南
-- [ ] 创建 `docs/utilities.md` - 工具函数完整文档
-- [ ] 创建 `docs/advanced.md` - 高级用法指南
-- [ ] 创建 `docs/performance.md` - 性能优化指南
+- [ ] 增补 `ErrorFormatter` 专项文档
+- [ ] 增补 Plugin Hook 速查文档
+- [ ] 增补 TypeScript 示例统一运行说明
+- [ ] 增补性能调优/基准解读手册
 
 ---
 
@@ -514,7 +525,7 @@ const schema = {
 
 ---
 
-**最后更新**: 2025-12-29
+**最后更新**: 2026-04-30
 **维护者**: SchemaI-DSL Team
 
 

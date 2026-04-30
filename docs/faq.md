@@ -52,7 +52,7 @@ const schema = Joi.object({
 npm install schema-dsl
 ```
 
-**Node.js 版本要求**：>= 12.0.0
+**Node.js 版本要求**：>= 18.0.0
 
 ---
 
@@ -67,6 +67,18 @@ const { dsl, validate } = require('schema-dsl');
 // ES Modules
 import { dsl, validate } from 'schema-dsl';
 ```
+
+### Q: i18n 目录加载支持哪些语言包文件格式？
+
+**A**: 在 **Node.js >= 18.0.0** 下，`dsl.config({ i18n: '/path/to/locales' })` 默认支持：
+
+- `.js`（CommonJS 语言包）
+- `.cjs`
+- `.json`
+- `.jsonc`
+- `.json5`
+
+**推荐**：如果你的项目是 `type: module` / ESM，优先使用 `.cjs`、`.json`、`.jsonc`、`.json5`，兼容性最稳定。
 
 ---
 

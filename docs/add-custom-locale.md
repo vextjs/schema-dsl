@@ -1,13 +1,18 @@
 # 添加自定义语言包指南
 
-**版本**: v1.2.3  
-**最后更新**: 2026-03-03
+**版本**: v2.0.0-beta.1  
+**最后更新**: 2026-04-30
 
 ---
 
 ## 📖 概述
 
 本指南将教你如何为 schema-dsl 添加自定义语言包或扩展现有语言。
+
+> **Node.js 要求**：`>=18.0.0`
+>
+> **目录加载（Node >=18）默认支持的语言文件格式**：`.js`（CommonJS）、`.cjs`、`.json`、`.jsonc`、`.json5`。  
+> **推荐**：如果你的应用是 `type: module` / ESM 项目，优先使用 `.cjs`、`.json`、`.jsonc`、`.json5`。
 
 ---
 
@@ -21,34 +26,34 @@
 project/
 ├── locales/
 │   ├── core/               # 公共 code 段：1000-1999（框架层维护）
-│   │   ├── zh-CN.js
-│   │   └── en-US.js
+│   │   ├── zh-CN.cjs
+│   │   └── en-US.jsonc
 │   ├── account/            # 账户模块 code 段：10000-10999（开发者A）
-│   │   ├── zh-CN.js
-│   │   └── en-US.js
+│   │   ├── zh-CN.cjs
+│   │   └── en-US.jsonc
 │   ├── order/              # 订单模块 code 段：20000-20999（开发者B）
-│   │   ├── zh-CN.js
-│   │   └── en-US.js
+│   │   ├── zh-CN.json5
+│   │   └── en-US.json5
 │   └── payment/            # 支付模块 code 段：30000-30999（开发者C）
-│       ├── zh-CN.js
-│       └── en-US.js
+│       ├── zh-CN.cjs
+│       └── en-US.cjs
 └── app.js
 ```
 
 ### 每个模块独立维护自己的语言文件
 
 ```javascript
-// locales/account/zh-CN.js — 开发者A 独立维护，互不干扰
+// locales/account/zh-CN.cjs — 开发者A 独立维护，互不干扰
 module.exports = {
   'account.notFound': { code: 10001, message: '账户不存在' },
   'account.locked':   { code: 10002, message: '账户已锁定' },
 };
 
-// locales/order/zh-CN.js — 开发者B 独立维护
-module.exports = {
+// locales/order/zh-CN.json5 — 开发者B 独立维护
+const orderZhCN = {
   'order.notFound': { code: 20001, message: '订单不存在' },
   'order.notPaid':  { code: 20002, message: '订单未支付' },
-};
+}
 ```
 
 ### 应用启动：一行配置，自动递归合并
@@ -79,7 +84,7 @@ dsl.config({
 // 冲突示例输出：
 // Error: [schema-dsl] i18n key 冲突 in locale 'zh-CN'
 //   冲突 key: account.notFound
-//   来源文件: /project/locales/account/zh-CN.js
+//   来源文件: /project/locales/account/zh-CN.cjs
 ```
 
 ### Code 段划分建议
@@ -114,13 +119,13 @@ dsl.config({
 # 项目结构
 my-project/
 ├── locales/              # 语言包目录
-│   ├── zh-CN.js         # 中文（已存在，将被覆盖/合并）
-│   ├── en-US.js         # 英文（已存在，将被覆盖/合并）
-│   └── pt-BR.js         # 葡萄牙语（新增）
+│   ├── zh-CN.cjs        # 中文（CommonJS / ESM 项目都稳定）
+│   ├── en-US.jsonc      # 英文（带注释 / 末尾逗号）
+│   └── pt-BR.json5      # 葡萄牙语（JSON5 风格）
 └── app.js
 ```
 
-#### 第2步：定义语言包（`locales/pt-BR.js`）
+#### 第2步：定义语言包（`locales/pt-BR.json5`）
 
 ```javascript
 module.exports = {
@@ -194,8 +199,8 @@ dsl.config({
 });
 
 // 说明：
-// 1. 自动扫描 locales/ 目录下的所有 .js 和 .json 文件
-// 2. 从文件名提取语言代码（如 pt-BR.js → pt-BR）
+// 1. 自动扫描 locales/ 目录下的 `.js`（CommonJS）、`.cjs`、`.json`、`.jsonc`、`.json5`
+// 2. 从文件名提取语言代码（如 pt-BR.cjs → pt-BR）
 // 3. 自动加载并注册所有语言包
 // 4. 用户自定义的语言包会与系统默认语言包合并，用户的优先
 
@@ -224,7 +229,7 @@ const systemZhCN = {
   'string.minLength': '{{#label}}长度不能少于{{#limit}}个字符'
 };
 
-// 用户自定义的 locales/zh-CN.js
+// 用户自定义的 locales/zh-CN.cjs
 const userZhCN = {
   'required': '{{#label}}必须填写',  // 覆盖系统默认
   'custom.myError': '自定义错误'     // 新增自定义消息
@@ -277,8 +282,7 @@ function validateUser(data, locale) {
 }
 ```
 
-}
-
+```javascript
 // ✅ 正确：应用启动时一次性加载
 // app.js 启动入口
 dsl.config({ i18n: './locales' });  // 只加载一次
@@ -432,21 +436,23 @@ app.post('/api/users', (req, res) => {
 你可以参考内置的语言包作为模板：
 
 ```javascript
+const { Locale } = require('schema-dsl');
+
 // 查看中文语言包
-const zhCN = require('schema-dsl/lib/locales/zh-CN');
+const zhCN = Locale.getMessages('zh-CN');
 console.log(zhCN);
 
 // 查看英文语言包
-const enUS = require('schema-dsl/lib/locales/en-US');
+const enUS = Locale.getMessages('en-US');
 console.log(enUS);
 ```
 
 或者直接查看源码：
-- 中文：`node_modules/schema-dsl/lib/locales/zh-CN.js`
-- 英文：`node_modules/schema-dsl/lib/locales/en-US.js`
-- 日语：`node_modules/schema-dsl/lib/locales/ja-JP.js`
-- 西班牙语：`node_modules/schema-dsl/lib/locales/es-ES.js`
-- 法语：`node_modules/schema-dsl/lib/locales/fr-FR.js`
+- 中文：`src/locales/zh-CN.ts`
+- 英文：`src/locales/en-US.ts`
+- 日语：`src/locales/ja-JP.ts`
+- 西班牙语：`src/locales/es-ES.ts`
+- 法语：`src/locales/fr-FR.ts`
 
 ---
 
@@ -465,9 +471,9 @@ console.log(enUS);
 如果你为 schema-dsl 添加了新语言包，欢迎提交 Pull Request：
 
 1. Fork 项目
-2. 在 `lib/locales/` 目录创建新语言文件（如 `pt-BR.js`）
+2. 在 `src/locales/` 目录创建新语言文件（如 `pt-BR.ts`）
 3. 完整翻译所有消息键
-4. 在 `lib/locales/index.js` 中注册新语言
+4. 在 `src/locales/index.ts` 中注册新语言
 5. 添加测试用例（在 `test/unit/locales/` 目录）
 6. 提交 Pull Request
 
@@ -479,5 +485,5 @@ console.log(enUS);
 
 - 查看 [多语言配置指南](./i18n.md)
 - 查看 [动态多语言配置指南](./dynamic-locale.md)
-- 提交 Issue: https://github.com/your-repo/schema-dsl/issues
+- 提交 Issue: https://github.com/vextjs/schema-dsl/issues
 

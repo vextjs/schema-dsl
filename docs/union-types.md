@@ -267,7 +267,7 @@ DslBuilder.registerType('phone_cn', { ... });
 
 - [插件系统](./plugin-system.md)
 - [自定义类型注册](./plugin-type-registration.md)
-- [代码规范](../specs/rules/代码规范.md)
+- [贡献指南](../CONTRIBUTING.md)
 
 ---
 

@@ -1,6 +1,6 @@
 # MongoDB 导出器文档
 
-> **模块**: `lib/exporters/MongoDBExporter.js`  
+> **模块**: `src/exporters/MongoDBExporter.ts`  
 
 > **用途**: 将 JSON Schema 转换为 MongoDB 验证 Schema
 

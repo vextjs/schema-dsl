@@ -2,23 +2,26 @@
  * i18n 子目录合并测试 (v2 TypeScript)
  *
  * v2 differences:
- * - Locale.locales is private → use Locale.getMessage() to verify loaded messages
+ * - Locale.locales is private → use Locale.getMessageText() to verify loaded messages
  * - Temp locale files use CJS module.exports (loaded via require() in impl)
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import assert from 'assert'
-import path from 'path'
-import fs from 'fs'
-import os from 'os'
+import * as path from 'node:path'
+import * as fs from 'node:fs'
+import * as os from 'node:os'
 import { dsl, validate, Locale } from '../../src/index.js'
 
-function createTmpLocales(tree: Record<string, Record<string, string>>) {
+function createTmpLocales(tree: Record<string, Record<string, unknown> | string>) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-dsl-test-'))
   for (const [relPath, content] of Object.entries(tree)) {
     const fullPath = path.join(root, relPath)
     fs.mkdirSync(path.dirname(fullPath), { recursive: true })
-    fs.writeFileSync(fullPath, `module.exports = ${JSON.stringify(content)};`, 'utf-8')
+    if (typeof content === 'string') {
+      fs.writeFileSync(fullPath, content, 'utf-8')
+    } else {
+      fs.writeFileSync(fullPath, `module.exports = ${JSON.stringify(content)};`, 'utf-8')
+    }
   }
   return root
 }
@@ -37,8 +40,8 @@ describe('i18n 子目录合并', () => {
         'en-US.js': { 'hello': 'Hello' }
       })
       dsl.config({ i18n: root })
-      expect(Locale.getMessage('hello', {}, 'zh-CN')).toBe('你好')
-      expect(Locale.getMessage('hello', {}, 'en-US')).toBe('Hello')
+      expect(Locale.getMessageText('hello', {}, 'zh-CN')).toBe('你好')
+      expect(Locale.getMessageText('hello', {}, 'en-US')).toBe('Hello')
     })
 
     it('应该递归加载一级子目录下的语言文件', () => {
@@ -48,9 +51,9 @@ describe('i18n 子目录合并', () => {
         'order/zh-CN.js':   { 'test.order.notPaid': '订单未支付' }
       })
       dsl.config({ i18n: root })
-      expect(Locale.getMessage('test.core.key', {}, 'zh-CN')).toBe('核心')
-      expect(Locale.getMessage('test.account.notFound', {}, 'zh-CN')).toBe('账户不存在')
-      expect(Locale.getMessage('test.order.notPaid', {}, 'zh-CN')).toBe('订单未支付')
+      expect(Locale.getMessageText('test.core.key', {}, 'zh-CN')).toBe('核心')
+      expect(Locale.getMessageText('test.account.notFound', {}, 'zh-CN')).toBe('账户不存在')
+      expect(Locale.getMessageText('test.order.notPaid', {}, 'zh-CN')).toBe('订单未支付')
     })
 
     it('应该递归加载二级子目录（深层嵌套）', () => {
@@ -59,8 +62,8 @@ describe('i18n 子目录合并', () => {
         'modules/payment/zh-CN.js': { 'test.payment.failed': '支付失败' }
       })
       dsl.config({ i18n: root })
-      expect(Locale.getMessage('test.user.notFound', {}, 'zh-CN')).toBe('用户不存在')
-      expect(Locale.getMessage('test.payment.failed', {}, 'zh-CN')).toBe('支付失败')
+      expect(Locale.getMessageText('test.user.notFound', {}, 'zh-CN')).toBe('用户不存在')
+      expect(Locale.getMessageText('test.payment.failed', {}, 'zh-CN')).toBe('支付失败')
     })
 
     it('应该合并同语言的多个子目录文件', () => {
@@ -69,10 +72,10 @@ describe('i18n 子目录合并', () => {
         'order/zh-CN.js':   { 'test.order.k1': '订单不存在', 'test.order.k2': '订单未支付' }
       })
       dsl.config({ i18n: root })
-      expect(Locale.getMessage('test.account.k1', {}, 'zh-CN')).toBeTruthy()
-      expect(Locale.getMessage('test.account.k2', {}, 'zh-CN')).toBeTruthy()
-      expect(Locale.getMessage('test.order.k1', {}, 'zh-CN')).toBeTruthy()
-      expect(Locale.getMessage('test.order.k2', {}, 'zh-CN')).toBeTruthy()
+      expect(Locale.getMessageText('test.account.k1', {}, 'zh-CN')).toBeTruthy()
+      expect(Locale.getMessageText('test.account.k2', {}, 'zh-CN')).toBeTruthy()
+      expect(Locale.getMessageText('test.order.k1', {}, 'zh-CN')).toBeTruthy()
+      expect(Locale.getMessageText('test.order.k2', {}, 'zh-CN')).toBeTruthy()
     })
 
     it('合并后的语言包可正常用于 validate', () => {
@@ -94,10 +97,42 @@ describe('i18n 子目录合并', () => {
         'order/en-US.js':   { 'test.order.multi': 'Order not paid' }
       })
       dsl.config({ i18n: root })
-      expect(Locale.getMessage('test.multi.key', {}, 'zh-CN')).toBe('账户不存在')
-      expect(Locale.getMessage('test.multi.key', {}, 'en-US')).toBe('Account not found')
-      expect(Locale.getMessage('test.order.multi', {}, 'zh-CN')).toBe('订单未支付')
-      expect(Locale.getMessage('test.order.multi', {}, 'en-US')).toBe('Order not paid')
+      expect(Locale.getMessageText('test.multi.key', {}, 'zh-CN')).toBe('账户不存在')
+      expect(Locale.getMessageText('test.multi.key', {}, 'en-US')).toBe('Account not found')
+      expect(Locale.getMessageText('test.order.multi', {}, 'zh-CN')).toBe('订单未支付')
+      expect(Locale.getMessageText('test.order.multi', {}, 'en-US')).toBe('Order not paid')
+    })
+
+    it('应该支持 .cjs 语言文件', () => {
+      const root = createTmpLocales({
+        'zh-CN.cjs': 'module.exports = { "test.cjs.key": "CJS语言包" };'
+      })
+      dsl.config({ i18n: root })
+      expect(Locale.getMessageText('test.cjs.key', {}, 'zh-CN')).toBe('CJS语言包')
+    })
+
+    it('应该支持 .json 语言文件', () => {
+      const root = createTmpLocales({
+        'zh-CN.json': '{"test.json.key":"JSON语言包"}'
+      })
+      dsl.config({ i18n: root })
+      expect(Locale.getMessageText('test.json.key', {}, 'zh-CN')).toBe('JSON语言包')
+    })
+
+    it('应该支持 .jsonc 语言文件（注释 + 末尾逗号）', () => {
+      const root = createTmpLocales({
+        'zh-CN.jsonc': '{\n  // comment\n  "test.jsonc.key": "JSONC语言包",\n}'
+      })
+      dsl.config({ i18n: root })
+      expect(Locale.getMessageText('test.jsonc.key', {}, 'zh-CN')).toBe('JSONC语言包')
+    })
+
+    it('应该支持 .json5 语言文件', () => {
+      const root = createTmpLocales({
+        'zh-CN.json5': "{\n  'test.json5.key': 'JSON5语言包',\n}"
+      })
+      dsl.config({ i18n: root })
+      expect(Locale.getMessageText('test.json5.key', {}, 'zh-CN')).toBe('JSON5语言包')
     })
 
   })
@@ -132,7 +167,7 @@ describe('i18n 子目录合并', () => {
       } finally {
         console.warn = origWarn
       }
-      expect(Locale.getMessage('test.dup.key', {}, 'zh-CN')).toBe('新值')
+      expect(Locale.getMessageText('test.dup.key', {}, 'zh-CN')).toBe('新值')
     })
 
     it('strict 模式：同名 key 冲突时抛出 Error', () => {
@@ -182,9 +217,9 @@ describe('i18n 子目录合并', () => {
         'zh-CN.js':  { 'real.key': '应被加载' }
       })
       dsl.config({ i18n: root })
-      // v2: Locale.locales is private; verify via getMessage
+      // v2: Locale.locales is private; verify via getMessageText
       // index locale shouldn't be loadable
-      expect(Locale.getMessage('real.key', {}, 'zh-CN')).toBe('应被加载')
+      expect(Locale.getMessageText('real.key', {}, 'zh-CN')).toBe('应被加载')
     })
 
     it('应该跳过 utils.js、CODE-SEGMENTS.js 等非语言文件', () => {
@@ -195,7 +230,7 @@ describe('i18n 子目录合并', () => {
         'zh-CN.js':          { 'valid.key': '有效' }
       })
       dsl.config({ i18n: root })
-      expect(Locale.getMessage('valid.key', {}, 'zh-CN')).toBe('有效')
+      expect(Locale.getMessageText('valid.key', {}, 'zh-CN')).toBe('有效')
     })
 
     it('应该正确加载标准语言代码格式的文件', () => {
@@ -208,12 +243,24 @@ describe('i18n 子目录合并', () => {
         'en.js':     { 'test.k6': 'v6' }
       })
       dsl.config({ i18n: root })
-      expect(Locale.getMessage('test.k1', {}, 'zh-CN')).toBe('v1')
-      expect(Locale.getMessage('test.k2', {}, 'en-US')).toBe('v2')
-      expect(Locale.getMessage('test.k3', {}, 'ja-JP')).toBe('v3')
-      expect(Locale.getMessage('test.k4', {}, 'fr-FR')).toBe('v4')
-      expect(Locale.getMessage('test.k5', {}, 'zh')).toBe('v5')
-      expect(Locale.getMessage('test.k6', {}, 'en')).toBe('v6')
+      expect(Locale.getMessageText('test.k1', {}, 'zh-CN')).toBe('v1')
+      expect(Locale.getMessageText('test.k2', {}, 'en-US')).toBe('v2')
+      expect(Locale.getMessageText('test.k3', {}, 'ja-JP')).toBe('v3')
+      expect(Locale.getMessageText('test.k4', {}, 'fr-FR')).toBe('v4')
+      expect(Locale.getMessageText('test.k5', {}, 'zh')).toBe('v5')
+      expect(Locale.getMessageText('test.k6', {}, 'en')).toBe('v6')
+    })
+
+    it('默认扫描不包含 .ts / .mjs', () => {
+      const root = createTmpLocales({
+        'zh-CN.ts': 'export default { "test.ts.key": "TS语言包" };',
+        'zh-CN.mjs': 'export default { "test.mjs.key": "MJS语言包" };',
+        'zh-CN.cjs': 'module.exports = { "test.cjs.fallback": "CJS回退" };'
+      })
+      dsl.config({ i18n: root })
+      expect(Locale.getMessageText('test.cjs.fallback', {}, 'zh-CN')).toBe('CJS回退')
+      expect(Locale.getMessageText('test.ts.key', {}, 'zh-CN')).toBe('test.ts.key')
+      expect(Locale.getMessageText('test.mjs.key', {}, 'zh-CN')).toBe('test.mjs.key')
     })
 
   })
@@ -226,8 +273,8 @@ describe('i18n 子目录合并', () => {
         'en-US.js': { 'compat.key': 'Compat' }
       })
       dsl.config({ i18n: root })
-      expect(Locale.getMessage('compat.key', {}, 'zh-CN')).toBe('兼容')
-      expect(Locale.getMessage('compat.key', {}, 'en-US')).toBe('Compat')
+      expect(Locale.getMessageText('compat.key', {}, 'zh-CN')).toBe('兼容')
+      expect(Locale.getMessageText('compat.key', {}, 'en-US')).toBe('Compat')
     })
 
     it('用法2 对象直接传语言包 —— 行为不变', () => {
@@ -237,8 +284,8 @@ describe('i18n 子目录合并', () => {
           'en-US': { 'obj.key': 'Object' } as any
         }
       })
-      expect(Locale.getMessage('obj.key', {}, 'zh-CN')).toBe('对象')
-      expect(Locale.getMessage('obj.key', {}, 'en-US')).toBe('Object')
+      expect(Locale.getMessageText('obj.key', {}, 'zh-CN')).toBe('对象')
+      expect(Locale.getMessageText('obj.key', {}, 'en-US')).toBe('Object')
     })
 
     it('用法3 对象含 localesPath —— 真正生效', () => {
@@ -246,7 +293,7 @@ describe('i18n 子目录合并', () => {
         'zh-CN.js': { 'lp.key': '路径对象' }
       })
       dsl.config({ i18n: { localesPath: root } as any })
-      expect(Locale.getMessage('lp.key', {}, 'zh-CN')).toBe('路径对象')
+      expect(Locale.getMessageText('lp.key', {}, 'zh-CN')).toBe('路径对象')
     })
 
     it('用法4 路径不存在 —— 只打 WARN，不抛错', () => {
@@ -260,7 +307,7 @@ describe('i18n 子目录合并', () => {
         'zh-CN.js': { 'default.strict': '默认' }
       })
       expect(() => dsl.config({ i18n: root })).not.toThrow()
-      expect(Locale.getMessage('default.strict', {}, 'zh-CN')).toBe('默认')
+      expect(Locale.getMessageText('default.strict', {}, 'zh-CN')).toBe('默认')
     })
 
     it('同时配置 i18n + cache + patterns —— 综合用法不回归', () => {
@@ -273,7 +320,7 @@ describe('i18n 子目录合并', () => {
           cache: { maxSize: 500, ttl: 60000 }
         })
       }).not.toThrow()
-      expect(Locale.getMessage('combo.key', {}, 'zh-CN')).toBe('综合')
+      expect(Locale.getMessageText('combo.key', {}, 'zh-CN')).toBe('综合')
     })
 
   })

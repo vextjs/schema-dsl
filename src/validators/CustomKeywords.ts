@@ -1,5 +1,4 @@
-import { Ajv } from 'ajv'
-import type { ErrorObject } from 'ajv'
+import type { Ajv, ErrorObject } from 'ajv'
 import { Locale } from '../core/Locale.js'
 
 // AJV DataValidateFunction compatible type
@@ -11,7 +10,7 @@ type ValidateFnWithErrors = ((schema: unknown, data: unknown, parentSchema?: unk
  * CustomKeywords — AJV 自定义关键字注册器
  *
  * 修复：
- *   CK-01: getMessage 统一返回 string（v1 因 LocaleMessage 类型返回 object，导致 error.message 为 "[object Object]"）
+ *   CK-01: 内部统一使用 getMessageText() 获取字符串，避免 v1 兼容对象形态落成 "[object Object]"
  *   CK-02: regex 关键字错误消息使用 locale key 而非拼接原始消息
  *   CK-Y04: exactLength 使用 Unicode 码点计数（[...str].length）而非 str.length，正确处理 emoji/汉字
  */
@@ -59,12 +58,12 @@ export class CustomKeywords {
 
           if (result instanceof Promise) {
             // CK-01 修复：getMessage 返回 string
-            const msg = Locale.getMessage('ASYNC_VALIDATION_NOT_SUPPORTED')
+            const msg = Locale.getMessageText('ASYNC_VALIDATION_NOT_SUPPORTED')
             throw new Error(msg)
           }
 
           if (result === false) {
-            const msg = Locale.getMessage('CUSTOM_VALIDATION_FAILED')
+            const msg = Locale.getMessageText('CUSTOM_VALIDATION_FAILED')
             validate.errors = [{ keyword: '_customValidators', message: msg, params: {} }]
             return false
           }
@@ -73,7 +72,7 @@ export class CustomKeywords {
             return false
           }
           if (result !== null && typeof result === 'object' && (result as Record<string, unknown>)['error']) {
-            const msg = String((result as Record<string, unknown>)['message'] ?? Locale.getMessage('CUSTOM_VALIDATION_FAILED'))
+            const msg = String((result as Record<string, unknown>)['message'] ?? Locale.getMessageText('CUSTOM_VALIDATION_FAILED'))
             validate.errors = [{ keyword: '_customValidators', message: msg, params: {} }]
             return false
           }
@@ -99,7 +98,7 @@ export class CustomKeywords {
         // CK-02 修复：使用 locale key 而非拼接原始错误消息
         validate.errors = [{
           keyword: 'regex',
-          message: Locale.getMessage('string.pattern'),
+          message: Locale.getMessageText('string.pattern'),
           params: { pattern: schema },
         }]
         return false
@@ -107,7 +106,7 @@ export class CustomKeywords {
         // CK-02 修复：Invalid regex 也使用 locale key
         validate.errors = [{
           keyword: 'regex',
-          message: Locale.getMessage('string.pattern'),
+          message: Locale.getMessageText('string.pattern'),
           params: { error: error instanceof Error ? error.message : String(error) },
         }]
         return false
@@ -124,7 +123,7 @@ export class CustomKeywords {
       if (typeof schema !== 'function') {
         validate.errors = [{
           keyword: 'validate',
-          message: Locale.getMessage('VALIDATE_MUST_BE_FUNCTION'),
+          message: Locale.getMessageText('VALIDATE_MUST_BE_FUNCTION'),
           params: {},
         }]
         return false
@@ -191,7 +190,7 @@ export class CustomKeywords {
       if (codePointLength !== Number(schema)) {
         exactLength.errors = [{
           keyword: 'exactLength',
-          message: Locale.getMessage('string.length'),
+          message: Locale.getMessageText('string.length'),
           params: { limit: schema },
         }]
         return false
@@ -203,7 +202,7 @@ export class CustomKeywords {
     // alphanum
     const alphanum: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       if (schema && !/^[a-zA-Z0-9]*$/.test(String(data))) {
-        alphanum.errors = [{ keyword: 'alphanum', message: Locale.getMessage('string.alphanum'), params: {} }]
+        alphanum.errors = [{ keyword: 'alphanum', message: Locale.getMessageText('string.alphanum'), params: {} }]
         return false
       }
       return true
@@ -214,7 +213,7 @@ export class CustomKeywords {
     const trim: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const str = String(data)
       if (schema && str !== str.trim()) {
-        trim.errors = [{ keyword: 'trim', message: Locale.getMessage('string.trim'), params: {} }]
+        trim.errors = [{ keyword: 'trim', message: Locale.getMessageText('string.trim'), params: {} }]
         return false
       }
       return true
@@ -225,7 +224,7 @@ export class CustomKeywords {
     const lowercase: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const str = String(data)
       if (schema && str !== str.toLowerCase()) {
-        lowercase.errors = [{ keyword: 'lowercase', message: Locale.getMessage('string.lowercase'), params: {} }]
+        lowercase.errors = [{ keyword: 'lowercase', message: Locale.getMessageText('string.lowercase'), params: {} }]
         return false
       }
       return true
@@ -236,7 +235,7 @@ export class CustomKeywords {
     const uppercase: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const str = String(data)
       if (schema && str !== str.toUpperCase()) {
-        uppercase.errors = [{ keyword: 'uppercase', message: Locale.getMessage('string.uppercase'), params: {} }]
+        uppercase.errors = [{ keyword: 'uppercase', message: Locale.getMessageText('string.uppercase'), params: {} }]
         return false
       }
       return true
@@ -249,7 +248,7 @@ export class CustomKeywords {
         try {
           JSON.parse(String(data))
         } catch {
-          jsonString.errors = [{ keyword: 'jsonString', message: Locale.getMessage('pattern.json'), params: {} }]
+          jsonString.errors = [{ keyword: 'jsonString', message: Locale.getMessageText('pattern.json'), params: {} }]
           return false
         }
       }
@@ -266,7 +265,7 @@ export class CustomKeywords {
       const decimalPart = String(data as number).split('.')[1]
       const actualPrecision = decimalPart ? decimalPart.length : 0
       if (actualPrecision > Number(schema)) {
-        precision.errors = [{ keyword: 'precision', message: Locale.getMessage('number.precision'), params: { limit: schema } }]
+        precision.errors = [{ keyword: 'precision', message: Locale.getMessageText('number.precision'), params: { limit: schema } }]
         return false
       }
       return true
@@ -277,7 +276,7 @@ export class CustomKeywords {
     const port: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const num = data as number
       if (schema && (!Number.isInteger(num) || num < 1 || num > 65535)) {
-        port.errors = [{ keyword: 'port', message: Locale.getMessage('number.port'), params: {} }]
+        port.errors = [{ keyword: 'port', message: Locale.getMessageText('number.port'), params: {} }]
         return false
       }
       return true
@@ -296,7 +295,7 @@ export class CustomKeywords {
       if (missingKeys.length > 0) {
         requiredAll.errors = [{
           keyword: 'requiredAll',
-          message: Locale.getMessage('object.missing'),
+          message: Locale.getMessageText('object.missing'),
           params: { missing: missingKeys },
         }]
         return false
@@ -314,7 +313,7 @@ export class CustomKeywords {
       if (extraKeys.length > 0) {
         strictSchema.errors = [{
           keyword: 'strictSchema',
-          message: Locale.getMessage('object.schema'),
+          message: Locale.getMessageText('object.schema'),
           params: { extra: extraKeys },
         }]
         return false
@@ -335,7 +334,7 @@ export class CustomKeywords {
           if (!(i in arr)) {
             noSparse.errors = [{
               keyword: 'noSparse',
-              message: Locale.getMessage('array.sparse'),
+              message: Locale.getMessageText('array.sparse'),
               params: { index: i },
             }]
             return false
@@ -361,7 +360,7 @@ export class CustomKeywords {
       if (missing.length > 0) {
         includesRequired.errors = [{
           keyword: 'includesRequired',
-          message: Locale.getMessage('array.includesRequired'),
+          message: Locale.getMessageText('array.includesRequired'),
           params: { missing },
         }]
         return false
@@ -389,7 +388,7 @@ export class CustomKeywords {
       if (!pattern || !pattern.test(String(data))) {
         dateFormat.errors = [{
           keyword: 'dateFormat',
-          message: Locale.getMessage('date.format'),
+          message: Locale.getMessageText('date.format'),
           params: { format: schema },
         }]
         return false
@@ -405,7 +404,7 @@ export class CustomKeywords {
       if (isNaN(dataDate.getTime()) || isNaN(compareDate.getTime()) || dataDate <= compareDate) {
         dateGreater.errors = [{
           keyword: 'dateGreater',
-          message: Locale.getMessage('date.greater'),
+          message: Locale.getMessageText('date.greater'),
           params: { limit: schema },
         }]
         return false
@@ -421,7 +420,7 @@ export class CustomKeywords {
       if (isNaN(dataDate.getTime()) || isNaN(compareDate.getTime()) || dataDate >= compareDate) {
         dateLess.errors = [{
           keyword: 'dateLess',
-          message: Locale.getMessage('date.less'),
+          message: Locale.getMessageText('date.less'),
           params: { limit: schema },
         }]
         return false

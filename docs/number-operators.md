@@ -431,8 +431,8 @@ dsl({ level: 'number:=5' })    // 等于
 ## 📚 相关文档
 
 - [DSL 语法速查](../README.md#-dsl-语法速查)
-- [完整示例](../examples/number-operators.examples.js)
-- [测试用例](../test/unit/number-operators.test.js)
+- [完整示例](../examples/number-operators.examples.ts)
+- [测试用例](../test/unit/number-operators.test.ts)
 - [CHANGELOG](../CHANGELOG.md)
 
 ---

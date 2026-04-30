@@ -221,7 +221,7 @@ const schema = dsl({
 ### 1. 在DslAdapter中添加解析规则
 
 ```javascript
-// lib/adapters/DslAdapter.js
+// src/adapters/DslAdapter.ts
 
 _parseType(dslString) {
   // 添加新类型
@@ -241,7 +241,7 @@ _parseType(dslString) {
 ### 2. 在ErrorCodes中添加错误消息
 
 ```javascript
-// lib/core/ErrorCodes.js
+// src/core/ErrorCodes.ts
 
 ERROR_CODES.phone = {
   code: 'INVALID_PHONE',

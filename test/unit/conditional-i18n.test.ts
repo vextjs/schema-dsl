@@ -3,7 +3,7 @@
  *
  * v2 变更：
  * - Locale.before/after → beforeAll/afterAll
- * - Locale.getMessage() 返回 string（非对象）
+ * - Locale.getMessageText() 用于字符串断言；Locale.getMessage() 保留 v1 对象返回
  * - conditional.underAge key 需要验证是否在 v2 locale 文件中
  */
 

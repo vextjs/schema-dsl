@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { CacheManager } from '../../../src/index.js'
+import { CacheManager } from '../../../src/core/CacheManager.js'
 
 describe('Locale 语言包缓存（CacheManager）', () => {
   let cache: InstanceType<typeof CacheManager>

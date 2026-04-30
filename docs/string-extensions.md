@@ -206,8 +206,8 @@ const schema = dsl({
 - 返回 `false` → 验证失败（默认消息）
 
 **注意**: 
-- 异步验证器（async）需要使用 `validator.validateAsync()`（计划中）或在外部处理。
-- 目前 `validator.validate()` 是同步的，如果 `.custom()` 返回 Promise，会抛出错误提示。
+- 当前版本**不支持**在 `.custom()` 中直接返回 `Promise`；即使调用 `validateAsync()`，异步 custom validator 仍会报 `同步验证不支持异步操作`。
+- 需要异步校验时，请改为：① 先用 `schema-dsl` 做同步结构校验；② 再在业务层执行异步检查。
 
 
 ---
@@ -471,7 +471,7 @@ const schema = dsl({
 - [DSL 语法](./dsl-syntax.md)
 - [API 参考](./api-reference.md)
 - [多语言支持](./multi-language.md)
-- [示例代码](../examples/string-extensions.js)
+- [示例代码](../examples/string-extensions.ts)
 
 ---
 

@@ -2,6 +2,8 @@
  * JSON Schema Draft 7 类型定义
  * 含 schema-dsl 内部 key（以 _ 开头，toJsonSchema() 时清除）
  */
+import type { ErrorMessages } from './error.js'
+
 export interface JSONSchema {
   // --- 标准 JSON Schema Draft 7 字段 ---
   type?: string | string[]
@@ -56,7 +58,7 @@ export interface JSONSchema {
 export interface SchemaIOOptions {
   allErrors?: boolean
   verbose?: boolean
-  messages?: import('./error.js').ErrorMessages
+  messages?: ErrorMessages
   locale?: string
   cache?: boolean
   cacheSize?: number

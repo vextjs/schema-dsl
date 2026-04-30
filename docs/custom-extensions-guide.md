@@ -32,7 +32,7 @@ schema-dsl采用模块化设计，你可以轻松扩展：
 
 ### 步骤1：注册关键字
 
-在 `lib/validators/CustomKeywords.js` 中添加：
+在 `src/validators/CustomKeywords.ts` 中添加：
 
 ```javascript
 static registerCustomValidators(ajv) {
@@ -88,7 +88,7 @@ static registerAll(ajv) {
 
 ### 步骤3：添加多语言消息
 
-在 `lib/locales/zh-CN.js` 中：
+在 `src/locales/zh-CN.ts` 中：
 
 ```javascript
 module.exports = {
@@ -104,7 +104,7 @@ module.exports = {
 
 ### 步骤1：添加便捷方法
 
-在 `lib/core/DslBuilder.js` 中添加：
+在 `src/core/DslBuilder.ts` 中添加：
 
 ```javascript
 /**
@@ -137,7 +137,7 @@ validate(schema, { mobile: '13012345678' });
 
 ### 步骤1：创建模式文件
 
-创建 `lib/config/patterns/custom.js`：
+创建 `src/config/patterns/custom.ts`：
 
 ```javascript
 module.exports = {
@@ -165,7 +165,7 @@ module.exports = {
 
 ### 步骤2：导出模式
 
-在 `lib/config/patterns/index.js` 中：
+在 `src/config/patterns.ts`（或对应聚合导出文件）中：
 
 ```javascript
 module.exports = {
@@ -193,7 +193,7 @@ wechat() {
 ### 步骤4：添加多语言
 
 ```javascript
-// lib/locales/zh-CN.js
+// src/locales/zh-CN.ts
 'pattern.wechat': '{{#label}}必须是有效的微信号',
 'pattern.qq': '{{#label}}必须是有效的QQ号'
 ```
@@ -206,7 +206,7 @@ wechat() {
 
 1. **创建语言文件**
 
-创建 `lib/locales/ko-KR.js`（韩语）：
+创建 `src/locales/ko-KR.ts`（韩语）：
 
 ```javascript
 module.exports = {
@@ -220,7 +220,7 @@ module.exports = {
 
 ```javascript
 dsl.config({
-  i18n: path.join(__dirname, 'lib/locales')
+  i18n: path.join(__dirname, 'i18n/locales')
 });
 ```
 

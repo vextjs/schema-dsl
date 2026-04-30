@@ -1,6 +1,6 @@
 # SchemaHelper Schema辅助工具
 
-> **模块**: `lib/utils/SchemaHelper.js`  
+> **模块**: `src/utils/SchemaHelper.ts`  
 
 > **用途**: 提供 JSON Schema 操作的常用辅助方法
 
@@ -36,8 +36,7 @@
 ## 快速开始
 
 ```javascript
-const { SchemaHelper } = require('schema-dsl/lib/utils');
-const { dsl } = require('schema-dsl');
+const { SchemaHelper, dsl } = require('schema-dsl');
 
 // 创建 Schema
 const userSchema = dsl({
@@ -263,8 +262,7 @@ const summary = SchemaHelper.summarizeSchema(userSchema);
 ### Schema 分析工具
 
 ```javascript
-const { SchemaHelper } = require('schema-dsl/lib/utils');
-const { dsl } = require('schema-dsl');
+const { SchemaHelper, dsl } = require('schema-dsl');
 
 function analyzeSchema(schema, name = 'Schema') {
   console.log(`\n=== ${name} 分析 ===`);

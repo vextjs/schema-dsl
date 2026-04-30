@@ -137,13 +137,12 @@ export class ConditionalBuilder implements IConditionalBuilder {
    * 转换为包含条件数据的 Schema（供 Validator 内部使用）
    */
   toSchema(): JSONSchema {
-    const self = this
     return {
       _isConditional: true,
       conditions: this._conditions,
       else: this._elseSchema,
       _evaluateCondition: (conditionObj: ConditionEntry, data: unknown) =>
-        self._evaluateCondition(conditionObj, data),
+        this._evaluateCondition(conditionObj, data),
     } as unknown as JSONSchema
   }
 
@@ -176,7 +175,7 @@ export class ConditionalBuilder implements IConditionalBuilder {
       const { result: matched, failedMessage } = this._evaluateCondition(cond, data)
       if (matched && cond.action === 'throw') {
         const rawMsg = failedMessage ?? cond.message ?? 'Condition failed'
-        const message = Locale.getMessage(rawMsg, {}, locale)
+        const message = Locale.getMessageText(rawMsg, {}, locale)
         throw new ValidationError(
           [{ message, path: '', keyword: 'conditional', params: {} }],
           data,

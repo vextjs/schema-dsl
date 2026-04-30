@@ -1,23 +1,23 @@
 # schema-dsl 文档索引
 
-> **更新时间**: 2025-12-29  
+> **更新时间**: 2026-05-01  
 > **用途**: 所有文档的快速导航  
-> **文档数量**: 27个文档（总计 12,450+ 行）
+> **文档数量**: `README.md + docs/*.md` 共 58 份
 
 ---
 
 ## 📑 目录
 
 ### 快速导航
-- [🚀 快速开始](#-快速开始) - 入门必读
-- [📖 核心文档](#-核心文档) - 主要功能文档
-- [🎯 功能索引](#-功能索引) - 按功能查找
-- [🗄️ 导出器](#️-导出器) - 数据库Schema导出
-- [🛠️ 工具类](#️-工具类utilities) - 辅助工具
-- [📖 使用指南](#-使用指南guides) - 完整教程
-- [🔧 故障排查](#-故障排查troubleshooting) - 问题解决
-- [📝 示例代码](#-示例代码examples) - 完整示例
-- [❓ 常见问题](#-常见问题faq) - FAQ
+- 快速开始 - 入门必读
+- 核心文档 - 主要功能文档
+- 功能索引 - 按功能查找
+- 导出器 - 数据库 Schema 导出
+- 工具类 - 辅助工具
+- 使用指南 - 完整教程
+- 故障排查 - 问题解决
+- 示例代码 - 完整示例
+- 常见问题 - FAQ
 
 ---
 
@@ -38,17 +38,17 @@
 
 ### DSL 语法（核心功能）
 
-| 文档 | 行数 | 说明 |
-|------|------|------|
-| [dsl-syntax.md](dsl-syntax.md) | 2815行 | **DSL语法完整指南**（最重要）⭐⭐⭐ |
-| [string-extensions.md](string-extensions.md) | 465行 | **String扩展文档** ⭐⭐ |
-| [plugin-system.md](plugin-system.md) | 580行 | **插件系统指南** ⭐⭐ |
-| [api-reference.md](api-reference.md) | 534行 | API完整参考 ⭐⭐ |
-| [validate.md](validate.md) | 452行 | validate方法详解 ⭐ |
-| [**validate-async.md**](validate-async.md) | ~700行 | **异步验证方法详解** ⭐⭐⭐ |
-| [**schema-utils-chaining.md**](schema-utils-chaining.md) | ~680行 | **Schema链式复用方法** ⭐⭐⭐ |
-| [**schema-utils-best-practices.md**](schema-utils-best-practices.md) | ~500行 | **SchemaUtils最佳实践与常见陷阱** ⭐⭐⭐ |
-| [**schema-utils-advanced-issues.md**](schema-utils-advanced-issues.md) | ~600行 | **SchemaUtils深入问题分析** ⭐⭐ |
+| 文档 | 说明 |
+|------|------|
+| [dsl-syntax.md](dsl-syntax.md) | **DSL语法完整指南**（最重要）⭐⭐⭐ |
+| [string-extensions.md](string-extensions.md) | **String扩展文档** ⭐⭐ |
+| [plugin-system.md](plugin-system.md) | **插件系统指南** ⭐⭐ |
+| [api-reference.md](api-reference.md) | API完整参考 ⭐⭐ |
+| [validate.md](validate.md) | validate方法详解 ⭐ |
+| [**validate-async.md**](validate-async.md) | **异步验证方法详解** ⭐⭐⭐ |
+| [**schema-utils-chaining.md**](schema-utils-chaining.md) | **Schema链式复用方法** ⭐⭐⭐ |
+| [**schema-utils-best-practices.md**](schema-utils-best-practices.md) | **SchemaUtils最佳实践与常见陷阱** ⭐⭐⭐ |
+| [**schema-utils-advanced-issues.md**](schema-utils-advanced-issues.md) | **SchemaUtils深入问题分析** ⭐⭐ |
 
 ---
 
@@ -58,14 +58,14 @@
 
 | 功能 | 文档 | 代码位置 |
 |------|------|---------|
-| dsl() 函数 | [api-reference.md](api-reference.md#dsl-函数) | `lib/adapters/DslAdapter.js` |
-| DslBuilder 类 | [api-reference.md](api-reference.md#dslbuilder-类) | `lib/core/DslBuilder.js` |
-| String 扩展 | [string-extensions.md](string-extensions.md) | `lib/core/StringExtensions.js` |
-| Validator 类 | [validate.md](validate.md) | `lib/core/Validator.js` |
-| validate() 函数 | [api-reference.md](api-reference.md) | `index.js` |
-| validateAsync() 函数 | [validate-async.md](validate-async.md) | `index.js` |
-| ValidationError 类 | [validate-async.md](validate-async.md#validationerror) | `lib/errors/ValidationError.js` |
-| SchemaUtils 链式调用 | [schema-utils-chaining.md](schema-utils-chaining.md) | `lib/utils/SchemaUtils.js` |
+| dsl() 函数 | [api-reference.md](api-reference.md#dsl-函数) | `src/index.ts` / `src/adapters/DslAdapter.ts` |
+| DslBuilder 类 | [api-reference.md](api-reference.md#dslbuilder-类) | `src/core/DslBuilder.ts` |
+| String 扩展 | [string-extensions.md](string-extensions.md) | `src/core/StringExtensions.ts` |
+| Validator 类 | [validate.md](validate.md) | `src/core/Validator.ts` |
+| validate() 函数 | [api-reference.md](api-reference.md) | `src/index.ts` |
+| validateAsync() 函数 | [validate-async.md](validate-async.md) | `src/index.ts` |
+| ValidationError 类 | [validate-async.md](validate-async.md#validationerror) | `src/errors/ValidationError.ts` |
+| SchemaUtils 链式调用 | [schema-utils-chaining.md](schema-utils-chaining.md) | `src/utils/SchemaUtils.ts` |
 
 
 ---
@@ -91,9 +91,9 @@
 
 ### MongoDB 导出器
 
-| 文档 | 行数 | 说明 |
-|------|------|------|
-| [mongodb-exporter.md](mongodb-exporter.md) | ~200行 | MongoDB 导出器完整指南 |
+| 文档 | 说明 |
+|------|------|
+| [mongodb-exporter.md](mongodb-exporter.md) | MongoDB 导出器完整指南 |
 
 **主要功能**:
 - `export()` - 导出 $jsonSchema 验证规则
@@ -103,9 +103,9 @@
 
 ### MySQL 导出器
 
-| 文档 | 行数 | 说明 |
-|------|------|------|
-| [mysql-exporter.md](mysql-exporter.md) | ~220行 | MySQL 导出器完整指南 |
+| 文档 | 说明 |
+|------|------|
+| [mysql-exporter.md](mysql-exporter.md) | MySQL 导出器完整指南 |
 
 **主要功能**:
 - `export()` - 导出 CREATE TABLE DDL
@@ -114,9 +114,9 @@
 
 ### PostgreSQL 导出器
 
-| 文档 | 行数 | 说明 |
-|------|------|------|
-| [postgresql-exporter.md](postgresql-exporter.md) | ~280行 | PostgreSQL 导出器完整指南 |
+| 文档 | 说明 |
+|------|------|
+| [postgresql-exporter.md](postgresql-exporter.md) | PostgreSQL 导出器完整指南 |
 
 **主要功能**:
 - `export()` - 导出 CREATE TABLE DDL（含 CHECK 约束）
@@ -127,11 +127,11 @@
 
 ## 🛠️ 工具类（Utilities）
 
-| 文档 | 行数 | 说明 |
-|------|------|------|
-| [type-converter.md](type-converter.md) | ~250行 | TypeConverter - 类型转换工具 |
-| [schema-helper.md](schema-helper.md) | ~220行 | SchemaHelper - Schema 辅助工具 |
-| [cache-manager.md](cache-manager.md) | ~250行 | CacheManager - LRU缓存管理 |
+| 文档 | 说明 |
+|------|------|
+| [type-converter.md](type-converter.md) | TypeConverter - 类型转换工具 |
+| [schema-helper.md](schema-helper.md) | SchemaHelper - Schema 辅助工具 |
+| [cache-manager.md](cache-manager.md) | CacheManager - LRU缓存管理 |
 
 ### TypeConverter 主要功能
 - `toMongoDBType()` - 转换为 MongoDB 类型
@@ -157,11 +157,11 @@
 
 ## 📖 使用指南（Guides）
 
-| 文档 | 行数 | 说明 |
-|------|------|------|
-| [validation-guide.md](validation-guide.md) | ~400行 | 数据验证完整指南 |
-| [export-guide.md](export-guide.md) | ~350行 | 数据库导出完整指南 |
-| [error-handling.md](error-handling.md) | ~640行 | 错误处理最佳实践 |
+| 文档 | 说明 |
+|------|------|
+| [validation-guide.md](validation-guide.md) | 数据验证完整指南 |
+| [export-guide.md](export-guide.md) | 数据库导出完整指南 |
+| [error-handling.md](error-handling.md) | 错误处理最佳实践 |
 
 ### 验证指南内容
 - 基础验证流程
@@ -190,9 +190,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| [simple-example.js](../examples/simple-example.js) | 简单示例 |
-| [dsl-style.js](../examples/dsl-style.js) | DSL 风格完整示例 |
-| [string-extensions.js](../examples/string-extensions.js) | String 扩展示例 |
+| [simple-example.ts](../examples/simple-example.ts) | 简单示例 |
+| [dsl-style.ts](../examples/dsl-style.ts) | DSL 风格完整示例 |
+| [string-extensions.ts](../examples/string-extensions.ts) | String 扩展示例 |
 | [password-reset/](../examples/password-reset/) | 密码重置表单示例 |
 
 ---
@@ -224,21 +224,20 @@
 
 | 文档 | 说明 |
 |------|------|
-| [STATUS.md](../STATUS.md) | 项目状态（243个测试全部通过）|
+| [STATUS.md](../STATUS.md) | 项目状态（当前测试与发布状态）|
 | [CHANGELOG.md](../CHANGELOG.md) | 更新日志 |
 
 ---
 
 ## 📁 文档统计
 
-| 分类 | 文档数 | 总行数 |
-|------|--------|--------|
-| 核心文档 | 4 | ~4,266 |
-| 导出器文档 | 3 | ~700 |
-| 工具类文档 | 3 | ~720 |
-| 使用指南 | 3 | ~1,390 |
-| 其他文档 | 9 | ~500 |
-| **合计** | **22** | **~7,576** |
+| 指标 | 当前值 |
+|------|--------|
+| `docs/*.md` 文档数 | **57** |
+| `README.md + docs/*.md` 文档数 | **58** |
+| 文档总行数 | **持续演进（以仓库实时内容为准）** |
+| 测试文件数 | **65** |
+| 最近一次全量验证 | **1,025 tests passed** |
 
 ---
 
@@ -247,6 +246,6 @@
 - ⭐⭐ 核心文档
 - ⭐⭐⭐ 必读文档
 
-**最后更新**: 2025-12-29
+**最后更新**: 2026-05-01
 
 

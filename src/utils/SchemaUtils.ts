@@ -281,7 +281,6 @@ export class SchemaUtils {
   }
 
   private static _makeChainable(schema: JSONSchema): ChainableSchema {
-    const self = this
     const chainable = Object.assign({}, schema) as Record<string, unknown>
 
     Object.defineProperty(chainable, '_isChainable', {
@@ -292,7 +291,7 @@ export class SchemaUtils {
     for (const method of methods) {
       Object.defineProperty(chainable, method, {
         value: (...args: unknown[]) => {
-          const rawSchema = self._extractSchema(chainable as ChainableSchema)
+          const rawSchema = SchemaUtils._extractSchema(chainable as ChainableSchema)
           return (SchemaUtils[method] as (...args: unknown[]) => unknown)(rawSchema, ...args)
         },
         enumerable: false,

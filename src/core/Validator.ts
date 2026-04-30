@@ -446,7 +446,7 @@ export class Validator {
         if (cond.action === 'throw') {
           if (matched) {
             const errorMsg = evaluation.failedMessage ?? cond.message ?? 'Conditional validation failed'
-            const message = Locale.getMessage(errorMsg, (options.messages ?? {}) as Record<string, string>, locale)
+            const message = Locale.getMessageText(errorMsg, (options.messages ?? {}) as Record<string, string>, locale)
             return {
               valid: false,
               data: fieldValue,
@@ -467,7 +467,7 @@ export class Validator {
         // OR 要求模式：所有条件均未满足，视为验证失败
         if (evaluation.requirementFailed) {
           const errorMsg = cond.message ?? 'Condition not met'
-          const message = Locale.getMessage(errorMsg, (options.messages ?? {}) as Record<string, string>, locale)
+          const message = Locale.getMessageText(errorMsg, (options.messages ?? {}) as Record<string, string>, locale)
           return {
             valid: false,
             data: fieldValue,
@@ -545,11 +545,9 @@ export class Validator {
       // Check for custom 'required' message
       let message: string
       if (allMsgs['required']) {
-        message = Locale.getMessage(allMsgs['required'], allMsgs, locale)
-        if (typeof message === 'object') message = (message as unknown as { message: string }).message
+        message = Locale.getMessageText(allMsgs['required'], allMsgs, locale)
       } else {
-        const requiredMsg = Locale.getMessage('required', allMsgs, locale)
-        message = typeof requiredMsg === 'object' ? (requiredMsg as unknown as { message: string }).message : requiredMsg
+        message = Locale.getMessageText('required', allMsgs, locale)
         if (label) message = `${label} ${message}`
       }
       return {

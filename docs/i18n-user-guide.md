@@ -1,6 +1,6 @@
 # 多语言支持用户指南
 
-> **更新日期**: 2025-12-29
+> **更新日期**: 2026-04-30
 
 ---
 
@@ -16,6 +16,11 @@
 ---
 
 ## 快速开始
+
+> **Node.js 要求**：`>=18.0.0`
+>
+> **目录加载（Node >=18）默认支持的语言文件格式**：`.js`（CommonJS）、`.cjs`、`.json`、`.jsonc`、`.json5`。  
+> **推荐**：如果你的应用是 `type: module` / ESM 项目，优先使用 `.cjs`、`.json`、`.jsonc`、`.json5`。
 
 ### 5 分钟上手
 
@@ -50,7 +55,12 @@ const result = validate(schema, data, { locale: 'zh-CN' });
 
 ## 配置方式
 
-### 方式 1：直接传入对象（推荐小型项目）
+### 方式 1：传入对象配置（推荐小型项目）
+
+`schema-dsl` 同时支持两种对象写法：
+
+- 兼容包装层：`{ i18n: { locales: { ... } } }`
+- 简写形式：`{ i18n: { 'zh-CN': { ... }, 'en-US': { ... } } }`
 
 ```javascript
 dsl.config({
@@ -66,6 +76,23 @@ dsl.config({
         'email': 'Email Address',
         'custom.invalidEmail': 'Invalid email format'
       }
+    }
+  }
+});
+```
+
+**简写形式**:
+
+```javascript
+dsl.config({
+  i18n: {
+    'zh-CN': {
+      'username': '用户名',
+      'email': '邮箱地址'
+    },
+    'en-US': {
+      'username': 'Username',
+      'email': 'Email Address'
     }
   }
 });
@@ -89,9 +116,9 @@ dsl.config({
 project/
   ├── i18n/
   │   └── labels/
-  │       ├── zh-CN.js
-  │       ├── en-US.js
-  │       └── ja-JP.js
+  │       ├── zh-CN.cjs
+  │       ├── en-US.jsonc
+  │       └── ja-JP.json5
   ├── app.js
   └── routes/
 ```
@@ -107,7 +134,7 @@ dsl.config({
 });
 ```
 
-**语言包文件**（`i18n/labels/zh-CN.js`）:
+**语言包文件**（`i18n/labels/zh-CN.cjs`）:
 ```javascript
 module.exports = {
   // 字段标签
@@ -186,7 +213,7 @@ const addressSchema = dsl({
 
 **语言包**:
 ```javascript
-{
+const labels = {
   'address.city': '城市',
   'address.street': '街道',
   'address.zipCode': '邮编'
@@ -346,19 +373,19 @@ const handleSubmit = async () => {
 ```
 i18n/
   ├── labels/         # 字段标签
-  │   ├── zh-CN.js
-  │   ├── en-US.js
-  │   └── ja-JP.js
+  │   ├── zh-CN.cjs
+  │   ├── en-US.jsonc
+  │   └── ja-JP.json5
   └── messages/       # 自定义消息（可选）
-      ├── zh-CN.js
-      └── en-US.js
+      ├── zh-CN.cjs
+      └── en-US.json
 ```
 
 ### 2. 命名规范
 
 **字段标签**:
 ```javascript
-{
+const fieldLabels = {
   'username': '用户名',           // 简单字段
   'address.city': '城市',         // 嵌套字段
   'order.items[0].name': '商品名称' // 数组字段
@@ -367,7 +394,7 @@ i18n/
 
 **自定义消息**:
 ```javascript
-{
+const customMessages = {
   'custom.emailTaken': '邮箱已被注册',
   'custom.passwordWeak': '密码强度不够',
   'custom.orderExpired': '订单已过期'
@@ -405,7 +432,7 @@ const savedLang = localStorage.getItem('userLanguage') || 'zh-CN';
 **A**: 创建新的语言包文件并重启应用
 
 ```javascript
-// i18n/labels/ko-KR.js（韩语）
+// i18n/labels/ko-KR.cjs（韩语）
 module.exports = {
   'username': '사용자 이름',
   'email': '이메일 주소'
@@ -418,8 +445,8 @@ module.exports = {
 
 ```
 查找顺序：
-1. 用户语言包（i18n/labels/zh-CN.js）
-2. 系统语言包（lib/locales/zh-CN.js）
+1. 用户语言包（例如 `i18n/labels/zh-CN.cjs` / `zh-CN.jsonc`）
+2. 内置语言包（包内预置的 `zh-CN` / `en-US` / `ja-JP` / `es-ES` / `fr-FR`）
 3. 使用 key 本身
 ```
 
@@ -440,35 +467,14 @@ module.exports = {
 
 ```javascript
 // 动态添加语言
+const frFR = require('./i18n/fr-FR.cjs');
+
 dsl.config({
   i18n: {
     locales: {
-      'fr-FR': require('./i18n/fr-FR.js')
+      'fr-FR': frFR
     }
   }
 });
 ```
-
-### Q5: 如何与其他 i18n 库协同？
-
-**A**: 保持语言同步
-
-```javascript
-import i18next from 'i18next';
-import { Locale } from 'schema-dsl';
-
-// 同时切换两个库的语言
-function changeLanguage(lang) {
-  i18next.changeLanguage(lang);
-  Locale.setLocale(lang);
-}
-```
-
----
-
-## 相关文档
-
-- [API 参考](./api-reference.md)
-- [完整示例](../examples/i18n-full-demo.js)
-- [动态缓存优化](./cache-manager.md)
 

@@ -40,7 +40,7 @@ function normalizeParams(
 export class I18nError extends Error {
   readonly name = 'I18nError' as const
   readonly originalKey: string
-  readonly code: string
+  readonly code: string | number
   readonly params: Record<string, unknown>
   readonly statusCode: number
   readonly locale: string | null
@@ -52,14 +52,14 @@ export class I18nError extends Error {
     locale: string | null = null,
     /** 内部：已解析的消息模板，跳过 Locale 查找（用于解耦初始化顺序）*/
     _resolvedTemplate?: string,
-    _resolvedCode?: string
+    _resolvedCode?: string | number
   ) {
     const targetLocale = locale ?? Locale.getLocale()
     const normalizedParams: Record<string, unknown> = (params !== null && params !== undefined) ? params : {}
 
     // Look up locale message config if not pre-resolved
     let template: string
-    let resolvedCode: string
+    let resolvedCode: string | number
     if (_resolvedTemplate !== undefined) {
       template = _resolvedTemplate
       resolvedCode = _resolvedCode ?? key
@@ -67,7 +67,7 @@ export class I18nError extends Error {
       const msgConfig = Locale.getMessageConfig(key, {}, targetLocale)
       if (typeof msgConfig === 'object' && msgConfig !== null && 'message' in msgConfig) {
         template = (msgConfig as { message: string }).message
-        resolvedCode = (msgConfig as { code?: string }).code ?? key
+        resolvedCode = (msgConfig as { code?: string | number }).code ?? key
       } else if (typeof msgConfig === 'string') {
         template = msgConfig
         resolvedCode = key
@@ -129,14 +129,14 @@ export class I18nError extends Error {
   }
 
   /** 检查错误是否为指定 code 或原始 key */
-  is(codeOrKey: string): boolean {
+  is(codeOrKey: string | number): boolean {
     return this.code === codeOrKey || this.originalKey === codeOrKey
   }
 
   toJSON(): {
     error: string
     originalKey: string
-    code: string
+    code: string | number
     message: string
     params: Record<string, unknown>
     statusCode: number

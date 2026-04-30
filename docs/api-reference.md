@@ -696,11 +696,11 @@ const command = exporter.generateCommand('users', jsonSchema);
 const { MySQLExporter } = require('schema-dsl');
 
 const exporter = new MySQLExporter();
-const ddl = exporter.export(jsonSchema, { tableName: 'users' });
+const ddl = exporter.export('users', jsonSchema);
 ```
 
 **方法**:
-- `export(schema, options)` - 导出为MySQL DDL
+- `export(tableName, schema)` - 导出为MySQL DDL
 
 ---
 
@@ -712,11 +712,11 @@ const ddl = exporter.export(jsonSchema, { tableName: 'users' });
 const { PostgreSQLExporter } = require('schema-dsl');
 
 const exporter = new PostgreSQLExporter();
-const ddl = exporter.export(jsonSchema, { tableName: 'users' });
+const ddl = exporter.export('users', jsonSchema);
 ```
 
 **方法**:
-- `export(schema, options)` - 导出为PostgreSQL DDL
+- `export(tableName, schema)` - 导出为PostgreSQL DDL
 
 ---
 
@@ -729,7 +729,8 @@ const ddl = exporter.export(jsonSchema, { tableName: 'users' });
 ```javascript
 const { TypeConverter } = require('schema-dsl');
 
-TypeConverter.toJSONSchema(dslSchema);
+TypeConverter.toJSONSchemaType('string');
+TypeConverter.toMongoDBType('integer');
 ```
 
 ---

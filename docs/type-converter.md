@@ -1,6 +1,6 @@
 # TypeConverter 类型转换工具
 
-> **模块**: `lib/utils/TypeConverter.js`  
+> **模块**: `src/utils/TypeConverter.ts`  
 
 > **用途**: 提供 JSON Schema 与各种数据库类型之间的转换
 
@@ -34,7 +34,7 @@
 ## 快速开始
 
 ```javascript
-const { TypeConverter } = require('schema-dsl/lib/utils');
+const { TypeConverter } = require('schema-dsl');
 
 // JSON Schema 类型转 MongoDB 类型
 const mongoType = TypeConverter.toMongoDBType('integer');
@@ -46,38 +46,27 @@ console.log(mysqlType); // 'VARCHAR(100)'
 
 // JSON Schema 类型转 PostgreSQL 类型
 const pgType = TypeConverter.toPostgreSQLType('string', { format: 'uuid' });
-console.log(pgType); // 'UUID'
+console.log(pgType); // 'VARCHAR(255)'
 ```
 
 ---
 
 ## API 参考
 
-### `toJSONSchemaType(simpleType)`
+### `toJSONSchemaType(nativeType)`
 
-将简单类型字符串转换为 JSON Schema 类型对象。
+将类型标识转换为 JSON Schema 的 `type` 字符串。
 
 ```javascript
 TypeConverter.toJSONSchemaType('string');
-// { type: 'string' }
+// 'string'
 
-TypeConverter.toJSONSchemaType('int');
-// { type: 'integer' }
+TypeConverter.toJSONSchemaType('integer');
+// 'integer'
 
-TypeConverter.toJSONSchemaType('bool');
-// { type: 'boolean' }
+TypeConverter.toJSONSchemaType('email');
+// 'string'
 ```
-
-**支持的别名**：
-
-| 完整类型 | 别名 |
-|---------|------|
-| `string` | `str`, `s` |
-| `number` | `num`, `n` |
-| `integer` | `int`, `i` |
-| `boolean` | `bool`, `b` |
-| `object` | `obj`, `o` |
-| `array` | `arr`, `a` |
 
 ---
 
@@ -129,7 +118,7 @@ JSON Schema 类型转 PostgreSQL 数据类型。
 ```javascript
 // UUID 格式
 TypeConverter.toPostgreSQLType('string', { format: 'uuid' });
-// 'UUID'
+// 'VARCHAR(255)'  // 当前实现不会因 format=uuid 自动切换到 UUID 列类型
 
 // 日期时间
 TypeConverter.toPostgreSQLType('string', { format: 'date-time' });
@@ -142,17 +131,16 @@ TypeConverter.toPostgreSQLType('object');
 
 ---
 
-### `normalizePropertyName(name, style)`
+### `normalizePropertyName(name)`
 
-规范化属性名，转换命名风格。
+规范化属性名：去除首尾空白、将非法字符替换为下划线，并避免数字开头。
 
 ```javascript
-// camelCase 转 snake_case
-TypeConverter.normalizePropertyName('userName', 'snake_case');
+TypeConverter.normalizePropertyName('user name');
 // 'user_name'
 
-TypeConverter.normalizePropertyName('createdAt', 'snake_case');
-// 'created_at'
+TypeConverter.normalizePropertyName('123created-at');
+// '_123created_at'
 ```
 
 ---
@@ -285,7 +273,7 @@ const constraints = TypeConverter.extractConstraints(schema);
 ### 批量类型转换
 
 ```javascript
-const { TypeConverter } = require('schema-dsl/lib/utils');
+const { TypeConverter } = require('schema-dsl');
 
 const fields = ['string', 'number', 'integer', 'boolean', 'object', 'array'];
 

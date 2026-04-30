@@ -344,6 +344,8 @@ cloned.properties.user.properties.name.maxLength = 100;
 ### validateNestingDepth() - 检查嵌套深度
 
 ```javascript
+const { dsl, DslBuilder } = require('schema-dsl');
+
 const schema = dsl({
   level1: {
     level2: {
@@ -354,10 +356,10 @@ const schema = dsl({
   }
 });
 
-const depth = schema.validateNestingDepth(10);
-// 返回: 4
+const result = DslBuilder.validateNestingDepth(schema, 10);
+// 返回: { valid: true, depth: 4, path: 'level1.level2.level3', message: '...' }
 
-if (depth > 5) {
+if (result.depth > 5) {
   console.warn('嵌套层级过深，建议扁平化');
 }
 ```

@@ -450,10 +450,10 @@ const schema = dsl({
 
 ## 📖 相关文档
 
-- [基础用法](./README.md)
-- [验证规则](./docs/validation.md)
-- [API 参考](./docs/api.md)
-- [示例代码](../examples/enum.examples.js)
+- [基础用法](../README.md)
+- [验证规则](./validation-guide.md)
+- [API 参考](./api-reference.md)
+- [示例代码](../examples/enum.examples.ts)
 
 ---
 

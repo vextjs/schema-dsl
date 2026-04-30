@@ -1,6 +1,6 @@
 # MySQL 导出器文档
 
-> **模块**: `lib/exporters/MySQLExporter.js`  
+> **模块**: `src/exporters/MySQLExporter.ts`  
 
 > **用途**: 将 JSON Schema 转换为 MySQL CREATE TABLE 语句
 

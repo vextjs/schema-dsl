@@ -33,6 +33,108 @@ function _isRawJsonSchema(obj: Record<string, unknown>): boolean {
   return false
 }
 
+function _cleanRequiredMarks(schema: unknown): void {
+  if (!schema || typeof schema !== 'object') return
+  delete (schema as Record<string, unknown>)['_required']
+  const obj = schema as JSONSchema
+  if (obj.properties) {
+    for (const prop of Object.values(obj.properties)) _cleanRequiredMarks(prop)
+  }
+  if (obj.items) _cleanRequiredMarks(obj.items)
+}
+
+function _resolveDsl(value: unknown): JSONSchema {
+  if (value === null || value === undefined) return {}
+  if (typeof value === 'string') return DslParser.parseString(value)
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const obj = value as Record<string, unknown>
+    if (typeof obj['toSchema'] === 'function') return (obj['toSchema'] as () => JSONSchema)()
+    if (_isRawJsonSchema(obj)) return value as JSONSchema
+    return DslParser.parseObject(value as DslDefinition)
+  }
+  return value as JSONSchema
+}
+
+function _schemaForTarget(targetField: string, dslValue: unknown): JSONSchema {
+  const s = _resolveDsl(dslValue)
+  const isRequired = s._required
+  _cleanRequiredMarks(s)
+  const result: JSONSchema = { properties: { [targetField]: s } }
+  if (isRequired) result.required = [targetField]
+  return result
+}
+
+function _buildMatchSchema(conditionField: string, targetField: string, map: Record<string, unknown>): JSONSchema {
+  const entries = Object.entries(map).filter(([k]) => k !== '_default')
+  const defaultDsl = map['_default']
+
+  const build = (index: number): JSONSchema => {
+    if (index >= entries.length) {
+      if (defaultDsl === null || defaultDsl === undefined) return {}
+      const defaultObj = defaultDsl as Record<string, unknown>
+      if (defaultObj && defaultObj['_isMatch']) {
+        return _buildMatchSchema(String(defaultObj['field']), targetField, defaultObj['map'] as Record<string, unknown>)
+      }
+      if (defaultObj && defaultObj['_isIf']) {
+        return _buildIfSchema(String(defaultObj['condition']), targetField, defaultObj['then'], defaultObj['else'])
+      }
+      return _schemaForTarget(targetField, defaultDsl)
+    }
+
+    const [val, dslValue] = entries[index]
+    if (dslValue === null || dslValue === undefined) return build(index + 1)
+
+    const branchObj = dslValue as Record<string, unknown>
+    let thenSchema: JSONSchema
+    if (branchObj && branchObj['_isMatch']) {
+      thenSchema = _buildMatchSchema(String(branchObj['field']), targetField, branchObj['map'] as Record<string, unknown>)
+    } else if (branchObj && branchObj['_isIf']) {
+      thenSchema = _buildIfSchema(String(branchObj['condition']), targetField, branchObj['then'], branchObj['else'])
+    } else {
+      thenSchema = _schemaForTarget(targetField, dslValue)
+    }
+
+    return {
+      if: { properties: { [conditionField]: { const: val } } },
+      then: thenSchema,
+      else: build(index + 1),
+    }
+  }
+
+  return build(0)
+}
+
+function _buildIfSchema(conditionField: string, targetField: string, thenDsl: unknown, elseDsl: unknown): JSONSchema {
+  const thenObj = thenDsl as Record<string, unknown>
+  const elseObj = elseDsl as Record<string, unknown>
+
+  let thenResult: JSONSchema
+  if (thenObj && thenObj['_isMatch']) {
+    thenResult = _buildMatchSchema(String(thenObj['field']), targetField, thenObj['map'] as Record<string, unknown>)
+  } else if (thenObj && thenObj['_isIf']) {
+    thenResult = _buildIfSchema(String(thenObj['condition']), targetField, thenObj['then'], thenObj['else'])
+  } else {
+    thenResult = _schemaForTarget(targetField, thenDsl)
+  }
+
+  let elseResult: JSONSchema = {}
+  if (elseDsl !== null && elseDsl !== undefined) {
+    if (elseObj && elseObj['_isMatch']) {
+      elseResult = _buildMatchSchema(String(elseObj['field']), targetField, elseObj['map'] as Record<string, unknown>)
+    } else if (elseObj && elseObj['_isIf']) {
+      elseResult = _buildIfSchema(String(elseObj['condition']), targetField, elseObj['then'], elseObj['else'])
+    } else {
+      elseResult = _schemaForTarget(targetField, elseDsl)
+    }
+  }
+
+  return {
+    if: { properties: { [conditionField]: { const: true } } },
+    then: thenResult,
+    else: elseResult,
+  }
+}
+
 export const DslParser = {
   /**
    * 解析 DSL 字符串 → JSONSchema
@@ -213,8 +315,16 @@ export const DslParser = {
         fieldSchema = DslParser.parseString(value)
       } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         const obj = value as Record<string, unknown>
-        // DslBuilder 实例或 ConditionalBuilder（有 toSchema 方法）
-        if (typeof obj['toSchema'] === 'function') {
+        if (obj['_isMatch']) {
+          if (!schema.allOf) schema.allOf = []
+          schema.allOf.push(_buildMatchSchema(String(obj['field']), fieldKey, obj['map'] as Record<string, unknown>))
+          fieldSchema = { description: `Depends on ${String(obj['field'])}` }
+        } else if (obj['_isIf']) {
+          if (!schema.allOf) schema.allOf = []
+          schema.allOf.push(_buildIfSchema(String(obj['condition']), fieldKey, obj['then'], obj['else']))
+          fieldSchema = { description: `Conditional field based on ${String(obj['condition'])}` }
+        } else if (typeof obj['toSchema'] === 'function') {
+          // DslBuilder 实例或 ConditionalBuilder（有 toSchema 方法）
           fieldSchema = (obj['toSchema'] as () => JSONSchema)()
         } else if (_isRawJsonSchema(obj)) {
           // 原生 JSON Schema 对象（如 { type: 'object', properties: {...} }）直接透传
@@ -238,6 +348,7 @@ export const DslParser = {
       // 清除 _required 内部 key
       const { _required: _r, ...cleanSchema } = fieldSchema as JSONSchema & { _required?: boolean }
       void _r
+      _cleanRequiredMarks(cleanSchema)
 
       ;(schema.properties as Record<string, JSONSchema>)[fieldKey] = cleanSchema
     }

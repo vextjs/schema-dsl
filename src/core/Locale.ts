@@ -1,13 +1,17 @@
 import type { LocaleKey, LocaleMessage } from '../locales/types.js'
 import { getMessage, getMessages, isSupportedLocale, getSupportedLocales } from '../locales/index.js'
 
+export interface LocaleResolvedMessage {
+  code: string | number
+  message: string
+}
+
 /**
  * Locale — 全局语言管理器（静态类）
  *
- * 修复 CK-01：getMessage 统一返回 string（v1 返回 string | {code, message}，不一致）
- *
- * v2 语义：
- *   - getMessage() → 总是返回 string（最终消息文本）
+ * v1 兼容语义：
+ *   - getMessage() → 已命中的语言消息统一返回 { code, message }
+ *   - getMessageText() → 始终返回最终消息文本（供 v2 内部调用）
  *   - getMessageConfig() → 返回原始 LocaleMessage（含 code 对象格式，供 I18nError 用）
  */
 export class Locale {
@@ -75,44 +79,30 @@ export class Locale {
   // ─── 核心查询方法 ─────────────────────────────────────────────────────────
 
   /**
-   * 获取消息字符串（CK-01 修复：始终返回 string）
+   * 获取消息配置（v1 兼容：命中时统一返回 { code, message }）
    *
-   * 优先级: 自定义消息 > 语言包 > ErrorCodes > key 本身
+   * 优先级: 自定义消息 > 语言包 > key 本身
    */
   static getMessage(
     type: string,
     customMessages: Record<string, LocaleMessage> = {},
     locale: string | null = null
+  ): LocaleResolvedMessage | string {
+    const resolved = this._resolveMessage(type, customMessages, locale)
+    if (!resolved) return type
+    return this._normalizeResolvedMessage(type, resolved)
+  }
+
+  /**
+   * 获取最终消息文本（供 v2 内部调用，避免 message 字段落成 [object Object]）
+   */
+  static getMessageText(
+    type: string,
+    customMessages: Record<string, LocaleMessage> = {},
+    locale: string | null = null
   ): string {
-    const targetLocale = locale ?? this._currentLocale
-
-    // 1. 调用方传入的自定义消息（最高优先级）
-    const callerMsg = customMessages[type]
-    if (callerMsg !== undefined) {
-      return this._toStr(callerMsg)
-    }
-
-    // 2. 全局自定义消息 (setMessages — 优先于语言包 addLocale)
-    const globalMsg = this._customMessages[type]
-    if (globalMsg !== undefined) {
-      return this._toStr(globalMsg)
-    }
-
-    // 3. 语言包自定义消息 (addLocale)
-    const globalLocaleMsg = this._customMessages[`${targetLocale}:${type}`]
-    if (globalLocaleMsg !== undefined) {
-      return this._toStr(globalLocaleMsg)
-    }
-
-    // 3. 语言包查找（含 fallback 链）
-    if (this._isLocaleKey(type)) {
-      const msg = getMessage(type as LocaleKey, targetLocale)
-      return this._toStr(msg)
-    }
-
-    // 4. ErrorCodes — 尝试从语言包作为 fallback key 查找
-    // 5. 最终 fallback：原字符串（兼容硬编码消息）
-    return type
+    const resolved = this.getMessage(type, customMessages, locale)
+    return typeof resolved === 'string' ? resolved : resolved.message
   }
 
   /**
@@ -123,19 +113,7 @@ export class Locale {
     customMessages: Record<string, LocaleMessage> = {},
     locale: string | null = null
   ): LocaleMessage {
-    const targetLocale = locale ?? this._currentLocale
-
-    const callerMsg = customMessages[type]
-    if (callerMsg !== undefined) return callerMsg
-
-    const globalMsg = this._customMessages[`${targetLocale}:${type}`] ?? this._customMessages[type]
-    if (globalMsg !== undefined) return globalMsg
-
-    if (this._isLocaleKey(type)) {
-      return getMessage(type as LocaleKey, targetLocale)
-    }
-
-    return { code: type, message: type }
+    return this._resolveMessage(type, customMessages, locale) ?? { code: type, message: type }
   }
 
   /**
@@ -167,9 +145,37 @@ export class Locale {
 
   // ─── 私有辅助 ─────────────────────────────────────────────────────────────
 
-  private static _toStr(msg: LocaleMessage): string {
-    if (typeof msg === 'string') return msg
-    return msg.message
+  private static _normalizeResolvedMessage(type: string, msg: LocaleMessage): LocaleResolvedMessage {
+    if (typeof msg === 'string') {
+      return { code: type, message: msg }
+    }
+    return {
+      code: msg.code ?? type,
+      message: msg.message,
+    }
+  }
+
+  private static _resolveMessage(
+    type: string,
+    customMessages: Record<string, LocaleMessage>,
+    locale: string | null
+  ): LocaleMessage | null {
+    const targetLocale = locale ?? this._currentLocale
+
+    const callerMsg = customMessages[type]
+    if (callerMsg !== undefined) return callerMsg
+
+    const globalMsg = this._customMessages[type]
+    if (globalMsg !== undefined) return globalMsg
+
+    const globalLocaleMsg = this._customMessages[`${targetLocale}:${type}`]
+    if (globalLocaleMsg !== undefined) return globalLocaleMsg
+
+    if (this._isLocaleKey(type)) {
+      return getMessage(type as LocaleKey, targetLocale)
+    }
+
+    return null
   }
 
   private static _isLocaleKey(key: string): boolean {

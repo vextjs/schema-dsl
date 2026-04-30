@@ -24,6 +24,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
+    "examples:typecheck": "tsc -p tsconfig.examples.json --noEmit",
+    "examples:build": "tsc -p tsconfig.examples.json",
     "lint": "eslint src/**/*.ts",
     "test:version": "node -e \"const p=require('./package.json');const {VERSION}=require('./dist/index.cjs');if(p.version!==VERSION)throw new Error('Version mismatch: '+p.version+' vs '+VERSION);console.log('Version OK:',p.version)\"",
     "bench": "node test/benchmarks/library-comparison.js"
@@ -63,9 +65,10 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "ajv": "^8.17.1",
+    "ajv": "^8.18.0",
     "ajv-formats": "^2.1.1",
-    "cache-hub": "^1.0.0"
+    "cache-hub": "^1.0.0",
+    "json5": "^2.2.3"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

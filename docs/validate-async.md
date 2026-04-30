@@ -31,6 +31,10 @@ try {
 ---
 
 ## 基础用法
+
+```javascript
+try {
+  await validateAsync(userSchema, {
     name: '',
     email: 'invalid'
   });
@@ -470,7 +474,7 @@ new ValidationError(errors, data)
 - [SchemaUtils 链式调用](schema-utils-chaining.md) - Schema 复用简化方法
 - [validate.md](validate.md) - 传统同步验证方法
 - [error-handling.md](error-handling.md) - 错误处理指南
-- [Express 示例](../examples/express-integration.js) - 完整 Express 集成示例
+- [Express 示例](../examples/express-integration.ts) - 完整 Express 集成示例
 
 ---
 

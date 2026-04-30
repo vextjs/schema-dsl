@@ -107,14 +107,14 @@ npm run coverage
 ### 4. 运行示例
 
 ```bash
-# 运行 Joi 风格示例
-node examples/joi-style.js
+# 先编译 TypeScript 示例
+npm run examples:build
 
 # 运行 DSL 风格示例
-node examples/dsl-style.js
+node .tmp/dsl-style.js
 
 # 运行导出示例
-node examples/export-demo.js
+node .tmp/export-demo.js
 ```
 
 ### 5. 代码检查
@@ -333,7 +333,7 @@ npm run coverage
 使用 Node.js 调试器：
 
 ```bash
-node inspect examples/joi-style.js
+node inspect .tmp/dsl-style.js
 ```
 
 或使用 VSCode 调试配置。

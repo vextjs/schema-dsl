@@ -79,14 +79,20 @@ email: 'email!'.custom(async (value) => {
 // ❌ 错误：在 validate() 中使用异步验证器
 const result = validate(schema, data); // 同步模式
 
-// ✅ 解决1：使用 validateAsync()
-const result = await validateAsync(schema, data);
+// ❌ 误区：validateAsync() 也不会让 .custom(async fn) 生效
+await validateAsync(schema, data); // 仍会抛“同步验证不支持异步操作”
 
-// ✅ 解决2：使用同步验证器
+// ✅ 正确：使用同步验证器
 email: 'email!'.custom((value) => {
   // 同步代码
   if (checkSync(value)) return '邮箱已被占用';
 })
+
+// ✅ 或者：把异步检查放到 schema-dsl 之外
+const result = validate(schema, data);
+if (result.valid) {
+  await checkEmailUniqueness(data.email);
+}
 ```
 
 #### 原因2: custom() 返回值不正确

@@ -312,13 +312,17 @@ return res.status(400).json({
 ### 3. 限制 Schema 复杂度
 
 ```javascript
-const validator = new Validator({
-  maxNestingDepth: 10,  // 限制嵌套深度
-  maxSchemaSize: 10000  // 限制 Schema 大小（建议）
-});
+const MAX_SCHEMA_SIZE = 10000;
+
+if (JSON.stringify(schema).length > MAX_SCHEMA_SIZE) {
+  throw new Error('Schema 体积过大，建议拆分');
+}
 
 // 在 validate 前检查
-DslBuilder.validateNestingDepth(schema, 10);
+const depthCheck = DslBuilder.validateNestingDepth(schema, 10);
+if (!depthCheck.valid) {
+  throw new Error(depthCheck.message);
+}
 ```
 
 ---

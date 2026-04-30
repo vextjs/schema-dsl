@@ -7,7 +7,7 @@
 
 // ─── 基础消息值类型 ───────────────────────────────────────────────────────────
 /** 消息可以是纯字符串，或带 code 的对象（v1.1.5+ 格式）*/
-export type LocaleMessage = string | { code: string; message: string }
+export type LocaleMessage = string | { code: string | number; message: string }
 
 // ─── Key 联合（供 getMessage 精确 key 推断）──────────────────────────────────
 export type LocaleKey =

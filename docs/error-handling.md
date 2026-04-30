@@ -282,11 +282,11 @@ dsl.config({
 **目录结构**:
 ```
 project/
-├── lib/
-│   └── locales/
-│       ├── zh-CN.js
-│       ├── en-US.js
-│       └── ja-JP.js
+├── i18n/
+│   └── errors/
+│       ├── zh-CN.cjs
+│       ├── en-US.jsonc
+│       └── ja-JP.json5
 └── app.js
 ```
 
@@ -295,11 +295,11 @@ project/
 const path = require('path');
 
 dsl.config({
-  i18n: path.join(__dirname, 'lib/locales')
+  i18n: path.join(__dirname, 'i18n/errors')
 });
 ```
 
-**语言包文件** (`lib/locales/zh-CN.js`):
+**语言包文件**（例如 `i18n/errors/zh-CN.cjs`）:
 ```javascript
 module.exports = {
   'account.notFound': {
@@ -1716,7 +1716,7 @@ if (!result.valid) {
 
 **语言包配置**:
 ```javascript
-// lib/locales/zh-CN.js (或自定义语言包)
+// i18n/errors/zh-CN.cjs（或任意 .json/.jsonc/.json5 自定义语言包文件）
 module.exports = {
   // 字符串格式（向后兼容）
   'user.notFound': '用户不存在',
@@ -1770,13 +1770,13 @@ try {
 不同语言使用相同的数字 `code`，便于前端统一处理：
 
 ```javascript
-// zh-CN.js
+// zh-CN.cjs
 'account.notFound': {
   code: 40001,  // ← 数字 code 一致
   message: '账户不存在'
 }
 
-// en-US.js
+// en-US.cjs
 'account.notFound': {
   code: 40001,  // ← 数字 code 一致
   message: 'Account not found'
@@ -1794,6 +1794,8 @@ switch (error.code) {
     showPaymentDialog();
     break;
 }
+```
+
 #### 3. 增强的 error.is() 方法
 
 同时支持 `originalKey` 和数字 `code` 判断：
