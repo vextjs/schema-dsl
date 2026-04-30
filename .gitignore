@@ -139,3 +139,5 @@ dist
 plans/
 reports/
 
+# DevCodex AI context data (session memory, reports, profile, etc. - do not commit)
+.devcodex/
