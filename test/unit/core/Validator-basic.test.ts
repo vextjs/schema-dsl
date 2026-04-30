@@ -33,6 +33,17 @@ describe('Validator', () => {
       const customValidator = new Validator({ smartCoerce: true })
       expect(customValidator).toBeInstanceOf(Validator)
     })
+
+    it('应该支持 cache: false 关闭缓存（文档兼容简写）', () => {
+      const customValidator = new Validator({ cache: false })
+      expect(customValidator.cache.options.enabled).toBe(false)
+    })
+
+    it('应该支持 cache: true 启用默认缓存配置（文档兼容简写）', () => {
+      const customValidator = new Validator({ cache: true })
+      expect(customValidator.cache.options.enabled).toBe(true)
+      expect(customValidator.cache.options.maxSize).toBeGreaterThan(0)
+    })
   })
 
   describe('validate()', () => {
@@ -144,6 +155,8 @@ describe('Validator', () => {
   describe('addKeyword()', () => {
     it('应该添加自定义关键字', () => {
       validator.addKeyword('isEven', {
+        keyword: 'isEven',
+        type: 'number',
         validate: (_schema: unknown, data: unknown) => (data as number) % 2 === 0,
       })
 

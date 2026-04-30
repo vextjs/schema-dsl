@@ -6,13 +6,13 @@
 
 ## 答案
 
-**现在可以了！** 🎉 从 v1.1.7 开始，`validate()` 和 `validateAsync()` 都支持直接传入 DSL 对象。
+**现在可以了！** 🎉 当前 TypeScript 重构版（`v2.0.0-beta.1`）中，顶层 `validate()` 和 `validateAsync()` 都支持直接传入 DSL 对象。
 
 ---
 
 ## 支持的三种方式
 
-### 方式1：传入 DSL 对象（✅ v1.1.7 新增）
+### 方式1：传入 DSL 对象（✅ 当前版本支持）
 
 ```javascript
 const { validate } = require('schema-dsl');
@@ -96,17 +96,13 @@ const result = validate(
 
 ### 自动检测逻辑
 
-`validate()` 函数会自动检测传入的 schema 类型：
+顶层 `validate()` / `validateAsync()` 会先归一化传入的 schema：
 
 ```javascript
 function validate(schema, data, options = {}) {
-  // ✅ 自动检测并转换 DSL 对象
-  if (_isDslObject(schema)) {
-    schema = DslAdapter.parseObject(schema);
-  }
-  
-  const validator = new Validator(options);
-  return validator.validate(schema, data, options);
+  const normalizedSchema = _normalizeSchemaInput(schema);
+  const validator = getDefaultValidator();
+  return validator.validate(normalizedSchema, data, options);
 }
 ```
 
@@ -128,9 +124,9 @@ function validate(schema, data, options = {}) {
 
 ## 为什么之前必须是 schema？
 
-### 历史原因
+### 背景
 
-在 v1.1.7 之前，`validate()` 不会自动转换 DSL 对象：
+早期实现中，顶层 `validate()` 不会自动转换 DSL 对象：
 
 ```javascript
 // ❌ v1.1.6 及之前版本会失败
@@ -143,9 +139,9 @@ const result = validate(
 
 **原因**：`validate()` 会把 DSL 对象当作标准 JSON Schema，而 `"email!"` 不是有效的 JSON Schema 关键字。
 
-### 解决方案
+### 当前方案
 
-v1.1.7 添加了自动检测和转换逻辑：
+当前 TypeScript 重构版已补齐自动检测和转换逻辑：
 
 1. **检测 DSL 对象**：识别对象中的 DSL 字符串
 2. **自动转换**：调用 `DslAdapter.parseObject()` 转换为 JSON Schema
@@ -372,7 +368,7 @@ if (result.valid) {
 
 **答：现在不必了！** 
 
-- ✅ v1.1.7 开始支持直接传入 DSL 对象
+- ✅ 当前版本支持直接传入 DSL 对象
 - ✅ 自动检测并转换，无需手动包裹
 - ✅ 完全向后兼容，不影响原有功能
 - ✅ 同时支持 JSON Schema、DslBuilder、DSL 对象三种方式
@@ -498,7 +494,7 @@ app.post('/api/login', (req, res) => {
 | **原型开发** | ✅ 直接用 DSL 对象 | 快速迭代，无需在意性能 |
 | **测试代码** | ✅ 直接用 DSL 对象 | 简洁清晰，易于维护 |
 
-### Q3: 为什么之前不这样设计？
+### Q3: 为什么复杂场景仍然建议先用 `dsl()` 转换？
 
 **历史原因**：
 
@@ -512,14 +508,14 @@ app.post('/api/login', (req, res) => {
    ```
    这种设计让每个步骤的职责更清晰。
 
-2. **避免隐式转换**（最小惊喜原则）
+2. **避免在高频路径里滥用隐式转换**（最小惊喜原则）
    ```javascript
    // 用户传入什么，就是什么
    validate(jsonSchema, data);  // JSON Schema
    validate(dslBuilder, data);  // DslBuilder
    
-   // ❌ 之前不支持隐式转换
-   validate({ email: 'email!' }, data);  // 会被当作 JSON Schema
+    // ⚠️ 当前虽然支持隐式转换，但高频场景仍建议预先转换后复用
+    validate({ email: 'email!' }, data);
    ```
 
 3. **类型安全考虑**（TypeScript）
@@ -545,7 +541,7 @@ app.post('/api/login', (req, res) => {
    }
    ```
 
-**为什么现在改变了？**
+**为什么当前版本要补齐这个能力？**
 
 1. **用户反馈**：很多用户期望更简洁的 API
 2. **智能检测**：通过 `_isDslObject()` 准确区分 DSL 对象和 JSON Schema
@@ -557,8 +553,8 @@ app.post('/api/login', (req, res) => {
 
 | 设计方案 | 优点 | 缺点 |
 |---------|------|------|
-| **显式转换**（v1.1.6） | 职责清晰、类型安全、性能最优 | 代码冗长、学习成本高 |
-| **自动转换**（v1.1.7） | 简洁直观、学习成本低 | 隐式行为、可能误用 |
+| **显式转换** | 职责清晰、类型安全、性能最优 | 代码稍长 |
+| **自动转换**（当前顶层便捷函数） | 简洁直观、学习成本低 | 在高频路径里有额外转换开销 |
 
 **最终选择**：两者都支持，让用户自由选择！
 

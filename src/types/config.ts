@@ -47,8 +47,10 @@ export interface DslConfigOptions {
  */
 export interface ValidatorOptions {
   allErrors?: boolean
+  verbose?: boolean
   strict?: boolean
-  coerceTypes?: boolean
+  coerceTypes?: boolean | 'array'
   removeAdditional?: boolean | 'all' | 'failing'
   useDefaults?: boolean
+  cache?: boolean | CacheOptions
 }

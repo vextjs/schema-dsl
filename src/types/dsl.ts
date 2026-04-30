@@ -79,6 +79,7 @@ export interface DslFn {
   (def: DslDefinition): JSONSchema
   config: (options: DslConfigOptions) => void
   if: DslIfFn & DslFieldIfFn
+  _if: DslIfFn & DslFieldIfFn
   match: (value: unknown, cases: Record<string, unknown>) => DslConditionMarker
   error: DslErrorNamespace
 }

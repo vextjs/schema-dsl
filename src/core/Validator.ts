@@ -42,7 +42,7 @@ export interface ValidatorOptions {
   coerceTypes?: boolean | 'array'
   removeAdditional?: boolean | 'all' | 'failing'
   verbose?: boolean
-  cache?: {
+  cache?: boolean | {
     maxSize?: number
     ttl?: number
     enabled?: boolean
@@ -103,7 +103,12 @@ export class Validator {
     ;(addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(this._ajv)
     CustomKeywords.registerAll(this._ajv)
 
-    const cacheOpts = options.cache ?? {}
+    const cacheOpts = options.cache === false
+      ? { enabled: false }
+      : options.cache === true || options.cache == null
+        ? {}
+        : options.cache
+
     this._cache = new CacheManager({
       ...(cacheOpts.maxSize !== undefined ? { maxSize: cacheOpts.maxSize } : {}),
       ...(cacheOpts.ttl !== undefined ? { ttl: cacheOpts.ttl } : {}),

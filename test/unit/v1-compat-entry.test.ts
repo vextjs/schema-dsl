@@ -15,6 +15,8 @@ import defaultDsl, {
   exporters,
   installStringExtensions,
   uninstallStringExtensions,
+  validate,
+  validateAsync,
 } from '../../src/index.js'
 import type { DslConditionMarker } from '../../src/index.js'
 
@@ -94,6 +96,57 @@ describe('v1 entry compatibility', () => {
         then: { properties: { value: { type: 'string', exactLength: 11 } }, required: ['value'] },
         else: { properties: { value: { type: 'string' } } },
       },
+    })
+  })
+
+  it('dsl._if 应该作为 dsl.if 的兼容别名存在', () => {
+    expect(dsl._if).toBe(dsl.if)
+
+    const conditional = dsl._if('flag', 'string!', 'number!') as DslConditionMarker
+    const schema = dsl({
+      flag: 'boolean',
+      value: conditional,
+    }) as any
+
+    expect(schema.allOf?.[0]).toMatchObject({
+      if: { properties: { flag: { const: true } } },
+      then: { properties: { value: { type: 'string' } }, required: ['value'] },
+      else: { properties: { value: { type: 'number' } }, required: ['value'] },
+    })
+  })
+
+  it('顶层 validate() 应该支持直接传入 DSL 对象并保持 coerce 行为', () => {
+    const result = validate(
+      {
+        email: 'email!',
+        age: 'number:18-120',
+      },
+      {
+        email: 'test@example.com',
+        age: '25',
+      },
+    )
+
+    expect(result.valid).toBe(true)
+    expect(result.data).toEqual({
+      email: 'test@example.com',
+      age: 25,
+    })
+  })
+
+  it('顶层 validateAsync() 应该支持直接传入 DSL 对象', async () => {
+    await expect(validateAsync(
+      {
+        email: 'email!',
+        age: 'number:18-120',
+      },
+      {
+        email: 'test@example.com',
+        age: 25,
+      },
+    )).resolves.toEqual({
+      email: 'test@example.com',
+      age: 25,
     })
   })
 })

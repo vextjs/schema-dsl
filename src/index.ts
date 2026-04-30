@@ -212,6 +212,52 @@ function smartCoerceTypes(data: unknown, schema: _JSONSchema): unknown {
   return result ?? data   // 无转换时原样返回（零拷贝）
 }
 
+// ==================== 顶层 schema 归一化（raw DSL object 支持）====================
+
+const _JSON_SCHEMA_TYPES = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'])
+
+function _isRawJsonSchemaLike(obj: Record<string, unknown>): boolean {
+  if (typeof obj['type'] === 'string' && _JSON_SCHEMA_TYPES.has(obj['type'] as string)) return true
+  if ('anyOf' in obj || 'oneOf' in obj || 'allOf' in obj || '$ref' in obj || '$defs' in obj || 'definitions' in obj) return true
+
+  const props = obj['properties']
+  if (props && typeof props === 'object' && !Array.isArray(props)) {
+    const values = Object.values(props as Record<string, unknown>)
+    if (values.length === 0) return true
+    if (values.every(value => value && typeof value === 'object' && !Array.isArray(value) && _isRawJsonSchemaLike(value as Record<string, unknown>))) {
+      return true
+    }
+  }
+
+  const items = obj['items']
+  if (items && typeof items === 'object' && !Array.isArray(items)) {
+    return _isRawJsonSchemaLike(items as Record<string, unknown>)
+  }
+
+  return false
+}
+
+function _isDslObject(schema: unknown): schema is _DslDefinition {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return false
+
+  const obj = schema as Record<string, unknown>
+  if (typeof obj['toSchema'] === 'function') return false
+  if (obj['_isConditional']) return false
+
+  return !_isRawJsonSchemaLike(obj)
+}
+
+function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuilder): _JSONSchema {
+  const obj = schema as Record<string, unknown>
+  if (schema && typeof schema === 'object' && typeof obj['toSchema'] === 'function') {
+    return (obj['toSchema'] as () => _JSONSchema)()
+  }
+  if (_isDslObject(schema)) {
+    return _DslAdapter.parseObject(schema)
+  }
+  return schema as _JSONSchema
+}
+
 // ==================== i18n 目录扫描 ====================
 
 const _LOCALE_NAME_RE = /^[a-z]{2,3}(-[A-Z]{2,4})?$/
@@ -394,32 +440,34 @@ export function resetDefaultValidator(): void {
  * 当 options.coerce !== false 时，自动进行字符串→数字类型转换
  */
 export function validate<T = unknown>(
-  schema: _JSONSchema,
+  schema: _JSONSchema | _DslDefinition | _IDslBuilder,
   data: T,
   options: Record<string, unknown> = {},
 ): _ValidationResult<T> {
+  const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = options['coerce'] !== false
   // O5a：schema 无可转换字段时跳过整个 coerce 循环（零开销）
-  const coercedData = shouldCoerce && _hasCoercibleFields(schema as _JSONSchema)
-    ? smartCoerceTypes(data, schema as _JSONSchema)
+  const coercedData = shouldCoerce && _hasCoercibleFields(normalizedSchema)
+    ? smartCoerceTypes(data, normalizedSchema)
     : data
-  return _getDefaultValidator().validate(schema, coercedData as T, options)
+  return _getDefaultValidator().validate(normalizedSchema, coercedData as T, options)
 }
 
 /**
  * 便捷异步验证函数
  */
 export async function validateAsync<T = unknown>(
-  schema: _JSONSchema,
+  schema: _JSONSchema | _DslDefinition | _IDslBuilder,
   data: T,
   options: Record<string, unknown> = {},
 ): Promise<T> {
+  const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = options['coerce'] !== false
   // O5a：schema 无可转换字段时跳过整个 coerce 循环（零开销）
-  const coercedData = shouldCoerce && _hasCoercibleFields(schema as _JSONSchema)
-    ? smartCoerceTypes(data, schema as _JSONSchema)
+  const coercedData = shouldCoerce && _hasCoercibleFields(normalizedSchema)
+    ? smartCoerceTypes(data, normalizedSchema)
     : data
-  return _getDefaultValidator().validateAsync(schema, coercedData as T, options)
+  return _getDefaultValidator().validateAsync(normalizedSchema, coercedData as T, options)
 }
 
 // ==================== dsl 主函数 ====================
@@ -441,6 +489,10 @@ const _dslWithNS = _dslFn as {
   (def: _DslDefinition): _JSONSchema
   config: (options?: Partial<_DslConfigOptions>) => void
   if: {
+    (condition: string, thenSchema: unknown, elseSchema?: unknown): _DslConditionMarker
+    (condition: (data: unknown) => boolean): ReturnType<typeof _ConditionalBuilder.start>
+  }
+  _if: {
     (condition: string, thenSchema: unknown, elseSchema?: unknown): _DslConditionMarker
     (condition: (data: unknown) => boolean): ReturnType<typeof _ConditionalBuilder.start>
   }
@@ -470,6 +522,7 @@ function _dslIf(condition: string | ((data: unknown) => boolean), thenSchema?: u
 }
 
 _dslWithNS.if = _dslIf
+_dslWithNS._if = _dslIf
 
 _dslWithNS.match = (field: unknown, cases: Record<string, unknown>): _DslConditionMarker => {
   return _DslAdapter.match(String(field), cases) as _DslConditionMarker

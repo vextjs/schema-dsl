@@ -179,8 +179,17 @@ app.post('/api/user', (req, res) => {
 ### 2. 启用缓存
 
 ```javascript
-const validator = new Validator({ 
-  cache: true  // 启用编译缓存
+const validator = new Validator({
+  cache: true  // ✅ 简写：启用默认编译缓存配置
+});
+
+// 需要更细粒度时，使用对象配置
+const tunedValidator = new Validator({
+  cache: {
+    enabled: true,
+    maxSize: 500,
+    ttl: 60 * 60 * 1000
+  }
 });
 
 // 或者使用全局单例（默认启用缓存）
@@ -539,12 +548,16 @@ const config = {
   development: {
     verbose: true,
     allErrors: true,
-    cache: false // 开发时不缓存，便于调试
+    cache: false // ✅ 简写：关闭缓存，便于调试
   },
   production: {
     verbose: false,
     allErrors: false, // 只返回第一个错误
-    cache: true      // 生产环境启用缓存
+    cache: {
+      enabled: true,
+      maxSize: 1000,
+      ttl: 60 * 60 * 1000
+    }
   }
 };
 
