@@ -2,19 +2,18 @@
  * i18n 配置功能测试 (v2 TypeScript)
  *
  * v2 API differences:
- * - Locale.locales is private; use Locale.getMessage() or Locale.getAvailableLocales()
+ * - Locale.locales is private; use Locale.getMessageText() or Locale.getAvailableLocales()
  * - Locale.reset() resets to 'zh-CN' (v1 reset to 'en-US')
  * - locale files imported as ES modules from src/locales/
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import { dsl, validate, Locale } from '../../src/index.js'
+import { join } from 'path'
+import { dsl, Locale } from '../../src/index.js'
 import zhCN from '../../src/locales/zh-CN.js'
 import enUS from '../../src/locales/en-US.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const missingLocaleDir = join(process.cwd(), 'test', 'unit', 'non-existent-path')
 
 describe('i18n 配置功能', () => {
 
@@ -40,7 +39,7 @@ describe('i18n 配置功能', () => {
     it('应该支持传入目录路径配置', () => {
       expect(() => {
         dsl.config({
-          i18n: path.join(__dirname, 'non-existent-path')
+          i18n: missingLocaleDir
         })
       }).not.toThrow()
     })
@@ -96,8 +95,8 @@ describe('i18n 配置功能', () => {
         'test.key': 'test value'
       })
 
-      // v2: Locale.locales is private; verify via getMessage
-      const message = Locale.getMessage('test.key', {}, 'test-lang')
+      // v2: Locale.locales is private; verify via getMessageText
+      const message = Locale.getMessageText('test.key', {}, 'test-lang')
       expect(message).toBe('test value')
     })
 
