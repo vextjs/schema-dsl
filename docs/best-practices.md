@@ -67,9 +67,8 @@ const schema = dsl({
     }),
   
   email: 'email!'
-    .custom(async (value) => {
-      const exists = await checkEmailExists(value);
-      if (exists) return '邮箱已被占用';
+    .custom((value) => {
+      if (value.endsWith('@blocked.example')) return '该邮箱域名不允许注册';
     })
     .label('邮箱地址')
 });
@@ -415,22 +414,33 @@ const schema = dsl({
 
 ---
 
-### 3. 处理异步验证错误
+### 3. 处理外部异步校验错误
+
+> `.custom()` 当前仅支持同步函数；涉及数据库、RPC、HTTP 等异步检查时，请在基础校验通过后于业务层单独执行。
 
 ```javascript
 const schema = dsl({
-  email: 'email!'.custom(async (value) => {
-    try {
-      const exists = await checkEmailExists(value);
-      if (exists) return '邮箱已被占用';
-    } catch (error) {
-      // 记录错误但不阻止验证
-      console.error('Email check failed:', error);
-      // 可以选择跳过此验证或返回提示
-      return; // 跳过
-    }
-  })
+  email: 'email!'.label('邮箱地址')
 });
+
+async function validateUser(data) {
+  const result = validate(schema, data);
+  if (!result.valid) return result;
+
+  try {
+    const exists = await checkEmailExists(data.email);
+    if (exists) {
+      return {
+        valid: false,
+        errors: [{ field: 'email', keyword: 'business', message: '邮箱已被占用' }]
+      };
+    }
+  } catch (error) {
+    console.error('Email check failed:', error);
+  }
+
+  return result;
+}
 ```
 
 ---

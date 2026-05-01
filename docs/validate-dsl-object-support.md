@@ -187,7 +187,7 @@ module.exports = {
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': '只能包含字母、数字和下划线' }),
     email: 'email!',
-    password: 'password:strong!',
+    password: dsl('string!').password('strong'),
     age: 'number:18-120'
   }),
   
@@ -322,13 +322,13 @@ const result = validate(
 ## 完整示例
 
 ```javascript
-const { validate, validateAsync } = require('schema-dsl');
+const { dsl, validate, validateAsync } = require('schema-dsl');
 
 // 示例1：同步验证
 const result = validate(
   {
     email: 'email!',
-    password: 'password:strong!',
+    password: dsl('string!').password('strong'),
     age: 'number:18-120',
     username: 'string:3-32!'
   },
@@ -452,7 +452,7 @@ const userSchemas = {
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': '只能包含字母、数字和下划线' }),
     email: 'email!',
-    password: 'password:strong!',
+    password: dsl('string!').password('strong'),
     age: 'number:18-120'
   }),
   

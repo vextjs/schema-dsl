@@ -166,9 +166,11 @@ export const DslParser = {
       required = true
     }
 
-    // ========== 预处理 2：末尾 '!' → required=true，剥离 ==========
+    // ========== 预处理 2：末尾 '!' / '?' → required/optional 标记，剥离 ==========
     if (s.endsWith('!')) {
       required = true
+      s = s.slice(0, -1)
+    } else if (s.endsWith('?')) {
       s = s.slice(0, -1)
     }
 

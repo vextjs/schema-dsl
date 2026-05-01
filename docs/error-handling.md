@@ -1652,8 +1652,8 @@ const { dsl } = require('schema-dsl');
 // ✅ 推荐：返回错误消息字符串
 const schema = dsl({
   username: 'string:3-32!'
-    .custom(async (value) => {
-      if (await userExists(value)) {
+    .custom((value) => {
+      if (value === 'admin') {
         return '用户名已被占用';
       }
       // 验证通过时无需返回

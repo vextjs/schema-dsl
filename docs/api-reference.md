@@ -150,21 +150,20 @@ dsl('url').description('个人主页链接')
 
 **参数**:
 - `validator` (**Function**) - 验证函数
-  - 签名：`(value) => boolean | Promise<boolean> | { error, message }`
+  - 签名：`(value) => boolean | string | { error, message } | void`
   - 返回 `true` 表示通过
-  - 返回 `false` 或错误对象表示失败
+  - 返回 `false`、错误消息字符串或错误对象表示失败
+  - ⚠️ 当前运行时仅支持**同步**自定义验证；异步校验请在 `validate()` / `validateAsync()` 通过后于业务层单独执行
 
 **返回**: **DslBuilder**
 
 **示例**:
 ```javascript
 dsl('string:3-32!')
-  .custom(async (value) => {
-    const exists = await checkUsernameExists(value);
-    if (exists) {
+  .custom((value) => {
+    if (value === 'admin') {
       return { error: 'username.exists', message: '用户名已存在' };
     }
-    return true;
   })
 ```
 
@@ -320,13 +319,12 @@ const schema = dsl({
 
 ---
 
-#### `.validate(data, context?)`
+#### `.validate(data)`
 
 验证数据（便捷方法）。
 
 **参数**:
 - `data` (**any**) - 待验证数据
-- `context` (**Object**, 可选) - 验证上下文
 
 **返回**: **Promise<Object>** - 验证结果
   - `valid` (**boolean**) - 是否通过
@@ -385,285 +383,233 @@ dsl.if('isVip', 'number:0-50', 'number:0-10')
 ## Validator 类
 
 **参数**:
-- `dslString` (**string**) - DSL字符串，如 `'string:3-32!'`
+- `options` (**Object**, 可选) - Validator 配置项
 
 ### 方法
 
-#### `.pattern(regex, message?)`
+#### `.compile(schema, cacheKey?)`
 
-添加正则表达式验证。
-
-**参数**:
-- `regex` (**RegExp** | **string**) - 正则表达式
-- `message` (**string**, 可选) - 自定义错误消息
-
-**返回**: **DslBuilder**
-
-**示例**:
-```javascript
-dsl('string:3-32!')
-  .pattern(/^[a-zA-Z0-9_]+$/, '只能包含字母、数字和下划线')
-```
-
----
-
-#### `.label(text)`
-
-设置字段标签（用于错误消息）。
+编译 Schema 为 AJV 验证函数。
 
 **参数**:
-- `text` (**string**) - 标签文本
+- `schema` (**Object**) - JSON Schema
+- `cacheKey` (**string** | **null**, 可选) - 缓存键
 
-**返回**: **DslBuilder**
+**返回**: **Function** - AJV 验证函数
 
 **示例**:
 ```javascript
-dsl('email!').label('邮箱地址')
+const validator = new Validator();
+const validate = validator.compile(schema, 'user-schema');
+const ok = validate(data);
 ```
 
 ---
 
-#### `.messages(messages)`
+#### `.validate(schema, data, options?)`
 
-自定义错误消息。
+同步验证。
 
 **参数**:
-- `messages` (**Object**) - 错误消息对象
-  - 键：错误代码（如 `'string.min'`）
-  - 值：错误消息模板
-
-**返回**: **DslBuilder**
-
-**示例**:
-```javascript
-dsl('string:3-32!')
-  .messages({
-    'string.min': '至少{{#limit}}个字符',
-    'string.max': '最多{{#limit}}个字符'
-  })
-```
-
----
-
-#### `.description(text)`
-
-设置字段描述。
-
-**参数**:
-- `text` (**string**) - 描述文本
-
-**返回**: **DslBuilder**
-
-**示例**:
-```javascript
-dsl('url').description('个人主页链接')
-```
-
----
-
-#### `.custom(validator)`
-
-添加自定义验证器。
-
-**参数**:
-- `validator` (**Function**) - 验证函数
-  - 签名：`(value) => boolean | Promise<boolean> | { error, message }`
-  - 返回 `true` 表示通过
-  - 返回 `false` 或错误对象表示失败
-
-**返回**: **DslBuilder**
-
-**示例**:
-```javascript
-dsl('string:3-32!')
-  .custom(async (value) => {
-    const exists = await checkUsernameExists(value);
-    if (exists) {
-      return { error: 'username.exists', message: '用户名已存在' };
-    }
-    return true;
-  })
-```
-
----
-
-#### `.default(value)`
-
-设置默认值。
-
-**参数**:
-- `value` (**any**) - 默认值
-
-**返回**: **DslBuilder**
-
-**示例**:
-```javascript
-dsl('string').default('guest')
-```
-
----
-
-#### `.username(preset?)`
-
-用户名验证（自动设置长度和正则）。
-
-**参数**:
-- `preset` (**string** | **Object**, 可选) - 预设配置
-  - 字符串：`'short'` | `'medium'` | `'long'` | `'5-20'`
-  - 对象：`{ minLength, maxLength, allowUnderscore, allowNumber }`
-  - 默认值：`'medium'` (3-32位)
-
-**返回**: **DslBuilder**
-
-**示例**:
-```javascript
-// 默认 medium (3-32位)
-dsl('string!').username()
-
-// 自定义范围
-dsl('string!').username('5-20')
-
-// 使用预设
-dsl('string!').username('short')  // 3-16位
-```
-
----
-
-#### `.password(strength?)`
-
-密码强度验证（自动设置长度和正则）。
-
-**参数**:
-- `strength` (**string**, 可选) - 强度级别
-  - `'weak'` - 最少6位
-  - `'medium'` - 8位，字母+数字（默认）
-  - `'strong'` - 8位，大小写+数字
-  - `'veryStrong'` - 10位，大小写+数字+特殊字符
-
-**返回**: **DslBuilder**
-
-**示例**:
-```javascript
-dsl('string!').password('strong')
-```
-
----
-
-#### `.phone(country?)`
-
-手机号验证（自动设置长度和正则）。
-
-**参数**:
-- `country` (**string**, 可选) - 国家代码
-  - `'cn'` - 中国（默认）
-  - `'us'` - 美国
-  - `'uk'` - 英国
-  - `'hk'` - 香港
-  - `'tw'` - 台湾
-  - `'international'` - 国际格式
-
-**返回**: **DslBuilder**
-
-**注意**: 自动将类型纠正为 `string`（即使写成 `number` 也会自动修正）
-
-**示例**:
-```javascript
-// 推荐写法
-dsl('string!').phone('cn')
-
-// 自动纠正：number → string
-dsl('number!').phone('cn')  // 自动纠正为 string
-```
-
----
-
-#### `.toSchema()`
-
-转换为 JSON Schema 对象（含内部标记）。
-
-**返回**: **Object** - JSON Schema 对象（包含 `_required`、`_customMessages` 等 schema-dsl 内部字段）
-
-**示例**:
-```javascript
-const schema = dsl('email!').label('邮箱').toSchema();
-// { type: 'string', format: 'email', _label: '邮箱', _required: true }
-```
-
----
-
-#### `.toJsonSchema()` <sup>v1.2.5+</sup>
-
-转换为纯净的 JSON Schema 对象（无内部标记）。详见 [DslBuilder 类 - toJsonSchema()](#tojsonschema-supv125sup)。
-
-**返回**: **Object** - 纯净的 JSON Schema 对象
-
-**示例**:
-```javascript
-const schema = dsl('email!').label('邮箱').toJsonSchema();
-// { type: 'string', format: 'email' }
-// 注意：不含 _label、_required 等内部字段
-```
-
----
-
-#### `.validate(data, context?)`
-
-验证数据（便捷方法）。
-
-**参数**:
+- `schema` (**Object** | **Function**) - JSON Schema 或已编译的验证函数
 - `data` (**any**) - 待验证数据
-- `context` (**Object**, 可选) - 验证上下文
+- `options` (**Object**, 可选) - 验证选项
 
-**返回**: **Promise<Object>** - 验证结果
-  - `valid` (**boolean**) - 是否通过
-  - `errors` (**Array**, 可选) - 错误列表
-  - `data` (**any**, 可选) - 验证通过的数据
+**返回**: **Object**
+- `valid` (**boolean**) - 是否通过
+- `errors` (**Array**, 可选) - 错误列表
+- `data` (**any**, 可选) - 经过处理后的数据
 
 **示例**:
 ```javascript
-const result = await dsl('email!').validate('user@example.com');
-console.log(result.valid); // true
+const validator = new Validator();
+const result = validator.validate(schema, payload);
+console.log(result.valid);
 ```
 
 ---
 
-### 静态方法 
+#### `.validateAsync(schema, data, options?)`
 
-#### `dsl.match(field, map)```
-
-创建条件验证规则（类似 switch-case）。
+异步验证。验证失败时抛出 `ValidationError`。
 
 **参数**:
-- `field` (**string**) - 依赖的字段名
-- `map` (**Object**) - 值与Schema的映射
-  - `[value: string]`: 对应的Schema
-  - `_default` (**optional**): 默认Schema
+- `schema` (**Object** | **Function**) - JSON Schema 或已编译的验证函数
+- `data` (**any**) - 待验证数据
+- `options` (**Object**, 可选) - 验证选项
 
-**返回**: **Object** - 内部Match结构
+**返回**: **Promise<any>** - 验证通过后的数据
 
 **示例**:
 ```javascript
-dsl.match('type', {
-  email: 'email!',
-  phone: 'string:11!',
-  _default: 'string'
-})
+const validator = new Validator();
+await validator.validateAsync(schema, payload);
 ```
 
-#### `dsl.if(condition, thenSchema, elseSchema)`
+---
 
-创建简单的条件验证规则。
+#### `.validateBatch(schema, dataArray)`
+
+批量验证。Schema 只编译一次，多次复用。
 
 **参数**:
-- `condition` (**string**) - 条件字段名
-- `thenSchema` (**string|Object**) - 满足条件时的Schema
-- `elseSchema` (**string|Object**, 可选) - 不满足条件时的Schema
+- `schema` (**Object**) - JSON Schema
+- `dataArray` (**Array**) - 待验证数据数组
 
-**返回**: **Object** - 内部If结构
+**返回**: **Array<Object>** - 每项对应一个验证结果
 
 **示例**:
 ```javascript
-dsl.if('isVip', 'number:0-50', 'number:0-10')
+const validator = new Validator();
+const results = validator.validateBatch(schema, records);
+```
+
+---
+
+#### `.addKeyword(keyword, definition)`
+
+添加 AJV 自定义关键字。
+
+**参数**:
+- `keyword` (**string**) - 关键字名称
+- `definition` (**Object**) - AJV 关键字定义
+
+**返回**: **Validator**
+
+**示例**:
+```javascript
+const validator = new Validator();
+validator.addKeyword('isEven', {
+  type: 'number',
+  validate: (_schema, data) => data % 2 === 0
+});
+```
+
+---
+
+#### `.addFormat(name, validator)`
+
+添加 AJV 自定义格式。
+
+**参数**:
+- `name` (**string**) - 格式名称
+- `validator` (**Function** | **Object**) - AJV format 定义
+
+**返回**: **Validator**
+
+**示例**:
+```javascript
+const validator = new Validator();
+validator.addFormat('phone-cn', /^1[3-9]\d{9}$/);
+```
+
+---
+
+#### `.addSchema(uri, schema)`
+
+添加 schema 引用。
+
+**参数**:
+- `uri` (**string**) - schema 标识
+- `schema` (**Object**) - JSON Schema
+
+**返回**: **Validator**
+
+**示例**:
+```javascript
+const validator = new Validator();
+validator.addSchema('user.schema.json', schema);
+```
+
+---
+
+#### `.removeSchema(uri)`
+
+删除 schema 引用。
+
+**参数**:
+- `uri` (**string**) - schema 标识
+
+**返回**: **Validator**
+
+**示例**:
+```javascript
+const validator = new Validator();
+validator.removeSchema('user.schema.json');
+```
+
+---
+
+#### `.getAjv()`
+
+获取底层 AJV 实例。
+
+**返回**: **Ajv**
+
+**示例**:
+```javascript
+const validator = new Validator();
+const ajv = validator.getAjv();
+```
+
+---
+
+#### `.clearCache()`
+
+清空编译缓存。
+
+**返回**: `void`
+
+**示例**:
+```javascript
+const validator = new Validator();
+validator.clearCache();
+```
+
+---
+
+#### `.getCacheStats()`
+
+获取缓存统计信息。
+
+**返回**: **Object**
+
+**示例**:
+```javascript
+const validator = new Validator();
+console.log(validator.getCacheStats());
+```
+
+---
+
+### 静态方法
+
+#### `Validator.create(options?)`
+
+创建 `Validator` 实例。
+
+**返回**: **Validator**
+
+**示例**:
+```javascript
+const validator = Validator.create();
+```
+
+---
+
+#### `Validator.quickValidate(schema, data)`
+
+快速验证。
+
+**参数**:
+- `schema` (**Object**) - JSON Schema
+- `data` (**any**) - 待验证数据
+
+**返回**: **boolean**
+
+**示例**:
+```javascript
+const ok = Validator.quickValidate(schema, data);
 ```
 
 ---

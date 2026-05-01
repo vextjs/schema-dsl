@@ -63,7 +63,7 @@ const schema = dsl({
 | `.label(text)` | 字段标签 | `'email!'.label('邮箱地址')` |
 | `.messages(obj)` | 自定义消息 | `'string!'.messages({...})` |
 | `.description(text)` | 描述 | `'url'.description('主页')` |
-| `.custom(fn)` | 自定义验证 | `'string!'.custom(async...)` |
+| `.custom(fn)` | 自定义同步验证 | `'string!'.custom(value => value !== "admin")` |
 | `.default(value)` | 默认值 | `'string'.default('guest')` |
 | `.username(range?)` | 用户名验证 | `'string!'.username('5-20')` |
 | `.phone(country)` | 手机号验证 | `'string!'.phone('cn')` |
@@ -179,9 +179,8 @@ const schema = dsl({
 const schema = dsl({
   // 最优雅：只在失败时返回错误消息
   username: 'string:3-32!'
-    .custom(async (value) => {
-      const exists = await checkUsernameExists(value);
-      if (exists) return '用户名已被占用';
+    .custom((value) => {
+      if (value === 'admin') return '用户名已被占用';
       // 成功时无需返回
     })
     .label('用户名'),
@@ -196,6 +195,8 @@ const schema = dsl({
     .label('密码')
 });
 ```
+
+⚠️ `.custom()` 当前仅支持同步函数；需要异步查库或远程调用时，请在 `validate()` / `validateAsync()` 通过后于业务层单独执行。
 
 **支持的返回值**:
 - 不返回/`undefined` → 验证通过 ✅

@@ -1,12 +1,12 @@
 ﻿/**
  * 插件系统测试
  *
- * v2 PluginManager 现已完全兼容 v1 API：
- *   - on() 事件系统（plugin:registered / plugin:uninstalled / hook:error）
+ * v2 PluginManager 现已兼容 v1 PluginManager 核心 API：
+ *   - EventEmitter 事件系统
  *   - hooks 公开 Map，支持任意钩子名称
  *   - unhook() 移除钩子
  *   - runHook(name, ...args) 透传参数，返回结果数组
- *   - install(core, name?, opts?) 支持按名称单插件安装 + 选项合并
+ *   - install(core, name?, opts?) 支持按名称单插件安装 + 选项合并 + context
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -73,6 +73,35 @@ describe('PluginManager', () => {
       pluginManager.register(plugin);
 
       expect(emittedPlugin).toBe(plugin);
+    });
+
+    it('应该触发注册前后钩子', () => {
+      const calls: string[] = [];
+
+      pluginManager.hook('onBeforeRegister', (plugin: any) => {
+        calls.push(`before:${plugin.name}`);
+      });
+      pluginManager.hook('onAfterRegister', (plugin: any) => {
+        calls.push(`after:${plugin.name}`);
+      });
+
+      pluginManager.register({
+        name: 'test-plugin',
+        install() { }
+      });
+
+      expect(calls).toEqual(['before:test-plugin', 'after:test-plugin']);
+    });
+
+    it('应该兼容 EventEmitter once()', () => {
+      let count = 0;
+
+      pluginManager.once('plugin:registered', () => { count += 1; });
+
+      pluginManager.register({ name: 'plugin-1', install() { } });
+      pluginManager.register({ name: 'plugin-2', install() { } });
+
+      expect(count).toBe(1);
     });
   });
 
@@ -153,6 +182,59 @@ describe('PluginManager', () => {
         pluginManager.install({});
       }).toThrow('Failed to install plugin "error-plugin"');
     });
+
+    it('应该触发安装事件', () => {
+      const plugin = {
+        name: 'test-plugin',
+        install() { }
+      };
+
+      let emittedPlugin: unknown;
+      pluginManager.on('plugin:installed', (p) => { emittedPlugin = p; });
+
+      pluginManager.register(plugin);
+      pluginManager.install({});
+
+      expect(emittedPlugin).toBe(plugin);
+    });
+
+    it('应该向 install 传递 context', () => {
+      let receivedContext: any;
+
+      const plugin = {
+        name: 'test-plugin',
+        install(_core: any, _options: any, context: any) {
+          receivedContext = context;
+        }
+      };
+
+      pluginManager.register(plugin);
+      pluginManager.install({});
+
+      expect(receivedContext.plugins).toBe(pluginManager.plugins);
+      expect(receivedContext.hooks).toBe(pluginManager.hooks);
+    });
+
+    it('应该在安装失败时触发 plugin:error', () => {
+      let payload: any;
+
+      const plugin = {
+        name: 'error-plugin',
+        install() {
+          throw new Error('Installation failed');
+        }
+      };
+
+      pluginManager.on('plugin:error', (event) => { payload = event; });
+      pluginManager.register(plugin);
+
+      expect(() => {
+        pluginManager.install({});
+      }).toThrow('Failed to install plugin "error-plugin"');
+
+      expect(payload.plugin).toBe(plugin);
+      expect(payload.error.message).toBe('Installation failed');
+    });
   });
 
   describe('插件卸载', () => {
@@ -212,6 +294,52 @@ describe('PluginManager', () => {
 
       expect(emittedPlugin).toBe(plugin);
     });
+
+    it('应该向 uninstall 传递 core 和 context', () => {
+      let receivedCore: any;
+      let receivedContext: any;
+
+      const plugin = {
+        name: 'test-plugin',
+        install() { },
+        uninstall(coreInstance: any, context: any) {
+          receivedCore = coreInstance;
+          receivedContext = context;
+        }
+      };
+
+      const core = { version: '2' };
+      pluginManager.register(plugin);
+      pluginManager.install(core);
+      pluginManager.unregister('test-plugin');
+
+      expect(receivedCore).toBe(core);
+      expect(receivedContext.plugins).toBe(pluginManager.plugins);
+      expect(receivedContext.hooks).toBe(pluginManager.hooks);
+    });
+
+    it('应该在卸载失败时触发 plugin:error', () => {
+      let payload: any;
+
+      const plugin = {
+        name: 'error-plugin',
+        install() { },
+        uninstall() {
+          throw new Error('Uninstall failed');
+        }
+      };
+
+      pluginManager.on('plugin:error', (event) => { payload = event; });
+      pluginManager.register(plugin);
+      pluginManager.install({});
+
+      expect(() => {
+        pluginManager.unregister('error-plugin');
+      }).toThrow('Failed to uninstall plugin "error-plugin"');
+
+      expect(payload.plugin).toBe(plugin);
+      expect(payload.error.message).toBe('Uninstall failed');
+    });
   });
 
   describe('钩子系统', () => {
@@ -252,9 +380,9 @@ describe('PluginManager', () => {
     });
 
     it('应该处理钩子错误', async () => {
-      let errorEmitted = false;
+      let payload: any;
 
-      pluginManager.on('hook:error', () => { errorEmitted = true; });
+      pluginManager.on('hook:error', (event) => { payload = event; });
 
       pluginManager.hook('errorHook', () => {
         throw new Error('Hook error');
@@ -262,7 +390,24 @@ describe('PluginManager', () => {
 
       await pluginManager.runHook('errorHook');
 
-      expect(errorEmitted).toBe(true);
+      expect(payload.hookName).toBe('errorHook');
+      expect(payload.error.message).toBe('Hook error');
+    });
+
+    it('应该在钩子报错时触发 onError', async () => {
+      const errors: Array<{ message: string; hookName: string }> = [];
+
+      pluginManager.hook('onError', (error: any, meta: any) => {
+        errors.push({ message: error.message, hookName: meta.hookName });
+      });
+
+      pluginManager.hook('errorHook', () => {
+        throw new Error('Hook error');
+      });
+
+      await pluginManager.runHook('errorHook');
+
+      expect(errors).toEqual([{ message: 'Hook error', hookName: 'errorHook' }]);
     });
 
     it('应该移除钩子', () => {
@@ -367,6 +512,17 @@ describe('PluginManager', () => {
 
       pluginManager.clear();
       expect(pluginManager.size).toBe(0);
+    });
+
+    it('应该在 clear() 后触发 plugins:cleared', () => {
+      let cleared = false;
+
+      pluginManager.on('plugins:cleared', () => { cleared = true; });
+
+      pluginManager.register({ name: 'plugin1', install() { } });
+      pluginManager.clear();
+
+      expect(cleared).toBe(true);
     });
   });
 

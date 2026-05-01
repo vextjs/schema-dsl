@@ -20,6 +20,7 @@ const NON_AJV_KEYS = new Set([
 
 // AJV ValidateFunction type
 type AjvValidateFn = ValidateFunction
+type KeywordDefinitionInput = KeywordDefinition | ({ keyword?: string; [key: string]: unknown })
 
 // 带 _removeAdditional 或 _isConditional 内部标记的 schema
 type InternalSchema = JSONSchema & {
@@ -177,9 +178,12 @@ export class Validator {
   /**
    * 添加自定义关键字
    */
-  addKeyword(keyword: string, definition: KeywordDefinition): this {
+  addKeyword(keyword: string, definition: KeywordDefinitionInput): this {
     try {
-      this._ajv.addKeyword(keyword, definition)
+      this._ajv.addKeyword({
+        ...definition,
+        keyword,
+      })
       return this
     } catch (error) {
       throw new Error(`Failed to add keyword '${keyword}': ${error instanceof Error ? error.message : String(error)}`)

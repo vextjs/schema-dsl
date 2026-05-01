@@ -110,6 +110,9 @@ dist
 # vitepress cache directory
 **/.vitepress/cache
 
+# Local temporary build / smoke artifacts
+.tmp/
+
 # Docusaurus cache and generated files
 .docusaurus
 

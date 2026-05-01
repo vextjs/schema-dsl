@@ -380,6 +380,8 @@ const schema = dsl({
 
 ### 1. 链式调用
 
+> ⚠️ `.custom()` 当前仅支持同步自定义逻辑；异步业务校验请在验证通过后单独执行。
+
 ```javascript
 const schema = dsl({
   username: 'string:3-32!'
@@ -392,9 +394,8 @@ const schema = dsl({
   email: 'email!'
     .label('邮箱地址')
     .description('用于登录和接收通知')
-    .custom(async (value) => {
-      const exists = await checkEmailExists(value);
-      if (exists) return '邮箱已被占用';
+    .custom((value) => {
+      if (value.endsWith('@blocked.example')) return '该邮箱域名不允许注册';
     })
 });
 ```
@@ -479,15 +480,17 @@ const schema = dsl({
 'string!@custom'  // ❌ 不支持
 ```
 
-**解决方案**: 使用 `.custom()` 方法
+**解决方案**: 使用 `.custom()` 方法承载**同步**自定义逻辑
 ```javascript
-'string!'.custom(async (value) => {
-  // 自定义逻辑
-  if (await checkExists(value)) {
-    return '已存在';
+'string!'.custom((value) => {
+  // 自定义同步逻辑
+  if (value === 'reserved') {
+    return '该值不可用';
   }
 })
 ```
+
+异步校验（如数据库查重）请在 `validate()` / `validateAsync()` 通过后于业务层单独执行。
 
 ---
 

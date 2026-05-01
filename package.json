@@ -15,6 +15,21 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./plugins/custom-format": {
+      "types": "./dist/plugins/custom-format.d.ts",
+      "import": "./dist/plugins/custom-format.js",
+      "require": "./plugins/custom-format.cjs"
+    },
+    "./plugins/custom-validator": {
+      "types": "./dist/plugins/custom-validator.d.ts",
+      "import": "./dist/plugins/custom-validator.js",
+      "require": "./plugins/custom-validator.cjs"
+    },
+    "./plugins/custom-type-example": {
+      "types": "./dist/plugins/custom-type-example.d.ts",
+      "import": "./dist/plugins/custom-type-example.js",
+      "require": "./plugins/custom-type-example.cjs"
     }
   },
   "scripts": {
@@ -87,6 +102,7 @@
   "type": "module",
   "files": [
     "dist",
+    "plugins",
     "src",
     "docs",
     "README.md",

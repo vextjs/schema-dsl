@@ -1,6 +1,6 @@
 # 变更日志 (CHANGELOG)
 
-> **最后更新**: 2026-04-12
+> **最后更新**: 2026-05-01
 
 ---
 
@@ -24,10 +24,12 @@
 - 当前版本在 **`Node.js >=18.0.0`** 基线下保留 v1 主要公共 API 兼容入口
 - `require('schema-dsl')` 仍然有效（main 字段指向 `dist/index.cjs`）
 - `import dsl from 'schema-dsl'` 与 `import { dsl } from 'schema-dsl'` 均有效（ESM default + named exports）
+- `schema-dsl/plugins/custom-format`、`schema-dsl/plugins/custom-validator`、`schema-dsl/plugins/custom-type-example` 官方插件子路径已恢复
+- `Validator.addKeyword(keyword, definition)` 现内部转为 AJV 8 对象式注册，保留 v1 两参数 API，同时清理 `custom-validator` 安装时的 deprecated 警告
 - 恢复 `dsl._if` 兼容别名（运行时 + TypeScript 类型）
 - 顶层 `validate()` / `validateAsync()` 现支持直接传入 DSL 对象（内部自动归一化为 JSON Schema）
 - `new Validator({ cache: true/false })` 布尔简写现与文档口径保持一致
-- 当前验证基线：`1026` 个测试用例通过
+- 当前验证基线：`1052` 个测试用例通过
 - `ValidationErrorItem` 新增 `type` 和 `expected` 字段（向后兼容追加，不破坏现有代码）
 - 下游项目使用前提：运行时需满足 `Node.js >=18.0.0`
 

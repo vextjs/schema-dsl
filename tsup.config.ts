@@ -1,7 +1,12 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: {
+    index: 'src/index.ts',
+    'plugins/custom-format': 'src/plugins/custom-format.ts',
+    'plugins/custom-validator': 'src/plugins/custom-validator.ts',
+    'plugins/custom-type-example': 'src/plugins/custom-type-example.ts',
+  },
   format: ['esm', 'cjs'],
   dts: true,
   splitting: false,

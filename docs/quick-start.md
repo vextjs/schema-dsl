@@ -240,12 +240,13 @@ const formSchema = dsl({
 
 ### 自定义验证
 
+> `.custom()` 当前仅支持同步函数；如果需要异步查重，请在 `validate()` / `validateAsync()` 通过后于业务层单独执行。
+
 ```javascript
 const schema = dsl({
   username: 'string:3-32!'
-    .custom(async (value) => {
-      const exists = await checkUsernameExists(value);
-      if (exists) {
+    .custom((value) => {
+      if (value === 'admin') {
         return '用户名已存在';
       }
     })
@@ -662,9 +663,8 @@ const formSchema = dsl({
 ```javascript
 const schema = dsl({
   username: 'string:3-32!'
-    .custom(async (value) => {
-      const exists = await checkUsernameExists(value);
-      if (exists) {
+    .custom((value) => {
+      if (value === 'admin') {
         return { error: 'username.exists', message: '用户名已存在' };
       }
       return true;

@@ -67,9 +67,9 @@ console.log(result.valid);  // true
 
 ---
 
-## 🆕 最新特性（v1.1.8）
+## 🆕 兼容保留特性（v1.1.8 引入）
 
-### 🎯 智能参数识别 - 简化语法支持（v1.1.8）
+### 🎯 智能参数识别 - 简化语法支持（v1.1.8 引入）
 
 **API 更简洁，从4个参数减少到2个参数**
 
@@ -181,7 +181,7 @@ switch (error.code) {
 const schema = dsl({
   contact: 'types:email|phone!',      // 邮箱或手机号
   price: 'types:number:0-|string:1-20',  // 数字价格或"面议"
-  status: 'types:active|inactive|null'   // 枚举或空值
+  status: 'active|inactive'              // 枚举值
 });
 
 validate(schema, { contact: 'test@example.com' });  // ✅ 通过
@@ -564,7 +564,7 @@ npm run coverage
 
 > 当前仓库保留 `examples/` 目录（可直接运行的 smoke 示例），并同时维护测试与文档示例：
 > - **`examples/`** — 包含 `export-demo.ts` 等 TypeScript 示例（编译输出到 `.tmp/` 后可直接运行）
-> - **`test/`** — 1,026 个测试用例，覆盖所有功能的实际用法
+> - **`test/`** — 覆盖当前全量 Vitest 回归场景（本轮验证：67 files / 1052 tests passed）
 > - **`docs/`** — 57 个功能文档，含大量代码示例
 > - 本 README 内联示例（下方各章节）
 

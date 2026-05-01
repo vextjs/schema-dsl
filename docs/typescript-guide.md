@@ -461,10 +461,9 @@ try {
 ```typescript
 const schema = dsl({
   username: dsl('string:3-32!')
-    .custom(async (value) => {
-      // 异步验证（检查用户名是否已存在）
-      const exists = await checkUsernameExists(value);
-      if (exists) {
+    .custom((value) => {
+      // 同步自定义业务规则
+      if (value === 'admin') {
         return { error: 'USERNAME_EXISTS', message: '用户名已存在' };
       }
       return true;

@@ -437,15 +437,25 @@ const quickSchema = dsl({
 // 完整验证（详细）
 const fullSchema = dsl({
   username: 'string:3-32!'.pattern(/^[a-z]+$/),
-  email: 'email!'.custom(async (v) => checkEmailUnique(v))
+  email: 'email!'
 });
 
 // 先快速验证，再完整验证
-function validateWithFallback(data) {
+async function validateWithFallback(data) {
   const quick = validate(quickSchema, data);
   if (!quick.valid) return quick;
 
-  return validate(fullSchema, data);
+  const full = validate(fullSchema, data);
+  if (!full.valid) return full;
+
+  if (await checkEmailUnique(data.email)) {
+    return {
+      valid: false,
+      errors: [{ field: 'email', keyword: 'business', message: '邮箱已被占用' }]
+    };
+  }
+
+  return full;
 }
 ```
 

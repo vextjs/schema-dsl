@@ -8,7 +8,7 @@
  * - Validator.create() / Validator.quickValidate() 存在
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Validator } from '../../../src/index.js'
 
 describe('Validator', () => {
@@ -164,6 +164,25 @@ describe('Validator', () => {
 
       expect(validator.validate(schema, 4).valid).toBe(true)
       expect(validator.validate(schema, 5).valid).toBe(false)
+    })
+
+    it('应该兼容 v1 两参数写法且不触发 AJV deprecated 警告', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      try {
+        validator.addKeyword('isPositive', {
+          type: 'number',
+          validate: (_schema: unknown, data: unknown) => (data as number) > 0,
+        } as any)
+
+        const schema = { type: 'number', isPositive: true }
+
+        expect(validator.validate(schema, 1).valid).toBe(true)
+        expect(validator.validate(schema, 0).valid).toBe(false)
+        expect(warnSpy.mock.calls.flat().join('\n')).not.toContain('these parameters are deprecated')
+      } finally {
+        warnSpy.mockRestore()
+      }
     })
   })
 

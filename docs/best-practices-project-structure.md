@@ -49,7 +49,7 @@ const userSchemas = {
         'string.email': '请输入有效的邮箱地址'
       }),
     
-    password: dsl('password:strong!')
+    password: dsl('string!').password('strong')
       .label('密码')
       .messages({
         'string.password': '密码必须包含大小写字母、数字和特殊字符'
@@ -82,7 +82,7 @@ const userSchemas = {
   // 修改密码 schema
   changePassword: dsl({
     oldPassword: 'string!',
-    newPassword: 'password:strong!'
+    newPassword: dsl('string!').password('strong')
   })
 };
 
@@ -255,7 +255,7 @@ router.post('/register', (req, res) => {
     {  // ❌ 每次请求都转换
       username: 'string:3-32!',
       email: 'email!',
-      password: 'password:strong!'
+      password: dsl('string!').password('strong')
     },
     req.body
   );
@@ -367,7 +367,7 @@ export const userSchemas = {
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': '只能包含字母、数字和下划线' }),
     email: 'email!',
-    password: 'password:strong!',
+    password: dsl('string!').password('strong'),
     age: 'number:18-120'
   }),
   
