@@ -78,6 +78,13 @@ JSON Schema 对象，支持 JSON Schema Draft 7 标准。
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `format` | Boolean | 否 | `true` | 是否格式化错误信息 |
+| `allErrors` | Boolean | 否 | `false` | 是否收集所有错误（默认只返回第一个）|
+| `locale` | String | 否 | — | 动态指定语言，如 `'zh-CN'`、`'en-US'`、`'ja-JP'` |
+| `messages` | Object | 否 | — | 自定义错误消息覆盖 |
+| `smartCoerce` | Boolean | 否 | `false` | 是否启用智能类型强制（字符串→数字等自动转换）|
+| `removeAdditional` | Boolean \| `'all'` \| `'failing'` | 否 | `false` | 是否删除额外属性 |
+| `cache` | Boolean \| Object | 否 | — | 是否启用缓存，或传入缓存配置对象 |
+| `strict` | Boolean | 否 | `false` | 是否启用严格模式 |
 
 **图例说明**:
 - ✅ **标准功能**: 该参数来自 JSON Schema 或 ajv 标准

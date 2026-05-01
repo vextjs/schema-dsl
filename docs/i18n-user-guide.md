@@ -112,7 +112,7 @@ dsl.config({
 ### 方式 2：从目录加载（推荐大型项目）
 
 **目录结构**:
-```
+```text
 project/
   ├── i18n/
   │   └── labels/
@@ -370,7 +370,7 @@ const handleSubmit = async () => {
 ### 1. 语言包组织
 
 **推荐结构**:
-```
+```text
 i18n/
   ├── labels/         # 字段标签
   │   ├── zh-CN.cjs
@@ -443,7 +443,7 @@ module.exports = {
 
 **A**: 系统会自动回退
 
-```
+```text
 查找顺序：
 1. 用户语言包（例如 `i18n/labels/zh-CN.cjs` / `zh-CN.jsonc`）
 2. 内置语言包（包内预置的 `zh-CN` / `en-US` / `ja-JP` / `es-ES` / `fr-FR`）
@@ -454,7 +454,7 @@ module.exports = {
 
 **A**: 大型项目提升 3-10 倍
 
-```
+```text
 场景：3000 个 Schema
 原配置（1000）：33% 命中率
 优化后（5000）：100% 命中率

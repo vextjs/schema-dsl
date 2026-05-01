@@ -2,7 +2,7 @@
 
 ## 推荐的项目结构
 
-```
+```text
 your-project/
 ├── schemas/              # ✅ 所有 schema 定义（项目启动时加载）
 │   ├── index.js          # 统一导出

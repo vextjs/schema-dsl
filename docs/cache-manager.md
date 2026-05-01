@@ -318,7 +318,7 @@ function updateSchema(name, newSchema) {
 
 当缓存达到最大容量时，自动淘汰最久未使用的条目：
 
-```
+```text
 缓存操作顺序：
 1. set('A', ...) → [A]
 2. set('B', ...) → [A, B]

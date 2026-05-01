@@ -55,7 +55,7 @@ validate(schema, { value: 101 });      // ❌ 超范围
 
 ### 基本格式
 
-```
+```text
 types:type1|type2|type3[!]
 ```
 
@@ -65,7 +65,7 @@ types:type1|type2|type3[!]
 
 ### 带约束格式
 
-```
+```text
 types:type1:constraint1|type2:constraint2
 ```
 

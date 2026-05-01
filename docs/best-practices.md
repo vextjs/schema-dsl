@@ -406,7 +406,7 @@ const schema = dsl({
 ```
 
 **效果**:
-```
+```text
 ❌ 用户名不能为空
 ❌ 用户名至少需要3个字符
 ✅ 清晰明了，用户友好
@@ -450,7 +450,7 @@ async function validateUser(data) {
 ### 1. 集中管理 Schema
 
 **推荐的项目结构**:
-```
+```text
 src/
 ├── schemas/
 │   ├── index.js         # 导出所有 Schema

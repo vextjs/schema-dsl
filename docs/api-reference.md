@@ -698,14 +698,14 @@ SchemaHelper.clone(schema);
 
 ### 基本类型
 
-```
+```text
 string, number, integer, boolean
 email, url, uuid, date, datetime
 ```
 
 ### 约束
 
-```
+```text
 string:min-max      # 字符串长度
 number:min-max      # 数字范围
 value1|value2       # 枚举
@@ -714,7 +714,7 @@ value1|value2       # 枚举
 
 ### 数组
 
-```
+```text
 array<type>         # 数组
 array<string:1-50>  # 带约束的数组元素
 ```

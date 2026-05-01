@@ -256,7 +256,7 @@ console.log(result.data);
 **A**: 因为 Schema-DSL 使用**运行时解析 DSL**，而 Zod 是**编译时构建**。
 
 **权衡**:
-```
+```text
 损失: 比 Zod 慢 1.9倍
 换来:
   ✅ 代码量减少 65%
@@ -432,7 +432,7 @@ JSON.stringify({ username: 'string:3-32!' });
 
 **A**: Schema-DSL 的设计优先级：
 
-```
+```text
 灵活性 > 易用性 > 性能
 ```
 
