@@ -48,7 +48,7 @@ const result = validate(userSchema, req.body);
 - ✅ **统一错误模型** — `ValidationError` + `I18nError`
 - ✅ **多语言** — 内置 5 种语言（zh-CN / en-US / ja-JP / es-ES / fr-FR），支持运行时切换
 
-**5 分钟教程**: [快速开始](./docs/quick-start.md) | **完整文档**: [在线文档站](https://vextjs.github.io/schema-dsl)
+**5 分钟教程**: [快速开始](./docs/quick-start.md) | **完整文档**: [在线文档站](https://schema-dsl.github.io/)
 
 ---
 

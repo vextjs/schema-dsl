@@ -45,6 +45,8 @@ jobs:
   build-and-deploy:
     name: Build & Deploy Docs
     runs-on: ubuntu-latest
+    env:
+      DEPLOY_TOKEN: ${{ secrets.WEBSITE || secrets.DOCS_DEPLOY_TOKEN || secrets.GH_PAGES_TOKEN || secrets.PERSONAL_TOKEN }}
 
     steps:
       - name: Checkout
@@ -69,10 +71,18 @@ jobs:
         env:
           NODE_ENV: production
 
+      - name: Validate deploy token
+        shell: bash
+        run: |
+          if [ -z "${DEPLOY_TOKEN}" ]; then
+            echo "::error::Missing deploy token. Set one of these repository secrets in vextjs/schema-dsl: WEBSITE / DOCS_DEPLOY_TOKEN / GH_PAGES_TOKEN / PERSONAL_TOKEN"
+            exit 1
+          fi
+
       - name: Deploy to schema-dsl.github.io
         uses: peaceiris/actions-gh-pages@v4
         with:
-          personal_token: ${{ secrets.DOCS_DEPLOY_TOKEN }}
+          personal_token: ${{ env.DEPLOY_TOKEN }}
           external_repository: schema-dsl/schema-dsl.github.io
           publish_branch: main
           publish_dir: website/dist
