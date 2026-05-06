@@ -610,7 +610,8 @@ export class Validator {
       Object.keys(messages).length === 0
         ? localeMessages
         : { ...localeMessages, ...messages }
-    return this._errorFormatter.formatDetailed(rawErrors as Parameters<ErrorFormatter['formatDetailed']>[0], locale, mergedMessages)
+    // alreadyMerged=true: mergedMessages 已含 locale+custom，跳过 formatDetailed 内的二次展开
+    return this._errorFormatter.formatDetailed(rawErrors as Parameters<ErrorFormatter['formatDetailed']>[0], locale, mergedMessages, true)
   }
 
   private _internalError<T>(error: unknown, data: T): ValidationResult<T> {

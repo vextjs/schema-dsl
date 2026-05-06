@@ -21,7 +21,7 @@
  *
  * 测试场景：
  *   S1 - 简单对象（有效数据）
- *   S2 - 简单对象（无效数据 / 错误收集）
+ *   S2 - 简单对象（无效数据 / 错误收集，均不做 i18n 格式化）
  *   S3 - 嵌套对象（有效数据）
  */
 
@@ -217,13 +217,14 @@ const TIER1 = ['schema-dsl', 'ajv (raw)', 'zod', 'joi']
 // 参考库：代码生成级别（不同维度，仅供参考）
 const TIER2 = ['fastest-validator']
 
-function printTable(title, bench) {
+function printTable(title, bench, tier1Override) {
+  const tier1 = tier1Override ?? TIER1
   const byName = Object.fromEntries(bench.tasks.map(t => [t.name, t]))
   const results = bench.tasks
     .map(t => ({ name: t.name, hz: t.result?.hz ?? 0, p99: t.result?.p99 ?? 0, mean: t.result?.mean ?? 0 }))
     .sort((a, b) => b.hz - a.hz)
 
-  const tier1Results = results.filter(r => TIER1.includes(r.name))
+  const tier1Results = results.filter(r => tier1.includes(r.name))
   const tier2Results = results.filter(r => TIER2.includes(r.name))
 
   console.log(`\n${'─'.repeat(80)}`)
@@ -283,20 +284,23 @@ async function runS1() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 场景 S2：简单对象（无效数据 / 错误收集路径）
+// 场景 S2：无效数据 — 公平对比（schema-dsl 关闭 i18n 格式化，与其他库同等条件）
+// 说明：默认 validate() 会做完整 i18n 模板渲染（这是附加价值），其他库仅返回原始错误。
+//       S2 用 { format: false } 关闭格式化，才是真正的苹果对苹果比较。
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function runS2() {
   const bench = new Bench({ time: 2000, iterations: 100 })
   bench
-    .add('schema-dsl',        () => validate(sdSimple, SIMPLE_INVALID))
-    .add('ajv (raw)',         () => ajvSimpleValidate(SIMPLE_INVALID))
-    .add('zod',               () => zodSimple.safeParse(SIMPLE_INVALID))
-    .add('joi',               () => joiSimple.validate(SIMPLE_INVALID, { abortEarly: false }))
-    .add('fastest-validator', () => fvSimpleCheck(SIMPLE_INVALID))
+    .add('schema-dsl (no-fmt)', () => validate(sdSimple, SIMPLE_INVALID, { format: false }))
+    .add('ajv (raw)',            () => ajvSimpleValidate(SIMPLE_INVALID))
+    .add('zod',                  () => zodSimple.safeParse(SIMPLE_INVALID))
+    .add('joi',                  () => joiSimple.validate(SIMPLE_INVALID, { abortEarly: false }))
+    .add('fastest-validator',    () => fvSimpleCheck(SIMPLE_INVALID))
   await bench.warmup()
   await bench.run()
-  printTable('S2：简单对象验证（无效数据 / 错误收集）', bench)
+  printTable('S2：无效数据 — 公平对比（均不做 i18n 格式化）', bench,
+    ['schema-dsl (no-fmt)', 'ajv (raw)', 'zod', 'joi'])
   return bench
 }
 
@@ -328,18 +332,22 @@ function printSummary(benchmarks) {
   console.log('  📊 综合汇总（以 schema-dsl 为基准，横向对比各库）')
   console.log('═'.repeat(80))
 
-  const hdr = `  ${'场景'.padEnd(14)}` + libs.map(l => l.padStart(16)).join('')
+  const hdr = `  ${'场景'.padEnd(18)}` + libs.map(l => l.padStart(16)).join('')
   console.log(hdr)
   console.log('─'.repeat(80))
 
-  benchmarks.forEach(({ name, bench }) => {
+  benchmarks.forEach(({ name, bench, sdKey }) => {
     if (!bench) return
     const hz = Object.fromEntries(bench.tasks.map(t => [t.name, t.result?.hz ?? 0]))
-    const sds = hz['schema-dsl'] || 1
-    const row = `  ${name.padEnd(14)}` + libs.map(lib => {
-      const v = hz[lib]
+    // sdKey 用于 S2 等特殊命名的 schema-dsl 条目
+    const sdName = sdKey ?? 'schema-dsl'
+    const sds = hz[sdName] || 1
+    const row = `  ${name.padEnd(18)}` + libs.map(lib => {
+      // S2 中 schema-dsl 列映射到实际 task name
+      const actualLib = lib === 'schema-dsl' ? sdName : lib
+      const v = hz[actualLib]
       if (!v) return '           N/A'.padStart(16)
-      if (lib === 'schema-dsl') return '    baseline'.padStart(16)
+      if (actualLib === sdName) return '    baseline'.padStart(16)
       const ratio = v / sds
       const label = ratio >= 1
         ? `×${ratio.toFixed(2)} faster`
@@ -363,16 +371,17 @@ console.log(`  Platform : ${process.platform} / ${process.arch}`)
 console.log(`  Date     : ${new Date().toISOString()}`)
 console.log('\n  ⏳ 运行中，每个场景预热 + 2 秒测量，请稍候...')
 console.log('  ℹ️  ajv (raw) 是 schema-dsl 底层引擎，差值 = schema-dsl 自身层的开销')
-console.log('  ⚠️  fastest-validator 使用代码生成（非 JSON Schema），仅供参考，不同维度\n')
+console.log('  ⚠️  fastest-validator 使用代码生成（非 JSON Schema），仅供参考，不同维度')
+console.log('  ℹ️  S2 = 公平对比：均无 i18n 格式化（schema-dsl 使用 { format: false }）\n')
 
-const s1 = await runS1()
-const s2 = await runS2()
-const s3 = await runS3()
+const s1  = await runS1()
+const s2  = await runS2()
+const s3  = await runS3()
 
 printSummary([
-  { name: 'S1 简单(有效)', bench: s1 },
-  { name: 'S2 简单(无效)', bench: s2 },
-  { name: 'S3 嵌套(有效)', bench: s3 },
+  { name: 'S1 简单(有效)',   bench: s1 },
+  { name: 'S2 无效(no-fmt)', bench: s2, sdKey: 'schema-dsl (no-fmt)' },
+  { name: 'S3 嵌套(有效)',   bench: s3 },
 ])
 
 console.log('  ── fastest-validator 架构差异说明 ────────────────────────────────────────')

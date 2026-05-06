@@ -73,14 +73,18 @@ export class ErrorFormatter {
 
   /**
    * 格式化 AJV 原始错误数组 → ValidationErrorItem[]
+   *
+   * @param alreadyMerged - 当为 true 时，customMessages 已是完整的 locale+自定义合并结果，
+   *   跳过 { ...this.messages, ...customMessages } 展开（避免 100+ key 的冷展开）
    */
   formatDetailed(
     errors: AjvRawError[],
     locale?: string,
-    customMessages?: ErrorMessages
+    customMessages?: ErrorMessages,
+    alreadyMerged = false
   ): ValidationErrorItem[] {
     const msgs = customMessages
-      ? { ...this.messages, ...customMessages }
+      ? (alreadyMerged ? customMessages : { ...this.messages, ...customMessages })
       : this.messages
 
     // 过滤包装错误（if/anyOf/oneOf）当存在具体字段错误时
@@ -162,12 +166,17 @@ export class ErrorFormatter {
         schemaCustomMessages = { ...schemaCustomMessages, ...(properties[missingProp]['_customMessages'] as ErrorMessages) }
       }
     }
-    const mergedMessages = { ...messages, ...schemaCustomMessages }
+
+    // 性能优化：schemaCustomMessages 为空时（99% 场景）直接复用 messages，避免 100+ key 的对象展开
+    const hasCustomMessages = Object.keys(schemaCustomMessages).length > 0
+    const mergedMessages = hasCustomMessages ? { ...messages, ...schemaCustomMessages } : messages
     const mappedKeyword = KEYWORD_MAP[keyword] ?? keyword
     const schemaType = typeof schema['type'] === 'string' ? schema['type'] : 'string'
 
     // 消息查找：schema 自定义 > 类型+关键字 > 关键字 > fallback
-    let message: string | undefined = schemaCustomMessages[keyword] ?? schemaCustomMessages[mappedKeyword]
+    let message: string | undefined = hasCustomMessages
+      ? (schemaCustomMessages[keyword] ?? schemaCustomMessages[mappedKeyword])
+      : undefined
 
     if (message) {
       // 可能是键引用，尝试从 mergedMessages 查找
@@ -189,8 +198,11 @@ export class ErrorFormatter {
         'Validation error'
     }
 
-    // 插值参数
+    // 插值参数：先 spread params，再覆盖固定键（保持原有行为）
     const limit = params['limit'] ?? params['limitLength'] ?? params['comparison'] ?? ''
+    const allowedVals = Array.isArray(params['allowedValues'])
+      ? (params['allowedValues'] as unknown[]).join(', ')
+      : undefined
     const interpolateData: Record<string, unknown> = {
       ...params,
       path: label,
@@ -208,12 +220,8 @@ export class ErrorFormatter {
             : Array.isArray(err.data)
               ? 'array'
               : typeof err.data,
-      valids: Array.isArray(params['allowedValues'])
-        ? (params['allowedValues'] as unknown[]).join(', ')
-        : undefined,
-      allowed: Array.isArray(params['allowedValues'])
-        ? (params['allowedValues'] as unknown[]).join(', ')
-        : undefined,
+      valids: allowedVals,
+      allowed: allowedVals,
       key: params['additionalProperty'],
     }
 

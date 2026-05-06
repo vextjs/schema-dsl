@@ -7,14 +7,14 @@ export default defineConfig({
   // Many docs link back to ../README.md, ../examples/, ../CHANGELOG.md, etc.,
   // so mirroring them under website/docs would create a second drifting source.
   root: path.join(__dirname, '..', 'docs'),
-  base: '/',
+  base: '/schema-dsl/',
   title: 'schema-dsl',
   icon: '/favicon.svg',
   description: '简洁强大的 JSON Schema 验证库，提供 DSL 语法、链式 API、多格式导出与完整 TypeScript 支持。',
   outDir: 'dist',
   plugins: [
     pluginSitemap({
-      siteUrl: 'https://schema-dsl.github.io'
+      siteUrl: 'https://vextjs.github.io/schema-dsl'
     })
   ],
   markdown: {
@@ -44,15 +44,15 @@ export default defineConfig({
         link: '/api-reference'
       },
       {
-        text: 'v2.0.0-beta.1',
+        text: 'v2.0.0-beta.2',
         items: [
           {
             text: '更新日志',
-            link: 'https://github.com/vextjs/schema-dsl/blob/main/CHANGELOG.md'
+            link: 'https://github.com/vextjs/schema-dsl/blob/v2/CHANGELOG.md'
           },
           {
             text: '贡献指南',
-            link: 'https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md'
+            link: 'https://github.com/vextjs/schema-dsl/blob/v2/CONTRIBUTING.md'
           }
         ]
       }
