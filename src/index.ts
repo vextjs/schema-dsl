@@ -128,54 +128,69 @@ import * as _locales from './locales/index.js'
 
 // ==================== smartCoerceTypes ====================
 
-// 性能优化 O5a：缓存 schema 是否含可转换字段（number / number 数组 / 嵌套对象）
-// 无可转换字段时，直接跳过整个 smartCoerceTypes 循环
-const _coercibleCache = new WeakMap<object, boolean>()
+// 性能优化 O5b：预计算 schema 的可转换字段候选列表
+// 避免 smartCoerceTypes 对整个 data 做 Object.keys() 再逐字段判断类型
+// 只迭代"可能需要转换"的字段（numbers/arrays/objects），减少循环次数
+type _CoerceCandidates = {
+  numbers: string[]   // type: 'number' | 'integer' 字段
+  arrays: string[]    // items.type: 'number' 的数组字段
+  objects: Array<{ key: string; schema: _JSONSchema }>   // 含 properties 的嵌套对象
+} | null   // null = 无可转换字段
 
-function _hasCoercibleFields(schema: _JSONSchema): boolean {
+const _coerceCandidatesCache = new WeakMap<object, _CoerceCandidates>()
+
+function _getCoerceCandidates(schema: _JSONSchema): _CoerceCandidates {
   const schemaObj = schema as object
-  const cached = _coercibleCache.get(schemaObj)
+  const cached = _coerceCandidatesCache.get(schemaObj)
   if (cached !== undefined) return cached
 
   const props = schema.properties as Record<string, _JSONSchema> | undefined
   if (!props) {
-    _coercibleCache.set(schemaObj, false)
-    return false
+    _coerceCandidatesCache.set(schemaObj, null)
+    return null
   }
 
-  const result = Object.values(props).some(f => {
-    const ft = f.type
-    return ft === 'number' || ft === 'integer' ||
-      (ft === 'object' && !!f.properties) ||
-      (ft === 'array' && (f.items as _JSONSchema | undefined)?.type === 'number')
-  })
+  const numbers: string[] = []
+  const arrays: string[] = []
+  const objects: Array<{ key: string; schema: _JSONSchema }> = []
 
-  _coercibleCache.set(schemaObj, result)
+  for (const [key, f] of Object.entries(props)) {
+    if (f.enum) continue
+    const ft = f.type
+    if (ft === 'number' || ft === 'integer') {
+      numbers.push(key)
+    } else if (ft === 'array' && (f.items as _JSONSchema | undefined)?.type === 'number') {
+      arrays.push(key)
+    } else if (ft === 'object' && f.properties) {
+      objects.push({ key, schema: f })
+    }
+  }
+
+  const result: _CoerceCandidates = (numbers.length || arrays.length || objects.length)
+    ? { numbers, arrays, objects }
+    : null
+  _coerceCandidatesCache.set(schemaObj, result)
   return result
 }
 
 function smartCoerceTypes(data: unknown, schema: _JSONSchema): unknown {
   if (!data || typeof data !== 'object') return data
 
-  const properties = schema.properties
-  if (!properties) return data   // 快速路径：无 properties 定义直接返回
-
   if (Array.isArray(data)) {
     return data.map(item => smartCoerceTypes(item, schema))
   }
 
-  // 惰性拷贝：只有真正发生转换时才创建新对象
+  // O5b：用预计算候选列表替代 Object.keys(data) 遍历
+  // 只处理 schema 中已知可能需要转换的字段，避免无效迭代
+  const candidates = _getCoerceCandidates(schema)
+  if (!candidates) return data   // 快速路径：无可转换字段
+
   let result: Record<string, unknown> | null = null
   const src = data as Record<string, unknown>
 
-  for (const key of Object.keys(src)) {
+  for (const key of candidates.numbers) {
     const value = src[key]
-    const fieldSchema = (properties as Record<string, _JSONSchema>)[key]
-    if (!fieldSchema || fieldSchema.enum) continue
-
-    const ftype = fieldSchema.type
-
-    if (ftype === 'number' && typeof value === 'string') {
+    if (typeof value === 'string') {
       const trimmed = value.trim()
       if (trimmed !== '') {
         const num = Number(trimmed)
@@ -184,25 +199,32 @@ function smartCoerceTypes(data: unknown, schema: _JSONSchema): unknown {
           result[key] = num
         }
       }
-    } else if (ftype === 'object' && typeof value === 'object' && value !== null) {
-      const converted = smartCoerceTypes(value, fieldSchema)
-      if (converted !== value) {
-        if (!result) result = { ...src }
-        result[key] = converted
-      }
-    } else if (ftype === 'array' && Array.isArray(value)) {
-      const items = fieldSchema.items as _JSONSchema | undefined
-      if (items?.type === 'number') {
-        const converted = value.map(item => {
-          if (typeof item === 'string') {
-            const trimmed = item.trim()
-            if (trimmed !== '') {
-              const num = Number(trimmed)
-              return !isNaN(num) ? num : item
-            }
+    }
+  }
+
+  for (const key of candidates.arrays) {
+    const value = src[key]
+    if (Array.isArray(value)) {
+      const converted = value.map(item => {
+        if (typeof item === 'string') {
+          const trimmed = item.trim()
+          if (trimmed !== '') {
+            const num = Number(trimmed)
+            return !isNaN(num) ? num : item
           }
-          return item
-        })
+        }
+        return item
+      })
+      if (!result) result = { ...src }
+      result[key] = converted
+    }
+  }
+
+  for (const { key, schema: nestedSchema } of candidates.objects) {
+    const value = src[key]
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const converted = smartCoerceTypes(value, nestedSchema)
+      if (converted !== value) {
         if (!result) result = { ...src }
         result[key] = converted
       }
@@ -247,15 +269,28 @@ function _isDslObject(schema: unknown): schema is _DslDefinition {
   return !_isRawJsonSchemaLike(obj)
 }
 
+// 性能优化 O6：缓存 _normalizeSchemaInput 结果（避免每次调用重复 _isDslObject 检查）
+// DslBuilder.toSchema() / DslAdapter.parseObject() 只在第一次调用时执行
+const _normalizeSchemaCache = new WeakMap<object, _JSONSchema>()
+
 function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuilder): _JSONSchema {
+  if (!schema || typeof schema !== 'object') return schema as _JSONSchema
+
+  const schemaObj = schema as object
+  const cached = _normalizeSchemaCache.get(schemaObj)
+  if (cached !== undefined) return cached
+
   const obj = schema as Record<string, unknown>
-  if (schema && typeof schema === 'object' && typeof obj['toSchema'] === 'function') {
-    return (obj['toSchema'] as () => _JSONSchema)()
+  let result: _JSONSchema
+  if (typeof obj['toSchema'] === 'function') {
+    result = (obj['toSchema'] as () => _JSONSchema)()
+  } else if (_isDslObject(schema)) {
+    result = _DslAdapter.parseObject(schema)
+  } else {
+    result = schema as _JSONSchema
   }
-  if (_isDslObject(schema)) {
-    return _DslAdapter.parseObject(schema)
-  }
-  return schema as _JSONSchema
+  _normalizeSchemaCache.set(schemaObj, result)
+  return result
 }
 
 // ==================== i18n 目录扫描 ====================
@@ -446,8 +481,8 @@ export function validate<T = unknown>(
 ): _ValidationResult<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = options['coerce'] !== false
-  // O5a：schema 无可转换字段时跳过整个 coerce 循环（零开销）
-  const coercedData = shouldCoerce && _hasCoercibleFields(normalizedSchema)
+  // O5b：用候选字段缓存替代 _hasCoercibleFields + Object.keys 扫描
+  const coercedData = shouldCoerce && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
   return _getDefaultValidator().validate(normalizedSchema, coercedData as T, options)
@@ -463,8 +498,8 @@ export async function validateAsync<T = unknown>(
 ): Promise<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = options['coerce'] !== false
-  // O5a：schema 无可转换字段时跳过整个 coerce 循环（零开销）
-  const coercedData = shouldCoerce && _hasCoercibleFields(normalizedSchema)
+  // O5b：用候选字段缓存替代 _hasCoercibleFields + Object.keys 扫描
+  const coercedData = shouldCoerce && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
   return _getDefaultValidator().validateAsync(normalizedSchema, coercedData as T, options)
