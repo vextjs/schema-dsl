@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# schema-dsl 文档站 — 自动部署到 schema-dsl/schema-dsl.github.io
+# schema-dsl 文档站 — 自动部署到 vextjs/schema-dsl.github.io
 #
 # 触发条件：
 #   - push 到 main 分支（`website/` 或 `docs/` 目录变更时触发）
@@ -10,7 +10,7 @@
 #   2. deploy — 将 website/dist/ 跨仓库推送到 schema-dsl.github.io@main
 #
 # 首次使用前需完成以下一次性设置：
-#   1. 在 GitHub 创建 Fine-grained PAT，授权 schema-dsl/schema-dsl.github.io
+#   1. 在 GitHub 创建 Fine-grained PAT，授权 vextjs/schema-dsl.github.io
 #      的 Contents: Read and write 权限
 #   2. 在本仓库 Settings → Secrets → Actions 中添加 Secret：
 #      名称 DOCS_DEPLOY_TOKEN，值为上述 PAT
@@ -83,7 +83,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           personal_token: ${{ env.DEPLOY_TOKEN }}
-          external_repository: schema-dsl/schema-dsl.github.io
+          external_repository: vextjs/schema-dsl.github.io
           publish_branch: main
           publish_dir: website/dist
           force_orphan: true
