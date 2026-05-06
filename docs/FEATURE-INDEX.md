@@ -273,10 +273,12 @@ console.log(ddl);
 **可用方法**:
 - ✅ `reusable(factory)` - 创建可复用片段
 - ✅ `createLibrary(fragments)` - 创建片段库
-- ✅ `merge(...schemas)` - 合并多个Schema
 - ✅ `extend(baseSchema, extensions)` - 扩展Schema
 - ✅ `pick(schema, fields)` - 筛选字段
 - ✅ `omit(schema, fields)` - 排除字段
+- ✅ `partial(schema, fields?)` - 将字段改为可选
+- ✅ `validateBatch(schema, dataArray, ajvInstance)` - 带汇总统计的批量验证
+- ✅ `withPerformance(validator)` - 为 Validator 包装性能信息
 - ✅ `toMarkdown(schema)` - 导出为Markdown
 - ✅ `toHTML(schema)` - 导出为HTML
 - ✅ `clone(schema)` - 深度克隆
@@ -383,9 +385,29 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 - ✅ `MessageTemplate.renderBatch(templates, vars)` - 批量渲染（静态方法）
 
 **文档位置**:
-- 📖 [API参考 - MessageTemplate](./api-reference.md)
+- 📖 [API参考 - MessageTemplate](./api-reference.md#messagetemplate)
 
 **代码位置**: `src/core/MessageTemplate.ts`
+
+---
+
+### 底层解析与模板工具
+
+**功能**: 面向进阶集成的模板渲染、DSL 解析与 Schema 编译能力
+
+**可用导出**:
+- ✅ `renderTemplate(template, params)`
+- ✅ `JSONSchemaCore`
+- ✅ `DslParser.parseString(dsl)`
+- ✅ `DslParser.parseObject(dslObject)`
+- ✅ `TypeRegistry`
+- ✅ `ConstraintParser.parse(constraintStr, baseType)`
+- ✅ `SchemaCompiler.compile(typeDef, constraints, meta?)`
+
+**文档位置**:
+- 📖 [API参考 - renderTemplate / JSONSchemaCore / 底层解析与编译工具](./api-reference.md)
+
+**代码位置**: `src/core/TemplateEngine.ts` / `src/core/JSONSchemaCore.ts` / `src/parser/*`
 
 ---
 

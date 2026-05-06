@@ -521,25 +521,27 @@ router.post('/register', (req, res) => {
 
 ### 2. Schema 复用
 
-**使用 SchemaHelper**:
+**使用 SchemaUtils**:
 ```javascript
-const { SchemaHelper } = require('schema-dsl');
+const { SchemaUtils, dsl } = require('schema-dsl');
 
 // 创建可复用字段库
-const fields = SchemaHelper.createLibrary({
-  email: 'email!',
-  phone: dsl('string!').phone('cn'),
-  password: dsl('string!').password('strong')
+const fields = SchemaUtils.createLibrary({
+  email: () => 'email!',
+  phone: () => dsl('string!').phone('cn'),
+  password: () => dsl('string!').password('strong')
 });
 
 // 在多个 Schema 中复用
 const registerSchema = dsl({
-  ...fields.pick(['email', 'password']),
+  email: fields.email(),
+  password: fields.password(),
   username: 'string:3-32!'
 });
 
 const profileSchema = dsl({
-  ...fields.pick(['email', 'phone']),
+  email: fields.email(),
+  phone: fields.phone(),
   bio: 'string:500'
 });
 ```
@@ -628,7 +630,7 @@ app.get('/health', (req, res) => {
     res.json({ 
       status: 'ok',
       validator: 'operational',
-      cacheSize: validator.getCacheSize()
+      cacheStats: validator.getCacheStats()
     });
   } catch (error) {
     res.status(500).json({ 

@@ -421,6 +421,26 @@ dsl.if(d => d.age < 18)
 
 ---
 
+### .build()
+
+将当前 `ConditionalBuilder` 输出为可直接交给 `Validator` / `validate()` 使用的 schema 对象。
+
+`.build()` 是 `.toSchema()` 的别名，适合在你想显式拿到最终 schema 时使用。
+
+```javascript
+const { dsl, validate } = require('schema-dsl');
+
+const conditionalSchema = dsl.if(data => data.age >= 18)
+  .then('email!')
+  .else('email')
+  .build();
+
+const result = validate(conditionalSchema, 'user@example.com');
+console.log(result.valid);
+```
+
+---
+
 ### .elseIf(condition)
 
 添加 else-if 分支。
@@ -666,7 +686,7 @@ try {
 
 **返回**: `*` - 验证通过返回数据
 
-**抛出**: `Error` - 验证失败抛出错误（name: 'ValidationError'）
+**抛出**: `ValidationError` - 验证失败时直接抛出 `ValidationError`
 
 **特性**: 同步版本的断言验证，适合快速失败场景
 

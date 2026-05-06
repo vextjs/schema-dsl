@@ -189,10 +189,9 @@ const fullUserSchema = dsl({
   updatedAt: 'date'
 });
 
-// POST /users - 创建用户（严格模式）
+// POST /users - 创建用户（排除系统字段）
 const createSchema = SchemaUtils
-  .omit(fullUserSchema, ['id', 'createdAt', 'updatedAt'])
-  .strict();
+  .omit(fullUserSchema, ['id', 'createdAt', 'updatedAt']);
 
 app.post('/users', async (req, res, next) => {
   try {
@@ -208,17 +207,17 @@ app.post('/users', async (req, res, next) => {
   }
 });
 
-// GET /users/:id - 查询用户（移除敏感字段）
+// GET /users/:id - 查询用户（业务层显式移除敏感字段）
 const publicSchema = SchemaUtils
-  .omit(fullUserSchema, ['password'])
-  .clean();
+  .pick(fullUserSchema, ['id', 'name', 'email', 'age', 'createdAt', 'updatedAt']);
 
 app.get('/users/:id', async (req, res, next) => {
   try {
     const user = await db.users.findById(req.params.id);
+    const { password, ...publicUser } = user;
     const { validate } = require('schema-dsl');
-    const result = validate(publicSchema, user);
-    res.json(result.data); // 自动移除 password
+    const result = validate(publicSchema, publicUser);
+    res.json(result.data);
   } catch (error) {
     next(error);
   }
@@ -227,8 +226,7 @@ app.get('/users/:id', async (req, res, next) => {
 // PATCH /users/:id - 更新用户（部分验证）
 const updateSchema = SchemaUtils
   .pick(fullUserSchema, ['name', 'age'])
-  .partial()
-  .loose();
+  .partial();
 
 app.patch('/users/:id', async (req, res, next) => {
   try {
@@ -243,10 +241,9 @@ app.patch('/users/:id', async (req, res, next) => {
   }
 });
 
-// PUT /users/:id - 替换用户（严格模式）
+// PUT /users/:id - 替换用户（排除系统字段）
 const replaceSchema = SchemaUtils
-  .omit(fullUserSchema, ['id', 'createdAt', 'updatedAt'])
-  .strict();
+  .omit(fullUserSchema, ['id', 'createdAt', 'updatedAt']);
 
 app.put('/users/:id', async (req, res, next) => {
   try {
@@ -261,6 +258,8 @@ app.put('/users/:id', async (req, res, next) => {
   }
 });
 ```
+
+> ⚠️ `SchemaUtils` 当前只负责生成派生 Schema（如 `pick()` / `omit()` / `partial()` / `extend()`），不会自动删除运行时对象上的额外字段。返回公开响应时，请先在业务层显式投影数据，再用 `validate()` 校验投影结果。
 
 ---
 
@@ -353,10 +352,9 @@ const baseUserSchema = dsl({
   updatedAt: 'date'
 });
 
-// 注册 Schema（排除系统字段，严格模式）
+// 注册 Schema（排除系统字段）
 const registerSchema = SchemaUtils
-  .omit(baseUserSchema, ['id', 'createdAt', 'updatedAt'])
-  .strict();
+  .omit(baseUserSchema, ['id', 'createdAt', 'updatedAt']);
 
 // 注册接口
 app.post('/register', async (req, res, next) => {
@@ -384,13 +382,14 @@ app.post('/register', async (req, res, next) => {
       updatedAt: new Date()
     });
     
-    // 5. 返回公开信息（移除密码）
+    // 5. 返回公开信息（先显式投影，再按公开 Schema 校验）
     const publicSchema = SchemaUtils
-      .omit(baseUserSchema, ['password'])
-      .clean();
+      .pick(baseUserSchema, ['id', 'username', 'email', 'age', 'createdAt', 'updatedAt']);
+    
+    const { password, ...publicUser } = user;
     
     const { validate } = require('schema-dsl');
-    const result = validate(publicSchema, user);
+    const result = validate(publicSchema, publicUser);
     
     res.status(201).json({
       success: true,

@@ -251,7 +251,7 @@ dsl.error.throw('account.notFound', 'zh-CN', 404);
 
 ---
 
-**完整文档**: [docs/INDEX.md](./docs/INDEX.md)  
+**完整文档**: [docs/doc-index.md](./docs/doc-index.md)  
 **GitHub**: [https://github.com/vextjs/schema-dsl](https://github.com/vextjs/schema-dsl)  
 **npm**: [https://www.npmjs.com/package/schema-dsl](https://www.npmjs.com/package/schema-dsl)
 

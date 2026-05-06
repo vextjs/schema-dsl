@@ -75,19 +75,25 @@ JSON Schema 对象，支持 JSON Schema Draft 7 标准。
 
 ### options 对象属性
 
+`validator.validate(schema, data, options)` 当前按本次调用实际读取以下参数：
+
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `format` | Boolean | 否 | `true` | 是否格式化错误信息 |
-| `allErrors` | Boolean | 否 | `false` | 是否收集所有错误（默认只返回第一个）|
 | `locale` | String | 否 | — | 动态指定语言，如 `'zh-CN'`、`'en-US'`、`'ja-JP'` |
 | `messages` | Object | 否 | — | 自定义错误消息覆盖 |
-| `smartCoerce` | Boolean | 否 | `false` | 是否启用智能类型强制（字符串→数字等自动转换）|
-| `removeAdditional` | Boolean \| `'all'` \| `'failing'` | 否 | `false` | 是否删除额外属性 |
-| `cache` | Boolean \| Object | 否 | — | 是否启用缓存，或传入缓存配置对象 |
-| `strict` | Boolean | 否 | `false` | 是否启用严格模式 |
 
-**图例说明**:
-- ✅ **标准功能**: 该参数来自 JSON Schema 或 ajv 标准
+### 相关配置入口
+
+以下能力**不属于** `validator.validate(schema, data, options)` 的逐次调用参数：
+
+| 能力 | 正确入口 | 说明 |
+|------|----------|------|
+| `allErrors` / `useDefaults` / `coerceTypes` / `removeAdditional` / `cache` | `new Validator(options)` | 这些配置在创建 `Validator` 实例时注入到底层 AJV / 缓存层 |
+| `strict` | Schema 本身 | 如果需要禁止额外字段，请在 schema 层使用 `DslBuilder.strict()` 或等价的 schema 级约束 |
+| `coerce` | 顶层 `validate()` / `validateAsync()` 便捷函数 | 顶层 helper 默认会做字符串 → 数字的便捷转换，传 `{ coerce: false }` 可关闭 |
+
+如果你需要在**单次调用**中覆盖错误输出，请使用上表中的 `format`、`locale`、`messages`；如果你需要调整验证器行为，请优先在 `Validator` 构造阶段配置。
 
 ---
 
@@ -355,8 +361,7 @@ processData(result.data);
 const result = validator.validate(schema, data);
 
 if (!result.valid) {
-  const error = new ValidationError('数据验证失败');
-  error.errors = result.errors;
+  const error = new ValidationError(result.errors, data);
   throw error;
 }
 ```

@@ -57,13 +57,34 @@ const schema = dsl({
 |------|-----|------|
 | 邮箱 | `email` | 邮箱地址 |
 | URL | `url` | 网址 |
+| URI | `uri` | URI 地址 |
 | UUID | `uuid` | UUID格式 |
 | 日期 | `date` | YYYY-MM-DD |
 | 日期时间 | `datetime` | ISO 8601 |
 | 时间 | `time` | HH:mm:ss |
+| 主机名 | `hostname` | 主机名 |
+| IP（IPv4 / IPv6） | `ip` | 自动接受 IPv4 或 IPv6 |
 | IPv4 | `ipv4` | IPv4地址 |
 | IPv6 | `ipv6` | IPv6地址 |
 | 二进制 | `binary` | Base64编码 |
+
+### 特殊类型
+
+| 类型 | DSL | 说明 |
+|------|-----|------|
+| ObjectId | `objectId` | MongoDB ObjectId |
+| 十六进制颜色 | `hexColor` | CSS 十六进制颜色 |
+| MAC 地址 | `macAddress` | MAC 地址 |
+| Cron 表达式 | `cron` | 标准 Cron 表达式 |
+| URL Slug | `slug` | 小写字母/数字/中横线组成的 URL 友好标识 |
+| 中文姓名 | `chineseName` | 2 到 10 个中文字符 |
+| 纯中文文本 | `chinese` | 仅允许中文字符 |
+| 邮箱域名校验 | `emailDomain` | 邮箱格式基础上的域名约束类型 |
+| 字母数字 | `alphanum` | 仅字母与数字 |
+| 全小写字符串 | `lower` | 自动约束为小写字符串 |
+| 全大写字符串 | `upper` | 自动约束为大写字符串 |
+| JSON 字符串 | `json` | 内容需为合法 JSON 字符串 |
+| 端口号 | `port` | 整数端口号 |
 
 
 ---
@@ -181,7 +202,26 @@ const schema = dsl({
 });
 ```
 
-### 4. 特殊约束
+### 4. `types:` 联合类型
+
+当一个字段需要接受多种不同类型时，可以使用 `types:` 前缀生成联合类型：
+
+```javascript
+const schema = dsl({
+  contact: 'types:email|phone',
+  price: 'types:number:0-|string:1-20',
+  payload: 'types:object|array<object>'
+});
+```
+
+这个语法会被编译为 `oneOf` 结构，适合表达“满足其中任意一种类型即可”的场景。
+
+**适用场景**:
+- 联系方式允许邮箱或手机号
+- 价格字段允许数值或说明字符串
+- 兼容历史接口中同字段的多种输入格式
+
+### 5. 特殊约束
 
 支持特定格式的约束：
 

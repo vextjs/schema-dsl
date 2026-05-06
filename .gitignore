@@ -110,6 +110,9 @@ dist
 # vitepress cache directory
 **/.vitepress/cache
 
+# Rspress temporary artifacts
+**/.rspress/
+
 # Local temporary build / smoke artifacts
 .tmp/
 

@@ -1,6 +1,6 @@
-# 数据库导出完整指南
+# 导出完整指南
 
-> **用途**: Schema 到数据库 DDL 的完整导出指南  
+> **用途**: Schema 到多种输出格式的完整导出指南  
 > **阅读时间**: 10分钟
 
 > ⚠️ **重要提示**: 并非所有 SchemaI-DSL 特性都能导出到数据库。请先阅读 [导出限制说明](export-limitations.md) 了解哪些特性不支持导出。
@@ -14,6 +14,7 @@
 - [MongoDB 导出](#mongodb-导出)
 - [MySQL 导出](#mysql-导出)
 - [PostgreSQL 导出](#postgresql-导出)
+- [Markdown 导出](#markdown-导出)
 - [导出对比](#导出对比)
 - [最佳实践](#最佳实践)
 
@@ -21,15 +22,18 @@
 
 ## 概述
 
-SchemaI-DSL 支持将 JSON Schema 导出为多种数据库的 DDL 语句，实现"一次定义，多处使用"。
+schema-dsl 支持将 JSON Schema 导出为多种数据库结构或文档格式，实现“一次定义，多处使用”。
 
-### 支持的数据库
+### 支持的导出格式
 
-| 数据库 | 导出器 | 输出格式 |
-|--------|--------|----------|
+| 类型 | 导出器 | 输出格式 |
+|------|--------|----------|
 | MongoDB | `MongoDBExporter` | `$jsonSchema` 验证文档 |
 | MySQL | `MySQLExporter` | `CREATE TABLE` DDL |
 | PostgreSQL | `PostgreSQLExporter` | `CREATE TABLE` DDL + COMMENT |
+| Markdown | `MarkdownExporter` | 面向人类阅读的 Markdown 文档 |
+
+其中 `MarkdownExporter` 更适合生成接口字段说明、表单文档或内部规范文档，完整用法见 [Markdown 导出器](./markdown-exporter.md)。
 
 ---
 
@@ -51,11 +55,39 @@ const userSchema = dsl({
   createdAt: 'datetime!'
 });
 
-// 导出到不同数据库
+// 导出到不同目标
 const mongoSchema = new exporters.MongoDBExporter().export(userSchema);
 const mysqlDdl = new exporters.MySQLExporter().export('users', userSchema);
 const pgDdl = new exporters.PostgreSQLExporter().export('users', userSchema);
+const markdownDoc = exporters.MarkdownExporter.export(userSchema, {
+  title: '用户 Schema 文档'
+});
 ```
+
+---
+
+## Markdown 导出
+
+如果你的目标不是数据库，而是给研发、测试、产品或接口使用方生成一份可直接阅读的字段说明文档，可以使用 `MarkdownExporter`：
+
+```javascript
+const { dsl, exporters } = require('schema-dsl');
+
+const schema = dsl({
+  username: 'string:3-32!'.description('登录账号'),
+  email: 'email!'.description('联系邮箱'),
+  age: 'number:18-120'.description('年龄')
+});
+
+const markdown = exporters.MarkdownExporter.export(schema, {
+  title: '用户注册字段说明',
+  locale: 'zh-CN'
+});
+
+console.log(markdown);
+```
+
+更完整的选项、示例和多语言输出说明见 [Markdown 导出器](./markdown-exporter.md)。
 
 ---
 

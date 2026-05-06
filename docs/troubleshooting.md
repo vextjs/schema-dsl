@@ -41,10 +41,10 @@ const validator = new Validator({ verbose: true });
 const result = validator.validate(schema, data);
 ```
 
-3. **使用 Schema 分析工具**
+3. **使用 Schema 摘要工具**
 ```javascript
-const { SchemaUtils } = require('schema-dsl');
-console.log(SchemaUtils.analyze(schema));
+const { SchemaHelper } = require('schema-dsl');
+console.log(SchemaHelper.summarizeSchema(schema));
 ```
 
 4. **检查字段名是否正确**
@@ -411,15 +411,15 @@ console.log(JSON.stringify(schema, null, 2));
 // 查看实际生成的 JSON Schema 结构
 ```
 
-### 技巧2: 使用 Schema 分析工具
+### 技巧2: 使用 Schema 摘要工具
 
 ```javascript
-const { SchemaUtils } = require('schema-dsl');
+const { SchemaHelper } = require('schema-dsl');
 
-// 分析 Schema 结构
-const analysis = SchemaUtils.analyze(schema);
-console.log(analysis);
-// 输出字段列表、约束信息、嵌套深度等
+// 查看 Schema 结构摘要
+const summary = SchemaHelper.summarizeSchema(schema);
+console.log(summary);
+// 输出字段列表、required 数量、复杂度等
 ```
 
 ### 技巧3: 启用详细日志
@@ -464,7 +464,7 @@ describe('User Schema', () => {
 
 如果以上方法无法解决你的问题：
 
-1. **查看文档**: [完整文档索引](INDEX.md)
+1. **查看文档**: [完整文档索引](doc-index.md)
 2. **查看示例**: [examples/](../examples/) 目录
 3. **GitHub Issues**: [提交问题](https://github.com/schema-dsl/schema-dsl/issues)
 4. **常见问题**: [FAQ.md](faq.md)

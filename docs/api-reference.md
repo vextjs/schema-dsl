@@ -380,6 +380,57 @@ dsl.if('isVip', 'number:0-50', 'number:0-10')
 
 ---
 
+## 运行时辅助函数
+
+### `getDefaultValidator()`
+
+获取顶层 `validate()` / `validateAsync()` 便捷函数内部复用的默认 `Validator` 单例。
+
+```javascript
+const { getDefaultValidator } = require('schema-dsl');
+
+const validator = getDefaultValidator();
+console.log(validator.getCacheStats());
+```
+
+---
+
+### `resetDefaultValidator()`
+
+重置顶层 `validate()` / `validateAsync()` 使用的默认 `Validator` 单例。
+
+```javascript
+const { resetDefaultValidator } = require('schema-dsl');
+
+resetDefaultValidator();
+```
+
+---
+
+### `installStringExtensions(dslFunction?)`
+
+手动安装 String 扩展。模块导入时默认已自动安装；只有在调用过 `uninstallStringExtensions()` 或需要显式恢复扩展时才需要手动执行。
+
+```javascript
+const { installStringExtensions } = require('schema-dsl');
+
+installStringExtensions();
+```
+
+---
+
+### `uninstallStringExtensions()`
+
+卸载挂载到 `String.prototype` 上的扩展方法。
+
+```javascript
+const { uninstallStringExtensions } = require('schema-dsl');
+
+uninstallStringExtensions();
+```
+
+---
+
 ## Validator 类
 
 **参数**:
@@ -694,6 +745,104 @@ SchemaHelper.clone(schema);
 
 ---
 
+### MessageTemplate
+
+错误消息模板封装类，内部委托 `renderTemplate()` 执行占位符替换。
+
+```javascript
+const { MessageTemplate } = require('schema-dsl');
+
+const template = new MessageTemplate('{{#label}} is required');
+console.log(template.render({ label: 'Email' }));
+```
+
+**方法**:
+- `new MessageTemplate(template)` - 创建模板实例
+- `render(context)` - 渲染当前模板
+- `MessageTemplate.render(template, context)` - 静态快速渲染
+- `MessageTemplate.renderBatch(templates, context)` - 批量渲染多个模板
+
+---
+
+### renderTemplate(template, params)
+
+底层模板渲染函数，同时兼容 `{{#key}}` 和 `{key}` 两种占位符格式。
+
+```javascript
+const { renderTemplate } = require('schema-dsl');
+
+const msg = renderTemplate('{field} must be {min}~{max}', {
+  field: 'age',
+  min: 18,
+  max: 65,
+});
+
+console.log(msg); // age must be 18~65
+```
+
+---
+
+### JSONSchemaCore
+
+`JSONSchemaCore` 是 v1 兼容外观类，用于以链式方式构建 JSON Schema，并可直接调用 `validate()` 做快速校验。
+
+```javascript
+const { JSONSchemaCore } = require('schema-dsl');
+
+const schema = new JSONSchemaCore()
+  .type('object')
+  .property('email', { type: 'string', format: 'email' })
+  .required('email')
+  .getSchema();
+```
+
+**常用方法**:
+- `type(typeName)`
+- `property(name, schema)`
+- `properties(properties)`
+- `required(fields)`
+- `format(formatName)`
+- `pattern(pattern)`
+- `items(schema)`
+- `toSchema()` / `getSchema()`
+- `validate(data)`
+
+---
+
+### 底层解析与编译工具
+
+以下导出主要面向进阶集成、调试 DSL 解析流程或自定义类型系统的场景；大多数业务代码仍然优先使用 `dsl()`、`DslBuilder` 和 `Validator`。
+
+#### DslParser
+
+统一的 DSL 解析入口。
+
+- `DslParser.parseString(dslString)` - 解析字符串 DSL
+- `DslParser.parseObject(dslObject)` - 解析对象 DSL 定义
+
+#### TypeRegistry
+
+统一类型注册表。
+
+- `TypeRegistry.resolve(typeName)`
+- `TypeRegistry.register(name, def)`
+- `TypeRegistry.registerDynamic(name, factory)`
+- `TypeRegistry.unregister(name)`
+- `TypeRegistry.has(typeName)`
+- `TypeRegistry.getInternalKeys()`
+- `TypeRegistry.toJsonSchema(schema)`
+
+#### ConstraintParser
+
+- `ConstraintParser.parse(constraintStr, baseType)` - 将 DSL 约束字符串解析为 `Partial<JSONSchema>`
+
+#### SchemaCompiler
+
+- `SchemaCompiler.compile(typeDef, constraints, meta?)` - 合并类型定义、约束与元信息
+- `SchemaCompiler.toJsonSchema(schema, internalKeys)` - 清除内部 key，输出纯净 JSON Schema
+
+---
+
 ## DSL 语法快速参考
 
 ### 基本类型
@@ -756,6 +905,29 @@ const { Locale } = require('schema-dsl');
 Locale.setLocale('zh-CN');  // 设置中文
 Locale.setLocale('en-US');  // 设置英文
 ```
+
+---
+
+### ConditionalBuilder
+
+`dsl.if(conditionFn)` 返回的链式条件构建器，适用于运行时动态条件校验。
+
+**常用方法**:
+- `if(condition)`
+- `and(condition)`
+- `or(condition)`
+- `elseIf(condition)`
+- `message(msg)`
+- `then(schema)`
+- `else(schema)`
+- `toSchema()`
+- `build()` - `toSchema()` 的别名
+- `validate(data, options?)`
+- `validateAsync(data, options?)`
+- `assert(data, options?)`
+- `check(data)`
+
+更完整的示例和行为说明请参考 [conditional-api.md](./conditional-api.md)。
 
 ---
 

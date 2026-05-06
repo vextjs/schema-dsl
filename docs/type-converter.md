@@ -133,14 +133,14 @@ TypeConverter.toPostgreSQLType('object');
 
 ### `normalizePropertyName(name)`
 
-规范化属性名：去除首尾空白、将非法字符替换为下划线，并避免数字开头。
+规范化属性名：去除首尾空白、将非法字符替换为下划线，并压缩连续下划线。
 
 ```javascript
 TypeConverter.normalizePropertyName('user name');
 // 'user_name'
 
 TypeConverter.normalizePropertyName('123created-at');
-// '_123created_at'
+// '123created_at'
 ```
 
 ---
@@ -205,12 +205,8 @@ const constraints = TypeConverter.extractConstraints(schema);
 // {
 //   minLength: 3,
 //   maxLength: 32,
-//   minimum: undefined,
-//   maximum: undefined,
 //   pattern: '^[a-z]+$',
-//   format: 'email',
-//   enum: undefined,
-//   default: undefined
+//   format: 'email'
 // }
 ```
 

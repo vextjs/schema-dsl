@@ -113,32 +113,33 @@ const registerSchema = dsl({
 
 ## Schema 合并
 
-### merge() - 合并多个Schema
+### createLibrary() - 创建片段库
 
 ```javascript
 const { SchemaUtils, dsl } = require('schema-dsl');
 
-// 基础Schema
-const baseUser = dsl({
-  name: 'string:1-50!',
-  email: 'email!'
+const fields = SchemaUtils.createLibrary({
+  email: () => 'email!'.label('邮箱地址'),
+  phone: () => dsl('string!').phone('cn').label('手机号'),
+  profile: () => ({
+    bio: 'string:500',
+    avatar: 'url'
+  })
 });
 
-// 扩展Schema
-const withAge = dsl({
-  age: 'number:18-120',
-  gender: 'male|female|other'
+const registerSchema = dsl({
+  email: fields.email(),
+  phone: fields.phone(),
+  password: dsl('string!').password('strong')
 });
 
-// 扩展
-const fullUser = SchemaUtils.extend(baseUser, {
-  age: 'number:18-120',
-  bio: 'string:500',
-  avatar: 'url'
+const profileSchema = dsl({
+  ...fields.profile(),
+  email: fields.email()
 });
 ```
 
-**说明**: 扩展字段，合并 properties 和 required 数组
+**说明**: `createLibrary()` 只是返回片段工厂集合，适合在大型项目中集中管理字段和组合片段。
 
 ---
 
@@ -206,6 +207,32 @@ const safeUser = SchemaUtils.omit(fullUser, ['password']);
 
 ---
 
+### partial() - 将字段改为可选
+
+```javascript
+const updateSchema = SchemaUtils.partial(dsl({
+  name: 'string!',
+  email: 'email!',
+  age: 'number:18-120'
+}));
+
+// 结果中 required 会被移除，适合 PATCH / 局部更新场景
+```
+
+也可以只对部分字段做可选化：
+
+```javascript
+const schema = dsl({
+  name: 'string!',
+  email: 'email!',
+  age: 'number:18-120'
+});
+
+const partialContact = SchemaUtils.partial(schema, ['name', 'email']);
+```
+
+---
+
 ## Schema 导出
 
 ### toMarkdown() - 导出为Markdown文档
@@ -218,10 +245,7 @@ const schema = dsl({
 });
 
 const markdown = SchemaUtils.toMarkdown(schema, {
-  title: '用户注册Schema',
-  showRequired: true,
-  showType: true,
-  showConstraints: true
+  title: '用户注册Schema'
 });
 
 console.log(markdown);
@@ -246,8 +270,7 @@ console.log(markdown);
 
 ```javascript
 const html = SchemaUtils.toHTML(schema, {
-  title: '用户注册Schema',
-  theme: 'bootstrap'  // 或 'default'
+  title: '用户注册Schema'
 });
 
 // 生成HTML表格，可以嵌入文档
@@ -259,10 +282,10 @@ const html = SchemaUtils.toHTML(schema, {
 
 ## 性能监控
 
-### validateBatch() - 批量验证
+### validateBatch() - 批量验证统计
 
 ```javascript
-const { Validator } = require('schema-dsl');
+const { SchemaUtils, Validator, dsl } = require('schema-dsl');
 
 const schema = dsl({
   email: 'email!',
@@ -277,44 +300,46 @@ const items = [
   { email: 'user2@example.com', age: 30 }
 ];
 
-const results = validator.validateBatch(schema, items);
+const batch = SchemaUtils.validateBatch(schema, items, validator.getAjv());
 
-console.log(results);
+console.log(batch);
 // {
 //   results: [
-//     { valid: true, ... },
-//     { valid: false, errors: [...] },
-//     { valid: true, ... }
+//     { index: 0, valid: true, errors: null, data: {...} },
+//     { index: 1, valid: false, errors: [...], data: null },
+//     { index: 2, valid: true, errors: null, data: {...} }
 //   ],
-//   stats: {
+//   summary: {
 //     total: 3,
 //     valid: 2,
 //     invalid: 1,
-//     duration: '5.2ms'
+//     duration: 5,
+//     averageTime: 1.67
 //   }
 // }
 ```
 
-**用途**: 批量验证数据，获取性能统计
+**说明**:
+- 如果你只需要“每条是否通过”的结果，可直接使用 `validator.validateBatch(schema, items)`
+- 如果你还需要汇总统计信息，再使用 `SchemaUtils.validateBatch(schema, items, validator.getAjv())`
 
 ---
 
-### 性能监控（自动）
+### withPerformance() - 给 Validator 添加性能包装
 
 ```javascript
-const validator = new Validator({ performance: true });
+const validator = SchemaUtils.withPerformance(new Validator());
 
 const result = validator.validate(schema, data);
 
 console.log(result.performance);
 // {
-//   duration: '2.1ms',
-//   compileDuration: '1.5ms',
-//   validateDuration: '0.6ms'
+//   duration: 2,
+//   timestamp: '2026-05-06T12:34:56.789Z'
 // }
 ```
 
-**用途**: 监控验证性能
+**用途**: 在不改业务调用方式的前提下，为验证结果附加耗时信息
 
 ---
 
@@ -364,7 +389,7 @@ if (result.depth > 5) {
 }
 ```
 
-**用途**: 防止过深嵌套
+**说明**: 这个能力属于 `DslBuilder` 静态方法，不是 `SchemaUtils` 的成员；这里一并列出是因为它常与 Schema 工具链一起使用。
 
 ---
 

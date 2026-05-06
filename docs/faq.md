@@ -577,7 +577,7 @@ const schema = dsl({
 
 如果您有其他问题：
 
-1. 查看 [完整文档](INDEX.md)
+1. 查看 [完整文档](doc-index.md)
 2. 查看 [DSL 语法指南](dsl-syntax.md)
 3. 查看 [API 参考](api-reference.md)
 4. 提交 [GitHub Issue](https://github.com/schema-dsl/schema-dsl/issues)
