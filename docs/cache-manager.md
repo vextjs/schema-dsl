@@ -38,7 +38,7 @@ const { CacheManager } = require('schema-dsl');
 
 // 创建缓存实例
 const cache = new CacheManager({
-  maxSize: 100,    // 最大缓存数量
+  maxSize: 5000,   // 默认最大缓存数量
   ttl: 3600000     // 1小时过期
 });
 
@@ -71,7 +71,7 @@ new CacheManager(options)
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `options.maxSize` | number | `100` | 最大缓存条目数 |
+| `options.maxSize` | number | `5000` | 最大缓存条目数 |
 | `options.ttl` | number | `3600000` | 缓存生存时间（毫秒） |
 | `options.enabled` | boolean | `true` | 是否启用缓存 |
 | `options.statsEnabled` | boolean | `true` | 是否启用统计 |
@@ -164,7 +164,7 @@ console.log(stats);
 //   clears: 1,       // 清空次数
 //   hitRate: '83.33', // 命中率百分比字符串
 //   size: 80,        // 当前缓存数量
-//   maxSize: 100,    // 最大容量
+//   maxSize: 5000,   // 最大容量
 //   enabled: true    // 是否启用缓存
 // }
 ```

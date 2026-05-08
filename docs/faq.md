@@ -193,8 +193,8 @@ const result = validator.validate(schema, data);
 ```javascript
 {
   valid: true/false,      // 是否通过
-  data: {},               // 仅 valid=true 时存在
-  errors: []              // 仅 valid=false 时存在
+  data: {},               // 当前实现会返回本次验证数据，失败时也便于定位输入
+  errors: []              // 成功时为空数组，失败时包含详细错误
 }
 ```
 
@@ -206,10 +206,9 @@ const result = validator.validate(schema, data);
 
 ```javascript
 const validator = new Validator({ allErrors: false });
-
-// 或者按次关闭
-validator.validate(schema, data, { allErrors: false });
 ```
+
+`allErrors` 需要在创建 `Validator` 实例时配置，`validator.validate(schema, data, options)` 不能按次覆盖这个开关。
 
 ---
 
@@ -381,7 +380,7 @@ console.log(batch.results[0].valid);
 6. **前后端共享验证** - 一套规则，两端使用
 
 ⚠️ **不适合的场景**:
-1. 极致性能要求（>50万 ops/s）→ 推荐 **Zod** 或 **Ajv**
+1. 绝对吞吐量优先、且不需要 DSL 动态能力 → 推荐 **Ajv**
 2. TypeScript 强类型推断 → 推荐 **Zod**
 3. 静态验证规则 → 推荐 **Zod**
 

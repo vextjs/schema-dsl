@@ -225,13 +225,13 @@ const schema1 = dsl({
 });
 
 validate(schema1, { age: 16, status: 'active' });
-// => { valid: false, errors: [{ message: '未成年用户不能注册' }] }
+// => { valid: false, errors: [{ message: '未成年用户不能注册' }], data: { age: 16, status: 'active' } }
 
 // ✅ 方式2：快捷方式（一行代码验证）
 const result = dsl.if((data) => data.age < 18)
   .message('未成年用户不能注册')
   .validate({ age: 16 });
-// => { valid: false, errors: [{ message: '未成年用户不能注册' }] }
+// => { valid: false, errors: [{ message: '未成年用户不能注册' }], data: { age: 16 } }
 
 // ✅ 方式3：.check() 快速判断
 const isValid = dsl.if((data) => data.age < 18)

@@ -48,11 +48,11 @@ export default defineConfig({
         items: [
           {
             text: '更新日志',
-            link: 'https://github.com/vextjs/schema-dsl/blob/v2/CHANGELOG.md'
+            link: 'https://github.com/vextjs/schema-dsl/blob/main/CHANGELOG.md'
           },
           {
             text: '贡献指南',
-            link: 'https://github.com/vextjs/schema-dsl/blob/v2/CONTRIBUTING.md'
+            link: 'https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md'
           }
         ]
       }

@@ -419,7 +419,7 @@ const result = validate(
 每次调用 `validate()` 时，DSL 对象都会被转换为 JSON Schema：
 
 ```javascript
-// ❌ 性能较差：每次请求都重复转换（~3.4秒/1000次）
+// ❌ 性能较差：每次请求都重复转换
 app.post('/api/user', (req, res) => {
   const result = validate(
     { email: 'email!', age: 'number!' },  // ❌ 每次请求都会执行 DSL → JSON Schema 转换
@@ -427,13 +427,15 @@ app.post('/api/user', (req, res) => {
   );
 });
 
-// ✅ 性能最优：项目启动时转换一次，复用 schema（~3.3秒/1000次）
+// ✅ 性能最优：项目启动时转换一次，复用 schema
 const userSchema = dsl({ email: 'email!', age: 'number!' });  // ✅ 启动时转换一次
 
 app.post('/api/user', (req, res) => {
   const result = validate(userSchema, req.body);  // ✅ 直接使用，不再转换
 });
 ```
+
+> ℹ️ 具体耗时取决于机器性能、Node 版本、schema 复杂度和命中率；这里强调的是“预先转换后复用通常显著快于每次请求都重新转换”的相对结论，而不是固定秒数。
 
 **性能差异**：约 3-5%（对于简单 schema）
 

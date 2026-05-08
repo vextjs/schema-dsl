@@ -356,9 +356,9 @@ const schema = dsl(useNewRules ? newRules : oldRules);
 
 | 场景 | Schema-DSL | vs Zod | Zod | Ajv (raw) | Joi |
 |------|-----------|:------:|-----|-----------|-----|
-| S1 简单有效 | **604K ops/s** | **🏆 +23%** | 493K ops/s | 1.955M ops/s | 187K ops/s |
-| S2 无效（均无 i18n）| **1.821M ops/s** | **🏆 +109x** | 16.6K ops/s | 5.038M ops/s | 112K ops/s |
-| S3 嵌套有效 | **1.819M ops/s** | **🏆 +98%** | 917K ops/s | 3.911M ops/s | 140K ops/s |
+| S1 简单有效 | **1.301M ops/s** | ≈ 持平（差 <1%） | 1.305M ops/s | 4.732M ops/s | 154K ops/s |
+| S2 无效（均无 i18n）| **1.205M ops/s** | **🏆 +89x** | 13.49K ops/s | 4.874M ops/s | 92.32K ops/s |
+| S3 嵌套有效 | **1.085M ops/s** | **🏆 +28%** | 846.81K ops/s | 3.974M ops/s | 125.35K ops/s |
 
 > ℹ️ 绝对 ops/s 数值随测试机器 CPU 性能而变化；**相对倍数（vs Zod 列）是稳定的跨机器指标**，以下分析均基于倍数。  
 > ℹ️ S2 使用 `validate(schema, data, { format: false })` 关闭 i18n 格式化，与其他库保持相同条件（均不做 i18n 模板渲染），是真正的苹果对苹果比较。  
@@ -368,10 +368,10 @@ const schema = dsl(useNewRules ? newRules : oldRules);
 
 **Schema-DSL vs Zod 对比结论**
 
-- **有效数据场景（S1）**：schema-dsl 比 Zod 快约 **23%**；**S3 嵌套场景**快约 **98%**（接近 2 倍）
-- **无效数据公平对比（S2，均无 i18n 格式化）**：schema-dsl **1.821M** vs Zod **16.6K** — schema-dsl 快约 **109x**
+- **有效数据场景（S1）**：schema-dsl 与 Zod **基本持平**；**S3 嵌套场景**快约 **28%**
+- **无效数据公平对比（S2，均无 i18n 格式化）**：schema-dsl **1.205M** vs Zod **13.49K** — schema-dsl 快约 **89x**
 
-> ⚠️ **Zod 在无效数据场景极慢的根因**：Zod 的错误收集路径使用异常驱动机制（`try/catch` 控制流），每个无效字段抛出一次 Error，4 个错误字段 = 4 次 Error 实例创建 + 4 次堆栈捕获，这是其 13K ops/s 的直接原因。相比之下 schema-dsl 基于 AJV 的无异常收集路径，无格式化时达 1.2M ops/s。
+> ⚠️ **Zod 在无效数据场景极慢的根因**：Zod 的错误收集路径使用异常驱动机制（`try/catch` 控制流），每个无效字段抛出一次 Error，4 个错误字段 = 4 次 Error 实例创建 + 4 次堆栈捕获，这是其约 13.49K ops/s 的直接原因。相比之下 schema-dsl 基于 AJV 的无异常收集路径，无格式化时达 1.205M ops/s。
 
 ```text
 Schema-DSL 的执行流程（含内置缓存）：
@@ -397,8 +397,8 @@ Schema-DSL 的执行流程（含内置缓存）：
 
 **与 Ajv (raw) 的差距**:
 ```text
-- 比 Ajv (raw) 慢约 2-3x（DSL 层自身开销）
-  S1 简单场景：3.24x，S3 嵌套场景：2.15x
+- 比 Ajv (raw) 慢约 3.6-4.0x（DSL 层自身开销）
+  S1 简单场景：3.64x，S3 嵌套场景：3.66x
 - ajv (raw) 是底层引擎，无 DSL 解析/i18n/coerce 功能
 ```
 
@@ -550,8 +550,8 @@ REGEX_CACHE: LRU(500)    // 正则表达式
 
 | 维度 | Schema-DSL | Zod | Ajv | Joi |
 |------|-----------|-----|-----|-----|
-| **有效路径性能** | ✅ **超越 Zod 23–98%** | baseline | 🥇 2–3x 更快 | 3–5x 更慢 |
-| **无效路径性能** | 🏆 **Zod 的 109x** | 极慢（异常驱动）| 🥇 最快 | 中等 |
+| **有效路径性能** | ✅ **S1 持平，S3 快约 28%** | baseline | 🥇 3.6-4.0x 更快 | 7-9x 更慢 |
+| **无效路径性能** | 🏆 **Zod 的 89x** | 极慢（异常驱动）| 🥇 最快 | 中等 |
 | **动态性** | ✅✅ 完全动态 | ❌ 编译时固定 | ⚠️ 部分动态 | ⚠️ 部分动态 |
 | **语法简洁性** | ✅✅ 最简洁 | ⚠️ 较冗长 | ❌ 最冗长 | ⚠️ 较冗长 |
 | **TypeScript** | ✅ 完整（v2 全量 TS 重构）| ✅✅ 强（Schema→类型推断）| ⚠️ 基础 | ⚠️ 基础 |

@@ -264,13 +264,15 @@ console.log(Object.keys(Locale.locales));
 // 应该包含: ['zh-CN', 'en-US', 'ja-JP', ...]
 ```
 
-#### 2. 检查 Validator 配置
+#### 2. 检查验证调用是否传入 locale
 ```javascript
-// ❌ 未指定语言
+// ❌ 构造函数不会设置本次验证语言
 const validator = new Validator();
 
-// ✅ 指定语言
-const validator = new Validator({ locale: 'zh-CN' });
+// ✅ 在 validate 时按次指定语言
+const result = validator.validate(schema, data, {
+  locale: 'zh-CN'
+});
 ```
 
 #### 3. 动态切换语言

@@ -10,23 +10,26 @@
 ## 📑 目录
 
 ### 快速导航
-- 快速开始 - 入门必读
-- 核心文档 - 主要功能文档
-- 功能索引 - 按功能查找
-- 导出器 - 数据库 Schema 导出
-- 工具类 - 辅助工具
-- 使用指南 - 完整教程
-- 故障排查 - 问题解决
-- 示例代码 - 完整示例
-- 常见问题 - FAQ
+- [快速开始](#doc-index-quick-start) - 入门必读
+- [核心文档](#doc-index-core-docs) - 主要功能文档
+- [功能索引](#doc-index-feature-map) - 按功能查找
+- [导出器](#doc-index-exporters) - 数据库 Schema 导出
+- [工具类](#doc-index-utilities) - 辅助工具
+- [使用指南](#doc-index-guides) - 完整教程
+- [补充文档](#doc-index-supplemental) - 其余未在专题区展开的文档
+- [故障排查](#doc-index-troubleshooting) - 问题解决
+- [示例代码](#doc-index-examples) - 完整示例
+- [常见问题](#doc-index-faq) - FAQ
 
 ---
+
+<a id="doc-index-quick-start"></a>
 
 ## 🚀 快速开始
 
 | 文档 | 阅读时间 | 说明 |
 |------|----------|------|
-| [README.md](../README.md) | 3分钟 | 项目介绍、安装和快速开始 ⭐ |
+| [README.md](https://github.com/vextjs/schema-dsl/blob/main/README.md) | 3分钟 | 项目介绍、安装和快速开始 ⭐ |
 | [quick-start.md](quick-start.md) | 5分钟 | 5分钟快速上手教程 ⭐ |
 | [design-philosophy.md](design-philosophy.md) | 15分钟 | **设计理念与性能权衡** ⭐⭐⭐ |
 | [FEATURE-INDEX.md](FEATURE-INDEX.md) | 10分钟 | 完整功能索引 ⭐ |
@@ -34,6 +37,8 @@
 | [faq.md](faq.md) | 5分钟 | 常见问题解答 |
 
 ---
+
+<a id="doc-index-core-docs"></a>
 
 ## 📖 核心文档
 
@@ -53,6 +58,8 @@
 
 ---
 
+<a id="doc-index-feature-map"></a>
+
 ## 🎯 功能索引
 
 ### 核心API
@@ -70,6 +77,8 @@
 
 
 ---
+
+<a id="doc-index-exporters"></a>
 
 ## 🗄️ 导出器
 
@@ -126,6 +135,8 @@
 
 ---
 
+<a id="doc-index-utilities"></a>
+
 ## 🛠️ 工具类（Utilities）
 
 | 文档 | 说明 |
@@ -155,6 +166,8 @@
 - 线程安全设计
 
 ---
+
+<a id="doc-index-guides"></a>
 
 ## 📖 使用指南（Guides）
 
@@ -187,6 +200,52 @@
 
 ---
 
+<a id="doc-index-supplemental"></a>
+
+## 🧩 补充文档
+
+> 上方专题区主要按学习路径和主题组织；以下补充索引列出当前尚未在专题区单独展开的其余文档，确保导航覆盖 `docs/*.md` 全量文档。
+
+| 文档 | 标题 / 说明 |
+|------|-------------|
+| [add-custom-locale.md](add-custom-locale.md) | 添加自定义语言包指南 |
+| [add-keyword.md](add-keyword.md) | addKeyword 方法 |
+| [api.md](api.md) | API 参考入口 |
+| [best-practices-project-structure.md](best-practices-project-structure.md) | Schema-DSL 项目最佳实践示例 |
+| [compile.md](compile.md) | compile 方法 |
+| [conditional-api.md](conditional-api.md) | 链式条件 API - ConditionalBuilder |
+| [custom-extensions-guide.md](custom-extensions-guide.md) | 自定义扩展指南 |
+| [dynamic-locale.md](dynamic-locale.md) | 动态多语言配置指南 |
+| [enum.md](enum.md) | 枚举功能文档 |
+| [frontend-i18n-guide.md](frontend-i18n-guide.md) | 前端动态切换语言 - 最佳实践指南 |
+| [i18n-user-guide.md](i18n-user-guide.md) | 多语言支持用户指南 |
+| [i18n.md](i18n.md) | 多语言配置指南 |
+| [index.md](index.md) | 站点首页文案（文件内未单独声明 H1） |
+| [json-schema-basics.md](json-schema-basics.md) | JSON Schema 基础 |
+| [label-vs-description.md](label-vs-description.md) | label vs description 使用指南 |
+| [markdown-exporter.md](markdown-exporter.md) | Markdown 导出器 |
+| [multi-language.md](multi-language.md) | 多语言支持 |
+| [multi-type-support.md](multi-type-support.md) | 多类型支持设计说明 |
+| [number-operators.md](number-operators.md) | 数字比较运算符 (v1.1.2+) |
+| [optional-marker-guide.md](optional-marker-guide.md) | schema-dsl 可选标记 ? 支持 |
+| [performance-guide.md](performance-guide.md) | 性能优化指南 |
+| [plugin-type-registration.md](plugin-type-registration.md) | 自定义类型注册 |
+| [runtime-locale-support.md](runtime-locale-support.md) | 运行时多语言支持 - schema-dsl |
+| [schema-utils.md](schema-utils.md) | Schema 工具函数文档 |
+| [security-checklist.md](security-checklist.md) | 安全检查清单 |
+| [troubleshooting.md](troubleshooting.md) | 常见问题排查指南 |
+| [type-reference.md](type-reference.md) | schema-dsl 类型参考 |
+| [typescript-guide.md](typescript-guide.md) | TypeScript 使用指南 |
+| [union-type-guide.md](union-type-guide.md) | 一个字段支持多种类型 |
+| [union-types.md](union-types.md) | 跨类型联合验证 - types: 语法 |
+| [validate-batch.md](validate-batch.md) | validateBatch 方法 |
+| [validate-dsl-object-support.md](validate-dsl-object-support.md) | validate() 函数支持 DSL 对象说明 |
+| [validator.md](validator.md) | Validator 类概述 |
+
+---
+
+<a id="doc-index-examples"></a>
+
 ## 📝 示例代码（Examples）
 
 | 文件 | 说明 |
@@ -197,6 +256,8 @@
 | [troubleshooting.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/troubleshooting.ts) | 排障与错误定位示例 |
 
 ---
+
+<a id="doc-index-faq"></a>
 
 ## ❓ 常见问题（FAQ）
 
@@ -213,11 +274,13 @@
 
 ---
 
+<a id="doc-index-troubleshooting"></a>
+
 ## 🔧 开发指南
 
 | 文档 | 说明 |
 |------|------|
-| [CONTRIBUTING.md](../CONTRIBUTING.md) | 贡献指南 |
+| [CONTRIBUTING.md](https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md) | 贡献指南 |
 
 ---
 
@@ -225,8 +288,8 @@
 
 | 文档 | 说明 |
 |------|------|
-| [STATUS.md](../STATUS.md) | 项目状态（当前测试与发布状态）|
-| [CHANGELOG.md](../CHANGELOG.md) | 更新日志 |
+| [STATUS.md](https://github.com/vextjs/schema-dsl/blob/main/STATUS.md) | 项目状态（当前测试与发布状态）|
+| [CHANGELOG.md](https://github.com/vextjs/schema-dsl/blob/main/CHANGELOG.md) | 更新日志 |
 
 ---
 

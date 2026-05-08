@@ -47,6 +47,7 @@ export interface ValidatorOptions {
     maxSize?: number
     ttl?: number
     enabled?: boolean
+    statsEnabled?: boolean
   }
   [key: string]: unknown
 }
@@ -114,6 +115,7 @@ export class Validator {
       ...(cacheOpts.maxSize !== undefined ? { maxSize: cacheOpts.maxSize } : {}),
       ...(cacheOpts.ttl !== undefined ? { ttl: cacheOpts.ttl } : {}),
       ...(cacheOpts.enabled !== undefined ? { enabled: cacheOpts.enabled } : {}),
+      ...(cacheOpts.statsEnabled !== undefined ? { statsEnabled: cacheOpts.statsEnabled } : {}),
     })
 
     this._errorFormatter = new ErrorFormatter()

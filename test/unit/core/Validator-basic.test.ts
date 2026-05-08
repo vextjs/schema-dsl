@@ -44,6 +44,18 @@ describe('Validator', () => {
       expect(customValidator.cache.options.enabled).toBe(true)
       expect(customValidator.cache.options.maxSize).toBeGreaterThan(0)
     })
+
+    it('应该把 cache.statsEnabled 透传给 CacheManager', () => {
+      const customValidator = new Validator({
+        cache: {
+          maxSize: 10,
+          statsEnabled: false,
+        },
+      })
+
+      expect(customValidator.cache.options.maxSize).toBe(10)
+      expect(customValidator.cache.options.statsEnabled).toBe(false)
+    })
   })
 
   describe('validate()', () => {

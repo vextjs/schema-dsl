@@ -175,7 +175,7 @@ dsl.config({
 
 | 项目规模 | maxSize | 说明 |
 |---------|---------|------|
-| 小型（< 100 Schema） | 1000（默认） | 够用 |
+| 小型（< 100 Schema） | 1000 | 够用 |
 | 中型（100-1000） | 5000（默认） | 推荐 |
 | 大型（1000-5000） | 10000 | 推荐 |
 | 超大型（> 5000） | 20000 | 推荐 |
@@ -233,10 +233,10 @@ const { validate } = require('schema-dsl');
 const app = express();
 app.use(express.json());
 
-// 中间件：提取语言参数
+// 中间件：提取语言参数（简化版：query > Accept-Language > 默认）
 app.use((req, res, next) => {
-  req.locale = req.headers['accept-language'] || 
-               req.query.lang || 
+  req.locale = req.query.lang ||
+               req.headers['accept-language']?.split(',')[0]?.trim() || 
                'zh-CN';
   next();
 });
@@ -408,7 +408,7 @@ const customMessages = {
 const locale = 
   req.query.lang ||              // 1. URL 参数（最高优先级）
   req.cookies.lang ||            // 2. Cookie
-  req.headers['accept-language'] || // 3. Accept-Language 头
+  req.headers['accept-language']?.split(',')[0]?.trim() || // 3. Accept-Language 头（取首个语言标签）
   'zh-CN';                       // 4. 默认语言
 ```
 

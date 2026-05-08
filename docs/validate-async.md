@@ -41,7 +41,8 @@ try {
 } catch (error) {
   console.log(error instanceof ValidationError); // true
   console.log(error.getFieldErrors());
-  // { name: '长度必须大于等于1', email: '邮箱格式错误', age: '字段必填' }
+  // { email: '邮箱格式错误' }
+  // `string!` 只表示字段必填；若要限制空字符串，需要叠加长度约束。
 }
 ```
 
@@ -55,7 +56,7 @@ try {
 class ValidationError extends Error {
   name: 'ValidationError'        // 错误名称
   message: string                // 友好的错误消息
-  errors: Array<Object>          // 原始错误列表
+  errors: Array<Object>          // 格式化后的错误项列表（path/message/keyword/...）
   data: any                      // 原始输入数据
   statusCode: 400                // HTTP 状态码
 }
@@ -455,7 +456,7 @@ new ValidationError(errors, data)
 **属性**:
 - `name: 'ValidationError'`
 - `message: string` - 友好的错误消息
-- `errors: Array<Object>` - 原始错误列表
+- `errors: Array<Object>` - 格式化后的错误项列表（如 `path`、`message`、`keyword`、`params`）
 - `data: any` - 原始输入数据
 - `statusCode: 400` - HTTP 状态码
 

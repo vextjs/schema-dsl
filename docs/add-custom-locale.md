@@ -326,7 +326,7 @@ const userSchema = dsl({
 
 app.post('/api/users', (req, res) => {
   // 从请求头获取用户语言偏好
-  const locale = req.headers['accept-language'] || 'en-US';
+  const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'en-US';
   
   // 验证（直接切换语言，无需加载）
   const result = validate(userSchema, req.body, { locale });

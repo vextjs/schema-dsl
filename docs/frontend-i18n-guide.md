@@ -60,7 +60,7 @@ app.post('/api/validate/:type', (req, res) => {
   }
   
   // 从请求头获取语言偏好
-  const locale = req.headers['accept-language'] || 'en-US';
+  const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'en-US';
   
   // 验证（直接切换语言，无需重新加载）
   const result = validate(schema, req.body, { locale });
@@ -71,7 +71,7 @@ app.post('/api/validate/:type', (req, res) => {
 // 用户注册（带验证）
 app.post('/api/register', (req, res) => {
   // 从请求头获取语言偏好
-  const locale = req.headers['accept-language'] || 'en-US';
+  const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'en-US';
   
   // 验证数据
   const result = validate(schemas.user, req.body, { locale });
@@ -222,13 +222,20 @@ app.post('/api/validate', (req, res) => {
 
 ### Q2: 每次请求创建 Validator 实例会影响性能吗？
 
-**A**: 不会。Validator 实例创建非常轻量，且验证器内部有编译缓存。
+**A**: 实例创建本身很轻量，但**仍然建议复用同一个 `Validator` 实例**。原因不是构造函数慢，而是编译缓存挂在实例上；如果每个请求都 `new Validator()`，同一份 Schema 会反复出现首次编译 miss。
 
 ```javascript
-// 性能测试结果
-// 创建实例: ~0.001ms
-// 验证数据: ~0.1-1ms
-// 总计: 可忽略不计
+const validator = new Validator();
+
+app.post('/api/validate', (req, res) => {
+  const locale = resolveLocale(req);
+  const result = validator.validate(schema, req.body, { locale });
+  res.json(result);
+});
+
+// 说明：
+// - 共享实例：同一 schema 的后续请求可以复用编译缓存
+// - 语言仍通过 validate(..., { locale }) 按次传入，不要写进构造函数
 ```
 
 ### Q3: 如何支持更多语言？
@@ -265,12 +272,12 @@ const result = validate(schema, formData, {
 // 中间件：优先级 Header > Cookie > Session > 默认
 app.use((req, res, next) => {
   const locale = 
-    req.headers['accept-language'] ||
+    req.headers['accept-language']?.split(',')[0]?.trim() ||
     req.cookies?.locale ||
     req.session?.locale ||
     'en-US';
   
-  req.validator = new Validator({ locale });
+  req.locale = locale;
   next();
 });
 ```
@@ -281,7 +288,7 @@ app.use((req, res, next) => {
 
 ### ✅ 推荐做法
 
-1. **使用实例级配置**：每个请求创建独立 Validator
+1. **复用共享 Validator 实例**：按次通过 `validate(..., { locale })` 传入语言
 2. **通过请求头传递语言**：符合 HTTP 标准
 3. **使用中间件统一处理**：提高代码复用性
 

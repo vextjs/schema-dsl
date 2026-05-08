@@ -158,9 +158,9 @@ const dataList = [
 
 const results = validator.validateBatch(schema, dataList);
 // [
-//   { valid: true, errors: [] },
-//   { valid: false, errors: [...] },
-//   { valid: false, errors: [...] }
+//   { valid: true, data: {...}, errors: [] },
+//   { valid: false, data: {...}, errors: [...] },
+//   { valid: false, data: {...}, errors: [...] }
 // ]
 ```
 

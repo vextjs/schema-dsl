@@ -214,13 +214,14 @@ records.forEach(record => {
 
 **推荐**（批量验证）:
 ```javascript
-const Ajv = require('ajv');
-const { SchemaUtils } = require('schema-dsl');
+const { SchemaUtils, Validator } = require('schema-dsl');
 
-const ajv = new Ajv();
-const result = SchemaUtils.validateBatch(schema, records, ajv);
-// 当你已经自管 Ajv 实例时，这条路径适合批量校验
+const validator = new Validator();
+const result = SchemaUtils.validateBatch(schema, records, validator.getAjv());
+// 当你已经复用 Validator 底层 Ajv 实例时，这条路径适合批量校验
 ```
+
+> ℹ️ 如果你确实要直接传入自己创建的 Ajv 实例，请先确保它已经注册了与 schema-dsl 生成 schema 匹配的格式和关键字；对大多数项目来说，直接复用 `validator.getAjv()` 更稳妥。
 
 ---
 
@@ -673,17 +674,15 @@ setInterval(() => {
 
 ## 性能基准参考
 
-缓存命中前后通常能显著降低重复编译开销，实际收益取决于 schema 复杂度、数据规模和命中率：
+缓存命中前后通常能显著降低重复编译开销，但绝对耗时会受到机器性能、Node 版本、schema 复杂度、数据规模和命中率影响，不建议把某组固定毫秒数当成通用基准。
 
-| 操作 | 性能指标 |
-|------|---------|
-| 简单验证（未缓存） | ~0.1ms |
-| 简单验证（已缓存） | ~0.01ms |
-| 复杂嵌套（未缓存） | ~1ms |
-| 复杂嵌套（已缓存） | ~0.1ms |
-| 批量验证（1000条） | ~100ms |
+**更稳定的结论**:
 
-**结论**: 复用 schema 对象与缓存配置通常能带来最稳定的性能收益。
+- 复用同一个 schema 对象或 `Validator` 实例，通常比每次请求都重新编译更快
+- schema 越复杂、重复验证次数越多，缓存收益通常越明显
+- 批量验证总耗时主要取决于单条 schema 复杂度和数据规模，不应使用固定毫秒数做容量承诺
+
+如需当前可复查的吞吐量对比，请以维护中的 benchmark 结果和 FAQ 中同步的性能数据为准。
 
 ---
 

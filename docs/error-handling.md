@@ -323,7 +323,7 @@ module.exports = {
 
 #### 默认语言设置
 
-**默认值**: `'en-US'`（英文）
+**默认值**: `'zh-CN'`（简体中文）
 
 **全局设置**:
 ```javascript
@@ -341,7 +341,7 @@ console.log(Locale.getLocale());  // 'zh-CN'
 #### 语言优先级规则
 
 ```javascript
-运行时 locale 参数 > 全局 Locale.currentLocale > 默认 'en-US'
+运行时 locale 参数 > 全局 Locale.currentLocale > 默认 'zh-CN'
 ```
 
 **示例**:
@@ -374,7 +374,7 @@ const app = express();
 
 // 中间件：提取客户端语言
 app.use((req, res, next) => {
-  req.locale = req.headers['accept-language']?.split(',')[0] || 'zh-CN';
+  req.locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
   next();
 });
 
@@ -478,7 +478,7 @@ dsl.error.throw('account.notFound');
 app.get('/api/account/:id', async (req, res) => {
   try {
     const account = await findAccount(req.params.id);
-    const locale = req.headers['accept-language'] || 'zh-CN';
+    const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
     
     // 🎯 简化语法：只需2个参数
     dsl.error.assert(account, 'account.notFound', locale);
@@ -528,7 +528,7 @@ Locale.addLocale('en-US', {
 
 // ========== 中间件：提取语言 ==========
 app.use((req, res, next) => {
-  req.locale = req.headers['accept-language']?.split(',')[0] || 'zh-CN';
+  req.locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
   next();
 });
 
@@ -604,7 +604,7 @@ Locale.addLocale('zh-CN', {
 
 // ========== 中间件：提取语言 ==========
 app.use(async (ctx, next) => {
-  ctx.locale = ctx.headers['accept-language']?.split(',')[0] || 'zh-CN';
+  ctx.locale = ctx.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
   await next();
 });
 
@@ -657,7 +657,7 @@ Locale.addLocale('zh-CN', {
 const server = http.createServer((req, res) => {
   try {
     // 提取语言
-    const locale = req.headers['accept-language']?.split(',')[0] || 'zh-CN';
+    const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
     
     // 业务逻辑
     const order = getOrder(req.url);
@@ -1591,7 +1591,7 @@ function logValidationError(req, result) {
     url: req.url,
     method: req.method,
     errors: result.errors.map(err => ({
-      path: err.path.join('.'),
+      path: err.path.replace(/\//g, '.'),
       type: err.type,
       message: err.message
     })),
@@ -1946,9 +1946,9 @@ function handleError(error) {
 
 ### 更多信息
 
-- [v1.1.5 完整变更日志](../changelogs/v1.1.5.md)
-- [升级指南](../changelogs/v1.1.5.md#升级指南)
-- [最佳实践](../changelogs/v1.1.5.md#最佳实践)
+- [v1.1.5 完整变更日志](https://github.com/vextjs/schema-dsl/blob/main/changelogs/v1.1.5.md)
+- [升级指南](https://github.com/vextjs/schema-dsl/blob/main/changelogs/v1.1.5.md#升级指南)
+- [最佳实践](https://github.com/vextjs/schema-dsl/blob/main/changelogs/v1.1.5.md#最佳实践)
 
 ---
 
@@ -1958,7 +1958,7 @@ function handleError(error) {
 - [DSL 语法指南](./dsl-syntax.md)
 - [String 扩展文档](./string-extensions.md)
 - [多语言配置](./dynamic-locale.md)
-- [v1.1.5 变更日志](../changelogs/v1.1.5.md)
+- [v1.1.5 变更日志](https://github.com/vextjs/schema-dsl/blob/main/changelogs/v1.1.5.md)
 
 ---
 

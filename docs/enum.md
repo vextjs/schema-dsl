@@ -450,7 +450,7 @@ const schema = dsl({
 
 ## 📖 相关文档
 
-- [基础用法](../README.md)
+- [基础用法](https://github.com/vextjs/schema-dsl/blob/main/README.md)
 - [验证规则](./validation-guide.md)
 - [API 参考](./api-reference.md)
 - [示例代码](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/enum.ts)

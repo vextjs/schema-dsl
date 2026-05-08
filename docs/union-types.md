@@ -267,7 +267,7 @@ DslBuilder.registerType('phone_cn', { ... });
 
 - [插件系统](./plugin-system.md)
 - [自定义类型注册](./plugin-type-registration.md)
-- [贡献指南](../CONTRIBUTING.md)
+- [贡献指南](https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md)
 
 ---
 

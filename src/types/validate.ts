@@ -30,9 +30,9 @@ export interface ValidateOptions {
 export interface ValidationResult<T = unknown> {
   /** 是否验证通过 */
   valid: boolean
-  /** 验证后的数据（仅 valid=true 时存在）*/
+  /** 验证后的数据快照（当前实现成功/失败都会返回，失败时也便于定位输入）*/
   data?: T
-  /** 错误列表（仅 valid=false 时存在）*/
+  /** 错误列表（当前实现成功时为空数组，失败时为详细错误）*/
   errors?: ValidationErrorItem[]
   /** 首条错误消息（便捷访问）*/
   errorMessage?: string

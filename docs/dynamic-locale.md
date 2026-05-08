@@ -128,7 +128,7 @@ const userSchema = dsl({
 // ========== Express 路由 ==========
 app.post('/api/user/register', (req, res) => {
   // 从请求头获取语言偏好
-  const locale = req.headers['accept-language'] || 'en-US';
+  const locale = parseAcceptLanguage(req.headers['accept-language']);
   
   // 验证数据（直接切换语言，无需重新加载）
   const result = validate(userSchema, req.body, { locale });
@@ -210,7 +210,7 @@ function validateWithLocale(validator, schema, data, locale) {
 
 // 使用
 app.post('/api/user/register', (req, res) => {
-  const locale = req.headers['accept-language'] || 'en-US';
+  const locale = parseAcceptLanguage(req.headers['accept-language']);
   
   const result = validateWithLocale(validator, schema, req.body, locale);
   
@@ -234,7 +234,7 @@ const validator = new Validator();
 
 const schemaIoMiddleware = (req, res, next) => {
   // 1. 自动获取语言
-  const lang = req.headers['accept-language'] || 'en-US';
+  const lang = req.headers['accept-language']?.split(',')[0]?.trim() || 'en-US';
   // 简单匹配逻辑 (实际可使用 accept-language-parser)
   const locale = lang.includes('zh') ? 'zh-CN' : 
                  lang.includes('ja') ? 'ja-JP' : 
@@ -269,7 +269,9 @@ app.post('/users', (req, res) => {
 ### 3.2 Koa 中间件
 
 ```javascript
-const { Locale } = require('schema-dsl');
+const { Locale, Validator } = require('schema-dsl');
+
+const validator = new Validator();
 
 /**
  * Koa 语言中间件
@@ -282,10 +284,8 @@ function localeMiddleware() {
     // 保存到上下文
     ctx.locale = locale;
     
-    // 创建验证辅助函数
+    // 复用共享 Validator，避免每个请求都重新建立实例和缓存
     ctx.validate = function(schema, data) {
-      const { Validator } = require('schema-dsl');
-      const validator = new Validator();
       return validator.validate(schema, data, { locale: ctx.locale });
     };
     
@@ -368,11 +368,12 @@ function parseAcceptLanguage(acceptLanguage) {
 
 // ========== 3. 中间件 ==========
 
+const validator = new Validator();
+
 function localeMiddleware(req, res, next) {
   req.locale = parseAcceptLanguage(req.headers['accept-language']);
   
   req.validate = function(schema, data) {
-    const validator = new Validator();
     return validator.validate(schema, data, { locale: req.locale });
   };
   
@@ -525,7 +526,7 @@ if (!result.valid) {
 |------|------|------|--------|
 | **方案1: 验证时指定** | ✅ 无竞态问题<br>✅ 支持并发<br>✅ 代码简洁 | - | ⭐⭐⭐⭐⭐ |
 | 方案2: 临时切换 | ✅ 实现简单 | ⚠️ 并发竞态问题 | ⭐⭐⭐ |
-| 方案3: 中间件 | ✅ 自动化<br>✅ 统一管理 | - | ⭐⭐⭐⭐⭐ |
+| 方案3: 中间件 | ✅ 自动化<br>✅ 统一管理<br>✅ 可复用共享 Validator 缓存 | - | ⭐⭐⭐⭐⭐ |
 
 **推荐**: 方案1 + 方案3（中间件封装）
 
@@ -536,6 +537,8 @@ if (!result.valid) {
 ### Q1: 如何处理不支持的语言？
 
 **A**: 回退到默认语言
+
+不要直接把原始 `Accept-Language` 头透传给 `locale`；浏览器常见值会带 `q=` 权重，应该先解析再回退。
 
 ```javascript
 function parseAcceptLanguage(acceptLanguage) {

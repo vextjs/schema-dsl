@@ -55,10 +55,12 @@ validator.validate(schema, data, options = {})
 ```javascript
 {
   valid: Boolean,     // 是否有效
-  errors: Array,      // 错误列表
-  data: Any          // 验证后的数据（可能被 useDefaults 修改）
+  errors: Array,      // 成功时为空数组，失败时为错误列表
+  data: Any          // 当前实现会返回本次验证数据（可能被 useDefaults 修改）
 }
 ```
+
+当前实现中，`data` 与 `errors` 都会随结果一并返回：成功时 `errors` 为空数组，验证失败时仍会保留 `data` 以便排查输入。
 
 ---
 
@@ -110,7 +112,7 @@ result.valid === false  // 验证失败
 
 ### errors (Array)
 
-验证错误列表，当 `valid` 为 `false` 时包含详细错误信息。
+验证错误列表。当前实现成功时返回空数组，验证失败时包含详细错误信息。
 
 **错误对象结构**：
 ```javascript
@@ -124,7 +126,7 @@ result.valid === false  // 验证失败
 
 ### data (Any)
 
-验证后的数据。如果 Validator 配置了 `useDefaults: true`，则会应用 Schema 中定义的默认值。
+验证后的数据。当前实现即使在验证失败时也会保留本次验证数据，便于排查输入；如果 Validator 配置了 `useDefaults: true`，则也可能反映 Schema 中应用后的默认值。
 
 ---
 
@@ -164,9 +166,10 @@ const result = validator.validate(schema, {
 
 console.log(result.valid);  // false
 console.log(result.errors); 
+// 当前实现返回格式化后的错误列表：
 // [
-//   { path: '', message: "must have required property 'name'" },
-//   { path: 'age', message: 'must be number' }
+//   { path: 'name', message: 'name不能为空' },
+//   { path: 'age', message: 'age应该是 number 类型' }
 // ]
 ```
 

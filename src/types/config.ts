@@ -4,13 +4,13 @@ import type { ErrorMessages } from './error.js'
  * 缓存配置选项
  */
 export interface CacheOptions {
-  /** 最大缓存条目数（默认 100）*/
+  /** 最大缓存条目数（默认 5000）*/
   maxSize?: number
   /** 缓存过期时间（毫秒，0 表示不过期）*/
   ttl?: number
   /** 是否启用缓存 */
   enabled?: boolean
-  /** 是否启用统计（默认 false）*/
+  /** 是否启用统计（默认 true）*/
   statsEnabled?: boolean
 }
 

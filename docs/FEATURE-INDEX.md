@@ -109,7 +109,7 @@ const schema = dsl({
 
 **文档位置**:
 - 📖 [String扩展完整文档](./string-extensions.md)
-- 📖 [README](../README.md)
+- 📖 [README](https://github.com/vextjs/schema-dsl/blob/main/README.md)
 
 
 **代码位置**: `src/core/StringExtensions.ts`
@@ -125,7 +125,7 @@ const schema = dsl({
 **可用方法**:
 - ✅ `validate(schema, data, options)` - 验证数据
 - ✅ `compile(schema, cacheKey)` - 编译Schema
-- ✅ `validateBatch(schema, dataArray, options)` - 批量验证
+- ✅ `validateBatch(schema, dataArray)` - 批量验证
 - ✅ `addKeyword(name, definition)` - 添加自定义关键字
 - ✅ `addFormat(name, validator)` - 添加自定义格式
 - ✅ `clearCache()` - 清空缓存
@@ -536,13 +536,13 @@ const schema = {
 
 ## 相关文档
 
-- 📖 [README.md](../README.md) - 项目介绍
+- 📖 [README.md](https://github.com/vextjs/schema-dsl/blob/main/README.md) - 项目介绍
 - 📖 [快速开始](./quick-start.md) - 5分钟入门
 - 📖 [DSL语法指南](./dsl-syntax.md) - 完整语法
 - 📖 [String扩展](./string-extensions.md) - String扩展特性
 - 📖 [API参考](./api-reference.md) - 完整API
-- 📖 [CHANGELOG](../CHANGELOG.md) - 更新日志
-- 📖 [STATUS](../STATUS.md) - 项目状态
+- 📖 [CHANGELOG](https://github.com/vextjs/schema-dsl/blob/main/CHANGELOG.md) - 更新日志
+- 📖 [STATUS](https://github.com/vextjs/schema-dsl/blob/main/STATUS.md) - 项目状态
 
 ---
 

@@ -188,13 +188,17 @@ dsl.error.assert(
 ```javascript
 const { dsl } = require('schema-dsl');
 
+function getRequestLocale(acceptLanguage) {
+  return acceptLanguage?.split(',')[0]?.trim() || 'zh-CN';
+}
+
 // Express 中间件
 app.get('/api/account/:id', async (req, res, next) => {
   try {
     const account = await getAccount(req.params.id);
     
     // 根据请求头获取语言
-    const locale = req.headers['accept-language'] || 'zh-CN';
+    const locale = getRequestLocale(req.headers['accept-language']);
     
     // 使用运行时语言抛出错误
     dsl.error.assert(account, 'account.notFound', {}, 404, locale);
@@ -236,7 +240,7 @@ async function getUserService(userId, locale) {
 // 服务 B: API 网关
 app.get('/api/users/:id', async (req, res) => {
   try {
-    const locale = req.headers['accept-language'] || 'zh-CN';
+    const locale = getRequestLocale(req.headers['accept-language']);
     
     // 调用用户服务，传递 locale
     const user = await getUserService(req.params.id, locale);
@@ -343,7 +347,7 @@ const resolvers = {
 // ❌ 并发不安全
 app.get('/api/account/:id', async (req, res) => {
   // 修改全局状态
-  Locale.setLocale(req.headers['accept-language']);
+  Locale.setLocale(req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN');
   
   // 如果同时有多个请求，语言会互相干扰
   const error = dsl.error.create('account.notFound');
@@ -356,7 +360,7 @@ app.get('/api/account/:id', async (req, res) => {
 ```javascript
 // ✅ 并发安全
 app.get('/api/account/:id', async (req, res) => {
-  const locale = req.headers['accept-language'];
+  const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
   
   // 不修改全局状态，每个请求独立
   const error = dsl.error.create('account.notFound', {}, 404, locale);
@@ -422,7 +426,7 @@ console.log(error2.message);  // "Insufficient balance, current: 50, required: 1
 ```javascript
 // ✅ 推荐
 app.get('/api/account/:id', async (req, res) => {
-  const locale = req.headers['accept-language'] || 'zh-CN';
+  const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
   
   try {
     const account = await getAccount(req.params.id);
@@ -435,7 +439,7 @@ app.get('/api/account/:id', async (req, res) => {
 
 // ❌ 不推荐
 app.get('/api/account/:id', async (req, res) => {
-  Locale.setLocale(req.headers['accept-language']);  // 并发不安全
+  Locale.setLocale(req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN');  // 并发不安全
   // ...
 });
 ```
@@ -446,7 +450,7 @@ app.get('/api/account/:id', async (req, res) => {
 // 工具函数
 function getUserLocale(req) {
   return req.user?.locale || 
-         req.headers['accept-language'] || 
+         req.headers['accept-language']?.split(',')[0]?.trim() || 
          'zh-CN';
 }
 
