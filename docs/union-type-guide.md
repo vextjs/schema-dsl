@@ -2,6 +2,9 @@
 
 > 使用 `.pattern()` 方法匹配多种格式
 
+> ⚠️ 这篇文档描述的是“同一字符串字段匹配多种格式”的做法。  
+> 如果你需要真正的跨基础类型联合语义，例如 `string | number | null`，请优先使用 [types: 语法](./union-types.md)。
+
 ---
 
 ## 基本用法
@@ -143,5 +146,12 @@ testData.forEach((data, index) => {
 测试3: ❌
   错误: 必须是邮箱或手机号
 ```
+
+---
+
+## 对应示例文件
+
+**示例入口**: [union-type-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/union-type-guide.ts)  
+**说明**: 展示基于 `.pattern()` 的“单个字符串字段匹配多种格式”方案，以及对应的中英文错误消息。
 
 

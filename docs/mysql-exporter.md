@@ -19,7 +19,7 @@
 
 ## 概述
 
-`MySQLExporter` 将 SchemaI-DSL 生成的 JSON Schema 转换为 MySQL 的 DDL 语句，包括 `CREATE TABLE` 和索引创建语句。
+`MySQLExporter` 将 schema-dsl 生成的 JSON Schema 转换为 MySQL 的 DDL 语句，包括 `CREATE TABLE` 和索引创建语句。
 
 ### 核心功能
 
@@ -270,4 +270,11 @@ CREATE INDEX `idx_users_status` ON `users` (`status`);
 - [PostgreSQL 导出器](postgresql-exporter.md)
 - [TypeConverter](type-converter.md)
 - [**导出限制说明**](export-limitations.md) ⚠️
+
+---
+
+## 对应示例文件
+
+**示例入口**: [mysql-exporter.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/mysql-exporter.ts)  
+**说明**: 覆盖 `export()` 生成 DDL、主键检测，以及 `generateIndex()` 生成普通/唯一索引。
 

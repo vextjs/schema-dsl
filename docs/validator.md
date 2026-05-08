@@ -30,3 +30,10 @@ new Validator({
 
 相关方法：`compile()`、`validate()`、`validateAsync()`、`validateBatch()`、`addKeyword()`、`addFormat()`。
 
+---
+
+## 对应示例文件
+
+**示例入口**: [validator.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/validator.ts)  
+**说明**: 覆盖 `new Validator()` 的常见配置、单次验证、编译缓存命中和 `validateBatch()` 复用路径。
+

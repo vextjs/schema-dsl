@@ -1,7 +1,7 @@
 # schema-dsl 最佳实践
 
 > **用途**: 帮助你写出高质量、高性能的 Schema 代码  
-> **更新**: 2025-12-26  
+> **更新**: 2026-05-08  
 
 ---
 
@@ -33,7 +33,7 @@ const schema = dsl({
 **不推荐**（过度复杂）:
 ```javascript
 const schema = dsl({
-  username: dsl('string').minLength(3).maxLength(32).required(),
+  username: dsl('string').min(3).max(32).required(),
   // 太冗长了！
 });
 ```
@@ -78,7 +78,7 @@ const schema = dsl({
 
 ### 3. 使用预设验证器
 
-SchemaI-DSL 提供了常用的预设验证器，开箱即用：
+schema-dsl 提供了常用的预设验证器，开箱即用：
 
 ```javascript
 const schema = dsl({
@@ -163,6 +163,7 @@ app.post('/api/user', (req, res) => {
 **推荐**（预编译）:
 ```javascript
 // 在应用启动时编译一次
+const validator = new Validator();
 const userSchema = dsl({ username: 'string!' });
 const validateUser = validator.compile(userSchema);
 
@@ -171,7 +172,7 @@ app.post('/api/user', (req, res) => {
 });
 ```
 
-**性能提升**: 预编译可以提升 **10-100 倍** 的性能！
+**收益**: 复用已编译结果可以显著减少重复编译成本，尤其适合热点路由和高频校验路径。
 
 ---
 
@@ -213,8 +214,12 @@ records.forEach(record => {
 
 **推荐**（批量验证）:
 ```javascript
-const result = validator.validateBatch(schema, records);
-// 一次性验证所有记录，性能更好
+const Ajv = require('ajv');
+const { SchemaUtils } = require('schema-dsl');
+
+const ajv = new Ajv();
+const result = SchemaUtils.validateBatch(schema, records, ajv);
+// 当你已经自管 Ajv 实例时，这条路径适合批量校验
 ```
 
 ---
@@ -668,7 +673,7 @@ setInterval(() => {
 
 ## 性能基准参考
 
-基于 SchemaI-DSL 的性能测试：
+缓存命中前后通常能显著降低重复编译开销，实际收益取决于 schema 复杂度、数据规模和命中率：
 
 | 操作 | 性能指标 |
 |------|---------|
@@ -678,13 +683,13 @@ setInterval(() => {
 | 复杂嵌套（已缓存） | ~0.1ms |
 | 批量验证（1000条） | ~100ms |
 
-**结论**: 合理使用缓存可以提升 **10-100倍** 性能。
+**结论**: 复用 schema 对象与缓存配置通常能带来最稳定的性能收益。
 
 ---
 
 ## 总结
 
-遵循这些最佳实践，你的 SchemaI-DSL 代码将具备：
+遵循这些最佳实践，你的 schema-dsl 代码将具备：
 
 ✅ **高性能** - 通过预编译和缓存  
 ✅ **高安全性** - 避免常见安全陷阱  
@@ -695,7 +700,14 @@ setInterval(() => {
 
 ## 延伸阅读
 
-- [性能优化指南](performance-guide.md)（待创建）
-- [安全检查清单](security-checklist.md)（待创建）
+- [性能优化指南](performance-guide.md)
+- [安全检查清单](security-checklist.md)
 - [故障排查指南](troubleshooting.md)
+
+---
+
+## 对应示例文件
+
+**示例入口**: [best-practices.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/best-practices.ts)  
+**说明**: 展示“简单字段用纯 DSL、复杂字段局部使用 Builder、字段库复用”的推荐组合，以及成功 / 失败两条验证路径。
 

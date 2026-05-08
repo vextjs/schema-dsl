@@ -275,3 +275,10 @@ DslBuilder.registerType('phone_cn', { ... });
 
 - **v1.1.0** - 首次发布跨类型联合验证功能
 
+---
+
+## 对应示例文件
+
+**示例入口**: [union-types.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/union-types.ts)  
+**说明**: 覆盖 `types:` 语法的 `oneOf` 生成、字符串/数字联合，以及内置类型与自定义类型混用路径。
+

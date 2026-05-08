@@ -36,3 +36,10 @@ console.log(validate({ name: 'Rocky' }));
 - `cacheKey` 的缓存作用域是当前 `Validator` 实例，不跨实例共享
 - 如果只是对同一份 schema 做批量校验，也可以直接使用 `validator.validateBatch()`
 
+---
+
+## 对应示例文件
+
+**示例入口**: [compile.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/compile.ts)  
+**说明**: 覆盖 `compile()` 的编译结果复用、`cacheKey` 命中，以及失败场景下从验证函数读取错误详情。
+

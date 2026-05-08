@@ -1,8 +1,8 @@
 # 自定义扩展指南
 
-> **版本**: v1.0.2  
-> **更新日期**: 2025-12-31  
-> **用途**: 教你如何扩展schema-dsl，添加自己的验证器
+> **版本**: 2.0.0-beta.2  
+> **更新日期**: 2026-05-08  
+> **用途**: 说明当前版本推荐的运行时扩展方式，以及在维护 schema-dsl 自身源码时如何继续深入扩展
 
 ---
 
@@ -21,187 +21,97 @@
 
 schema-dsl采用模块化设计，你可以轻松扩展：
 
-1. **AJV关键字** - 底层验证逻辑
-2. **DslBuilder方法** - DSL语法糖
-3. **预定义模式** - 常用正则模式
-4. **多语言消息** - 错误消息国际化
+1. **`Validator.addKeyword()`** - 运行时注册自定义 AJV 关键字
+2. **`TypeRegistry.register()` / `DslBuilder.registerType()`** - 注册自定义 DSL 类型
+3. **`PluginManager` + `schema-dsl/plugins/*`** - 组合插件、hook 与官方插件入口
+4. **`Locale.addLocale()` / `dsl.config({ i18n })`** - 扩展多语言消息
+
+## 当前版本推荐路径
+
+> ⚠️ 如果你是把 `schema-dsl` 当成依赖使用，优先通过公开运行时 API 扩展，而不是直接修改 `src/*`。
+> 只有在你维护 `schema-dsl` 自身源码时，才需要继续阅读后面的“修改内部模块”类示例。
+
+- 自定义关键字：优先用 `new Validator().addKeyword(name, definition)`
+- 自定义类型：优先用 `TypeRegistry.register()` 或 `DslBuilder.registerType()`
+- 官方插件：优先用 `PluginManager` 配合 `schema-dsl/plugins/custom-format`、`schema-dsl/plugins/custom-validator`、`schema-dsl/plugins/custom-type-example`
+- 自定义语言：优先用 `Locale.addLocale()` 或 `dsl.config({ i18n: { locales } })`
 
 ---
 
 ## 添加自定义AJV关键字
 
-### 步骤1：注册关键字
-
-在 `src/validators/CustomKeywords.ts` 中添加：
+### 步骤1：通过公开 API 注册关键字
 
 ```javascript
-static registerCustomValidators(ajv) {
-  // 示例：手机号归属地验证
-  ajv.addKeyword({
-    keyword: 'phoneLocation',
-    type: 'string',
-    schemaType: 'string', // location参数类型
-    validate: function validate(location, phoneNumber) {
-      // location: 期望的归属地，如 'beijing'
-      // phoneNumber: 用户输入的手机号
-      
-      const locationPrefixes = {
-        'beijing': ['130', '131', '132'],
-        'shanghai': ['133', '134', '135']
-      };
-      
-      const prefixes = locationPrefixes[location];
-      if (!prefixes) {
-        validate.errors = [{
-          keyword: 'phoneLocation',
-          message: 'phone.location.unknown',
-          params: { location }
-        }];
-        return false;
-      }
-      
-      const prefix = phoneNumber.substring(0, 3);
-      if (!prefixes.includes(prefix)) {
-        validate.errors = [{
-          keyword: 'phoneLocation',
-          message: 'phone.location.mismatch',
-          params: { expected: location, actual: prefix }
-        }];
-        return false;
-      }
-      
-      return true;
-    },
-    errors: true
-  });
-}
-```
+const { Validator } = require('schema-dsl');
 
-### 步骤2：在registerAll中调用
+const validator = new Validator();
 
-```javascript
-static registerAll(ajv) {
-  // ...existing keywords...
-  this.registerCustomValidators(ajv);
-}
-```
-
-### 步骤3：添加多语言消息
-
-在 `src/locales/zh-CN.ts` 中：
-
-```typescript
-const zhCN = {
-  // ...existing messages...
-  'phone.location.unknown': '未知的归属地: {{#location}}',
-  'phone.location.mismatch': '手机号归属地不匹配，期望{{#expected}}'
-};
-
-export default zhCN;
-```
-
----
-
-## 扩展DslBuilder方法
-
-### 步骤1：添加便捷方法
-
-在 `src/core/DslBuilder.ts` 中添加：
-
-```javascript
-/**
- * 手机号归属地验证
- * @param {string} location - 归属地
- * @returns {DslBuilder}
- */
-phoneLocation(location) {
-  if (this._baseSchema.type !== 'string') {
-    throw new Error('phoneLocation() only applies to string type');
-  }
-  this._baseSchema.phoneLocation = location;
-  return this;
-}
-```
-
-### 步骤2：使用新方法
-
-```javascript
-const schema = dsl({
-  mobile: dsl('string!').phone('cn').phoneLocation('beijing')
+validator.addKeyword('isPositive', {
+  type: 'number',
+  validate: (_schema, data) => data > 0
 });
 
-validate(schema, { mobile: '13012345678' });
+const result = validator.validate({ type: 'number', isPositive: true }, 42);
+```
+
+### 步骤2：需要复用时，再封装成插件
+
+```javascript
+const plugin = {
+  name: 'my-validator-plugin',
+  install(core) {
+    const validator = new core.Validator();
+    validator.addKeyword('isPositive', {
+      type: 'number',
+      validate: (_schema, data) => data > 0
+    });
+  }
+};
 ```
 
 ---
 
-## 添加预定义模式
+## 注册自定义 DSL 类型
 
-### 步骤1：创建模式文件
-
-创建 `src/config/patterns/custom.ts`：
-
-```typescript
-import type { PatternConfig } from '../patterns';
-
-export const custom: Record<string, PatternConfig> = {
-  /**
-   * 微信号验证
-   */
-  wechat: {
-    pattern: /^[a-zA-Z]([a-zA-Z0-9_-]{5,19})$/,
-    key: 'pattern.wechat',
-    min: 6,
-    max: 20
-  },
-  
-  /**
-   * QQ号验证
-   */
-  qq: {
-    pattern: /^[1-9][0-9]{4,10}$/,
-    key: 'pattern.qq',
-    min: 5,
-    max: 11
-  }
-};
-```
-
-### 步骤2：导出模式
-
-在 `src/config/patterns.ts`（或对应聚合导出文件）中：
-
-```typescript
-import { custom } from './patterns/custom';
-
-export const PATTERNS = {
-  // ...existing patterns...
-  custom
-};
-```
-
-### 步骤3：添加DslBuilder方法
+### 运行时推荐写法
 
 ```javascript
-/**
- * 微信号验证
- * @returns {DslBuilder}
- */
-wechat() {
-  if (this._baseSchema.type !== 'string') {
-    throw new Error('wechat() only applies to string type');
-  }
-  const config = patterns.custom.wechat;
-  return this.pattern(config.pattern).messages({ 'pattern': config.key });
-}
+const { DslBuilder, dsl } = require('schema-dsl');
+
+DslBuilder.registerType('invoice-id', {
+  type: 'string',
+  pattern: '^INV-\\d{4}$'
+});
+
+const schema = dsl({ id: 'invoice-id!' });
 ```
 
-### 步骤4：添加多语言
+### 低层入口
 
 ```javascript
-// src/locales/zh-CN.ts
-'pattern.wechat': '{{#label}}必须是有效的微信号',
-'pattern.qq': '{{#label}}必须是有效的QQ号'
+const { TypeRegistry } = require('schema-dsl');
+
+TypeRegistry.register('evenNumber', {
+  baseSchema: { type: 'number', multipleOf: 2 }
+});
+```
+
+> 如果你要扩展 `schema-dsl` 自身源码，才需要继续修改 `DslBuilder` 内部方法或 parser/compiler 逻辑。
+
+---
+
+## 封装预定义模式
+
+当前版本更推荐用“自定义类型 + 现有约束”或“插件”来封装预定义模式，而不是直接要求业务侧修改包内 `src/config/patterns/*`。
+
+```typescript
+import { DslBuilder } from 'schema-dsl';
+
+DslBuilder.registerType('wechat-id', {
+  type: 'string',
+  pattern: '^[a-zA-Z]([a-zA-Z0-9_-]{5,19})$'
+});
 ```
 
 ---
@@ -210,25 +120,28 @@ wechat() {
 
 ### 添加新语言
 
-1. **创建语言文件**
-
-创建 `src/locales/ko-KR.ts`（韩语）：
+1. **运行时追加语言**
 
 ```typescript
-const koKR = {
-  required: '{{#label}}은(는) 필수 항목입니다',
-  type: '{{#label}}은(는) {{#expected}} 유형이어야 합니다',
-  // ...其他73个键
-};
+import { Locale } from 'schema-dsl';
 
-export default koKR;
+Locale.addLocale('ko-KR', {
+  required: '{{#label}}은(는) 필수 항목입니다',
+  type: '{{#label}}은(는) {{#expected}} 유형이어야 합니다'
+});
 ```
 
-2. **配置加载**
+2. **或通过配置对象集中注入**
 
 ```javascript
 dsl.config({
-  i18n: path.join(__dirname, 'i18n/locales')
+  i18n: {
+    locales: {
+      'ko-KR': {
+        required: '{{#label}}은(는) 필수 항목입니다'
+      }
+    }
+  }
 });
 ```
 
@@ -416,4 +329,11 @@ describe('Custom Validator - bankCard', function() {
 ---
 
 **需要帮助？** 访问 [GitHub Issues](https://github.com/vextjs/schema-dsl/issues)
+
+---
+
+## 对应示例文件
+
+**示例入口**: [custom-extensions-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/custom-extensions-guide.ts)  
+**说明**: 以运行时公开 API 为主，覆盖 `Validator.addKeyword()`、`DslBuilder.registerType()`、`Locale.addLocale()` 和官方插件入口四条扩展路径。
 

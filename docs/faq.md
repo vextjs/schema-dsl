@@ -1,6 +1,6 @@
 # 常见问题解答 (FAQ)
 
-> **更新时间**: 2025-12-25  
+> **更新时间**: 2026-05-08  
 
 
 ---
@@ -20,12 +20,12 @@
 
 ## 基础问题
 
-### Q: SchemaI-DSL 和 Joi、Yup 有什么区别？
+### Q: schema-dsl 和 Joi、Yup 有什么区别？
 
-**A**: SchemaI-DSL 采用 DSL 语法，更简洁：
+**A**: schema-dsl 采用 DSL 语法，更简洁：
 
 ```javascript
-// SchemaI-DSL - 简洁
+// schema-dsl - 简洁
 const schema = dsl({
   username: 'string:3-32!',
   email: 'email!'
@@ -46,7 +46,7 @@ const schema = Joi.object({
 
 ---
 
-### Q: 如何安装 SchemaI-DSL？
+### Q: 如何安装 schema-dsl？
 
 ```bash
 npm install schema-dsl
@@ -192,12 +192,9 @@ const result = validator.validate(schema, data);
 
 ```javascript
 {
-  valid: true/false,    // 是否通过
-  errors: [],           // 错误数组（如果有）
-  data: {},             // 验证后的数据（可能包含默认值）
-  performance: {        // 性能信息
-    duration: 1.5       // 验证耗时（毫秒）
-  }
+  valid: true/false,      // 是否通过
+  data: {},               // 仅 valid=true 时存在
+  errors: []              // 仅 valid=false 时存在
 }
 ```
 
@@ -205,10 +202,13 @@ const result = validator.validate(schema, data);
 
 ### Q: 如何获取所有错误而不是只有第一个？
 
-**A**: 默认就是返回所有错误。如果只需要第一个：
+**A**: 默认就会返回全部错误。如果你只想保留首条错误，可以显式关闭 `allErrors`：
 
 ```javascript
 const validator = new Validator({ allErrors: false });
+
+// 或者按次关闭
+validator.validate(schema, data, { allErrors: false });
 ```
 
 ---
@@ -232,7 +232,7 @@ console.log(result.data);
 
 ## 性能问题
 
-### Q: Schema-DSL 的性能怎么样？
+### Q: schema-dsl 的性能怎么样？
 
 **A**: 性能不错，**S3 嵌套场景快于 Zod（28%），无效数据公平对比快 89x**：
 
@@ -305,7 +305,7 @@ app.post('/api/users', (req, res) => {
 
 ### Q: 缓存如何工作？
 
-**A**: SchemaI-DSL 内置 LRU 缓存：
+**A**: schema-dsl 当前通过 `CacheManager` 委托 `cache-hub` 的 `MemoryCache` 实现编译缓存：
 
 ```javascript
 const validator = new Validator({
@@ -316,13 +316,15 @@ const validator = new Validator({
 });
 
 // 缓存统计
-const stats = validator.cache.getStats();
+const stats = validator.getCacheStats();
 console.log(stats);
 // {
-//   size: 150,      // 当前缓存数
-//   hits: 8500,     // 缓存命中次数
-//   misses: 150,    // 缓存未命中次数
-//   evictions: 0    // 驱逐次数
+//   hits: 8500,
+//   misses: 150,
+//   hitRate: '98.27',
+//   size: 150,
+//   maxSize: 5000,
+//   enabled: true
 // }
 ```
 
@@ -330,11 +332,16 @@ console.log(stats);
 
 ### Q: 如何批量验证？
 
-**A**: 使用 `validateBatch()`：
+**A**: 使用 `SchemaUtils.validateBatch()`：
 
 ```javascript
-const results = validator.validateBatch(schema, [data1, data2, data3]);
-// 返回结果数组
+const { SchemaUtils, Validator } = require('schema-dsl');
+
+const validator = new Validator();
+const batch = SchemaUtils.validateBatch(schema, [data1, data2, data3], validator.getAjv());
+
+console.log(batch.summary.valid);
+console.log(batch.results[0].valid);
 ```
 
 ---
@@ -469,12 +476,12 @@ validator.validate(schema, data, { locale: 'zh-CN' });
 
 ### Q: 错误路径格式是什么？
 
-**A**: JSON Pointer 格式：
+**A**: 当前返回的是 slash path：
 
 ```javascript
-'/username'           // 顶层字段
-'/user/name'          // 嵌套字段
-'/items/0/name'       // 数组元素
+'username'           // 顶层字段
+'user/name'          // 嵌套字段
+'items/0/name'       // 数组元素
 ```
 
 ---
@@ -525,18 +532,21 @@ MySQL 会生成 `COMMENT`，PostgreSQL 会生成 `COMMENT ON COLUMN`。
 
 ## TypeScript 支持
 
-### Q: SchemaI-DSL 支持 TypeScript 吗？
+### Q: schema-dsl 支持 TypeScript 吗？
 
-**A**: 支持，类型定义在 `index.d.ts`：
+**A**: 支持。当前更稳定的 TypeScript 写法是直接使用 `dsl('...')` Builder API，而不是依赖 String 原型扩展：
 
 ```typescript
-import { dsl, validate, DslBuilder, Validator } from 'schema-dsl';
+import { dsl, validate, Validator } from 'schema-dsl';
 
 const schema = dsl({
   username: 'string:3-32!',
-  email: 'email!'
+  email: dsl('email!').label('邮箱地址').error({
+    required: '请输入邮箱地址'
+  })
 });
 
+const validator = new Validator({ allErrors: true });
 const result = validate(schema, data);
 if (result.valid) {
   console.log(result.data);
@@ -545,14 +555,15 @@ if (result.valid) {
 
 ---
 
-### Q: 如何获得 String 扩展的类型提示？
+### Q: TypeScript 下如何写出更稳妥的链式提示？
 
-**A**: 类型定义包含全局 String 扩展：
+**A**: 推荐始终从 `dsl('...')` 开始链式调用；这样能和当前类型声明保持一致：
 
 ```typescript
-// TypeScript 会识别这些方法
 const schema = dsl({
-  email: 'email!'.label('邮箱').messages({ ... })
+  email: dsl('email!')
+    .label('邮箱')
+    .error({ format: '请输入有效邮箱地址' })
 });
 ```
 
@@ -576,4 +587,11 @@ const schema = dsl({
 - [验证指南](validation-guide.md)
 - [导出指南](export-guide.md)
 - [错误处理](error-handling.md)
+
+---
+
+## 对应示例文件
+
+**示例入口**: [faq.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/faq.ts)  
+**说明**: 把 FAQ 里最常被复制的 4 类场景放在一个可运行示例中: 单次验证、多语言错误、批量验证、缓存统计。
 

@@ -18,7 +18,7 @@
 
 ## 基本原理
 
-SchemaI-DSL 的 `Validator` 支持在验证时动态指定语言，无需全局切换。
+schema-dsl 的 `Validator` 支持在验证时动态指定语言，无需全局切换。
 
 ### 核心方法
 
@@ -264,7 +264,7 @@ app.post('/users', (req, res) => {
 });
 ```
 
-完整示例请参考 `examples/middleware-usage.ts`。
+完整示例请参考 [dynamic-locale.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/dynamic-locale.ts)。
 
 ### 3.2 Koa 中间件
 
@@ -592,7 +592,14 @@ const schema = dsl({
 
 ---
 
-**最后更新**: 2025-12-25  
-**作者**: SchemaI-DSL Team
+## 对应示例文件
+
+**示例入口**: [dynamic-locale.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/dynamic-locale.ts)  
+**说明**: 覆盖 `Accept-Language` 解析、运行时 locale 选择，以及同一 schema 在不同请求语言下的验证入口。
+
+---
+
+**最后更新**: 2026-05-08  
+**作者**: schema-dsl Team
 
 

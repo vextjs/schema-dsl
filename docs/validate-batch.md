@@ -40,3 +40,10 @@ console.log(results);
 - 同一 schema 下的大量记录预检查
 - 希望只编译一次 schema，再对整批数据复用
 
+---
+
+## 对应示例文件
+
+**示例入口**: [validate-batch.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/validate-batch.ts)  
+**说明**: 覆盖 `Validator.validateBatch()` 的单次编译、多条数据复用，以及失败项错误输出。
+

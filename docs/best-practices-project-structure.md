@@ -236,7 +236,7 @@ app.use('/api/product', require('./routes/product'));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server started on port ${PORT}`);
-  console.log('✅ All schemas are pre-compiled and ready to use');
+  console.log('✅ All schemas are loaded and ready to validate');
 });
 
 module.exports = app;
@@ -365,9 +365,11 @@ export const userSchemas = {
   register: dsl({
     username: dsl('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
-      .messages({ 'string.pattern': '只能包含字母、数字和下划线' }),
+      .error({ pattern: '只能包含字母、数字和下划线' }),
     email: 'email!',
-    password: dsl('string!').password('strong'),
+    password: dsl('string:8-64!')
+      .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
+      .error({ pattern: '密码至少 8 位且必须包含字母和数字' }),
     age: 'number:18-120'
   }),
   
@@ -406,3 +408,10 @@ router.post('/register', (req, res) => {
 - 集中管理所有验证规则
 - 易于维护和修改
 - 类型安全（TypeScript）
+
+---
+
+## 对应示例文件
+
+**示例入口**: [best-practices-project-structure.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/best-practices-project-structure.ts)  
+**说明**: 用一个最小的 `userSchemas` 对象模拟集中定义 / 路由复用结构，直接验证注册与登录两条路径。

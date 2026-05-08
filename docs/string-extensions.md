@@ -472,10 +472,17 @@ const schema = dsl({
 - [DSL 语法](./dsl-syntax.md)
 - [API 参考](./api-reference.md)
 - [多语言支持](./multi-language.md)
-- [示例代码](../examples/string-extensions.ts)
+- [示例代码](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/string-extensions.ts)
 
 ---
 
-**最后更新**: 2025-12-25
+## 对应示例文件
+
+**示例入口**: [string-extensions.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/string-extensions.ts)  
+**说明**: 覆盖 String.prototype 扩展的安装/卸载、链式 `.label()` / `.messages()` / `.pattern()` 调用，以及校验成功/失败路径。
+
+---
+
+**最后更新**: 2026-05-08
 
 

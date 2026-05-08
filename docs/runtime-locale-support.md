@@ -504,7 +504,7 @@ app.get('/api/users/:id', async (req, res) => {
 - 现有代码无需修改
 - `locale` 参数为可选参数
 - 不传 `locale` 时使用全局语言
-- 所有单元测试通过（949/949）
+- 相关单元测试已覆盖
 
 ---
 
@@ -516,6 +516,13 @@ app.get('/api/users/:id', async (req, res) => {
 
 ---
 
-**最后更新**: 2026-01-13  
+## 对应示例文件
+
+**示例入口**: [runtime-locale-support.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/runtime-locale-support.ts)  
+**说明**: 覆盖运行时指定 locale 创建错误对象、参数插值，以及“局部语言切换不污染全局状态”的关键行为。
+
+---
+
+**最后更新**: 2026-05-08  
 **作者**: schema-dsl Team
 

@@ -956,7 +956,7 @@ async function apiCall() {
 
 **A**: 
 
-- **默认语言**: `'en-US'`（英文）
+- **默认语言**: `'zh-CN'`（简体中文）
 - **修改方式**: 
 
 ```javascript
@@ -1041,7 +1041,7 @@ app.use((error, req, res, next) => {
 
 ### 基础结构
 
-SchemaI-DSL 验证返回的错误对象结构：
+schema-dsl 验证返回的错误对象结构：
 
 ```javascript
 const { dsl, validate } = require('schema-dsl');
@@ -1054,14 +1054,14 @@ const result = validate(schema, { username: 'ab' });
 
 // 返回结构
 {
-  valid: false,           // 验证是否通过
-  errors: [              // 错误数组（基于 ajv）
+  valid: false,
+  errors: [
     {
-      instancePath: '/username',
-      schemaPath: '#/properties/username/minLength',
+      path: 'username',
+      field: 'username',
       keyword: 'minLength',
       params: { limit: 3 },
-      message: 'must NOT have fewer than 3 characters'
+      message: '用户名长度不能少于3个字符'
     }
   ]
 }
@@ -1089,8 +1089,8 @@ const result = validate(schema, {
 });
 
 // 错误路径
-console.log(result.errors[0].instancePath); // '/user/profile/email'
-console.log(result.errors[0].message);      // 'must match format "email"'
+console.log(result.errors[0].path);    // 'user/profile/email'
+console.log(result.errors[0].message); // '邮箱必须是有效的邮箱地址'
 ```
 
 ### 数组项错误
@@ -1107,7 +1107,7 @@ const result = validate(schema, {
 });
 
 // 错误路径
-console.log(result.errors[0].instancePath); // '/items/0'
+console.log(result.errors[0].path); // 'items/0'
 ```
 
 ---
@@ -1183,7 +1183,7 @@ Locale.setMessages({
 
 ### 内置错误码（简化版）
 
-SchemaI-DSL 对 ajv 的错误关键字进行了简化映射，使其更易用：
+schema-dsl 对 Ajv 的错误关键字进行了统一格式化，使其更易用：
 
 #### 字符串错误码
 
@@ -1278,8 +1278,8 @@ const result = validate(schema, {
 });
 
 // 错误示例
-// result.errors[0].instancePath: '/user/address/city'
-// result.errors[1].instancePath: '/user/address/street'
+// result.errors[0].path: 'user/address/city'
+// result.errors[1].path: 'user/address/street'
 ```
 
 ### 数组验证
@@ -1297,7 +1297,7 @@ const result = validate(schema, {
 });
 
 // 错误路径
-console.log(result.errors[0].instancePath); // '/items/0'
+console.log(result.errors[0].path); // 'items/0'
 ```
 
 ---
@@ -1355,7 +1355,7 @@ function validateBody(schema) {
         code: 'VALIDATION_ERROR',
         message: '请检查输入信息',
         errors: result.errors.map(err => ({
-          field: err.instancePath.replace(/^\//, '').replace(/\//g, '.'),
+          field: err.path.replace(/\//g, '.'),
           message: err.message,
           keyword: err.keyword,
           params: err.params
@@ -1402,7 +1402,7 @@ function validateBody(schema) {
         code: 'VALIDATION_ERROR',
         message: '数据验证失败',
         errors: result.errors.map(err => ({
-          field: err.instancePath.replace(/^\//, '').replace(/\//g, '.'),
+          field: err.path.replace(/\//g, '.'),
           message: err.message,
           keyword: err.keyword
         }))
@@ -1685,9 +1685,9 @@ logger.warn('验证失败', {
 
 ```javascript
 // 统一的错误格式化函数
-function formatValidationErrors(ajvErrors) {
-  return ajvErrors.map(err => ({
-    field: err.instancePath.replace(/^\//, '').replace(/\//g, '.'),
+function formatValidationErrors(errors) {
+  return errors.map(err => ({
+    field: err.path.replace(/\//g, '.'),
     message: err.message,
     keyword: err.keyword,
     params: err.params
@@ -1962,7 +1962,14 @@ function handleError(error) {
 
 ---
 
-**最后更新**: 2026-01-17  
+## 对应示例文件
+
+**示例入口**: [error-handling.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/error-handling.ts)  
+**说明**: 覆盖 `validate()` 产生的字段错误、`I18nError` 业务错误对象、`toJSON()` 输出与错误码判断。
+
+---
+
+**最后更新**: 2026-05-08  
 **版本**: v1.1.5
 
 

@@ -110,11 +110,11 @@ npm run coverage
 # 先编译 TypeScript 示例
 npm run examples:build
 
-# 运行 DSL 风格示例
-node .tmp/dsl-style.js
+# 运行快速开始示例
+node .tmp/docs/quick-start.js
 
 # 运行导出示例
-node .tmp/export-demo.js
+node .tmp/docs/export-guide.js
 ```
 
 ### 5. 代码检查
@@ -333,7 +333,7 @@ npm run coverage
 使用 Node.js 调试器：
 
 ```bash
-node inspect .tmp/dsl-style.js
+node inspect .tmp/docs/quick-start.js
 ```
 
 或使用 VSCode 调试配置。

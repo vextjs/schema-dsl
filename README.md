@@ -594,11 +594,11 @@ npm test
 - [⚠️ 导出限制说明](https://vextjs.github.io/schema-dsl/export-limitations)
 
 ### 💻 示例代码
-- [simple-example.ts](./examples/simple-example.ts) — 基础用法
-- [express-integration.ts](./examples/express-integration.ts) — Express 集成
-- [export-demo.ts](./examples/export-demo.ts) — 数据库导出
-- [i18n-error.examples.ts](./examples/i18n-error.examples.ts) — 多语言错误
-- [plugin-system.examples.ts](./examples/plugin-system.examples.ts) — 插件示例
+- [quick-start.ts](./examples/docs/quick-start.ts) — 基础上手与注册表单示例
+- [validate-async.ts](./examples/docs/validate-async.ts) — 异步验证与 `ValidationError` 捕获
+- [export-guide.ts](./examples/docs/export-guide.ts) — 数据库导出总览
+- [error-handling.ts](./examples/docs/error-handling.ts) — 字段错误与业务错误处理
+- [plugin-system.ts](./examples/docs/plugin-system.ts) — 插件系统与 hook 示例
 
 ### 📝 版本与贡献
 - [更新日志](./CHANGELOG.md)

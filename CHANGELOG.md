@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
-| [Unreleased] | — | — | — |
+| [Unreleased] | 2026-05-08 | Docs | 文档示例体系收敛：58 篇文档示例对齐、旧顶层 examples 收口、API 参考高级能力覆盖补齐 |
 | [2.0.0-beta.2] | 2026-04-12 | Major | TypeScript 全量重写：ESM+CJS 双格式、AJV 8、tsup 构建、1052 项测试通过 [查看](./changelogs/v2.0.0-beta.2.md) |
 | [v1.2.5] | 2026-03-09 | Patch | 新功能：`DslBuilder.toJsonSchema()` — 输出纯净 JSON Schema，自动清理内部标记 |
 | [v1.2.4] | 2026-03-09 | Patch | P1 Bug修复：`enum:a,b,c` 逗号分隔格式解析完全失效 |
@@ -35,6 +35,14 @@ All notable changes to this project will be documented in this file.
 | v1.0.2 | 2025-12-31 | Patch | 15 个新增验证器、完整文档、75 个测试 |
 | v1.0.1 | 2025-12-31 | Patch | 枚举功能、自动类型识别、统一错误消息 |
 | [v1.0.0] | 2025-12-29 | Pre-release | 初始发布版本 [查看](./changelogs/v1.0.0.md) |
+
+---
+
+## [Unreleased]
+
+- docs: 完成 `docs/*.md` 与 `examples/docs/*.ts` 的 58 对 58 对齐，并统一切换到稳定示例入口链接
+- docs: 收口 `api-reference` 的高级 API 可运行覆盖，补齐 `ErrorFormatter` API 参考并修正 `FEATURE-INDEX` 方法口径
+- chore: 清理旧顶层 `examples/*` 主链路，统一示例入口与 `.tmp` 工作区可见性设置
 
 ---
 

@@ -191,10 +191,10 @@
 
 | 文件 | 说明 |
 |------|------|
-| [simple-example.ts](../examples/simple-example.ts) | 简单示例 |
-| [dsl-style.ts](../examples/dsl-style.ts) | DSL 风格完整示例 |
-| [string-extensions.ts](../examples/string-extensions.ts) | String 扩展示例 |
-| [password-reset/](../examples/password-reset/) | 密码重置表单示例 |
+| [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/quick-start.ts) | 快速开始示例 |
+| [dsl-syntax.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/dsl-syntax.ts) | DSL 风格完整示例 |
+| [string-extensions.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/string-extensions.ts) | String 扩展示例 |
+| [troubleshooting.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/troubleshooting.ts) | 排障与错误定位示例 |
 
 ---
 
@@ -234,8 +234,8 @@
 
 | 指标 | 当前值 |
 |------|--------|
-| `docs/*.md` 文档数 | **57** |
-| `README.md + docs/*.md` 文档数 | **58** |
+| `docs/*.md` 文档数 | **58** |
+| `README.md + docs/*.md` 文档数 | **59** |
 | 文档总行数 | **持续演进（以仓库实时内容为准）** |
 | 测试文件数 | **67** |
 | 最近一次全量验证 | **67 files / 1052 tests passed** |
@@ -247,41 +247,15 @@
 - ⭐⭐ 核心文档
 - ⭐⭐⭐ 必读文档
 
-**最后更新**: 2026-05-01
+---
 
+## 对应示例文件
 
-| 文档 | 说明 |
-|------|------|
-| [CONTRIBUTING.md](../CONTRIBUTING.md) | 贡献指南 |
+**示例入口**: [doc-index.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/doc-index.ts)  
+**说明**: 用一个最小入口脚本串起快速开始、编译校验和文档导出，帮助读者从索引页直接落到可运行示例。
 
 ---
 
-## 📊 版本信息
-
-| 文档 | 说明 |
-|------|------|
-| [STATUS.md](../STATUS.md) | 项目状态（当前测试与发布状态）|
-| [CHANGELOG.md](../CHANGELOG.md) | 更新日志 |
-
----
-
-## 📁 文档统计
-
-| 指标 | 当前值 |
-|------|--------|
-| `docs/*.md` 文档数 | **57** |
-| `README.md + docs/*.md` 文档数 | **58** |
-| 文档总行数 | **持续演进（以仓库实时内容为准）** |
-| 测试文件数 | **67** |
-| 最近一次全量验证 | **67 files / 1052 tests passed** |
-
----
-
-**图例说明**:
-- ⭐ 重点推荐文档
-- ⭐⭐ 核心文档
-- ⭐⭐⭐ 必读文档
-
-**最后更新**: 2026-05-01
+**最后更新**: 2026-05-08
 
 

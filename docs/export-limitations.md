@@ -49,7 +49,7 @@ const schema = dsl({
 
 **替代方案**:
 - 导出为最宽松的类型（`VARCHAR(255)`）
-- 验证逻辑保留在应用层（使用 SchemaI-DSL 验证器）
+- 验证逻辑保留在应用层（使用 schema-dsl 验证器）
 
 ---
 
@@ -331,7 +331,7 @@ const schema = dsl('string!')
 
 ```text
 ┌─────────────────────────────────────────┐
-│  应用层（SchemaI-DSL 完整验证）             │
+│  应用层（schema-dsl 完整验证）               │
 │  - 条件逻辑（match/if）                 │
 │  - 自定义验证器                         │
 │  - 复杂约束（正则、范围等）              │
@@ -449,7 +449,7 @@ module.exports = {
 ```markdown
 ## 数据验证说明
 
-### 应用层验证（SchemaI-DSL）
+### 应用层验证（schema-dsl）
 - ✅ `contact` 字段根据 `contactType` 动态验证
 - ✅ 用户名正则验证（`^[a-zA-Z0-9_]+$`）
 - ✅ 自定义业务规则验证
@@ -548,4 +548,11 @@ dsl('active|inactive|banned')
 - [MySQL 导出器](mysql-exporter.md)
 - [PostgreSQL 导出器](postgresql-exporter.md)
 - [最佳实践](best-practices.md)
+
+---
+
+## 对应示例文件
+
+**示例入口**: [export-limitations.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/export-limitations.ts)  
+**说明**: 展示“完整应用层 schema”与“数据库导出专用简化 schema”的分工，以及三类导出器对静态 schema 的落地结果。
 

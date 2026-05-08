@@ -745,6 +745,25 @@ SchemaHelper.clone(schema);
 
 ---
 
+### ErrorFormatter
+
+验证错误格式化工具，用于把 Ajv 原始错误数组或简化错误对象转换成统一的错误项结构或消息文本。
+
+```javascript
+const { ErrorFormatter } = require('schema-dsl');
+
+const formatter = new ErrorFormatter('zh-CN');
+const errors = formatter.formatDetailed(ajvValidate.errors);
+console.log(errors[0].message);
+```
+
+**方法**:
+- `new ErrorFormatter(locale?, messages?)` - 创建错误格式化器
+- `format(error, locale?)` - 格式化单个错误为消息字符串
+- `formatDetailed(errors, locale?, customMessages?, alreadyMerged?)` - 格式化错误数组为标准错误项列表
+
+---
+
 ### MessageTemplate
 
 错误消息模板封装类，内部委托 `renderTemplate()` 执行占位符替换。
@@ -975,10 +994,17 @@ console.log(result.valid); // true
 
 - [DSL 语法完整指南](./dsl-syntax.md)
 - [错误处理](./error-handling.md)
-- [示例代码](../examples/)
-- [GitHub](https://github.com/yourname/schema-dsl)
+- [示例代码](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/api-reference.ts)
+- [GitHub](https://github.com/vextjs/schema-dsl)
 
 ---
 
-**最后更新**: 2026-03-09
+## 对应示例文件
+
+**示例入口**: [api-reference.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/api-reference.ts)  
+**说明**: 覆盖 `dsl()`、`validate()`、`validateAsync()`、默认 `Validator` 单例、模板渲染、`JSONSchemaCore`、`ErrorFormatter` 以及底层解析 / 编译工具的可运行调用链。
+
+---
+
+**最后更新**: 2026-05-08
 

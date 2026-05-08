@@ -1,7 +1,7 @@
 # 链式条件 API - ConditionalBuilder
 
-> **版本**: v1.1.1  
-> **更新日期**: 2026-01-06  
+> **版本**: schema-dsl v2.0.0-beta.2  
+> **更新日期**: 2026-05-08  
 > **状态**: ✅ 稳定
 
 ---
@@ -21,6 +21,8 @@
 ## 概述
 
 `ConditionalBuilder` 提供流畅的链式条件判断 API，类似 JavaScript 的 if-else 语句，用于在验证时根据实际数据动态调整验证规则。
+
+> 关键语义：当你使用 `.message()` / `.assert()` / `.check()` 这类“失败即返回”的模式时，条件函数应该写成**失败条件**，因为条件返回 `true` 才会被判定为失败。
 
 ### 核心特性
 
@@ -218,7 +220,7 @@ const { dsl, validate } = require('schema-dsl');
 // 方式1：传统方式（需要 validate 函数）
 const schema1 = dsl({
   age: 'number!',
-  status: dsl.if((data) => data.age >= 18)
+  status: dsl.if((data) => data.age < 18)
     .message('未成年用户不能注册')
 });
 
@@ -226,13 +228,13 @@ validate(schema1, { age: 16, status: 'active' });
 // => { valid: false, errors: [{ message: '未成年用户不能注册' }] }
 
 // ✅ 方式2：快捷方式（一行代码验证）
-const result = dsl.if((data) => data.age >= 18)
+const result = dsl.if((data) => data.age < 18)
   .message('未成年用户不能注册')
   .validate({ age: 16 });
 // => { valid: false, errors: [{ message: '未成年用户不能注册' }] }
 
 // ✅ 方式3：.check() 快速判断
-const isValid = dsl.if((data) => data.age >= 18)
+const isValid = dsl.if((data) => data.age < 18)
   .message('未成年用户不能注册')
   .check({ age: 16 });
 // => false
@@ -478,11 +480,11 @@ dsl.if((data) => data.userType === 'admin')
 
 **基础示例**:
 ```javascript
-dsl.if((data) => data.age >= 18)
+dsl.if((data) => data.age < 18)
   .message('未成年用户不能注册')
 
 // 支持多语言 key
-dsl.if((data) => data.age >= 18)
+dsl.if((data) => data.age < 18)
   .message('error.underage')
 ```
 
@@ -1295,4 +1297,11 @@ validate(contactSchema, '13800138000');       // ✅ 作为手机号验证
 - [验证指南](./validation-guide.md)
 - [API 参考](./api-reference.md)
 - [最佳实践](./best-practices.md)
+
+---
+
+## 对应示例文件
+
+**示例入口**: [conditional-api.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/conditional-api.ts)  
+**说明**: 同时覆盖失败谓词模式下的 `.check()` / `.assert()`，以及字段名版本 `dsl.if(field, then, else)` 和 `dsl.match()` 映射。
 

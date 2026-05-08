@@ -11,3 +11,10 @@
 
 依赖升级后应重新运行完整测试与构建验证。
 
+---
+
+## 对应示例文件
+
+**示例入口**: [security-checklist.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/security-checklist.ts)  
+**说明**: 使用占位 token、受限字符集和显式 URL 校验，示范文档中“不要暴露真实凭据”“正则要有界”的落地写法。
+

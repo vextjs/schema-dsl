@@ -19,7 +19,7 @@
 
 ## 概述
 
-`CacheManager` 是 SchemaI-DSL 的内部缓存系统，用于缓存编译后的 Schema 验证函数，避免重复编译带来的性能开销。
+`CacheManager` 是 schema-dsl 的内部缓存系统，用于缓存编译后的 Schema 验证函数，避免重复编译带来的性能开销。
 
 ### 核心功能
 
@@ -334,4 +334,11 @@ function updateSchema(name, newSchema) {
 - [Validator](validate.md)
 - [性能优化指南](validation-guide.md#性能优化)
 - [API 参考](api-reference.md)
+
+---
+
+## 对应示例文件
+
+**示例入口**: [cache-manager.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/cache-manager.ts)  
+**说明**: 覆盖 `set/get/has`、LRU 淘汰、统计信息读取和 `resetStats()` 的实际行为。
 

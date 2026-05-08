@@ -453,7 +453,14 @@ const schema = dsl({
 - [基础用法](../README.md)
 - [验证规则](./validation-guide.md)
 - [API 参考](./api-reference.md)
-- [示例代码](../examples/enum.examples.ts)
+- [示例代码](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/enum.ts)
+
+---
+
+## 对应示例文件
+
+**示例入口**: [enum.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/enum.ts)  
+**说明**: 覆盖字符串、数字、布尔值和数组元素枚举的成功/失败路径，并展示自定义枚举错误消息。
 
 ---
 
@@ -470,6 +477,6 @@ const schema = dsl({
 
 ---
 
-**文档生成时间**: 2025-12-31  
+**文档生成时间**: 2026-05-08  
 **版本**: v1.1.0
 

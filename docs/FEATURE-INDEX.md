@@ -198,7 +198,7 @@ console.log(command);
 
 **文档位置**:
 - 📖 [数据库导出指南](./export-guide.md)
-- 📖 [示例代码](../examples/export-demo.ts)
+- 📖 [示例代码](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/feature-index.ts)
 
 **代码位置**: `src/exporters/MongoDBExporter.ts`
 
@@ -228,7 +228,7 @@ console.log(ddl);
 
 **文档位置**:
 - 📖 [数据库导出指南](./export-guide.md)
-- 📖 [示例代码](../examples/export-demo.ts)
+- 📖 [示例代码](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/feature-index.ts)
 
 **代码位置**: `src/exporters/MySQLExporter.ts`
 
@@ -258,7 +258,7 @@ console.log(ddl);
 
 **文档位置**:
 - 📖 [数据库导出指南](./export-guide.md)
-- 📖 [示例代码](../examples/export-demo.ts)
+- 📖 [示例代码](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/feature-index.ts)
 
 **代码位置**: `src/exporters/PostgreSQLExporter.ts`
 
@@ -354,13 +354,12 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 **功能**: 格式化验证错误信息
 
 **可用方法**:
-- ✅ `format(errors, options)` - 格式化错误列表
-- ✅ `formatSingle(error, options)` - 格式化单个错误
-- ✅ `toJSON(errors)` - 转为JSON格式
-- ✅ `toText(errors)` - 转为文本格式
+- ✅ `new ErrorFormatter(locale?, messages?)` - 创建格式化器
+- ✅ `format(error, locale?)` - 格式化单个错误为消息字符串
+- ✅ `formatDetailed(errors, locale?, customMessages?, alreadyMerged?)` - 格式化错误数组为标准错误项
 
 **文档位置**:
-- 📖 [API参考 - ErrorFormatter](./api-reference.md)
+- 📖 [API参考 - ErrorFormatter / MessageTemplate / 底层解析工具](./api-reference.md)
 - 📖 [错误处理文档](./error-handling.md)
 
 **代码位置**: `src/core/ErrorFormatter.ts`
@@ -493,15 +492,15 @@ const schema = {
 ### 完整示例目录
 
 **基础示例**:
-- 📄 [dsl-style.ts](../examples/dsl-style.ts) - DSL基础用法
-- 📄 [string-extensions.ts](../examples/string-extensions.ts) - String扩展示例
+- 📄 [dsl-syntax.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/dsl-syntax.ts) - DSL基础用法
+- 📄 [string-extensions.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/string-extensions.ts) - String扩展示例
 
 **场景示例**:
-- 📁 [user-registration/](../examples/user-registration/) - 用户注册表单验证
-- 📁 [password-reset/](../examples/password-reset/) - 密码重置流程
+- 📄 [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/quick-start.ts) - 用户注册式的基础表单验证起点
+- 📄 [validation-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/validation-guide.ts) - 失败路径、错误处理与规则组合示例
 
 **导出示例**:
-- 📄 [export-demo.ts](../examples/export-demo.ts) - 数据库导出示例
+- 📄 [feature-index.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/feature-index.ts) - 功能索引代表性示例
 
 ---
 
@@ -514,13 +513,13 @@ const schema = {
 3. ✅ Validator类 - `docs/validate.md`
 4. ✅ API参考 - `docs/api-reference.md`
 5. ✅ 快速开始 - `docs/quick-start.md`
-6. ✅ 数据库导出 - `README.md` + `examples/export-demo.ts`
+6. ✅ 数据库导出 - `README.md` + `docs/export-guide.md`
 7. ✅ 自定义验证 - `README.md`
 8. ✅ Schema工具 - `docs/schema-utils.md` + `docs/schema-helper.md`
 
 ### ⚠️ 文档需要补充
 
-1. ⚠️ ErrorFormatter - 仍主要散落在 API 参考与错误处理文档中
+1. ⚠️ ErrorFormatter - 当前已在 API 参考与错误处理文档中覆盖；如需更聚焦入口，可后续增补专项文档
 2. ⚠️ PluginManager - 可补一份更聚焦的 API/Hook 速查
 3. ⚠️ 性能与基准测试 - 可继续补充独立诊断手册
 4. ⚠️ 示例运行方式 - 可补充统一的 TypeScript 示例编译说明
@@ -547,7 +546,14 @@ const schema = {
 
 ---
 
-**最后更新**: 2026-04-30
-**维护者**: SchemaI-DSL Team
+## 对应示例文件
+
+**示例入口**: [feature-index.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/feature-index.ts)  
+**说明**: 以单文件串联 DSL、String 扩展和导出器三个代表性能力，作为功能索引页的快速落地入口。
+
+---
+
+**最后更新**: 2026-05-08
+**维护者**: schema-dsl Team
 
 

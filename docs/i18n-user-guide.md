@@ -478,3 +478,10 @@ dsl.config({
 });
 ```
 
+---
+
+## 对应示例文件
+
+**示例入口**: [i18n-user-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/i18n-user-guide.ts)  
+**说明**: 覆盖 `dsl.config({ i18n: { locales: ... } })` 的对象配置方式、已加载语言列表，以及不同 locale 的运行时切换。
+

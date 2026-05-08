@@ -3,7 +3,7 @@
 > **用途**: Schema 到多种输出格式的完整导出指南  
 > **阅读时间**: 10分钟
 
-> ⚠️ **重要提示**: 并非所有 SchemaI-DSL 特性都能导出到数据库。请先阅读 [导出限制说明](export-limitations.md) 了解哪些特性不支持导出。
+> ⚠️ **重要提示**: 并非所有 schema-dsl 特性都能导出到数据库。请先阅读 [导出限制说明](export-limitations.md) 了解哪些特性不支持导出。
 
 ---
 
@@ -491,4 +491,11 @@ console.log('导出完成！');
 - [PostgreSQL 导出器](postgresql-exporter.md)
 - [TypeConverter](type-converter.md)
 - [DSL 语法](dsl-syntax.md)
+
+---
+
+## 对应示例文件
+
+**示例入口**: [export-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/export-guide.ts)  
+**说明**: 覆盖同一组 schema 同时导出到 MongoDB、MySQL 和 PostgreSQL 的最小工作流，便于对照多导出器结果。
 

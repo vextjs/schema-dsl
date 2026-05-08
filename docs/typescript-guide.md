@@ -1,7 +1,7 @@
 # TypeScript 使用指南
 
-> **版本**: schema-dsl v1.0.6+  
-> **更新日期**: 2026-01-04  
+> **版本**: schema-dsl v2.0.0-beta.2  
+> **更新日期**: 2026-05-08  
 > **重要**: v1.0.6 移除了全局 String 类型扩展以避免类型污染
 
 ---
@@ -106,7 +106,10 @@ const emailBuilder = dsl('email!');
 emailBuilder.label('邮箱')
 //          ^? IDE 自动提示所有可用方法
   .pattern(/^[a-z]+@[a-z]+\.[a-z]+$/)
-  .messages({ required: '邮箱必填' });
+  .error({ required: '邮箱必填' });
+
+> ℹ️ 当前类型声明优先覆盖稳定链式 API，例如 `label()`、`pattern()`、`error()`、`default()`。  
+> 某些运行时扩展方法依然可用，但如果类型声明未暴露，建议在 TypeScript 代码里优先改写为上述稳定组合。
 ```
 
 ---
@@ -128,12 +131,13 @@ emailBuilder.label('邮箱')
 ```typescript
 const schema = dsl({
   username: dsl('string:3-32!')
-    .pattern(/^[a-zA-Z0-9_]+$/, '只能包含字母、数字和下划线')
+    .pattern(/^[a-zA-Z0-9_]+$/)
     .label('用户名'),
+    .error({ pattern: '只能包含字母、数字和下划线' }),
   
   email: dsl('email!')
     .label('邮箱地址')
-    .messages({ required: '邮箱必填' }),
+    .error({ required: '邮箱必填' }),
   
   age: dsl('number:18-100')
     .label('年龄')
@@ -151,17 +155,21 @@ const schema = dsl({
 // 定义可复用的字段
 const emailField = dsl('email!')
   .label('邮箱地址')
-  .messages({ required: '邮箱必填' });
+  .error({ required: '邮箱必填' });
 
 const usernameField = dsl('string:3-32!')
   .pattern(/^[a-zA-Z0-9_]+$/)
-  .label('用户名');
+  .label('用户名')
+  .error({ pattern: '用户名只能包含字母、数字和下划线' });
 
 // 组合使用
 const registrationSchema = dsl({
   email: emailField,
   username: usernameField,
-  password: dsl('string:8-64!').password('strong')
+  password: dsl('string:8-64!')
+    .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
+    .label('密码')
+    .error({ pattern: '密码至少 8 位且必须包含字母和数字' })
 });
 
 const loginSchema = dsl({
@@ -203,20 +211,18 @@ import { dsl, validateAsync, ValidationError } from 'schema-dsl';
 const registrationSchema = dsl({
   profile: dsl({
     username: dsl('string:3-32!')
-      .pattern(/^[a-zA-Z0-9_]+$/, '只能包含字母、数字和下划线')
+      .pattern(/^[a-zA-Z0-9_]+$/)
       .label('用户名')
-      .messages({
-        min: '用户名至少3个字符',
-        max: '用户名最多32个字符'
-      }),
+      .error({ pattern: '只能包含字母、数字和下划线' }),
     
     email: dsl('email!')
       .label('邮箱地址')
-      .messages({ required: '邮箱必填' }),
+      .error({ required: '邮箱必填' }),
     
-    password: dsl('string!')
-      .password('strong')
-      .label('密码'),
+    password: dsl('string:8-64!')
+      .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
+      .label('密码')
+      .error({ pattern: '密码至少 8 位且必须包含字母和数字' }),
     
     age: dsl('number:18-100')
       .label('年龄')
@@ -269,7 +275,7 @@ registerUser({
 ### 4.2 API 请求验证
 
 ```typescript
-import { dsl, validateAsync } from 'schema-dsl';
+import { ValidationError, dsl, validateAsync } from 'schema-dsl';
 import express from 'express';
 
 const app = express();
@@ -322,15 +328,17 @@ import { dsl } from 'schema-dsl';
 const commonFields = {
   email: dsl('email!')
     .label('邮箱地址')
-    .messages({ required: '邮箱必填' }),
+    .error({ required: '邮箱必填' }),
   
   username: dsl('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
-    .label('用户名'),
+    .label('用户名')
+    .error({ pattern: '用户名只能包含字母、数字和下划线' }),
   
-  password: dsl('string!')
-    .password('strong')
+  password: dsl('string:8-64!')
+    .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
     .label('密码')
+    .error({ pattern: '密码至少 8 位且必须包含字母和数字' })
 };
 
 // 注册表单
@@ -456,21 +464,20 @@ try {
 
 ## 6. 进阶技巧
 
-### 6.1 自定义验证器
+### 6.1 额外业务规则
 
 ```typescript
 const schema = dsl({
-  username: dsl('string:3-32!')
-    .custom((value) => {
-      // 同步自定义业务规则
-      if (value === 'admin') {
-        return { error: 'USERNAME_EXISTS', message: '用户名已存在' };
-      }
-      return true;
-    })
-    .label('用户名')
+  username: dsl('string:3-32!').label('用户名')
 });
+
+const result = await validateAsync(schema, data);
+if (result.username === 'admin') {
+  throw new Error('用户名已存在');
+}
 ```
+
+这种写法的好处是：结构校验仍由 schema-dsl 负责，业务唯一性、数据库查重等规则继续留在 TypeScript 业务层，避免把外部依赖塞进字段声明。
 
 ### 6.2 条件验证
 
@@ -498,14 +505,14 @@ const baseUserSchema = dsl({
 });
 
 // 扩展为管理员 Schema
-const adminSchema = SchemaUtils.extend(baseUserSchema.toJsonSchema(), {
+const adminSchema = SchemaUtils.extend(baseUserSchema, {
   role: dsl('string!').default('admin').label('角色'),
   permissions: dsl('array<string>').label('权限列表')
 });
 
 // 只选择部分字段
 const publicUserSchema = SchemaUtils.pick(
-  baseUserSchema.toJsonSchema(),
+  baseUserSchema,
   ['username']
 );
 ```
@@ -514,16 +521,14 @@ const publicUserSchema = SchemaUtils.pick(
 
 ## 7. 性能优化
 
-### 7.1 Schema 预编译
+### 7.1 复用 Schema 与默认缓存
 
 ```typescript
-// 预编译 Schema（只编译一次）
 const schema = dsl({
   email: dsl('email!').label('邮箱')
 });
-schema.compile();  // 预编译
 
-// 多次验证（使用缓存的编译结果）
+// 多次验证会复用默认 Validator 的编译缓存
 await validateAsync(schema, data1);
 await validateAsync(schema, data2);
 await validateAsync(schema, data3);
@@ -553,7 +558,7 @@ dsl.config({
 4. ✅ **复用常用字段定义**
 5. ✅ **使用 `ValidationError` 类型守卫处理错误**
 6. ✅ **为用户提供友好的错误消息**
-7. ✅ **预编译常用的 Schema**
+7. ✅ **复用常用 Schema 对象，让默认缓存命中**
 
 ---
 
@@ -567,6 +572,13 @@ dsl.config({
 
 ---
 
-**更新日期**: 2025-12-31  
-**文档版本**: v1.0.4
+## 对应示例文件
+
+**示例入口**: [typescript-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/typescript-guide.ts)  
+**说明**: 展示 TypeScript 下推荐的 `dsl()` 包裹写法、`validate<T>()` / `validateAsync<T>()`、以及 `ValidationError` 的字段错误读取方式。
+
+---
+
+**更新日期**: 2026-05-08  
+**文档版本**: v2.0.0-beta.2
 

@@ -6,7 +6,7 @@
 
 ## 答案
 
-**现在可以了！** 🎉 当前 TypeScript 重构版（`v2.0.0-beta.1`）中，顶层 `validate()` 和 `validateAsync()` 都支持直接传入 DSL 对象。
+**现在可以了！** 🎉 当前 TypeScript 重构版中，顶层 `validate()` 和 `validateAsync()` 都支持直接传入 DSL 对象。
 
 ---
 
@@ -566,4 +566,11 @@ validate({ email: 'email!' }, data);
 const schema = dsl({ email: 'email!' });
 validate(schema, data);
 ```
+
+---
+
+## 对应示例文件
+
+**示例入口**: [validate-dsl-object-support.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/validate-dsl-object-support.ts)  
+**说明**: 覆盖直接传入 DSL 对象、混合使用 `DslBuilder` 与 DSL 字符串，以及顶层 `validate()` / `validateAsync()` 的真实支持边界。
 

@@ -79,18 +79,20 @@ email: 'email!'
 </div>
 ```
 
-**在API文档中**:
+**在导出 / 文档工具中**:
 
 ```json
 {
   "email": {
     "type": "string",
     "format": "email",
-    "title": "邮箱地址",           // 来自 label
+    "_label": "邮箱地址",          // label 在 schema-dsl 内部以 _label 保存
     "description": "用于登录和接收系统通知"  // 来自 description
   }
 }
 ```
+
+`SchemaUtils.toMarkdown()`、导出器或你自己的表单渲染层，通常会再把 `_label` 映射成展示标题。
 
 ---
 
@@ -257,6 +259,13 @@ apiKey: 'string:32!'
 
 ---
 
-**记住**: label用于错误消息，description用于帮助说明！
+**记住**: label用于错误消息和展示标题来源，description用于帮助说明！
+
+---
+
+## 对应示例文件
+
+**示例入口**: [label-vs-description.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/label-vs-description.ts)  
+**说明**: 直接展示 `_label` / `description` 在 schema 中的实际落点，以及验证错误如何消费 `label`。
 
 

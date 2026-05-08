@@ -207,7 +207,7 @@ const schema3 = dsl({
 - ✅ **email?** - 支持
 - ✅ **number:18-?** - 支持
 - ✅ **array<string>?** - 支持
-- ✅ **所有单元测试通过** - 949/949
+- ✅ **相关单元测试已覆盖**
 
 ### 测试代码
 
@@ -236,27 +236,25 @@ console.log(validate(schema3, { username: 'test' }).valid); // true
 
 ## 🔧 实现细节
 
-### DslBuilder 构造函数
+### DslParser / DslBuilder 标记处理
 
 ```javascript
-constructor(dslString) {
-  // ...
-  
-  // 🔴 处理必填标记 ! 和可选标记 ?
-  // 优先级：! > ?（如果同时存在，! 优先）
-  this._required = processedDsl.endsWith('!');
-  this._optional = processedDsl.endsWith('?') && !this._required;
-  
-  let dslWithoutMarker = processedDsl;
-  if (this._required) {
-    dslWithoutMarker = processedDsl.slice(0, -1);
-  } else if (this._optional) {
-    dslWithoutMarker = processedDsl.slice(0, -1);
-  }
-  
-  // ...
+// DslParser.parseString()
+if (s.endsWith('!')) {
+  required = true;
+  s = s.slice(0, -1);
+} else if (s.endsWith('?')) {
+  s = s.slice(0, -1);
+}
+
+// DslBuilder constructor（兼容链式入口）
+this._required = s.endsWith('!');
+this._optional = s.endsWith('?') && !this._required;
+if (this._required || this._optional) s = s.slice(0, -1);
 }
 ```
+
+当前版本会在 `DslParser.parseString()` 中统一剥离末尾 `!` / `?`，同时 `DslBuilder` 构造函数保留相同的兼容处理，因此字符串 DSL 和链式 Builder 两条入口都能识别可选标记。
 
 ---
 
@@ -311,11 +309,18 @@ const schema = dsl({
 ## 📚 相关文档
 
 - [DSL 语法完整指南](./dsl-syntax.md)
-- [TypeScript 类型定义](../dist/index.d.ts)
-- [单元测试](../test/unit/adapters/DslAdapter.test.ts)
+- [类型参考](./type-reference.md)
+- [跨类型联合验证](./union-types.md)
 
 ---
 
 **最后更新**: 2026-01-13  
 **作者**: schema-dsl Team
+
+---
+
+## 对应示例文件
+
+**示例入口**: [optional-marker-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/optional-marker-guide.ts)  
+**说明**: 覆盖 `!` / `?` 的基础字段、对象字段和默认可选枚举场景，直接展示成功 / 失败路径。
 

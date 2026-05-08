@@ -1,6 +1,6 @@
-# schema-dsl 完整类型列表
+# schema-dsl 类型参考
 
-> **更新时间**: 2025-12-25  
+> **更新时间**: 2026-05-08  
 
 ---
 
@@ -8,7 +8,7 @@
 
 ### 基本类型
 
-| 类型 | SchemaI-DSL | JSON Schema | 说明 |
+| 类型 | schema-dsl DSL | JSON Schema | 说明 |
 |------|----------|-------------|------|
 | 字符串 | `string` | `{ type: 'string' }` | 文本类型 |
 | 数字 | `number` | `{ type: 'number' }` | 浮点数 |
@@ -23,14 +23,17 @@
 
 ### 格式类型（基于 string）
 
-| 类型 | SchemaI-DSL | JSON Schema format | 说明 |
+| 类型 | schema-dsl DSL | JSON Schema format | 说明 |
 |------|----------|-------------------|------|
 | 邮箱 | `email` | `email` | 邮箱地址 |
 | URL | `url` | `uri` | 网址 |
+| URI | `uri` | `uri` | URI 字符串 |
 | UUID | `uuid` | `uuid` | UUID格式 |
+| IP（IPv4/IPv6） | `ip` | `anyOf(ipv4, ipv6)` | 双栈 IP |
 | 日期 | `date` | `date` | YYYY-MM-DD |
 | 日期时间 | `datetime` | `date-time` | ISO 8601 |
 | 时间 | `time` | `time` | HH:mm:ss |
+| 主机名 | `hostname` | `hostname` | 主机名 |
 | IPv4 | `ipv4` | `ipv4` | IPv4地址 |
 | IPv6 | `ipv6` | `ipv6` | IPv6地址 |
 
@@ -38,13 +41,22 @@
 
 ### 特殊类型
 
-| 类型 | SchemaI-DSL | JSON Schema | 说明 |
+| 类型 | schema-dsl DSL | JSON Schema | 说明 |
 |------|----------|-------------|------|
 | 二进制 | `binary` | `contentEncoding: base64` | Base64编码 |
 | ObjectId | `objectId` | `pattern: ^[0-9a-fA-F]{24}$` | MongoDB ObjectId |
 | HexColor | `hexColor` | `pattern: ^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$` | CSS 16进制颜色 |
 | MAC地址 | `macAddress` | `pattern: ^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$` | MAC地址 |
 | Cron | `cron` | `pattern: ...` | Cron表达式 |
+| Slug | `slug` | `pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$` | URL Slug |
+| 中文姓名 | `chineseName` | `pattern: ^[\u4e00-\u9fa5]{2,10}$` | 中文姓名 |
+| 中文文本 | `chinese` | `pattern: ^[\u4e00-\u9fa5]+$` | 纯中文文本 |
+| 邮箱域扩展 | `emailDomain` | `format: email` | 邮箱 + 域名扩展校验 |
+| 只含字母数字 | `alphanum` | `alphanum: true` | 自定义 AJV keyword |
+| 小写字符串 | `lower` | `lowercase: true` | 自定义 AJV keyword |
+| 大写字符串 | `upper` | `uppercase: true` | 自定义 AJV keyword |
+| JSON字符串 | `json` | `jsonString: true` | 自定义 AJV keyword |
+| 端口号 | `port` | `port: true` | 整数端口号 |
 
 ---
 
@@ -87,14 +99,14 @@ const schema8 = dsl({ data: 'any' });
 
 ---
 
-### 扩展验证类型
+### 参数化 DSL 类型
 
 ```javascript
-// 手机号
+// 手机号（默认 cn）
 const schema1 = dsl({ mobile: 'phone:cn!' });
 
 // 身份证
-const schema2 = dsl({ id_card: 'idCard:cn!' });
+const schema2 = dsl({ idCard: 'idCard:cn!' });
 
 // 信用卡
 const schema3 = dsl({ card: 'creditCard:visa!' });
@@ -106,7 +118,7 @@ const schema4 = dsl({ plate: 'licensePlate:cn!' });
 const schema5 = dsl({ zip: 'postalCode:cn!' });
 
 // 护照
-const schema6 = dsl({ passport: 'passport:cn!' });
+const schema6 = dsl({ passportNo: 'passport:cn!' });
 ```
 
 ---
@@ -156,7 +168,7 @@ const schema = dsl({
 
 ### 完整对照表
 
-| joi | SchemaI-DSL | 说明 |
+| joi | schema-dsl DSL | 说明 |
 |-----|--------------|------|
 | `Joi.string()` | `'string'` | 字符串 |
 | `Joi.string().email()` | `'email'` | 邮箱 |
@@ -190,23 +202,27 @@ const schema = dsl({
 
 ## ❓ 常见问题
 
-### Q1: 为什么没有 `Joi.alternatives()` 对应？
+### Q1: 为什么没有直接叫 `Joi.alternatives()` 的 API？
 
-A: 使用条件验证 `dsl.match()` 实现：
+A: schema-dsl 把这类需求拆成两类：
+
+- 单字段跨类型联合: 使用 `types:` 语法
+- 根据其他字段做条件分支: 使用 `dsl.match()`
 
 ```javascript
 const schema = dsl({
+  value: 'types:string|number',
   contactType: 'email|phone',
   contact: dsl.match('contactType', {
     email: 'email!',
-    phone: 'string:11!'
+    phone: 'phone:cn!'
   })
 });
 ```
 
 ### Q2: 为什么 `integer` 不是 `number().integer()`？
 
-A: SchemaI-DSL 使用 JSON Schema 标准，`integer` 是独立类型。
+A: schema-dsl 使用 JSON Schema 标准，`integer` 是独立类型。
 
 ### Q3: 不支持简写吗？
 
@@ -214,6 +230,13 @@ A: 不支持 `s`/`n`/`i`/`b` 等简写，统一使用完整类型名（`string`/
 
 ---
 
-**最后更新**: 2025-12-25
+**最后更新**: 2026-05-08
+
+---
+
+## 对应示例文件
+
+**示例入口**: [type-reference.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/type-reference.ts)  
+**说明**: 用一份 schema 串起常用内置类型、参数化 DSL 类型和运行时错误路径，方便快速核对实际支持范围。
 
 

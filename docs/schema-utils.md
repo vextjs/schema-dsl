@@ -512,6 +512,13 @@ const schema = dsl({
 
 ---
 
-**最后更新**: 2025-12-25
+## 对应示例文件
+
+**示例入口**: [schema-utils.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/schema-utils.ts)  
+**说明**: 覆盖 `reusable()`、`createLibrary()`、`extend()`、`validateBatch()`、`withPerformance()` 和 `clone()` 的最小工作流。
+
+---
+
+**最后更新**: 2026-05-08
 
 

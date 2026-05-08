@@ -275,8 +275,9 @@ const validator = new Validator({ allErrors: true });
 ### 4. 监控性能
 
 ```javascript
+console.time('schema-dsl.validate');
 const result = validate(schema, data);
-console.log(`验证耗时: ${result.performance?.duration}ms`);
+console.timeEnd('schema-dsl.validate');
 ```
 
 ---
@@ -458,6 +459,13 @@ async function validateWithFallback(data) {
   return full;
 }
 ```
+
+---
+
+## 对应示例文件
+
+**示例入口**: [validation-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/validation-guide.ts)  
+**说明**: 覆盖推荐的验证流程：定义可复用 schema、格式化错误、预编译复用以及批量验证。
 
 ### 5. 测试验证逻辑
 

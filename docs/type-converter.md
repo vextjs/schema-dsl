@@ -45,8 +45,8 @@ const mysqlType = TypeConverter.toMySQLType('string', { maxLength: 100 });
 console.log(mysqlType); // 'VARCHAR(100)'
 
 // JSON Schema 类型转 PostgreSQL 类型
-const pgType = TypeConverter.toPostgreSQLType('string', { format: 'uuid' });
-console.log(pgType); // 'VARCHAR(255)'
+const pgType = TypeConverter.toPostgreSQLType('string', { format: 'date-time' });
+console.log(pgType); // 'TIMESTAMP'
 ```
 
 ---
@@ -83,7 +83,7 @@ TypeConverter.toMongoDBType('boolean'); // 'bool'
 
 ---
 
-### `toMySQLType(jsonSchemaType, constraints)`
+### `toMySQLType(jsonSchemaType, schemaFragment)`
 
 JSON Schema 类型转 MySQL 数据类型。
 
@@ -104,14 +104,14 @@ TypeConverter.toMySQLType('string', { maxLength: 500 });
 TypeConverter.toMySQLType('string', { format: 'email' });
 // 'VARCHAR(255)'
 
-// 整数范围
-TypeConverter.toMySQLType('integer', { maximum: 100 });
+// 整数范围（minimum + maximum 命中 TINYINT 分支）
+TypeConverter.toMySQLType('integer', { minimum: 0, maximum: 100 });
 // 'TINYINT'
 ```
 
 ---
 
-### `toPostgreSQLType(jsonSchemaType, constraints)`
+### `toPostgreSQLType(jsonSchemaType, schemaFragment)`
 
 JSON Schema 类型转 PostgreSQL 数据类型。
 
@@ -147,17 +147,19 @@ TypeConverter.normalizePropertyName('123created-at');
 
 ### `formatToRegex(format)`
 
-获取格式对应的正则表达式。
+获取格式对应的 `RegExp` 实例；未知格式返回 `null`。
 
 ```javascript
-TypeConverter.formatToRegex('email');
-// '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'
+const emailRegex = TypeConverter.formatToRegex('email');
+emailRegex?.test('user@example.com');
+// true
 
-TypeConverter.formatToRegex('uuid');
-// '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+const uuidRegex = TypeConverter.formatToRegex('uuid');
+uuidRegex?.test('123e4567-e89b-12d3-a456-426614174000');
+// true
 
-TypeConverter.formatToRegex('ipv4');
-// IPv4 正则表达式
+TypeConverter.formatToRegex('unknown');
+// null
 ```
 
 ---
@@ -235,7 +237,7 @@ const constraints = TypeConverter.extractConstraints(schema);
 | `string` | `maxLength: 500` | `TEXT` |
 | `string` | `format: email` | `VARCHAR(255)` |
 | `string` | `format: date-time` | `DATETIME` |
-| `integer` | `maximum: 127` | `TINYINT` |
+| `integer` | `minimum: 0, maximum: 100` | `TINYINT` |
 | `integer` | `maximum: 32767` | `SMALLINT` |
 | `integer` | `maximum: 2147483647` | `INT` |
 | `integer` | - | `BIGINT` |
@@ -251,11 +253,9 @@ const constraints = TypeConverter.extractConstraints(schema);
 | `string` | - | `VARCHAR(255)` |
 | `string` | `maxLength: 50` | `VARCHAR(50)` |
 | `string` | `maxLength: 500` | `TEXT` |
-| `string` | `format: uuid` | `UUID` |
+| `string` | `format: uuid` | `VARCHAR(255)` |
 | `string` | `format: date` | `DATE` |
 | `string` | `format: date-time` | `TIMESTAMP` |
-| `integer` | `maximum: 32767` | `SMALLINT` |
-| `integer` | `maximum: 2147483647` | `INTEGER` |
 | `integer` | - | `BIGINT` |
 | `number` | - | `DOUBLE PRECISION` |
 | `boolean` | - | `BOOLEAN` |
@@ -300,4 +300,11 @@ console.log(regex.test('invalid-email'));     // false
 - [MongoDB 导出器](mongodb-exporter.md)
 - [MySQL 导出器](mysql-exporter.md)
 - [PostgreSQL 导出器](postgresql-exporter.md)
+
+---
+
+## 对应示例文件
+
+**示例入口**: [type-converter.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/type-converter.ts)  
+**说明**: 覆盖类型映射、枚举到 MySQL `ENUM(...)`、PostgreSQL 实际 UUID 映射、属性名规范化、正则获取、Schema 合并和约束提取。
 

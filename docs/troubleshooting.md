@@ -1,6 +1,6 @@
 # 常见问题排查指南
 
-> **用途**: 快速解决 SchemaI-DSL 使用中的常见问题  
+> **用途**: 快速解决 schema-dsl 使用中的常见问题  
 > **更新**: 2025-12-26  
 
 ---
@@ -384,7 +384,7 @@ db.createCollection('users', {
 
 **解决方案**:
 ```javascript
-// SchemaI-DSL 默认会自动安装 String 扩展
+// schema-dsl 默认会自动安装 String 扩展
 // 如果未生效，手动安装：
 const { installStringExtensions } = require('schema-dsl');
 installStringExtensions();
@@ -465,9 +465,16 @@ describe('User Schema', () => {
 如果以上方法无法解决你的问题：
 
 1. **查看文档**: [完整文档索引](doc-index.md)
-2. **查看示例**: [examples/](../examples/) 目录
-3. **GitHub Issues**: [提交问题](https://github.com/schema-dsl/schema-dsl/issues)
+2. **查看示例**: [troubleshooting.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/troubleshooting.ts)
+3. **GitHub Issues**: [提交问题](https://github.com/vextjs/schema-dsl/issues)
 4. **常见问题**: [FAQ.md](faq.md)
+
+---
+
+## 对应示例文件
+
+**示例入口**: [troubleshooting.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/troubleshooting.ts)  
+**说明**: 演示如何用 `validate()` 和 `compile()` 复现错误、查看路径/关键字/消息，并快速定位失败原因。
 
 ---
 

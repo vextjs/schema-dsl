@@ -140,4 +140,11 @@ app.patch('/users/:id', async (req, res, next) => {
 ### extend(schema, extensions)
 扩展字段
 
+---
+
+## 对应示例文件
+
+**示例入口**: [schema-utils-chaining.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/schema-utils-chaining.ts)  
+**说明**: 覆盖 `omit()`、`extend()`、`pick()`、`partial()` 的链式组合，以及派生 schema 的成功/失败验证路径。
+
 

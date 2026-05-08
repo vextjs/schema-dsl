@@ -20,7 +20,7 @@
 
 ## 概述
 
-`PostgreSQLExporter` 将 SchemaI-DSL 生成的 JSON Schema 转换为 PostgreSQL 的 DDL 语句，支持丰富的 PostgreSQL 特性。
+`PostgreSQLExporter` 将 schema-dsl 生成的 JSON Schema 转换为 PostgreSQL 的 DDL 语句，支持丰富的 PostgreSQL 特性。
 
 ### 核心功能
 
@@ -301,4 +301,11 @@ exporter.generateIndex('users', 'metadata', { method: 'gin' });
 - [MySQL 导出器](mysql-exporter.md)
 - [TypeConverter](type-converter.md)
 - [**导出限制说明**](export-limitations.md) ⚠️
+
+---
+
+## 对应示例文件
+
+**示例入口**: [postgresql-exporter.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/postgresql-exporter.ts)  
+**说明**: 覆盖 PostgreSQL DDL 导出、CHECK 约束示意，以及 `generateIndex()` 生成 `gin` 索引。
 
