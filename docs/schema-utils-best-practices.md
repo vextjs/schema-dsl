@@ -15,6 +15,6 @@
 
 ## 对应示例文件
 
-**示例入口**: [schema-utils-best-practices.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/schema-utils-best-practices.ts)  
+**示例入口**: [schema-utils-best-practices.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/schema-utils-best-practices.ts)  
 **说明**: 以创建、公开返回、局部更新三个场景展示字段库复用与派生 schema 的推荐组织方式。
 

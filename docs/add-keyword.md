@@ -19,6 +19,6 @@ validator.addKeyword('isEven', {
 
 ## 对应示例文件
 
-**示例入口**: [add-keyword.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/add-keyword.ts)  
+**示例入口**: [add-keyword.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/add-keyword.ts)  
 **说明**: 覆盖 `Validator.addKeyword()` 的最小注册与验证路径，直接展示成功 / 失败两种结果。
 

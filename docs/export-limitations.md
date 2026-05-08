@@ -553,6 +553,6 @@ dsl('active|inactive|banned')
 
 ## 对应示例文件
 
-**示例入口**: [export-limitations.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/export-limitations.ts)  
+**示例入口**: [export-limitations.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/export-limitations.ts)  
 **说明**: 展示“完整应用层 schema”与“数据库导出专用简化 schema”的分工，以及三类导出器对静态 schema 的落地结果。
 

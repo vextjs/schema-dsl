@@ -198,7 +198,7 @@ console.log(command);
 
 **文档位置**:
 - 📖 [数据库导出指南](./export-guide.md)
-- 📖 [示例代码](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/feature-index.ts)
+- 📖 [示例代码](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/feature-index.ts)
 
 **代码位置**: `src/exporters/MongoDBExporter.ts`
 
@@ -228,7 +228,7 @@ console.log(ddl);
 
 **文档位置**:
 - 📖 [数据库导出指南](./export-guide.md)
-- 📖 [示例代码](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/feature-index.ts)
+- 📖 [示例代码](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/feature-index.ts)
 
 **代码位置**: `src/exporters/MySQLExporter.ts`
 
@@ -258,7 +258,7 @@ console.log(ddl);
 
 **文档位置**:
 - 📖 [数据库导出指南](./export-guide.md)
-- 📖 [示例代码](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/feature-index.ts)
+- 📖 [示例代码](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/feature-index.ts)
 
 **代码位置**: `src/exporters/PostgreSQLExporter.ts`
 
@@ -492,15 +492,15 @@ const schema = {
 ### 完整示例目录
 
 **基础示例**:
-- 📄 [dsl-syntax.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/dsl-syntax.ts) - DSL基础用法
-- 📄 [string-extensions.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/string-extensions.ts) - String扩展示例
+- 📄 [dsl-syntax.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/dsl-syntax.ts) - DSL基础用法
+- 📄 [string-extensions.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/string-extensions.ts) - String扩展示例
 
 **场景示例**:
-- 📄 [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/quick-start.ts) - 用户注册式的基础表单验证起点
-- 📄 [validation-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/validation-guide.ts) - 失败路径、错误处理与规则组合示例
+- 📄 [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/quick-start.ts) - 用户注册式的基础表单验证起点
+- 📄 [validation-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/validation-guide.ts) - 失败路径、错误处理与规则组合示例
 
 **导出示例**:
-- 📄 [feature-index.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/feature-index.ts) - 功能索引代表性示例
+- 📄 [feature-index.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/feature-index.ts) - 功能索引代表性示例
 
 ---
 
@@ -548,7 +548,7 @@ const schema = {
 
 ## 对应示例文件
 
-**示例入口**: [feature-index.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/feature-index.ts)  
+**示例入口**: [feature-index.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/feature-index.ts)  
 **说明**: 以单文件串联 DSL、String 扩展和导出器三个代表性能力，作为功能索引页的快速落地入口。
 
 ---

@@ -296,7 +296,7 @@ async function createValidatedCollection() {
 
 ## 对应示例文件
 
-**示例入口**: [mongodb-exporter.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/mongodb-exporter.ts)  
+**示例入口**: [mongodb-exporter.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/mongodb-exporter.ts)  
 **说明**: 覆盖 `$jsonSchema` 导出、`generateCreateCommand()` 和 `generateCommand()`，对应文档中的验证集合创建场景。
 
 

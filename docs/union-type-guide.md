@@ -151,7 +151,7 @@ testData.forEach((data, index) => {
 
 ## 对应示例文件
 
-**示例入口**: [union-type-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/union-type-guide.ts)  
+**示例入口**: [union-type-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/union-type-guide.ts)  
 **说明**: 展示基于 `.pattern()` 的“单个字符串字段匹配多种格式”方案，以及对应的中英文错误消息。
 
 

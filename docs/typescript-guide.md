@@ -574,7 +574,7 @@ dsl.config({
 
 ## 对应示例文件
 
-**示例入口**: [typescript-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/typescript-guide.ts)  
+**示例入口**: [typescript-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/typescript-guide.ts)  
 **说明**: 展示 TypeScript 下推荐的 `dsl()` 包裹写法、`validate<T>()` / `validateAsync<T>()`、以及 `ValidationError` 的字段错误读取方式。
 
 ---

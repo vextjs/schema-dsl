@@ -236,7 +236,7 @@ A: 不支持 `s`/`n`/`i`/`b` 等简写，统一使用完整类型名（`string`/
 
 ## 对应示例文件
 
-**示例入口**: [type-reference.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/type-reference.ts)  
+**示例入口**: [type-reference.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/type-reference.ts)  
 **说明**: 用一份 schema 串起常用内置类型、参数化 DSL 类型和运行时错误路径，方便快速核对实际支持范围。
 
 

@@ -704,7 +704,7 @@ dsl.match('vipLevel', { gold: 'number:0-50', silver: 'number:0-20' })
 
 ## 对应示例文件
 
-**示例入口**: [dsl-syntax.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/dsl-syntax.ts)  
+**示例入口**: [dsl-syntax.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/dsl-syntax.ts)  
 **说明**: 覆盖 Batch 1 中 DSL 语法的基础类型、约束、枚举、数组和嵌套对象写法，可直接运行参考。
 
 ---

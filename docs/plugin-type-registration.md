@@ -29,6 +29,6 @@ DslBuilder.registerType('orderCode', {
 
 ## 对应示例文件
 
-**示例入口**: [plugin-type-registration.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/plugin-type-registration.ts)  
+**示例入口**: [plugin-type-registration.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/plugin-type-registration.ts)  
 **说明**: 同时覆盖 `TypeRegistry.register()` 和 `DslBuilder.registerType()` 两条入口，以及注册后的真实验证与清理流程。
 

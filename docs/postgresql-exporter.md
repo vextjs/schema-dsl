@@ -306,6 +306,6 @@ exporter.generateIndex('users', 'metadata', { method: 'gin' });
 
 ## 对应示例文件
 
-**示例入口**: [postgresql-exporter.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/postgresql-exporter.ts)  
+**示例入口**: [postgresql-exporter.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/postgresql-exporter.ts)  
 **说明**: 覆盖 PostgreSQL DDL 导出、CHECK 约束示意，以及 `generateIndex()` 生成 `gin` 索引。
 

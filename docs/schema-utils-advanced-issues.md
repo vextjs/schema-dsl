@@ -18,6 +18,6 @@
 
 ## 对应示例文件
 
-**示例入口**: [schema-utils-advanced-issues.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/schema-utils-advanced-issues.ts)  
+**示例入口**: [schema-utils-advanced-issues.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/schema-utils-advanced-issues.ts)  
 **说明**: 覆盖内部字段泄漏、`required` 同步和 `clone()` 深拷贝边界三个最容易踩坑的点。
 

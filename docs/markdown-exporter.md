@@ -396,7 +396,7 @@ console.log('✅ 文档已生成');
 
 ## 对应示例文件
 
-**示例入口**: [markdown-exporter.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/markdown-exporter.ts)  
+**示例入口**: [markdown-exporter.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/markdown-exporter.ts)  
 **说明**: 覆盖 `MarkdownExporter.export()` 的中英文文档生成和标题/字段落点检查，适合作为文档导出最小样板。
 
 ---

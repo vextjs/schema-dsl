@@ -339,6 +339,6 @@ function updateSchema(name, newSchema) {
 
 ## 对应示例文件
 
-**示例入口**: [cache-manager.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/cache-manager.ts)  
+**示例入口**: [cache-manager.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/cache-manager.ts)  
 **说明**: 覆盖 `set/get/has`、LRU 淘汰、统计信息读取和 `resetStats()` 的实际行为。
 

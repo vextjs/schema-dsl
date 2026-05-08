@@ -35,6 +35,6 @@ const objectSchema = dsl({
 
 ## 对应示例文件
 
-**示例入口**: [json-schema-basics.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/json-schema-basics.ts)  
+**示例入口**: [json-schema-basics.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/json-schema-basics.ts)  
 **说明**: 直接对比 `toSchema()` 与 `toJsonSchema()` 的输出差异，并展示对象入口返回的 JSON Schema 结构。
 

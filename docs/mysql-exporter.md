@@ -275,6 +275,6 @@ CREATE INDEX `idx_users_status` ON `users` (`status`);
 
 ## 对应示例文件
 
-**示例入口**: [mysql-exporter.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/mysql-exporter.ts)  
+**示例入口**: [mysql-exporter.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/mysql-exporter.ts)  
 **说明**: 覆盖 `export()` 生成 DDL、主键检测，以及 `generateIndex()` 生成普通/唯一索引。
 

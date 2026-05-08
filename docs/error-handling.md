@@ -1964,7 +1964,7 @@ function handleError(error) {
 
 ## 对应示例文件
 
-**示例入口**: [error-handling.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/error-handling.ts)  
+**示例入口**: [error-handling.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/error-handling.ts)  
 **说明**: 覆盖 `validate()` 产生的字段错误、`I18nError` 业务错误对象、`toJSON()` 输出与错误码判断。
 
 ---

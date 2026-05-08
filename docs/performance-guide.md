@@ -44,6 +44,6 @@ npm run bench
 
 ## 对应示例文件
 
-**示例入口**: [performance-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/performance-guide.ts)  
+**示例入口**: [performance-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/performance-guide.ts)  
 **说明**: 展示复用同一个 schema / validator、读取缓存统计，以及 `SchemaUtils.withPerformance()` 包装后的耗时输出。
 

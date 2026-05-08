@@ -265,7 +265,7 @@ apiKey: 'string:32!'
 
 ## 对应示例文件
 
-**示例入口**: [label-vs-description.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/label-vs-description.ts)  
+**示例入口**: [label-vs-description.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/label-vs-description.ts)  
 **说明**: 直接展示 `_label` / `description` 在 schema 中的实际落点，以及验证错误如何消费 `label`。
 
 

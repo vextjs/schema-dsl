@@ -264,7 +264,7 @@ app.post('/users', (req, res) => {
 });
 ```
 
-完整示例请参考 [dynamic-locale.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/dynamic-locale.ts)。
+完整示例请参考 [dynamic-locale.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/dynamic-locale.ts)。
 
 ### 3.2 Koa 中间件
 
@@ -594,7 +594,7 @@ const schema = dsl({
 
 ## 对应示例文件
 
-**示例入口**: [dynamic-locale.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/dynamic-locale.ts)  
+**示例入口**: [dynamic-locale.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/dynamic-locale.ts)  
 **说明**: 覆盖 `Accept-Language` 解析、运行时 locale 选择，以及同一 schema 在不同请求语言下的验证入口。
 
 ---

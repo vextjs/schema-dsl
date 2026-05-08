@@ -340,6 +340,6 @@ function compareSchemaVersions(oldSchema, newSchema) {
 
 ## 对应示例文件
 
-**示例入口**: [schema-helper.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/schema-helper.ts)  
+**示例入口**: [schema-helper.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/schema-helper.ts)  
 **说明**: 覆盖 `isValidSchema()`、`generateSchemaId()`、`flattenSchema()`、`extractRequiredFields()`、`summarizeSchema()` 与 `compareSchemas()`。
 

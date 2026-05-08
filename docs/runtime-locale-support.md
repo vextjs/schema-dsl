@@ -518,7 +518,7 @@ app.get('/api/users/:id', async (req, res) => {
 
 ## 对应示例文件
 
-**示例入口**: [runtime-locale-support.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/runtime-locale-support.ts)  
+**示例入口**: [runtime-locale-support.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/runtime-locale-support.ts)  
 **说明**: 覆盖运行时指定 locale 创建错误对象、参数插值，以及“局部语言切换不污染全局状态”的关键行为。
 
 ---

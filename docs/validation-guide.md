@@ -464,7 +464,7 @@ async function validateWithFallback(data) {
 
 ## 对应示例文件
 
-**示例入口**: [validation-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/validation-guide.ts)  
+**示例入口**: [validation-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/validation-guide.ts)  
 **说明**: 覆盖推荐的验证流程：定义可复用 schema、格式化错误、预编译复用以及批量验证。
 
 ### 5. 测试验证逻辑

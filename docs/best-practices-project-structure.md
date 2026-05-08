@@ -413,5 +413,5 @@ router.post('/register', (req, res) => {
 
 ## 对应示例文件
 
-**示例入口**: [best-practices-project-structure.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/best-practices-project-structure.ts)  
+**示例入口**: [best-practices-project-structure.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/best-practices-project-structure.ts)  
 **说明**: 用一个最小的 `userSchemas` 对象模拟集中定义 / 路由复用结构，直接验证注册与登录两条路径。

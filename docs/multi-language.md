@@ -21,6 +21,6 @@
 
 ## 对应示例文件
 
-**示例入口**: [multi-language.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/multi-language.ts)  
+**示例入口**: [multi-language.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/multi-language.ts)  
 **说明**: 展示默认语言、按次覆盖 `locale` 以及可用语言列表的最小运行时示例。
 

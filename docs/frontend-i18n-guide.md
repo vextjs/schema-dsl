@@ -295,6 +295,6 @@ app.use((req, res, next) => {
 
 ## 对应示例文件
 
-**示例入口**: [frontend-i18n-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/frontend-i18n-guide.ts)  
+**示例入口**: [frontend-i18n-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/frontend-i18n-guide.ts)  
 **说明**: 覆盖前端常见的语言优先级解析、表单提交验证，以及把错误数组整理成字段级错误映射。
 

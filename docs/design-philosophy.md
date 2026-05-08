@@ -601,6 +601,6 @@ REGEX_CACHE: LRU(500)    // 正则表达式
 
 ## 对应示例文件
 
-**示例入口**: [design-philosophy.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/design-philosophy.ts)  
+**示例入口**: [design-philosophy.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/design-philosophy.ts)  
 **说明**: 通过“配置生成 DSL → 序列化 → 反序列化 → 再验证”的完整闭环，展示运行时解析和可序列化这两个核心设计点。
 

@@ -280,7 +280,7 @@ const schema = dsl({
 
 ### 示例代码
 
-- [Quick Start 完整示例](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/quick-start.ts)
+- [Quick Start 完整示例](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/quick-start.ts)
 
 其余主题示例现在都已分别挂到各自文档底部，并统一切到稳定 GitHub 示例链接。
 
@@ -425,7 +425,7 @@ uninstallStringExtensions();
 
 ## 对应示例文件
 
-**示例入口**: [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/quick-start.ts)  
+**示例入口**: [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/quick-start.ts)  
 **说明**: 覆盖快速上手中的 Hello World、String 扩展、用户注册示例，以及 `validate()` 与 `Validator.compile()` 的基础复用路径，可直接运行参考。
 
 ---

@@ -420,7 +420,7 @@ console.log(validateUser(data));
 
 ## 对应示例文件
 
-**示例入口**: [validate.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/validate.ts)  
+**示例入口**: [validate.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/validate.ts)  
 **说明**: 覆盖顶层 `validate()` 的成功/失败路径、默认类型转换，以及关闭 `coerce` 后的行为差异。
 
 ### Q1: 如何验证可选字段？

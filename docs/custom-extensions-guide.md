@@ -334,6 +334,6 @@ describe('Custom Validator - bankCard', function() {
 
 ## 对应示例文件
 
-**示例入口**: [custom-extensions-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/custom-extensions-guide.ts)  
+**示例入口**: [custom-extensions-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/custom-extensions-guide.ts)  
 **说明**: 以运行时公开 API 为主，覆盖 `Validator.addKeyword()`、`DslBuilder.registerType()`、`Locale.addLocale()` 和官方插件入口四条扩展路径。
 

@@ -376,6 +376,6 @@ pluginManager.install(schemaDsl, 'custom-type-example');
 
 ## 对应示例文件
 
-**示例入口**: [plugin-system.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/plugin-system.ts)  
+**示例入口**: [plugin-system.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/plugin-system.ts)  
 **说明**: 覆盖自定义插件的注册 / 安装 / 卸载、`runHook()` 执行结果，以及官方 `custom-format` 子路径插件的安装效果。
 

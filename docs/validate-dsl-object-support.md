@@ -571,6 +571,6 @@ validate(schema, data);
 
 ## 对应示例文件
 
-**示例入口**: [validate-dsl-object-support.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/validate-dsl-object-support.ts)  
+**示例入口**: [validate-dsl-object-support.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/validate-dsl-object-support.ts)  
 **说明**: 覆盖直接传入 DSL 对象、混合使用 `DslBuilder` 与 DSL 字符串，以及顶层 `validate()` / `validateAsync()` 的真实支持边界。
 

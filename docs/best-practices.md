@@ -708,6 +708,6 @@ setInterval(() => {
 
 ## 对应示例文件
 
-**示例入口**: [best-practices.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/best-practices.ts)  
+**示例入口**: [best-practices.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/best-practices.ts)  
 **说明**: 展示“简单字段用纯 DSL、复杂字段局部使用 Builder、字段库复用”的推荐组合，以及成功 / 失败两条验证路径。
 

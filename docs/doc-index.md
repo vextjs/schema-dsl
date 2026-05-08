@@ -191,10 +191,10 @@
 
 | 文件 | 说明 |
 |------|------|
-| [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/quick-start.ts) | 快速开始示例 |
-| [dsl-syntax.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/dsl-syntax.ts) | DSL 风格完整示例 |
-| [string-extensions.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/string-extensions.ts) | String 扩展示例 |
-| [troubleshooting.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/troubleshooting.ts) | 排障与错误定位示例 |
+| [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/quick-start.ts) | 快速开始示例 |
+| [dsl-syntax.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/dsl-syntax.ts) | DSL 风格完整示例 |
+| [string-extensions.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/string-extensions.ts) | String 扩展示例 |
+| [troubleshooting.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/troubleshooting.ts) | 排障与错误定位示例 |
 
 ---
 
@@ -251,7 +251,7 @@
 
 ## 对应示例文件
 
-**示例入口**: [doc-index.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/doc-index.ts)  
+**示例入口**: [doc-index.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/doc-index.ts)  
 **说明**: 用一个最小入口脚本串起快速开始、编译校验和文档导出，帮助读者从索引页直接落到可运行示例。
 
 ---

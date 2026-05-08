@@ -44,6 +44,6 @@ console.log(results);
 
 ## 对应示例文件
 
-**示例入口**: [validate-batch.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/validate-batch.ts)  
+**示例入口**: [validate-batch.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/validate-batch.ts)  
 **说明**: 覆盖 `Validator.validateBatch()` 的单次编译、多条数据复用，以及失败项错误输出。
 

@@ -40,6 +40,6 @@ console.log(validate({ name: 'Rocky' }));
 
 ## 对应示例文件
 
-**示例入口**: [compile.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/compile.ts)  
+**示例入口**: [compile.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/compile.ts)  
 **说明**: 覆盖 `compile()` 的编译结果复用、`cacheKey` 命中，以及失败场景下从验证函数读取错误详情。
 

@@ -305,6 +305,6 @@ console.log(regex.test('invalid-email'));     // false
 
 ## 对应示例文件
 
-**示例入口**: [type-converter.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/type-converter.ts)  
+**示例入口**: [type-converter.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/type-converter.ts)  
 **说明**: 覆盖类型映射、枚举到 MySQL `ENUM(...)`、PostgreSQL 实际 UUID 映射、属性名规范化、正则获取、Schema 合并和约束提取。
 

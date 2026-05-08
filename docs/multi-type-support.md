@@ -316,7 +316,7 @@ schema-dsl 的多类型支持采用**类型无关 Builder + 方法智能适配**
 
 ## 对应示例文件
 
-**示例入口**: [multi-type-support.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/multi-type-support.ts)  
+**示例入口**: [multi-type-support.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/multi-type-support.ts)  
 **说明**: 用一个对象同时覆盖字符串、数字、布尔、日期、数组和枚举字段的推荐写法，以及对应的成功 / 失败验证路径。
 
 

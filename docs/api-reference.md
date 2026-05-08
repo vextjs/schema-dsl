@@ -994,14 +994,14 @@ console.log(result.valid); // true
 
 - [DSL 语法完整指南](./dsl-syntax.md)
 - [错误处理](./error-handling.md)
-- [示例代码](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/api-reference.ts)
+- [示例代码](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/api-reference.ts)
 - [GitHub](https://github.com/vextjs/schema-dsl)
 
 ---
 
 ## 对应示例文件
 
-**示例入口**: [api-reference.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/api-reference.ts)  
+**示例入口**: [api-reference.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/api-reference.ts)  
 **说明**: 覆盖 `dsl()`、`validate()`、`validateAsync()`、默认 `Validator` 单例、模板渲染、`JSONSchemaCore`、`ErrorFormatter` 以及底层解析 / 编译工具的可运行调用链。
 
 ---

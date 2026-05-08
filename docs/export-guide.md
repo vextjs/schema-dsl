@@ -496,6 +496,6 @@ console.log('导出完成！');
 
 ## 对应示例文件
 
-**示例入口**: [export-guide.ts](https://github.com/vextjs/schema-dsl/blob/v2/examples/docs/export-guide.ts)  
+**示例入口**: [export-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/export-guide.ts)  
 **说明**: 覆盖同一组 schema 同时导出到 MongoDB、MySQL 和 PostgreSQL 的最小工作流，便于对照多导出器结果。
 
