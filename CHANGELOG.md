@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
-| [Unreleased] | 2026-05-08 | Docs | 文档示例体系收敛：58 篇文档示例对齐、旧顶层 examples 收口、API 参考高级能力覆盖补齐 |
+| [2.0.0] | 2026-05-09 | Major | Full release: BC-2/4/5/6/7 fixes, string:N compat, English comments, 58 enriched examples, 1053 tests [查看](./changelogs/v2.0.0.md) |
 | [2.0.0-beta.2] | 2026-04-12 | Major | TypeScript 全量重写：ESM+CJS 双格式、AJV 8、tsup 构建、1052 项测试通过 [查看](./changelogs/v2.0.0-beta.2.md) |
 | [v1.2.5] | 2026-03-09 | Patch | 新功能：`DslBuilder.toJsonSchema()` — 输出纯净 JSON Schema，自动清理内部标记 |
 | [v1.2.4] | 2026-03-09 | Patch | P1 Bug修复：`enum:a,b,c` 逗号分隔格式解析完全失效 |
@@ -38,6 +38,36 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2.0.0] — 2026-05-09
+
+### Breaking Changes (v1 → v2)
+
+- **BC-2**: `DslAdapter.parseObject()` now returns `ObjectDslBuilder` (chainable: `.strict()`, `.requireAll()`, `.toSchema()`, `.toJsonSchema()`) instead of plain `JSONSchema`. Call `.toSchema()` to get the raw schema.
+- **BC-4**: `DslAdapter.typeMap` is now a Proxy getter; `DslAdapter.registerType()` method added for direct registration.
+- **BC-5**: `ConditionalBuilder.require(field)` method added for v1 field-requirement compatibility.
+- **BC-6**: `Validator.validateAsync()` added; async custom validators in sync `validate()` now return `{ valid: false }` with an error message instead of silently passing.
+- **BC-7**: `string:N` single-value DSL now expands to `{ minLength: N, maxLength: N }` (exactLength compat, consistent with v1 behavior).
+
+### New Features
+
+- **ObjectDslBuilder**: New class wrapping object schemas; supports `.strict()`, `.requireAll()`, `.toSchema()`, `.toJsonSchema()`, `.toString()`.
+- **validateAsync()**: Full async validation support with typed return (`Promise<T>`); throws `ValidationError` on failure.
+- **installStringExtensions()**: Opt-in String.prototype extension; auto-installed at module load for v1 compatibility.
+
+### Documentation & Examples
+
+- 58 example files in `examples/docs/` fully enriched (90–130+ lines each) with complete API coverage.
+- All code comments translated to English (CJK locales and output strings preserved).
+- `docs/api-reference.md`: fixed 4 doc inconsistencies (string:N behavior, validateAsync signature, LocaleMessage params, exactOptionalPropertyTypes notes).
+
+### Quality
+
+- 1053 tests passing (all 67 test files green).
+- 0 TypeScript errors in source and examples.
+- ESM + CJS dual format build.
+
+---
+
 ## [Unreleased]
 
 - docs: 完成 `docs/*.md` 与 `examples/docs/*.ts` 的 58 对 58 对齐，并统一切换到稳定示例入口链接
@@ -53,7 +83,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.0-beta.2...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/vextjs/schema-dsl/compare/v2.0.0-beta.2...v2.0.0
 [2.0.0-beta.2]: https://github.com/vextjs/schema-dsl/releases/tag/v2.0.0-beta.2
 [v1.2.5]: https://github.com/vextjs/schema-dsl/compare/v1.2.4...v1.2.5
 [v1.2.4]: https://github.com/vextjs/schema-dsl/compare/v1.2.3...v1.2.4

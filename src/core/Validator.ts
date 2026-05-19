@@ -12,17 +12,17 @@ import { Locale } from './Locale.js'
 import { DslParser } from '../parser/DslParser.js'
 import type { DslDefinition } from '../types/dsl.js'
 
-// 非 AJV 的自定义选项键（V-Y01 修复：过滤后再传给 Ajv）
+// Non-AJV custom option keys (V-Y01 fix: filter before passing to new Ajv())
 const NON_AJV_KEYS = new Set([
   'cache', 'smartCoerce', 'locale', 'messages', 'format',
-  'strict',  // v2 重定义为 strictSchema，不透传给 Ajv
+  'strict',  // v2 redefines this as strictSchema; do not forward to AJV
 ])
 
 // AJV ValidateFunction type
 type AjvValidateFn = ValidateFunction
-type KeywordDefinitionInput = KeywordDefinition | ({ keyword?: string; [key: string]: unknown })
+type KeywordDefinitionInput = KeywordDefinition | ({ keyword?: string;[key: string]: unknown })
 
-// 带 _removeAdditional 或 _isConditional 内部标记的 schema
+// Schema with _removeAdditional or _isConditional internal markers
 type InternalSchema = JSONSchema & {
   _removeAdditional?: boolean
   _isConditional?: boolean
@@ -31,11 +31,11 @@ type InternalSchema = JSONSchema & {
   else?: unknown
 }
 
-// 性能优化 O5b：valid 路径共享空数组，避免每次 { errors: [] } 分配
+// Performance: share empty array on valid path to avoid `{ errors: [] }` allocation every time
 const EMPTY_ERRORS: ValidationErrorItem[] = []
 
 /**
- * ValidatorOptions — Validator 构造参数（扩展自 AJV 基础选项）
+ * ValidatorOptions — constructor options for Validator (extends AJV base options).
  */
 export interface ValidatorOptions {
   allErrors?: boolean
@@ -53,13 +53,13 @@ export interface ValidatorOptions {
 }
 
 /**
- * Validator — AJV 封装验证器（v2）
+ * Validator — AJV-backed validator (v2).
  *
- * 修复：
- *   V-Y01: 过滤非 AJV 选项后再 new Ajv()，防止未知选项警告
- *   V-02:  条件字段删除后，cleanSchema.required 也同步过滤（v1 漏掉了）
- *   V-Y03: _removeAdditional 模式复用缓存内部 Ajv 实例（v1 每次 new Validator）
- *   V-Y07: static quickValidate 复用单例 Ajv（v1 每次 new Ajv）
+ * Fixes:
+ *   V-Y01: filter non-AJV options before new Ajv() to prevent unknown-option warnings
+ *   V-02:  sync cleanSchema.required when conditional fields are removed (v1 missed this)
+ *   V-Y03: _removeAdditional mode reuses cached internal Ajv instance (v1 created new Validator each time)
+ *   V-Y07: static quickValidate reuses a singleton Ajv (v1 created new Ajv each time)
  */
 export class Validator {
   private readonly _ajvOptions: Record<string, unknown>
@@ -67,33 +67,33 @@ export class Validator {
   private readonly _cache: CacheManager
   private readonly _errorFormatter: ErrorFormatter
 
-  // WeakMap 缓存 schema 对象 → 唯一 cacheKey（避免 JSON.stringify）
+  // WeakMap: schema object → unique cacheKey (avoids JSON.stringify)
   private readonly _schemaMap = new WeakMap<object, string>()
   private _schemaKeyCounter = 0
 
-  // WeakMap 缓存 DslBuilder toSchema() 结果
+  // WeakMap: DslBuilder toSchema() result cache
   private readonly _dslSchemaCache = new WeakMap<object, JSONSchema>()
 
-  // 性能优化：缓存 schema 是否含条件字段（避免每次验证都遍历 properties）
+  // Performance: cache whether a schema has any conditional fields (avoids traversing properties on every validation)
   private readonly _conditionalFlagCache = new WeakMap<object, boolean>()
 
-  // V-Y03 修复：缓存 removeAdditional Ajv 实例（不再每次 new Validator）
+  // V-Y03 fix: cached removeAdditional Ajv instance (no longer new Validator each time)
   private _removeAdditionalAjv: InstanceType<typeof Ajv> | null = null
 
-  // V-Y07 修复：静态单例 Ajv
+  // V-Y07 fix: static singleton Ajv
   private static _quickValidateAjv: InstanceType<typeof Ajv> | null = null
 
   constructor(options: ValidatorOptions = {}) {
-    // V-Y01 修复：过滤非 AJV 选项
+    // V-Y01 fix: filter non-AJV options
     const ajvOptions: Record<string, unknown> = {
       allErrors: options.allErrors !== false,
       useDefaults: options.useDefaults !== false,
       coerceTypes: options.coerceTypes ?? false,
       removeAdditional: options.removeAdditional ?? false,
-      verbose: true, // 启用详细模式，以便访问 parentSchema
+      verbose: true, // verbose mode: enables parentSchema access on error objects
     }
 
-    // 透传其余合法 AJV 选项
+    // Forward remaining valid AJV options
     for (const [k, v] of Object.entries(options)) {
       if (!NON_AJV_KEYS.has(k) && !(k in ajvOptions)) {
         ajvOptions[k] = v
@@ -102,7 +102,7 @@ export class Validator {
 
     this._ajvOptions = ajvOptions
     this._ajv = new Ajv(ajvOptions)
-    ;(addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(this._ajv)
+      ; (addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(this._ajv)
     CustomKeywords.registerAll(this._ajv)
 
     const cacheOpts = options.cache === false
@@ -125,10 +125,10 @@ export class Validator {
     return this._ajvOptions
   }
 
-  // ─── 公开 API ──────────────────────────────────────────────────────────
+  // ─── Public API ────────────────────────────────────────────────────────
 
   /**
-   * 编译 schema → AJV 验证函数（with cache）
+   * Compile a schema → AJV validate function (with cache).
    */
   compile(schema: JSONSchema, cacheKey?: string | null): AjvValidateFn {
     const key = cacheKey ?? null
@@ -148,27 +148,83 @@ export class Validator {
   }
 
   /**
-   * 同步验证
+   * Synchronous validation.
    */
   validate<T = unknown>(schema: JSONSchema | AjvValidateFn, data: T, options: ValidateOptions = {}): ValidationResult<T> {
     return this._validateInternal(schema, data, options)
   }
 
   /**
-   * 异步验证（失败时抛出 ValidationError）
-   * V-Y02 修复：v1 validateAsync 缺少 smartCoerceTypes，v2 统一走 _validateInternal
+   * Async validation (throws ValidationError on failure).
+   * V-Y02 fix: v1 validateAsync lacked smartCoerceTypes; v2 routes through _validateInternal uniformly.
+   * BC-6 fix: validateAsync runs async custom validators (sync AJV pass skips async fn; this method runs the full set).
    */
   async validateAsync<T = unknown>(schema: JSONSchema | AjvValidateFn, data: T, options: ValidateOptions = {}): Promise<T> {
+    // Resolve DslBuilder/ObjectDslBuilder duck type to raw schema (mirrors _validateInternal logic)
+    // so _runCustomValidators can access schema._customValidators
+    let resolvedSchema = schema as JSONSchema
+    if (typeof (schema as Record<string, unknown>)['toSchema'] === 'function') {
+      const obj = schema as Record<string, unknown>
+      resolvedSchema = (obj['toSchema'] as () => JSONSchema)()
+    }
+
     const result = this._validateInternal(schema, data, options)
     if (!result.valid) {
       const { ValidationError } = await import('../errors/ValidationError.js')
       throw new ValidationError(result.errors ?? [], data)
     }
+
+    // BC-6: run async custom validators (sync AJV pass skips Promise-returning validators)
+    const customErr = await this._runCustomValidators(resolvedSchema, data)
+    if (customErr) {
+      const { ValidationError } = await import('../errors/ValidationError.js')
+      throw new ValidationError([customErr], data)
+    }
+
     return result.data as T
   }
 
   /**
-   * 批量验证（编译一次，多次复用）
+   * BC-6: run all validators in schema._customValidators (including async).
+   * AJV's sync keyword skips Promise-returning validators; this method runs the complete set in validateAsync.
+   * Returns the first failing ValidationErrorItem, or null if all pass.
+   */
+  private async _runCustomValidators(schema: JSONSchema, data: unknown): Promise<ValidationErrorItem | null> {
+    const validators = (schema as Record<string, unknown>)['_customValidators'] as Array<(v: unknown) => unknown> | undefined
+    if (!validators?.length) return null
+
+    for (const fn of validators) {
+      try {
+        const result = await Promise.resolve(fn(data))
+        if (result === false) {
+          return { message: Locale.getMessageText('CUSTOM_VALIDATION_FAILED'), path: '', keyword: '_customValidators', params: {} }
+        }
+        if (typeof result === 'string') {
+          return { message: result, path: '', keyword: '_customValidators', params: {} }
+        }
+        if (result !== null && typeof result === 'object' && (result as Record<string, unknown>)['error']) {
+          const r = result as { error: unknown; message?: string }
+          return {
+            message: r.message ?? Locale.getMessageText('CUSTOM_VALIDATION_FAILED'),
+            path: '',
+            keyword: '_customValidators',
+            params: {},
+          }
+        }
+      } catch (err) {
+        return {
+          message: err instanceof Error ? err.message : String(err),
+          path: '',
+          keyword: '_customValidators',
+          params: {},
+        }
+      }
+    }
+    return null
+  }
+
+  /**
+   * Batch validation (compile once, reuse for each item).
    */
   validateBatch<T = unknown>(schema: JSONSchema, dataArray: T[]): ValidationResult<T>[] {
     if (!Array.isArray(dataArray)) throw new Error('Data must be an array')
@@ -178,7 +234,7 @@ export class Validator {
   }
 
   /**
-   * 添加自定义关键字
+   * Add a custom keyword.
    */
   addKeyword(keyword: string, definition: KeywordDefinitionInput): this {
     try {
@@ -193,7 +249,7 @@ export class Validator {
   }
 
   /**
-   * 添加自定义格式
+   * Add a custom format.
    */
   addFormat(name: string, validator: Format): this {
     this._ajv.addFormat(name, validator)
@@ -201,7 +257,7 @@ export class Validator {
   }
 
   /**
-   * 添加 schema 引用
+   * Add a schema reference.
    */
   addSchema(uri: string, schema: JSONSchema): this {
     this._ajv.addSchema(schema, uri)
@@ -209,7 +265,7 @@ export class Validator {
   }
 
   /**
-   * 删除 schema 引用
+   * Remove a schema reference.
    */
   removeSchema(uri: string): this {
     this._ajv.removeSchema(uri)
@@ -221,19 +277,19 @@ export class Validator {
   clearCache(): void { this._cache.clear() }
   getCacheStats(): CacheStats { return this._cache.getStats() }
 
-  // ─── 静态工厂 ──────────────────────────────────────────────────────────
+  // ─── Static Factory ────────────────────────────────────────────────────
 
   static create(options?: ValidatorOptions): Validator {
     return new Validator(options)
   }
 
   /**
-   * 快速验证（V-Y07 修复：复用单例 Ajv，不再每次 new Ajv()）
+   * Quick validate (V-Y07 fix: reuses singleton Ajv instead of creating new Ajv each time).
    */
   static quickValidate(schema: JSONSchema, data: unknown): boolean {
     if (!Validator._quickValidateAjv) {
       Validator._quickValidateAjv = new Ajv()
-      ;(addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(Validator._quickValidateAjv)
+        ; (addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(Validator._quickValidateAjv)
       CustomKeywords.registerAll(Validator._quickValidateAjv)
     }
     try {
@@ -243,7 +299,7 @@ export class Validator {
     }
   }
 
-  // ─── 内部实现 ──────────────────────────────────────────────────────────
+  // ─── Internal Implementation ───────────────────────────────────────────
 
   private _validateInternal<T>(
     schema: JSONSchema | AjvValidateFn,
@@ -254,8 +310,8 @@ export class Validator {
     const locale = options.locale ?? Locale.getLocale()
     const messages = (options.messages ?? {}) as ErrorMessages
 
-    // DslBuilder 实例缓存转换（duck-type：有 toSchema 方法）
-    // 注意：typeof schema === 'function' 已在调用前过滤，此处只处理对象
+    // DslBuilder instance conversion cache (duck-type: has a toSchema method).
+    // Note: typeof schema === 'function' is already filtered by callers; only objects handled here.
     if (typeof (schema as Record<string, unknown>)['toSchema'] === 'function') {
       const obj = schema as Record<string, unknown>
       if (!this._dslSchemaCache.has(obj as object)) {
@@ -266,14 +322,14 @@ export class Validator {
 
     const internalSchema = schema as InternalSchema
 
-    // ConditionalBuilder（顶层）
+    // ConditionalBuilder (top-level)
     if (internalSchema._isConditional) {
       return this._validateConditional(internalSchema, data as Record<string, unknown>, null, data, options)
     }
 
-    // 包含 ConditionalBuilder 属性的对象 schema（包含任意深度的嵌套对象）
+    // Object schema containing ConditionalBuilder properties (including arbitrary nesting depth)
     if (internalSchema.properties) {
-      // 性能优化：缓存条件检测结果，避免每次验证都遍历 properties
+      // Performance: cache conditional detection result to avoid traversing properties on every validation
       let hasConditionals = this._conditionalFlagCache.get(internalSchema as object)
       if (hasConditionals === undefined) {
         hasConditionals = this._hasAnyConditional(internalSchema)
@@ -284,11 +340,11 @@ export class Validator {
       }
     }
 
-    // V-Y03 修复：_removeAdditional 复用内部 Ajv 实例
+    // V-Y03 fix: _removeAdditional reuses internal Ajv instance
     if (internalSchema._removeAdditional) {
       if (!this._removeAdditionalAjv) {
         this._removeAdditionalAjv = new Ajv({ ...this._ajvOptions, removeAdditional: true })
-        ;(addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(this._removeAdditionalAjv)
+          ; (addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(this._removeAdditionalAjv)
         CustomKeywords.registerAll(this._removeAdditionalAjv)
       }
 
@@ -310,7 +366,7 @@ export class Validator {
       if (typeof schema === 'function') {
         validate = schema as AjvValidateFn
       } else {
-        // 性能优化：合并 _generateCacheKey + compile() 为单次 WeakMap 查询
+        // Performance: merge _generateCacheKey + compile() into a single WeakMap lookup
         const schemaObj = schema as object
         let cacheKey = this._schemaMap.get(schemaObj)
         if (!cacheKey) {
@@ -339,14 +395,14 @@ export class Validator {
   }
 
   /**
-   * 递归检查 schema 或其任意嵌套属性中是否存在 _isConditional 标记
+   * Recursively check whether a schema or any of its nested properties carries an _isConditional marker.
    */
   private _hasAnyConditional(schema: InternalSchema): boolean {
     if (!schema.properties) return false
     return Object.values(schema.properties).some((fs) => {
       const fieldSchema = fs as InternalSchema
       if (fieldSchema._isConditional) return true
-      // 递归检查嵌套对象
+      // Recursively check nested objects
       if (fieldSchema.properties) return this._hasAnyConditional(fieldSchema)
       return false
     })
@@ -360,10 +416,10 @@ export class Validator {
   ): ValidationResult<T> {
     const errors: ValidationErrorItem[] = []
 
-    // rootData: 顶层完整数据，用于条件回调的上下文（嵌套时保持根引用）
+    // rootData: top-level full data object for condition callbacks (maintains root reference during nesting)
     const effectiveRoot = rootData ?? (data as Record<string, unknown>)
 
-    // 深拷贝 schema 避免修改原始
+    // Deep-clone schema to avoid mutating the original
     const cleanSchema = JSON.parse(JSON.stringify(schema)) as InternalSchema
     const conditionalFields: Record<string, InternalSchema> = {}
     const nestedObjectFields: Record<string, InternalSchema> = {}
@@ -373,27 +429,27 @@ export class Validator {
       if (fs._isConditional) {
         conditionalFields[fieldName] = fs
 
-        // 从 cleanSchema 中移除条件字段
+        // Remove conditional field from cleanSchema
         delete cleanSchema.properties?.[fieldName]
 
-        // V-02 修复：同步从 required[] 移除该字段（v1 漏掉了这步）
+        // V-02 fix: also remove field from required[] (v1 missed this step)
         if (cleanSchema.required) {
           cleanSchema.required = cleanSchema.required.filter(r => r !== fieldName)
         }
       } else if (fs.properties && this._hasAnyConditional(fs)) {
-        // 嵌套对象中包含条件字段 → 提取出来用自定义逻辑处理
+        // Nested object contains conditional fields → extract and handle with custom logic
         nestedObjectFields[fieldName] = fs
         delete cleanSchema.properties?.[fieldName]
       }
     }
 
-    // 先验证非条件字段（含嵌套对象按 AJV 正常处理的部分）
+    // Validate non-conditional fields first (nested objects handled normally by AJV)
     const baseResult = this._validateInternal(cleanSchema, data, options)
     if (!baseResult.valid) {
       errors.push(...(baseResult.errors ?? []))
     }
 
-    // 验证条件字段（使用 effectiveRoot 作为条件回调的数据上下文）
+    // Validate conditional fields (use effectiveRoot as data context for condition callbacks)
     for (const [fieldName, conditionalSchema] of Object.entries(conditionalFields)) {
       const dataRecord = data as Record<string, unknown>
       const fieldResult = this._validateConditional(conditionalSchema, effectiveRoot, fieldName, dataRecord[fieldName], options)
@@ -407,15 +463,15 @@ export class Validator {
       }
     }
 
-    // 递归处理包含条件属性的嵌套对象
+    // Recursively process nested objects that contain conditional properties
     for (const [fieldName, nestedSchema] of Object.entries(nestedObjectFields)) {
       const dataRecord = data as Record<string, unknown>
       const nestedData = dataRecord[fieldName]
 
-      // 如果嵌套对象数据不存在，用 AJV 处理 required 等错误
+      // Nested object data is absent — let AJV handle required/type errors
       if (nestedData === undefined || nestedData === null) {
         const partialSchema = JSON.parse(JSON.stringify(schema)) as InternalSchema
-        // 只保留这个字段
+        // Keep only this field
         partialSchema.properties = { [fieldName]: nestedSchema }
         partialSchema.required = (schema.required ?? []).filter(r => r === fieldName)
         const partialResult = this._validateInternal(partialSchema, data, options)
@@ -425,7 +481,7 @@ export class Validator {
         continue
       }
 
-      // 递归时传入 effectiveRoot，保证条件回调始终拿到根数据
+      // Pass effectiveRoot when recursing to ensure condition callbacks always receive root data
       const nestedResult = this._validateWithConditionals(nestedSchema, nestedData, options, effectiveRoot)
       if (!nestedResult.valid) {
         for (const err of (nestedResult.errors ?? [])) {
@@ -475,7 +531,7 @@ export class Validator {
           return { valid: true, data: fieldValue, errors: EMPTY_ERRORS }
         }
 
-        // OR 要求模式：所有条件均未满足，视为验证失败
+        // OR requirement mode: no condition matched → treat as validation failure
         if (evaluation.requirementFailed) {
           const errorMsg = cond.message ?? 'Condition not met'
           const message = Locale.getMessageText(errorMsg, (options.messages ?? {}) as Record<string, string>, locale)
@@ -487,7 +543,7 @@ export class Validator {
         }
       }
 
-      // else 分支
+      // else branch
       const elseSchema = conditionalSchema.else
       if (elseSchema !== undefined) {
         if (elseSchema === null) return { valid: true, data: fieldValue, errors: EMPTY_ERRORS }
@@ -509,12 +565,12 @@ export class Validator {
   ): ValidationResult<T> {
     let resolved = thenSchema
 
-    // 如果是 DSL 字符串，先解析为 JSONSchema
+    // If thenSchema is a DSL string, parse it to JSONSchema first
     if (typeof resolved === 'string') {
       resolved = DslParser.parseString(resolved)
     }
 
-    // 如果是 ConditionalBuilder 实例
+    // If resolved is a ConditionalBuilder instance, call toSchema()
     if (resolved !== null && typeof resolved === 'object') {
       const obj = resolved as Record<string, unknown>
       if (typeof obj['toSchema'] === 'function') {
@@ -527,7 +583,7 @@ export class Validator {
       return this._validateConditional(resInternal, data, fieldName, fieldValue, options)
     }
 
-    // 如果是普通对象（DSL 定义），先转为 JSONSchema
+    // If resolved is a plain DSL definition object, convert to JSONSchema
     if (resolved !== null && typeof resolved === 'object' && !Array.isArray(resolved)) {
       const obj = resolved as Record<string, unknown>
       if (obj['type'] === undefined && obj['oneOf'] === undefined && obj['anyOf'] === undefined && obj['allOf'] === undefined) {
@@ -571,7 +627,7 @@ export class Validator {
     return this._validateInternal(schema, fieldValue, options)
   }
 
-  // ─── 辅助方法 ──────────────────────────────────────────────────────────
+  // ─── Helper methods ─────────────────────────────────────────────────────
 
   private _generateCacheKey(schema: object): string {
     if (!this._schemaMap.has(schema)) {
@@ -580,8 +636,8 @@ export class Validator {
     return this._schemaMap.get(schema)!
   }
 
-  // 性能优化：缓存扁平化后的 locale messages（key = locale, value = flat ErrorMessages）
-  // 避免每次验证失败时重复 Locale.getMessages + Object.entries.map
+  // Performance: cache flattened locale messages (key = locale, value = flat ErrorMessages)
+  // to avoid re-running Locale.getMessages + Object.entries.map on every validation failure
   private readonly _flatLocaleCache = new Map<string, ErrorMessages>()
 
   private _getFlatLocaleMessages(locale: string): ErrorMessages {
@@ -607,12 +663,12 @@ export class Validator {
   ): ValidationErrorItem[] {
     if (!shouldFormat) return rawErrors as ValidationErrorItem[]
     const localeMessages = this._getFlatLocaleMessages(locale)
-    // 仅当有自定义 messages 时才合并（避免无必要的对象展开）
+    // Only merge when there are custom messages (avoid unnecessary object spread)
     const mergedMessages: ErrorMessages =
       Object.keys(messages).length === 0
         ? localeMessages
         : { ...localeMessages, ...messages }
-    // alreadyMerged=true: mergedMessages 已含 locale+custom，跳过 formatDetailed 内的二次展开
+    // alreadyMerged=true: mergedMessages already contains locale+custom, skip re-expansion inside formatDetailed
     return this._errorFormatter.formatDetailed(rawErrors as Parameters<ErrorFormatter['formatDetailed']>[0], locale, mergedMessages, true)
   }
 

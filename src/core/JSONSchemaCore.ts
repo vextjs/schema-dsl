@@ -4,8 +4,9 @@ import { Validator } from './Validator.js'
 /**
  * JSONSchemaCore — v1 compatibility facade.
  *
- * v2 的内部实现已拆分为 DslParser / SchemaCompiler / Validator；该类仅恢复
- * v1 公开 API 的常用链式构建入口，避免老用户从主入口导入时报错。
+ * The v2 internals have been split into DslParser / SchemaCompiler / Validator; this class
+ * restores the commonly-used chainable entry points from the v1 public API so that users
+ * who import from the main entry point do not encounter errors.
  */
 export class JSONSchemaCore {
   schema: JSONSchema

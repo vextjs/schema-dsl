@@ -1,6 +1,6 @@
 /**
- * IConditionalBuilder 接口（形状定义）
- * 实现类在 src/core/ConditionalBuilder.ts（Phase 8）
+ * IConditionalBuilder interface (shape definition).
+ * Implementation class is in src/core/ConditionalBuilder.ts (Phase 8).
  */
 import type { JSONSchema } from './schema.js'
 

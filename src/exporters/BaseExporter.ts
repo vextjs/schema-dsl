@@ -1,12 +1,12 @@
 /**
- * BaseExporter — 所有导出器的基础接口与抽象类
+ * BaseExporter — Base interface and abstract class for all exporters.
  *
- * 提供统一的 export() 抽象方法签名，各导出器继承后实现。
+ * Provides a unified abstract export() method signature; each exporter subclass implements it.
  */
 
 import type { JSONSchema } from '../types/schema.js'
 
-// ==================== 公共选项类型 ====================
+// ==================== Common options type ====================
 
 export interface ExporterOptions {
   [key: string]: unknown
@@ -22,14 +22,14 @@ export abstract class BaseExporter<TOptions extends ExporterOptions = ExporterOp
   }
 
   /**
-   * 导出 JSON Schema 为目标格式
-   * 各子类必须实现此方法
+   * Export a JSON Schema to the target format.
+   * Each subclass must implement this method.
    */
   abstract export(...args: unknown[]): unknown
 
   /**
-   * 验证输入的 JSON Schema 是否为有效对象类型 Schema
-   * @throws Error if invalid
+   * Assert that the input JSON Schema is a valid object-type schema.
+   * @throws Error if invalid.
    */
   protected _assertObjectSchema(jsonSchema: unknown, label = 'JSON Schema'): asserts jsonSchema is JSONSchema & { type: 'object' } {
     if (!jsonSchema || typeof jsonSchema !== 'object') {
@@ -42,14 +42,14 @@ export abstract class BaseExporter<TOptions extends ExporterOptions = ExporterOp
   }
 
   /**
-   * 转义 SQL 单引号（通用）
+   * Escape SQL single quotes (generic utility).
    */
   protected _escapeString(str: string): string {
     return str.replace(/'/g, "''")
   }
 
   /**
-   * 检测 Schema 中的主键列名（id / _id 优先）
+   * Detect the primary key column name in a schema (id / _id preferred).
    */
   protected _detectPrimaryKey(schema: JSONSchema): string | null {
     if (!schema.properties) return null

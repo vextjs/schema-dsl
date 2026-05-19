@@ -1,65 +1,65 @@
 /**
- * 验证选项
+ * Validation options.
  */
 import type { CacheOptions } from './config.js'
 import type { ErrorMessages } from './error.js'
 
 export interface ValidateOptions {
-  /** 是否格式化错误（默认 true）*/
+  /** Whether to format errors (default true). */
   format?: boolean
-  /** 是否返回所有错误（默认 false，只返回第一个）*/
+  /** Whether to return all errors (default false — only the first). */
   allErrors?: boolean
-  /** 动态指定语言（如 'zh-CN', 'en-US', 'ja-JP', 'es-ES', 'fr-FR'）*/
+  /** Dynamically specify a locale (e.g. 'zh-CN', 'en-US', 'ja-JP', 'es-ES', 'fr-FR'). */
   locale?: string
-  /** 自定义错误消息 */
+  /** Custom error messages. */
   messages?: ErrorMessages
-  /** 是否启用智能类型强制（自动转换字符串→数字等）*/
+  /** Whether to enable smart type coercion (auto-converts string → number etc.). */
   smartCoerce?: boolean
-  /** 是否删除额外属性 */
+  /** Whether to remove additional properties. */
   removeAdditional?: boolean | 'all' | 'failing'
-  /** 是否启用缓存 */
+  /** Whether to enable caching. */
   cache?: boolean | CacheOptions
-  /** 是否启用严格模式 */
+  /** Whether to enable strict mode. */
   strict?: boolean
   [key: string]: unknown
 }
 
 /**
- * 验证结果
+ * Validation result.
  */
 export interface ValidationResult<T = unknown> {
-  /** 是否验证通过 */
+  /** Whether validation passed. */
   valid: boolean
-  /** 验证后的数据快照（当前实现成功/失败都会返回，失败时也便于定位输入）*/
+  /** Snapshot of the data after validation (returned on both success and failure; useful for locating input on failure). */
   data?: T
-  /** 错误列表（当前实现成功时为空数组，失败时为详细错误）*/
+  /** Error list (empty array on success; detailed errors on failure). */
   errors?: ValidationErrorItem[]
-  /** 首条错误消息（便捷访问）*/
+  /** First error message (convenience accessor). */
   errorMessage?: string
 }
 
 /**
- * 验证错误条目（ValidationResult.errors 中的元素）
+ * Validation error item (element of ValidationResult.errors).
  */
 export interface ValidationErrorItem {
-  /** 错误消息 */
+  /** Error message. */
   message: string
-  /** 错误字段路径（点号分隔，如 'user.email'）*/
+  /** Error field path (dot-separated, e.g. 'user.email'). */
   path: string
-  /** 验证关键字（min, max, email, pattern 等）*/
+  /** Validation keyword (min, max, email, pattern, etc.). */
   keyword: string
-  /** 验证参数 */
+  /** Validation parameters. */
   params?: Record<string, unknown>
-  /** path 的别名（向后兼容）*/
+  /** Alias for path (backwards compatibility). */
   field?: string
-  /** keyword 的别名（向后兼容 v1 err.type）*/
+  /** Alias for keyword (backwards-compatible with v1 err.type). */
   type?: string | undefined
-  /** 期望类型（向后兼容 v1 err.expected，仅 type 错误时存在）*/
+  /** Expected type (backwards-compatible with v1 err.expected; only present for type errors). */
   expected?: string | undefined
 }
 
 /**
- * AJV 原始错误对象类型（内部使用）
+ * Raw AJV error object type (internal use).
  */
 export interface AjvError {
   keyword: string

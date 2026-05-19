@@ -1,16 +1,16 @@
 /**
- * MySQLExporter — 将 JSON Schema 导出为 MySQL CREATE TABLE DDL
+ * MySQLExporter — Export JSON Schema as a MySQL CREATE TABLE DDL statement.
  *
- * v2 修复：
- *   _escapeString 使用标准 SQL 单引号转义（`'` → `''`）
- *   _convertColumn 使用完整 schema 对象传给 TypeConverter.toMySQLType（含 maxLength 等约束）
+ * v2 fixes:
+ *   _escapeString uses standard SQL single-quote escaping (`'` → `''`)
+ *   _convertColumn passes the full schema object to TypeConverter.toMySQLType (includes maxLength etc.)
  */
 
 import type { JSONSchema } from '../types/schema.js'
 import { BaseExporter, type ExporterOptions } from './BaseExporter.js'
 import { TypeConverter } from '../utils/TypeConverter.js'
 
-// ==================== 类型定义 ====================
+// ==================== Type definitions ====================
 
 export interface MySQLExporterOptions extends ExporterOptions {
   engine: string
@@ -36,7 +36,7 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
   }
 
   /**
-   * 导出为 MySQL CREATE TABLE 语句
+   * Export as a MySQL CREATE TABLE statement.
    */
   export(tableName: string, jsonSchema: JSONSchema): string {
     if (!tableName || typeof tableName !== 'string') {
@@ -63,7 +63,7 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
   }
 
   /**
-   * 生成 CREATE INDEX 语句
+   * Generate a CREATE INDEX statement.
    */
   generateIndex(tableName: string, columnName: string, options: GenerateIndexOptions = {}): string {
     const indexName = options.name ?? `idx_${tableName}_${columnName}`
@@ -72,13 +72,13 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
   }
 
   /**
-   * 静态快速导出
+   * Static quick-export shorthand.
    */
   static export(tableName: string, jsonSchema: JSONSchema): string {
     return new MySQLExporter().export(tableName, jsonSchema)
   }
 
-  // ==================== 私有方法 ====================
+  // ==================== Private methods ====================
 
   private _convertProperties(schema: JSONSchema): string[] {
     if (!schema.properties) return []
@@ -94,7 +94,7 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
   }
 
   private _convertColumn(name: string, schema: JSONSchema, isRequired: boolean): string {
-    // 传完整 schema 以便 TypeConverter 读取 maxLength 等约束
+    // Pass full schema so TypeConverter can read maxLength and other constraints
     const mysqlType = TypeConverter.toMySQLType(
       (schema.type as string | string[]) ?? 'string',
       schema,

@@ -7,12 +7,12 @@ export interface LocaleResolvedMessage {
 }
 
 /**
- * Locale — 全局语言管理器（静态类）
+ * Locale — global locale manager (static class).
  *
- * v1 兼容语义：
- *   - getMessage() → 已命中的语言消息统一返回 { code, message }
- *   - getMessageText() → 始终返回最终消息文本（供 v2 内部调用）
- *   - getMessageConfig() → 返回原始 LocaleMessage（含 code 对象格式，供 I18nError 用）
+ * v1 compatibility semantics:
+ *   - getMessage() → returns { code, message } for every resolved message
+ *   - getMessageText() → always returns final message text (used internally by v2)
+ *   - getMessageConfig() → returns raw LocaleMessage (may contain code object; used by I18nError)
  */
 export class Locale {
   private static _currentLocale: string = 'zh-CN'
@@ -43,7 +43,7 @@ export class Locale {
     return result
   }
 
-  // ─── 语言切换 ──────────────────────────────────────────────────────────────
+  // ─── Locale Switching ─────────────────────────────────────────────────────
 
   static setLocale(locale: string): void {
     this._currentLocale = locale
@@ -53,16 +53,15 @@ export class Locale {
     return this._currentLocale
   }
 
-  // ─── 自定义消息（全局覆盖）────────────────────────────────────────────────
+  // ─── Custom Messages (global override) ───────────────────────────────────
 
   static setMessages(messages: Record<string, LocaleMessage>): void {
     this._customMessages = { ...this._customMessages, ...messages }
   }
 
   static addLocale(locale: string, messages: Record<string, LocaleMessage>): void {
-    // 在运行时动态添加语言包（合并到现有条目）
-    // 使用 locales/index.ts 的 addLocale 机制即可
-    // 此处记录到 customMessages 并在查找时优先使用
+    // Dynamically add a locale pack at runtime (merged into existing entries).
+    // Records into customMessages and takes priority during lookup.
     for (const [k, v] of Object.entries(messages)) {
       this._customMessages[`${locale}:${k}`] = v
     }
@@ -76,12 +75,12 @@ export class Locale {
     return isSupportedLocale(locale)
   }
 
-  // ─── 核心查询方法 ─────────────────────────────────────────────────────────
+  // ─── Core Query Methods ───────────────────────────────────────────────────
 
   /**
-   * 获取消息配置（v1 兼容：命中时统一返回 { code, message }）
+   * Get a resolved message (v1 compat: returns { code, message } on hit).
    *
-   * 优先级: 自定义消息 > 语言包 > key 本身
+   * Priority: custom messages > locale pack > key itself.
    */
   static getMessage(
     type: string,
@@ -94,7 +93,7 @@ export class Locale {
   }
 
   /**
-   * 获取最终消息文本（供 v2 内部调用，避免 message 字段落成 [object Object]）
+   * Get the final message text (used internally by v2 to avoid "[object Object]" in message field).
    */
   static getMessageText(
     type: string,
@@ -106,7 +105,7 @@ export class Locale {
   }
 
   /**
-   * 获取消息原始配置（供 I18nError 使用，可含 code）
+   * Get raw message config (used by I18nError; may include a numeric code).
    */
   static getMessageConfig(
     type: string,
@@ -117,7 +116,7 @@ export class Locale {
   }
 
   /**
-   * 获取指定语言的完整消息表（内置 + 自定义）
+   * Get the full message table for the given locale (built-in + custom).
    */
   static getMessages(locale?: string): Record<string, LocaleMessage> {
     const targetLocale = locale ?? this._currentLocale
@@ -136,14 +135,14 @@ export class Locale {
   }
 
   /**
-   * 重置（测试用）
+   * Reset to defaults (for testing).
    */
   static reset(): void {
     this._currentLocale = 'zh-CN'
     this._customMessages = {}
   }
 
-  // ─── 私有辅助 ─────────────────────────────────────────────────────────────
+  // ─── Private Helpers ──────────────────────────────────────────────────────
 
   private static _normalizeResolvedMessage(type: string, msg: LocaleMessage): LocaleResolvedMessage {
     if (typeof msg === 'string') {
@@ -179,7 +178,7 @@ export class Locale {
   }
 
   private static _isLocaleKey(key: string): boolean {
-    // 所有预定义的 locale key 都在语言包中
+    // All predefined locale keys are defined in language pack files
     const msgs = getMessages()
     return key in msgs
   }

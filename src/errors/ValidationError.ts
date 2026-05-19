@@ -1,4 +1,4 @@
-// V8/Node.js 扩展（ES2022 lib 中无此类型，显式声明）
+// V8/Node.js extension (not in ES2022 lib; declared explicitly)
 type ErrorWithCaptureStackTrace = typeof Error & {
   captureStackTrace?: (target: object, ctor: unknown) => void
 }
@@ -7,8 +7,8 @@ const ErrorCtor = Error as ErrorWithCaptureStackTrace
 import type { ValidationErrorItem } from '../types/validate.js'
 
 /**
- * ValidationError — validateAsync() 失败时抛出的错误类
- * 修复 v1 bug：空 errors 数组时消息格式异常
+ * ValidationError — error class thrown when validateAsync() fails.
+ * Fixes v1 bug: malformed message format when errors array is empty.
  */
 export class ValidationError extends Error {
   readonly name = 'ValidationError' as const
@@ -17,7 +17,7 @@ export class ValidationError extends Error {
   readonly statusCode: number
 
   constructor(errors: ValidationErrorItem[], data?: unknown, statusCode = 400) {
-    // 修复：空 errors 时提供友好消息（v1 bug）
+    // Fix: provide friendly message when errors array is empty (v1 bug)
     const messages =
       errors.length === 0
         ? 'Validation failed'
@@ -31,8 +31,8 @@ export class ValidationError extends Error {
             })
             .join('; ')
 
-    // v1 兼容：全无 path 属性时用 " - " 分隔，否则用 ": "
-    // v1 兼容补充：单条 conditional 错误直接使用消息字符串（不加前缀）
+    // v1 compat: use " - " separator when no path, ": " otherwise
+    // v1 compat: single conditional error uses message string directly (no prefix)
     const hasNoPath = errors.every(e => e.path === undefined || e.path === null || e.path === '')
     const isSingleConditional = errors.length === 1 && errors[0].keyword === 'conditional' && hasNoPath
     if (isSingleConditional) {

@@ -1,11 +1,11 @@
 /**
- * DslBuilder — 链式 DSL 构建器
+ * DslBuilder — chainable DSL builder.
  *
- * v2 变化：
- *   - 构造器委托 DslParser.parseString()（修复 DA-01/DA-02/DA-03）
- *   - 自定义类型注册委托 TypeRegistry（修复 DB-01/DB-02 统一三处类型列表）
- *   - _customMessages 合并而非覆盖（修复 v1 overwrite bug）
- *   - 实现 IDslBuilder 接口（error/optional/required/enum 链式方法）
+ * v2 changes:
+ *   - Constructor delegates to DslParser.parseString() (fixes DA-01/DA-02/DA-03)
+ *   - Custom type registration delegates to TypeRegistry (fixes DB-01/DB-02: unifies three type lists)
+ *   - _customMessages merges instead of overwriting (fixes v1 overwrite bug)
+ *   - Implements IDslBuilder interface (error/optional/required/enum chain methods)
  */
 
 import type { JSONSchema } from '../types/schema.js'
@@ -14,11 +14,11 @@ import { DslParser } from '../parser/DslParser.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
 
-// ==================== 内部工具 ====================
+// ==================== Internal Utilities ====================
 
-type CustomValidatorFn = (value: unknown) => unknown
+type CustomValidatorFn= (value: unknown) => unknown
 
-/** 密码强度预设 */
+/** Password strength presets. */
 const PASSWORD_PATTERNS: Record<string, RegExp> = {
   weak:       /.{6,}/,
   medium:     /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/,
@@ -32,13 +32,13 @@ const PASSWORD_MIN_LENGTHS: Record<string, number> = {
 // ==================== DslBuilder ====================
 
 export class DslBuilder implements IDslBuilder {
-  // IDslBuilder 必须字段
+  // Required IDslBuilder field
   readonly _isDslBuilder = true as const
 
-  /** schema-dsl 自定义验证关键字集合（toJsonSchema 时清除）*/
+  /** schema-dsl custom validation keyword set (stripped during toJsonSchema). */
   static readonly _internalKeys: ReadonlySet<string> = TypeRegistry.getInternalKeys()
 
-  /** 自定义类型缓存（BC with v1 DslBuilder._customTypes）*/
+  /** Custom type cache (BC with v1 DslBuilder._customTypes). */
   private static readonly _customTypes = new Map<string, JSONSchema | (() => JSONSchema)>()
 
   private _baseSchema: JSONSchema
@@ -50,7 +50,7 @@ export class DslBuilder implements IDslBuilder {
   private _customValidators: CustomValidatorFn[]
   private _whenConditions: unknown[]
 
-  // ==================== 构造器 ====================
+  // ==================== Constructor ====================
 
   constructor(dslString: string) {
     if (!dslString || typeof dslString !== 'string') {
@@ -59,7 +59,7 @@ export class DslBuilder implements IDslBuilder {
 
     let s = dslString.trim()
 
-    // array!N-M 特殊语法（v1 兼容）→ array:N-M + required=true
+    // array!N-M special syntax (v1 compat) → array:N-M + required=true
     const arrayBangMatch = /^array!([\d-]+)$/.exec(s)
     if (arrayBangMatch) {
       s = `array:${arrayBangMatch[1]}`
@@ -80,11 +80,11 @@ export class DslBuilder implements IDslBuilder {
     this._baseSchema = DslBuilder._parseBody(s)
   }
 
-  // ==================== 内部解析 ====================
+  // ==================== Internal Parsing ====================
 
   /**
-   * 解析 DSL body（不含 ! 或 ?）
-   * 处理 DslParser 不支持的特殊类型：types:/phone:/idCard:等
+   * Parse DSL body (without ! or ?).
+   * Handles special types not supported by DslParser: types:/phone:/idCard: etc.
    */
   private static _parseBody(dsl: string): JSONSchema {
     // 1. types:type1|type2 → oneOf
@@ -95,12 +95,12 @@ export class DslBuilder implements IDslBuilder {
       return { oneOf: parts.map(t => DslBuilder._parseBody(t)) }
     }
 
-    // 2. 提取 typeName 和 arg（仅用于特殊类型分支）
+    // 2. Extract typeName and arg (used only for special-type branches)
     const colonIdx = dsl.indexOf(':')
     const typeName = colonIdx === -1 ? dsl : dsl.slice(0, colonIdx)
     const arg = colonIdx === -1 ? '' : dsl.slice(colonIdx + 1)
 
-    // 3. 特殊 pattern 类型（TypeRegistry 不包含这些动态参数类型）
+    // 3. Special pattern types (TypeRegistry does not contain these dynamic-argument types)
     switch (typeName) {
       case 'phone': {
         const country = arg || 'cn'
@@ -168,14 +168,14 @@ export class DslBuilder implements IDslBuilder {
       }
     }
 
-    // 4. 委托标准 DslParser（不带 !，所以不会设 _required）
+    // 4. Delegate to standard DslParser (without !, so _required will not be set)
     return DslParser.parseString(dsl)
   }
 
-  // ==================== 静态方法（BC with v1）====================
+  // ==================== Static Methods (BC with v1) ====================
 
   /**
-   * 注册自定义类型（委托 TypeRegistry）
+   * Register a custom type (delegates to TypeRegistry).
    */
   static registerType(name: string, schema: JSONSchema | (() => JSONSchema)): void {
     if (!name || typeof name !== 'string') {
@@ -193,17 +193,17 @@ export class DslBuilder implements IDslBuilder {
     }
   }
 
-  /** 检查类型是否已注册（内置或自定义）*/
+  /** Check whether a type is registered (built-in or custom). */
   static hasType(type: string): boolean {
     return TypeRegistry.has(type)
   }
 
-  /** 获取所有已注册的自定义类型名称 */
+  /** Get all registered custom type names. */
   static getCustomTypes(): string[] {
     return Array.from(DslBuilder._customTypes.keys())
   }
 
-  /** 清除所有自定义类型（主要用于测试）*/
+  /** Clear all custom types (primarily for testing). */
   static clearCustomTypes(): void {
     for (const name of DslBuilder._customTypes.keys()) {
       TypeRegistry.unregister(name)
@@ -212,9 +212,9 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 验证 Schema 嵌套深度
-   * @param schema - 待验证的 JSON Schema
-   * @param maxDepth - 最大深度（默认 3）
+   * Validate schema nesting depth.
+   * @param schema - JSON Schema to validate
+   * @param maxDepth - maximum allowed depth (default 3)
    */
   static validateNestingDepth(
     schema: JSONSchema,
@@ -254,12 +254,12 @@ export class DslBuilder implements IDslBuilder {
       path: deepestPath,
       message:
         maxFound > maxDepth
-          ? `嵌套深度${maxFound}超过限制${maxDepth}，路径: ${deepestPath}`
-          : `嵌套深度${maxFound}符合要求`,
+          ? `Nesting depth ${maxFound} exceeds limit ${maxDepth}, path: ${deepestPath}`
+          : `Nesting depth ${maxFound} is within the limit`,
     }
   }
 
-  // ==================== 内部工具 ====================
+  // ==================== Private Utilities ====================
 
   private _assertType(method: string, ...types: string[]): void {
     const t = this._baseSchema.type as string
@@ -284,10 +284,10 @@ export class DslBuilder implements IDslBuilder {
     this._assertType(method, 'array')
   }
 
-  // ==================== 通用链式方法 ====================
+  // ==================== Common Chain Methods ====================
 
   /**
-   * 设置格式
+   * Set format.
    */
   format(fmt: string): this {
     this._baseSchema.format = fmt
@@ -295,7 +295,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 添加正则表达式验证
+   * Add regex validation.
    */
   pattern(regex: RegExp | string, message?: string): this {
     this._baseSchema.pattern = regex instanceof RegExp ? regex.source : regex
@@ -306,7 +306,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 自定义错误消息（IDslBuilder: error；BC alias: messages）
+   * Custom error messages (IDslBuilder: error; BC alias: messages).
    */
   messages(msgs: Record<string, string>): this {
     Object.assign(this._customMessages, msgs)
@@ -319,7 +319,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 设置字段标签（用于错误消息）
+   * Set field label (used in error messages).
    */
   label(text: string): this {
     this._label = text
@@ -327,7 +327,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 设置描述
+   * Set description.
    */
   description(text: string): this {
     this._description = text
@@ -335,7 +335,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 设置默认值
+   * Set default value.
    */
   default(value: unknown): this {
     this._baseSchema.default = value
@@ -343,7 +343,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 设置枚举值（IDslBuilder）
+   * Set allowed enum values (IDslBuilder).
    */
   enum(...values: unknown[]): this {
     this._baseSchema.enum = values
@@ -351,7 +351,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 标记字段为可选
+   * Mark field as optional.
    */
   optional(): this {
     this._required = false
@@ -360,7 +360,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 标记字段为必填
+   * Mark field as required.
    */
   required(): this {
     this._required = true
@@ -369,7 +369,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 添加自定义验证器
+   * Add a custom validator function.
    */
   custom(validatorFn: CustomValidatorFn): this {
     if (typeof validatorFn !== 'function') {
@@ -379,98 +379,98 @@ export class DslBuilder implements IDslBuilder {
     return this
   }
 
-  // ==================== String 链式方法 ====================
+  // ==================== String Chain Methods ====================
 
-  /** String 最小长度 */
+  /** String minimum length. */
   min(n: number): this {
     this._assertStringType('min')
     this._baseSchema.minLength = n
     return this
   }
 
-  /** String 最大长度 */
+  /** String maximum length. */
   max(n: number): this {
     this._assertStringType('max')
     this._baseSchema.maxLength = n
     return this
   }
 
-  /** String 精确长度（→ exactLength 自定义关键字）*/
+  /** String exact length (→ exactLength custom keyword). */
   length(n: number): this {
     this._assertStringType('length')
     this._baseSchema.exactLength = n
     return this
   }
 
-  /** String 只能包含字母和数字 */
+  /** String: only alphanumeric characters allowed. */
   alphanum(): this {
     this._assertStringType('alphanum')
     this._baseSchema.alphanum = true
     return this
   }
 
-  /** String 不能包含前后空格 */
+  /** String: no leading/trailing whitespace. */
   trim(): this {
     this._assertStringType('trim')
     this._baseSchema.trim = true
     return this
   }
 
-  /** String 必须是小写 */
+  /** String: must be lowercase. */
   lowercase(): this {
     this._assertStringType('lowercase')
     this._baseSchema.lowercase = true
     return this
   }
 
-  /** String 必须是大写 */
+  /** String: must be uppercase. */
   uppercase(): this {
     this._assertStringType('uppercase')
     this._baseSchema.uppercase = true
     return this
   }
 
-  /** String 必须是有效 JSON 字符串 */
+  /** String: must be a valid JSON string. */
   json(): this {
     this._assertStringType('json')
     this._baseSchema.jsonString = true
     return this
   }
 
-  /** String 日期格式验证 */
+  /** String date format validation. */
   dateFormat(fmt: string): this {
     this._assertStringType('dateFormat')
     this._baseSchema.dateFormat = fmt
     return this
   }
 
-  /** String 必须晚于指定日期 */
+  /** String: must be after the given date. */
   after(date: string): this {
     this._assertStringType('after')
     this._baseSchema.dateGreater = date
     return this
   }
 
-  /** String 必须早于指定日期 */
+  /** String: must be before the given date. */
   before(date: string): this {
     this._assertStringType('before')
     this._baseSchema.dateLess = date
     return this
   }
 
-  /** v1.0.2 别名：dateGreater */
+  /** v1.0.2 alias: dateGreater. */
   dateGreater(date: string): this {
     this._baseSchema.dateGreater = date
     return this
   }
 
-  /** v1.0.2 别名：dateLess */
+  /** v1.0.2 alias: dateLess. */
   dateLess(date: string): this {
     this._baseSchema.dateLess = date
     return this
   }
 
-  /** String slug 格式验证 */
+  /** String slug format validation. */
   slug(): this {
     this._assertStringType('slug')
     this._baseSchema.pattern = '^[a-z0-9]+(?:-[a-z0-9]+)*$'
@@ -479,39 +479,39 @@ export class DslBuilder implements IDslBuilder {
     return this
   }
 
-  /** String 域名验证 */
+  /** String domain validation. */
   domain(): this {
     this._assertStringType('domain')
     const cfg = PATTERNS.common.domain
     return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
   }
 
-  /** String IP 地址验证（IPv4 或 IPv6）*/
+  /** String IP address validation (IPv4 or IPv6). */
   ip(): this {
     this._assertStringType('ip')
     const cfg = PATTERNS.common.ip
     return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
   }
 
-  /** String Base64 编码验证 */
+  /** String Base64 encoding validation. */
   base64(): this {
     this._assertStringType('base64')
     const cfg = PATTERNS.common.base64
     return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
   }
 
-  /** String JWT 令牌验证 */
+  /** String JWT token validation. */
   jwt(): this {
     this._assertStringType('jwt')
     const cfg = PATTERNS.common.jwt
     return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
   }
 
-  // ==================== 身份/模式链式方法 ====================
+  // ==================== Identity / Pattern Chain Methods ====================
 
-  /** 手机号验证（自动纠正 number → string）*/
+  /** Phone number validation (auto-corrects number → string). */
   phone(country = 'cn'): this {
-    // 自动纠正类型
+    // Auto-correct type
     if (this._baseSchema.type === 'number' || this._baseSchema.type === 'integer') {
       this._baseSchema.type = 'string'
       delete (this._baseSchema as Record<string, unknown>)['minimum']
@@ -524,12 +524,12 @@ export class DslBuilder implements IDslBuilder {
     return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
   }
 
-  /** phone() 别名（BC）*/
+  /** phone() alias (BC). */
   phoneNumber(country = 'cn'): this {
     return this.phone(country)
   }
 
-  /** 身份证验证 */
+  /** National ID (idCard) validation. */
   idCard(country = 'cn'): this {
     const lower = country.toLowerCase()
     const cfg = PATTERNS.idCard[lower]
@@ -539,33 +539,33 @@ export class DslBuilder implements IDslBuilder {
     return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
   }
 
-  /** URL Slug 验证 */
+  /** URL slug validation. */
   slugChain(): this {
     return this.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).messages({ pattern: 'pattern.slug' })
   }
 
-  /** 信用卡验证 */
+  /** Credit card number validation. */
   creditCard(type = 'visa'): this {
     const cfg = PATTERNS.creditCard[type.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported credit card type: ${type}`)
     return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
   }
 
-  /** 车牌号验证 */
+  /** Vehicle license plate validation. */
   licensePlate(country = 'cn'): this {
     const cfg = PATTERNS.licensePlate[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for licensePlate: ${country}`)
     return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
   }
 
-  /** 邮政编码验证 */
+  /** Postal code validation. */
   postalCode(country = 'cn'): this {
     const cfg = PATTERNS.postalCode[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for postalCode: ${country}`)
     return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
   }
 
-  /** 护照号码验证 */
+  /** Passport number validation. */
   passport(country = 'cn'): this {
     const cfg = PATTERNS.passport[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for passport: ${country}`)
@@ -573,7 +573,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 用户名验证
+   * Username validation.
    * @param preset - 'short'(3-16) | 'medium'(3-32) | 'long'(3-64) | 'N-M' | object
    */
   username(preset: string | { minLength?: number; maxLength?: number; allowUnderscore?: boolean; allowNumber?: boolean } = 'medium'): this {
@@ -620,7 +620,7 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 密码强度验证
+   * Password strength validation.
    * @param strength - 'weak' | 'medium' | 'strong' | 'veryStrong'
    */
   password(strength = 'medium'): this {
@@ -631,55 +631,55 @@ export class DslBuilder implements IDslBuilder {
     return this.pattern(pat).messages({ pattern: `pattern.password.${strength}` })
   }
 
-  // ==================== Number 链式方法 ====================
+  // ==================== Number Chain Methods ====================
 
-  /** Number 小数位数限制 */
+  /** Number decimal places limit. */
   precision(n: number): this {
     this._assertNumberType('precision')
     this._baseSchema.precision = n
     return this
   }
 
-  /** Number 倍数验证（标准 JSON Schema multipleOf）*/
+  /** Number multiple-of validation (standard JSON Schema multipleOf). */
   multiple(n: number): this {
     this._assertNumberType('multiple')
     this._baseSchema.multipleOf = n
     return this
   }
 
-  /** Number 端口号验证（1-65535）*/
+  /** Number port validation (1–65535). */
   port(): this {
     this._assertNumberType('port')
     this._baseSchema.port = true
     return this
   }
 
-  // ==================== Object 链式方法 ====================
+  // ==================== Object Chain Methods ====================
 
-  /** Object 要求所有属性都必须存在 */
+  /** Object: all defined properties are required. */
   requireAll(): this {
     this._assertObjectType('requireAll')
     this._baseSchema.requiredAll = true
     return this
   }
 
-  /** Object 严格模式，不允许额外属性 */
+  /** Object strict mode: no additional properties allowed. */
   strict(): this {
     this._assertObjectType('strict')
     this._baseSchema.strictSchema = true
     return this
   }
 
-  // ==================== Array 链式方法 ====================
+  // ==================== Array Chain Methods ====================
 
-  /** Array 不允许稀疏数组 */
+  /** Array: sparse arrays are not allowed. */
   noSparse(): this {
     this._assertArrayType('noSparse')
     this._baseSchema.noSparse = true
     return this
   }
 
-  /** Array 必须包含指定元素 */
+  /** Array: must contain the specified element. */
   includesRequired(items: unknown[]): this {
     this._assertArrayType('includesRequired')
     if (!Array.isArray(items)) {
@@ -689,10 +689,10 @@ export class DslBuilder implements IDslBuilder {
     return this
   }
 
-  // ==================== 输出方法 ====================
+  // ==================== Output Methods ====================
 
   /**
-   * 转换为包含 schema-dsl 内部字段的 Schema（供 Validator 使用）
+   * Convert to a schema with schema-dsl internal fields (for use by Validator).
    */
   toSchema(): JSONSchema {
     const schema: JSONSchema = { ...this._baseSchema }
@@ -701,7 +701,7 @@ export class DslBuilder implements IDslBuilder {
       schema.description = this._description
     }
 
-    // 合并 _customMessages：基础类型消息 + 用户自定义消息（用户优先）
+    // Merge _customMessages: base type messages + user custom messages (user takes priority)
     const baseCustomMsgs = (schema._customMessages as Record<string, string> | undefined) || {}
     const mergedMsgs = { ...baseCustomMsgs, ...this._customMessages }
     if (Object.keys(mergedMsgs).length > 0) {
@@ -722,15 +722,15 @@ export class DslBuilder implements IDslBuilder {
       schema._whenConditions = this._whenConditions
     }
 
-    // 始终输出 _required（BC with v1：即使为 false 也输出）
+    // Always output _required (BC with v1: output even when false)
     schema._required = this._required
 
     return schema
   }
 
   /**
-   * 输出纯净的 JSON Schema（清除所有 schema-dsl 内部字段和自定义 keyword）
-   * 可直接嵌入 OpenAPI / JSON Schema 标准文档
+   * Output a clean JSON Schema (strips all schema-dsl internal fields and custom keywords).
+   * Can be embedded directly in OpenAPI / standard JSON Schema documents.
    */
   toJsonSchema(): JSONSchema {
     return TypeRegistry.toJsonSchema(this.toSchema())
@@ -741,8 +741,8 @@ export class DslBuilder implements IDslBuilder {
   }
 
   /**
-   * 验证数据（BC with v1）
-   * @param data - 待验证数据
+   * Validate data (BC with v1).
+   * @param data - data to validate
    */
   async validate(data: unknown): Promise<unknown> {
     const { Validator } = await import('./Validator.js')

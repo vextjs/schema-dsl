@@ -61,7 +61,7 @@ export class SchemaUtils {
     // Detect flat DSL definition: if no 'properties' key but has string values, treat as DSL
     let extSchema: JSONSchema
     if (!('properties' in extensions) && Object.values(extensions).some(v => typeof v === 'string')) {
-      extSchema = DslAdapter.parseObject(extensions as Record<string, string>)
+      extSchema = DslAdapter.parseObject(extensions as Record<string, string>).toSchema()
     } else {
       extSchema = extensions as JSONSchema
     }

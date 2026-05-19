@@ -1,8 +1,8 @@
 /**
- * 错误消息模板（自定义验证错误文案）
+ * Error message templates (custom validation error copy).
  */
 export interface ErrorMessages {
-  // 长度/范围（v1.0.3+ 推荐 min/max 代替 minLength/maximum 等）
+  // Length / range (v1.0.3+ recommends min/max over minLength/maximum etc.)
   min?: string
   max?: string
   minLength?: string
@@ -11,7 +11,7 @@ export interface ErrorMessages {
   maximum?: string
   minItems?: string
   maxItems?: string
-  // 类型
+  // Types
   type?: string
   string?: string
   number?: string
@@ -19,7 +19,7 @@ export interface ErrorMessages {
   boolean?: string
   array?: string
   object?: string
-  // 格式
+  // Formats
   email?: string
   url?: string
   date?: string
@@ -27,34 +27,34 @@ export interface ErrorMessages {
   uuid?: string
   ipv4?: string
   ipv6?: string
-  // 其他
+  // Other
   pattern?: string
   format?: string
   required?: string
   enum?: string
   uniqueItems?: string
-  // 自定义关键字
+  // Custom keywords
   exactLength?: string
   phone?: string
   idCard?: string
   creditCard?: string
-  // 允许扩展
+  // Extensible
   [key: string]: string | undefined
 }
 
 /**
- * 错误码常量类型（ErrorCodes 对象的形状）
+ * Error code constant type (shape of the ErrorCodes object).
  */
 export interface ErrorCodeMap {
-  // 验证错误
+  // Validation errors
   VALIDATION_ERROR: 'VALIDATION_ERROR'
   INVALID_SCHEMA: 'INVALID_SCHEMA'
-  // 配置错误
+  // Config errors
   INVALID_CONFIG: 'INVALID_CONFIG'
   INVALID_LOCALE: 'INVALID_LOCALE'
-  // 插件错误
+  // Plugin errors
   PLUGIN_INSTALL_ERROR: 'PLUGIN_INSTALL_ERROR'
   PLUGIN_NOT_FOUND: 'PLUGIN_NOT_FOUND'
-  // 扩展
+  // Extensible
   [key: string]: string
 }

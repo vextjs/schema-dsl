@@ -17,14 +17,14 @@ export interface CacheStats {
 }
 
 /**
- * CacheManager — 编译后 AJV schema 的 LRU 缓存
+ * CacheManager — LRU cache for compiled AJV schemas.
  *
- * v2 改为委托 cache-hub 的 MemoryCache（修复 BD-04：miss 返回 undefined → 统一转 null）
+ * v2 delegates to cache-hub's MemoryCache (fix BD-04: miss returns undefined → normalized to null).
  *
- * cache-hub MemoryCache 实际 API：
+ * cache-hub MemoryCache actual API:
  *   get(key) → value | undefined
- *   set(key, value, opts?) — opts.ttl 单位 ms
- *   del(key) → boolean           ← 注意是 del，不是 delete
+ *   set(key, value, opts?) — opts.ttl in ms
+ *   del(key) → boolean           ← note: del, not delete
  *   has(key) → boolean
  *   clear() → void
  *   keys() → string[]
@@ -68,8 +68,8 @@ export class CacheManager {
   }
 
   /**
-   * 获取缓存的 AJV 编译函数
-   * @returns 命中返回函数；未命中返回 null（BD-04：undefined → null）
+   * Retrieve a cached AJV compile function.
+   * @returns cached compile function, or null on miss (BD-04: undefined → null)
    */
   get(key: string): CacheValue | null {
     if (!this._enabled || key == null) return null
@@ -82,7 +82,7 @@ export class CacheManager {
   }
 
   /**
-   * 写入缓存
+   * Write a value to the cache.
    */
   set(key: string, value: CacheValue, ttl?: number): void {
     if (!this._enabled || key == null) return
@@ -94,14 +94,14 @@ export class CacheManager {
   }
 
   /**
-   * 删除单个缓存条目
+   * Delete a single cache entry.
    */
   delete(key: string): boolean {
     return this._cache.del(key)
   }
 
   /**
-   * 检查 key 是否命中
+   * Check whether a key exists in the cache.
    */
   has(key: string): boolean {
     if (!this._enabled) return false
@@ -109,7 +109,7 @@ export class CacheManager {
   }
 
   /**
-   * 清空全部缓存
+   * Clear all cache entries.
    */
   clear(): void {
     this._cache.clear()
@@ -117,14 +117,14 @@ export class CacheManager {
   }
 
   /**
-   * 当前缓存条目数
+   * Return the current number of cache entries.
    */
   size(): number {
     return this._cache.keys().length
   }
 
   /**
-   * 获取统计信息
+   * Return cache statistics.
    */
   getStats(): CacheStats {
     if (!this._statsEnabled) {
@@ -150,7 +150,7 @@ export class CacheManager {
   }
 
   /**
-   * 重置统计信息
+   * Reset all hit/miss/eviction counters.
    */
   resetStats(): void {
     this._cache.resetStats()

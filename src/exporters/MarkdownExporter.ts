@@ -1,9 +1,9 @@
 /**
- * MarkdownExporter — 将 JSON Schema 导出为人类可读的 Markdown 文档
+ * MarkdownExporter — Export JSON Schema as human-readable Markdown documentation.
  *
- * v2 修复：
- *   EX-01：required 判断优先使用 prop._required，再 fallback schema.required?.includes(key)
- *          （v1 已有此逻辑，v2 保持并加强类型安全）
+ * v2 fix:
+ *   EX-01: required check prefers prop._required, then falls back to schema.required?.includes(key)
+ *          (v1 already had this logic; v2 preserves it with stronger type safety)
  *
  * @version 2.0.0
  */
@@ -11,7 +11,7 @@
 import type { JSONSchema } from '../types/schema.js'
 import { BaseExporter, type ExporterOptions } from './BaseExporter.js'
 
-// ==================== 类型定义 ====================
+// ==================== Type definitions ====================
 
 export interface MarkdownExporterOptions extends ExporterOptions {
   title?: string
@@ -27,7 +27,7 @@ type Locale = 'zh-CN' | 'en-US' | 'ja-JP'
 export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
   constructor(options: Partial<MarkdownExporterOptions> = {}) {
     super({
-      title: 'Schema 文档',
+      title: 'Schema Documentation',
       locale: 'zh-CN',
       includeExample: true,
       includeDescription: true,
@@ -36,18 +36,18 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
   }
 
   /**
-   * 导出为 Markdown 文档
+   * Export as a Markdown document.
    */
   export(schema: JSONSchema, options?: Partial<MarkdownExporterOptions>): string {
     return MarkdownExporter.export(schema, { ...this.options, ...options })
   }
 
   /**
-   * 静态方法：直接导出
+   * Static method: export directly without instantiation.
    */
   static export(schema: JSONSchema, options: Partial<MarkdownExporterOptions> = {}): string {
     const {
-      title = 'Schema 文档',
+      title = 'Schema Documentation',
       locale = 'zh-CN',
       includeExample = true,
       includeDescription = true,
@@ -70,7 +70,7 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
     return markdown
   }
 
-  // ==================== 私有静态方法 ====================
+  // ==================== Private static methods ====================
 
   private static _i18nFields = {
     'zh-CN': { fields: '字段列表', name: '字段名', type: '类型', required: '必填', constraints: '约束', description: '说明' },
@@ -106,7 +106,7 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
     if (schema.properties) {
       for (const [key, prop] of Object.entries(schema.properties)) {
         const type = this._formatType(prop, locale)
-        // EX-01 修复：_required 优先，再 fallback schema.required
+        // EX-01 fix: prefer _required flag, then fall back to schema.required
         const isRequired = !!(
           (prop as Record<string, unknown>)['_required'] === true ||
           schema.required?.includes(key)

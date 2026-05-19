@@ -147,10 +147,12 @@ describe('DslAdapter', () => {
 
   describe('parseObject() - 对象Schema', () => {
     it('应该解析简单对象', () => {
-      const result = DslAdapter.parseObject({
+      // BC-2: parseObject() returns ObjectDslBuilder; call .toSchema() to get JSONSchema
+      const builder = DslAdapter.parseObject({
         name: 'string!',
         age: 'number',
       })
+      const result = builder.toSchema()
       expect(result.type).toBe('object')
       expect(result.properties!.name).toEqual({ type: 'string' })
       expect(result.properties!.age).toEqual({ type: 'number' })
@@ -158,12 +160,13 @@ describe('DslAdapter', () => {
     })
 
     it('应该解析复杂对象', () => {
-      const result = DslAdapter.parseObject({
+      const builder = DslAdapter.parseObject({
         username: 'string:3-32!',
         email: 'email!',
         age: 'number:18-120',
         status: 'active|inactive',
       })
+      const result = builder.toSchema()
       expect(result.properties!.username).toMatchObject({
         type: 'string',
         minLength: 3,
@@ -178,7 +181,7 @@ describe('DslAdapter', () => {
     })
 
     it('应该解析嵌套对象', () => {
-      const result = DslAdapter.parseObject({
+      const builder = DslAdapter.parseObject({
         user: {
           name: 'string!',
           profile: {
@@ -187,16 +190,18 @@ describe('DslAdapter', () => {
           },
         },
       })
+      const result = builder.toSchema()
       expect(result.properties!.user.type).toBe('object')
       expect((result.properties!.user as any).properties.name).toEqual({ type: 'string' })
       expect((result.properties!.user as any).properties.profile.type).toBe('object')
     })
 
     it('应该清理 _required 标记', () => {
-      const result = DslAdapter.parseObject({
+      const builder = DslAdapter.parseObject({
         name: 'string!',
         age: 'number',
       })
+      const result = builder.toSchema()
       expect(result.properties!.name).not.toHaveProperty('_required')
       expect(result.properties!.age).not.toHaveProperty('_required')
     })
@@ -212,7 +217,8 @@ describe('DslAdapter', () => {
     })
 
     it('应该处理空对象', () => {
-      const result = DslAdapter.parseObject({})
+      // BC-2: parseObject() returns ObjectDslBuilder; call .toSchema() to get JSONSchema
+      const result = DslAdapter.parseObject({}).toSchema()
       expect(result.type).toBe('object')
       expect(result.properties).toEqual({})
     })

@@ -1,49 +1,49 @@
 import type { ErrorMessages } from './error.js'
 
 /**
- * 缓存配置选项
+ * Cache configuration options.
  */
 export interface CacheOptions {
-  /** 最大缓存条目数（默认 5000）*/
+  /** Maximum number of cache entries (default 5000). */
   maxSize?: number
-  /** 缓存过期时间（毫秒，0 表示不过期）*/
+  /** Cache TTL in milliseconds (0 = no expiry). */
   ttl?: number
-  /** 是否启用缓存 */
+  /** Whether caching is enabled. */
   enabled?: boolean
-  /** 是否启用统计（默认 true）*/
+  /** Whether statistics are enabled (default true). */
   statsEnabled?: boolean
 }
 
 /**
- * I18n 配置类型
+ * I18n configuration type.
  */
 export type I18nConfig =
-  | string                          // 语言包目录路径（Node >=18：.js/.cjs/.json/.jsonc/.json5）
-  | Record<string, ErrorMessages>   // 内联语言包
-  | { localesPath: string }         // 语言包目录对象形式（Node >=18：.js/.cjs/.json/.jsonc/.json5）
-  | { locales: Record<string, ErrorMessages> } // v1/文档兼容包装层
+  | string                          // Path to locale directory (Node >=18: .js/.cjs/.json/.jsonc/.json5)
+  | Record<string, ErrorMessages>   // Inline locale bundle
+  | { localesPath: string }         // Locale directory — object form (Node >=18: .js/.cjs/.json/.jsonc/.json5)
+  | { locales: Record<string, ErrorMessages> } // v1/doc-compatible wrapper
 
 /**
- * dsl.config() 选项
+ * dsl.config() options.
  */
 export interface DslConfigOptions {
-  /** 国际化配置 */
+  /** Internationalisation config. */
   i18n?: I18nConfig
-  /** 缓存配置 */
+  /** Cache config. */
   cache?: CacheOptions
-  /** 自定义验证规则扩展 */
+  /** Custom validation rule extensions. */
   patterns?: {
     phone?: Record<string, RegExp>
     idCard?: Record<string, RegExp>
     creditCard?: Record<string, RegExp>
     [key: string]: Record<string, RegExp> | undefined
   }
-  /** 默认语言（默认 'zh-CN'）*/
+  /** Default locale (default 'zh-CN'). */
   defaultLocale?: string
 }
 
 /**
- * ValidatorOptions（Validator 类构造参数）
+ * ValidatorOptions (Validator class constructor parameters).
  */
 export interface ValidatorOptions {
   allErrors?: boolean

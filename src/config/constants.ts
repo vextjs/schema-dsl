@@ -1,11 +1,11 @@
 /**
- * 全局常量
- * 修复：
- *   CF-01 IPv4 正则过于宽松 → 替换为 RFC 合规标准正则
- *   CF-02 IPv6 正则不支持压缩格式 → 替换为完整 RFC 5952 兼容正则
+ * Global constants.
+ * Fixes:
+ *   CF-01 IPv4 regex too permissive → replaced with RFC-compliant standard regex
+ *   CF-02 IPv6 regex did not support compressed notation → replaced with full RFC 5952 compatible regex
  */
 
-// ========== 验证配置 ==========
+// ========== Validation config ==========
 export const VALIDATION = {
   MAX_RECURSION_DEPTH: 100,
   MAX_ARRAY_SIZE: 100_000,
@@ -16,33 +16,33 @@ export const VALIDATION = {
   CUSTOM_VALIDATOR_TIMEOUT: 1_000,
 } as const
 
-// ========== 缓存配置 ==========
+// ========== Cache config ==========
 export const CACHE = {
   ENABLED: true,
   SCHEMA_CACHE: {
     MAX_SIZE: 5_000,
-    TTL: 3_600_000,   // 1 小时
+    TTL: 3_600_000,   // 1 hour
     STRATEGY: 'LRU',
   },
   STATS_ENABLED: true,
 } as const
 
-// ========== 格式验证正则 ==========
+// ========== Format validation regex ==========
 
 /**
- * CF-01 修复：IPv4 标准正则
- * 每段 0-255，四组，完整匹配
- * 拒绝 999.999.999.999 等非法地址
+ * CF-01 fix: RFC-compliant IPv4 regex.
+ * Each octet 0-255, four groups, full-string match.
+ * Rejects invalid addresses such as 999.999.999.999.
  */
 const IPV4_OCTET = '(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)'
 export const PATTERN_IPV4 = new RegExp(`^(?:${IPV4_OCTET}\\.){3}${IPV4_OCTET}$`)
 
 /**
- * CF-02 修复：IPv6 完整正则（RFC 5952 兼容）
- * 覆盖：
- *   - 全展开：8 组 16 进制
- *   - :: 压缩：前缀/后缀/纯 :: 等变体
- * 禁止嵌套量词（避免 ReDoS）
+ * CF-02 fix: Full IPv6 regex (RFC 5952 compatible).
+ * Covers:
+ *   - Fully-expanded: 8 groups of hex
+ *   - :: compressed: prefix / suffix / standalone :: variants
+ * No nested quantifiers (avoids ReDoS).
  */
 const HEX4 = '[0-9a-fA-F]{1,4}'
 const IPV6_FULL = `(?:${HEX4}:){7}${HEX4}`
@@ -55,7 +55,7 @@ const IPV6_COMPRESS = [
   `(?:${HEX4}:){1,2}(?::${HEX4}){1,5}`,
   `${HEX4}:(?::${HEX4}){1,6}`,
   `:(?::${HEX4}){1,7}`,                          // ::n...
-  `::`,                                           // 纯 ::（全零）
+  `::`,                                           // standalone :: (all-zeros)
 ].join('|')
 export const PATTERN_IPV6 = new RegExp(`^(?:${IPV6_FULL}|${IPV6_COMPRESS})$`)
 
@@ -76,7 +76,7 @@ export const FORMATS = {
   },
 } as const
 
-// ========== 插件配置 ==========
+// ========== Plugin config ==========
 export const PLUGINS = {
   MAX_PLUGINS: 50,
   NAMING_CONVENTION: /^schema-dsl-plugin-/,

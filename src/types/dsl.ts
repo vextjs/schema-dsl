@@ -3,11 +3,11 @@ import type { DslConfigOptions } from './config.js'
 import type { IConditionalBuilder } from './conditional.js'
 
 /**
- * DslBuilder 接口定义（链式 API 形状）
- * 实现类在 src/core/DslBuilder.ts（Phase 7）
+ * DslBuilder interface definition (chainable API shape).
+ * Implementation class is in src/core/DslBuilder.ts (Phase 7).
  */
 export interface IDslBuilder {
-  // 约束方法
+  // Constraint methods
   min(n: number): this
   max(n: number): this
   label(text: string): this
@@ -18,23 +18,23 @@ export interface IDslBuilder {
   required(): this
   default(value: unknown): this
   error(messages: Record<string, string>): this
-  // 输出
+  // Output
   toJsonSchema(): JSONSchema
   toString(): string
-  // 内部标识
+  // Internal marker
   readonly _isDslBuilder: true
 }
 
 /**
- * DSL 对象定义（key → field 映射）
- * ⚠️ 必须用 interface 而非 type alias，以支持 DslField ↔ DslDefinition 递归引用
+ * DSL object definition (key → field mapping).
+ * ⚠️ Must be an interface rather than a type alias to support recursive DslField ↔ DslDefinition references.
  */
 export interface DslDefinition {
   [key: string]: DslField
 }
 
 /**
- * v1 条件字段标记（由 dsl.if / dsl.match 创建，parseObject 阶段编译为 allOf 条件 Schema）
+ * v1 conditional field marker (created by dsl.if / dsl.match; compiled to allOf conditional schema during parseObject).
  */
 export interface DslConditionMarker {
   _isIf?: true
@@ -47,32 +47,32 @@ export interface DslConditionMarker {
 }
 
 /**
- * DSL 字段类型（递归定义）
- * 字符串 | DslBuilder 实例 | 嵌套对象
+ * DSL field type (recursive definition).
+ * String | DslBuilder instance | nested object.
  */
 export type DslField = string | IDslBuilder | DslDefinition | DslConditionMarker
 
 /**
- * DslBuilder 构造参数（字符串或嵌套定义）
+ * DslBuilder constructor input (string or nested definition).
  */
 export type DslInput = string | DslDefinition
 
 /**
- * if/conditional 函数类型
+ * if/conditional function types.
  */
 export type DslIfFn = (condition: (data: unknown) => boolean) => IConditionalBuilder
 export type DslFieldIfFn = (condition: string, thenSchema: unknown, elseSchema?: unknown) => DslConditionMarker
 
 /**
- * dsl.error 命名空间
+ * dsl.error namespace.
  */
 export interface DslErrorNamespace {
   readonly [code: string]: string
 }
 
 /**
- * DslFn 接口（函数重载 + 命名空间挂载）
- * ⚠️ 使用函数重载而非联合返回类型，确保 TS 类型缩窄正常工作
+ * DslFn interface (function overloads + namespace attachments).
+ * ⚠️ Uses function overloads rather than union return types to ensure TypeScript type narrowing works correctly.
  */
 export interface DslFn {
   (def: string): IDslBuilder

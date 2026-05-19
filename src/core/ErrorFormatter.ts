@@ -17,9 +17,9 @@ type AjvRawError = {
 }
 
 /**
- * 错误格式化器
- * 委托 TemplateEngine.renderTemplate() 实现模板插值（修复 CORE-03）
- * 保持 v1 API 完全兼容
+ * Error formatter.
+ * Delegates template interpolation to TemplateEngine.renderTemplate() (fix CORE-03).
+ * Maintains full v1 API compatibility.
  */
 export class ErrorFormatter {
   private messages: ErrorMessages
@@ -43,7 +43,7 @@ export class ErrorFormatter {
   }
 
   /**
-   * 格式化单个错误对象 → 消息字符串（v1 API）
+   * Format a single error object → message string (v1 API).
    */
   format(error: AjvRawError | Record<string, unknown>, locale?: string): string {
     // If locale differs, reload messages for that locale
@@ -72,10 +72,10 @@ export class ErrorFormatter {
   }
 
   /**
-   * 格式化 AJV 原始错误数组 → ValidationErrorItem[]
+   * Format an AJV raw error array → ValidationErrorItem[].
    *
-   * @param alreadyMerged - 当为 true 时，customMessages 已是完整的 locale+自定义合并结果，
-   *   跳过 { ...this.messages, ...customMessages } 展开（避免 100+ key 的冷展开）
+   * @param alreadyMerged - when true, customMessages is already a fully merged locale+custom result;
+   *   skip `{ ...this.messages, ...customMessages }` spread (avoids 100+ key cold-spread overhead).
    */
   formatDetailed(
     errors: AjvRawError[],
@@ -87,7 +87,7 @@ export class ErrorFormatter {
       ? (alreadyMerged ? customMessages : { ...this.messages, ...customMessages })
       : this.messages
 
-    // 过滤包装错误（if/anyOf/oneOf）当存在具体字段错误时
+    // Filter wrapper errors (if/anyOf/oneOf) when concrete field errors are present
     const hasConcreteErrors = errors.some(
       e => e.keyword !== 'if' && e.keyword !== 'anyOf' && e.keyword !== 'oneOf' && e.keyword !== 'error'
     )
@@ -99,7 +99,7 @@ export class ErrorFormatter {
   }
 
   /**
-   * 格式化单个错误
+   * Format a single error entry into a ValidationErrorItem.
    */
   private _formatOne(
     err: AjvRawError,
@@ -110,7 +110,7 @@ export class ErrorFormatter {
     const instancePath = err.instancePath ?? ''
     const params = err.params ?? {} as Record<string, unknown>
 
-    // 字段路径计算（required 错误特殊处理）
+    // Field path calculation (required errors get special handling)
     let fieldName: string
     if (keyword === 'required' && params['missingProperty']) {
       const parentPath = instancePath.replace(/^\//, '')
@@ -120,7 +120,7 @@ export class ErrorFormatter {
       fieldName = instancePath.replace(/^\//, '') || 'value'
     }
 
-    // label 计算
+    // Label resolution
     const schema = (err.parentSchema ?? {}) as Record<string, unknown>
     let label: string | undefined
 
@@ -155,7 +155,7 @@ export class ErrorFormatter {
       label = messages[autoKey] ?? labelKey
     }
 
-    // schema 级自定义消息
+    // Schema-level custom messages
     let schemaCustomMessages = (schema['_customMessages'] ?? {}) as ErrorMessages
 
     // For required errors, also check field-level custom messages
@@ -167,22 +167,22 @@ export class ErrorFormatter {
       }
     }
 
-    // 性能优化：schemaCustomMessages 为空时（99% 场景）直接复用 messages，避免 100+ key 的对象展开
+    // Performance: reuse `messages` directly when schemaCustomMessages is empty (99 % of calls)
     const hasCustomMessages = Object.keys(schemaCustomMessages).length > 0
     const mergedMessages = hasCustomMessages ? { ...messages, ...schemaCustomMessages } : messages
     const mappedKeyword = KEYWORD_MAP[keyword] ?? keyword
     const schemaType = typeof schema['type'] === 'string' ? schema['type'] : 'string'
 
-    // 消息查找：schema 自定义 > 类型+关键字 > 关键字 > fallback
+    // Message lookup order: schema custom > type+keyword > keyword > fallback
     let message: string | undefined = hasCustomMessages
       ? (schemaCustomMessages[keyword] ?? schemaCustomMessages[mappedKeyword])
       : undefined
 
     if (message) {
-      // 可能是键引用，尝试从 mergedMessages 查找
+      // May be a key reference — try to resolve from mergedMessages
       message = mergedMessages[message] ?? message
     } else {
-      // format.email 等特殊处理
+      // Special handling for format.email etc.
       if (mappedKeyword === 'format' && params['format']) {
         let fmt = String(params['format'])
         if (fmt === 'uri') fmt = 'url'
@@ -198,7 +198,7 @@ export class ErrorFormatter {
         'Validation error'
     }
 
-    // 插值参数：先 spread params，再覆盖固定键（保持原有行为）
+    // Interpolation params: spread AJV params first, then override fixed keys
     const limit = params['limit'] ?? params['limitLength'] ?? params['comparison'] ?? ''
     const allowedVals = Array.isArray(params['allowedValues'])
       ? (params['allowedValues'] as unknown[]).join(', ')

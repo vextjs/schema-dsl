@@ -1,4 +1,4 @@
-// --- 核心类型 ---
+// --- Core types ---
 export type { JSONSchema, SchemaIOOptions } from './schema.js'
 export type {
   DslFn,

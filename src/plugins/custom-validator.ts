@@ -27,7 +27,7 @@ export const customValidatorPlugin: Plugin & {
 } = {
   name: 'custom-validator',
   version: '1.0.0',
-  description: '自定义验证器插件，添加业务特定的验证规则',
+  description: 'Custom validator plugin — adds business-specific validation rules',
   install(core, _options = {}, _context) {
     const validator = getValidator(core)
     this.addCustomKeywords(validator)

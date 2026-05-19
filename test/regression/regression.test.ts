@@ -65,13 +65,14 @@ describe('[Regression] DslAdapter — v1 行为兼容', () => {
 
   describe('parseObject() — 对象 DSL', () => {
     it('required 字段收集到 required[]', () => {
-      const schema = DslAdapter.parseObject({ name: 'string!', age: 'number' })
+      // BC-2: parseObject() returns ObjectDslBuilder; call .toSchema() for JSONSchema access
+      const schema = DslAdapter.parseObject({ name: 'string!', age: 'number' }).toSchema()
       expect(schema.required).toContain('name')
       expect(schema.required).not.toContain('age')
     })
 
     it('嵌套对象处理', () => {
-      const schema = DslAdapter.parseObject({ user: { name: 'string!', age: 'number' } })
+      const schema = DslAdapter.parseObject({ user: { name: 'string!', age: 'number' } }).toSchema()
       expect(schema.properties?.['user']?.type).toBe('object')
     })
   })

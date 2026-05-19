@@ -6,26 +6,26 @@ import { SchemaCompiler } from './SchemaCompiler.js'
 import { PATTERNS } from '../config/patterns.js'
 
 /**
- * DslParser — DSL 字符串和对象定义的统一入口解析器
+ * DslParser — unified entry point for parsing DSL strings and object definitions
  *
- * 替代 v1 中 DslBuilder._parseTypeString() 与 DslAdapter._parseType() 的双重实现。
- * 所有解析逻辑统一流经：
+ * Replaces the dual implementations of DslBuilder._parseTypeString() and DslAdapter._parseType() from v1.
+ * All parsing flows through a single pipeline:
  *   parseString() → TypeRegistry.resolve() → ConstraintParser.parse() → SchemaCompiler.compile()
  */
 
-/** JSON Schema 标准类型集合，用于区分原生 JSON Schema 对象与 DSL 定义对象 */
+/** Set of standard JSON Schema types used to distinguish native JSON Schema objects from DSL definition objects. */
 const JSON_SCHEMA_TYPES = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'])
 
 /**
- * 判断一个对象是否为原生 JSON Schema（而非 DSL 定义对象）。
+ * Determine whether an object is a raw JSON Schema (rather than a DSL definition object).
  *
- * 判断标准：
- *   1. `type` 字段是合法的 JSON Schema 类型字符串，或
- *   2. 包含 anyOf / oneOf / allOf / $ref 等 JSON Schema 关键字
+ * Criteria:
+ *   1. The `type` field is a valid JSON Schema type string, or
+ *   2. The object contains JSON Schema keywords such as anyOf / oneOf / allOf / $ref
  *
- * 这样可以区分：
- *   - `{ type: 'object', properties: {...} }` → 原生 JSON Schema ✅
- *   - `{ street: 'string!', city: 'string!' }` → DSL 定义 ✅
+ * This allows distinguishing:
+ *   - `{ type: 'object', properties: {...} }` → raw JSON Schema ✅
+ *   - `{ street: 'string!', city: 'string!' }` → DSL definition ✅
  */
 function _isRawJsonSchema(obj: Record<string, unknown>): boolean {
   if (typeof obj['type'] === 'string' && JSON_SCHEMA_TYPES.has(obj['type'] as string)) return true
@@ -137,15 +137,15 @@ function _buildIfSchema(conditionField: string, targetField: string, thenDsl: un
 
 export const DslParser = {
   /**
-   * 解析 DSL 字符串 → JSONSchema
+   * Parse a DSL string → JSONSchema
    *
-   * 支持格式：
+   * Supported formats:
    *   - 'string'          → { type: 'string' }
    *   - 'string!'         → { type: 'string', _required: true }
-   *   - 'string:6'        → { type: 'string', exactLength: 6 }（DA-03 修复）
+   *   - 'string:6'        → { type: 'string', exactLength: 6 }  (DA-03 fix)
    *   - 'string:3-32'     → { type: 'string', minLength: 3, maxLength: 32 }
    *   - 'number:0-100'    → { type: 'number', minimum: 0, maximum: 100 }
-   *   - 'number:-100-0'   → { type: 'number', minimum: -100, maximum: 0 }（DB-03 修复）
+   *   - 'number:-100-0'   → { type: 'number', minimum: -100, maximum: 0 }  (DB-03 fix)
    *   - 'enum:a,b,c'      → { type: 'string', enum: ['a','b','c'] }
    *   - 'a|b|c'           → { type: 'string', enum: ['a','b','c'] }
    *   - 'array!1-10'      → { type: 'array', minItems:1, maxItems:10, _required:true }
@@ -158,15 +158,15 @@ export const DslParser = {
     let s = dslStr.trim()
     let required = false
 
-    // ========== 预处理 1：array!N-M 特殊语法（v1 兼容）==========
-    // 'array!1-10' → 等价于 'array:1-10' + required=true
+    // ========== Pre-processing 1: array!N-M special syntax (v1 compat) ==========
+    // 'array!1-10' → equivalent to 'array:1-10' + required=true
     const arrayBangMatch = /^array!([\d-]+)$/.exec(s)
     if (arrayBangMatch) {
       s = `array:${arrayBangMatch[1]}`
       required = true
     }
 
-    // ========== 预处理 2：末尾 '!' / '?' → required/optional 标记，剥离 ==========
+    // ========== Pre-processing 2: trailing '!' / '?' → required/optional marker, strip ==========
     if (s.endsWith('!')) {
       required = true
       s = s.slice(0, -1)
@@ -174,7 +174,7 @@ export const DslParser = {
       s = s.slice(0, -1)
     }
 
-    // ========== 特殊处理：pipe 枚举 'a|b|c'（无冒号，全段视为枚举）==========
+    // ========== Special case: pipe enum 'a|b|c' (no colon — entire segment is enum) ==========
     if (s.includes('|') && !s.includes(':')) {
       const rawValues = s.split('|').map(v => v.trim())
       // Auto-detect type from values
@@ -203,14 +203,14 @@ export const DslParser = {
       }
     }
 
-    // ========== 特殊处理：enum: 前缀 ==========
+    // ========== Special case: enum: prefix ==========
     // 'enum:a,b,c'         → { type:'string', enum:['a','b','c'] }
     // 'enum:number:1,2,3'  → { type:'number', enum:[1,2,3] }
     if (s.startsWith('enum:')) {
       return DslParser._parseEnumSyntax(s, required)
     }
 
-    // ========== 特殊处理：types: 联合类型前缀（v1 兼容）==========
+    // ========== Special case: types: union type prefix (v1 compat) ==========
     // 'types:string|number'              → oneOf: [{ type:'string' }, { type:'number' }]
     // 'types:string:3-10|number:0-100'   → oneOf with constraints
     // 'types:email|phone'                → oneOf with format types
@@ -218,7 +218,7 @@ export const DslParser = {
       return DslParser._parseUnionTypes(s.slice(6), required)
     }
 
-    // ========== 特殊处理：array<TYPE> 语法 ==========
+    // ========== Special case: array<TYPE> syntax ==========
     // 'array<string>'                  → { type:'array', items:{ type:'string' } }
     // 'array<enum:public|private>'     → { type:'array', items:{ type:'string', enum:[...] } }
     // 'array:1-5<string:1-20>'         → { type:'array', minItems:1, maxItems:5, items:{ type:'string', minLength:1, maxLength:20 } }
@@ -243,7 +243,7 @@ export const DslParser = {
       }
     }
 
-    // ========== 主解析：typeName[:constraint] ==========
+    // ========== Main parsing: typeName[:constraint] ==========
     const colonIdx = s.indexOf(':')
     let typeName: string
     let constraintStr: string
@@ -256,7 +256,7 @@ export const DslParser = {
       constraintStr = s.slice(colonIdx + 1)
     }
 
-    // ========== 特殊处理：pattern 类型（phone/idCard/creditCard/licensePlate/postalCode/passport）==========
+    // ========== Special case: pattern types (phone/idCard/creditCard/licensePlate/postalCode/passport) ==========
     const PATTERN_TYPES = ['phone', 'idCard', 'creditCard', 'licensePlate', 'postalCode', 'passport'] as const
     if (PATTERN_TYPES.includes(typeName as typeof PATTERN_TYPES[number])) {
       const patternGroup = PATTERNS[typeName as keyof typeof PATTERNS] as Record<string, { pattern: RegExp; min?: number; max?: number; key: string }>
@@ -276,14 +276,14 @@ export const DslParser = {
       }
     }
 
-    // TypeRegistry 解析
+    // TypeRegistry resolution
     const typeDef = TypeRegistry.resolve(typeName)
 
-    // ConstraintParser 解析 — use resolved base type (e.g., 'string' for 'alphanum')
+    // ConstraintParser parse — use resolved base type (e.g., 'string' for 'alphanum')
     const resolvedBaseType = (typeDef.baseSchema.type as string) ?? typeName
     const constraints = ConstraintParser.parse(constraintStr, resolvedBaseType)
 
-    // SchemaCompiler 组装
+    // SchemaCompiler assembly
     const schema = SchemaCompiler.compile(typeDef, constraints, {
       required,
     })
@@ -292,7 +292,7 @@ export const DslParser = {
   },
 
   /**
-   * 解析对象 DSL 定义 → JSONSchema（type:object + properties + required[]）
+   * Parse an object DSL definition → JSONSchema (type:object + properties + required[])
    */
   parseObject(dslObj: DslDefinition): JSONSchema {
     const schema: JSONSchema = {
@@ -305,7 +305,7 @@ export const DslParser = {
       let fieldKey = rawKey
       let isKeyRequired = false
 
-      // key! 后缀表示该字段必填
+      // key! suffix marks this field as required
       if (rawKey.endsWith('!')) {
         fieldKey = rawKey.slice(0, -1)
         isKeyRequired = true
@@ -326,28 +326,28 @@ export const DslParser = {
           schema.allOf.push(_buildIfSchema(String(obj['condition']), fieldKey, obj['then'], obj['else']))
           fieldSchema = { description: `Conditional field based on ${String(obj['condition'])}` }
         } else if (typeof obj['toSchema'] === 'function') {
-          // DslBuilder 实例或 ConditionalBuilder（有 toSchema 方法）
+          // DslBuilder instance or ConditionalBuilder (has toSchema method)
           fieldSchema = (obj['toSchema'] as () => JSONSchema)()
         } else if (_isRawJsonSchema(obj)) {
-          // 原生 JSON Schema 对象（如 { type: 'object', properties: {...} }）直接透传
+          // Raw JSON Schema object (e.g., { type: 'object', properties: {...} }) — pass through as-is
           fieldSchema = value as JSONSchema
         } else {
-          // 嵌套 DslDefinition（如 { street: 'string!', city: 'string!' }）
+          // Nested DslDefinition (e.g., { street: 'string!', city: 'string!' })
           fieldSchema = DslParser.parseObject(value as DslDefinition)
         }
       } else {
-        // 原样保留（兼容直接传入 schema 片段）
+        // Pass through as-is (compatible with direct schema fragment input)
         fieldSchema = value as JSONSchema
       }
 
-      // 处理必填标记：key! 优先于字段内部的 _required
+      // Apply required flag: key! takes priority over the field's internal _required marker
       if (isKeyRequired) {
         ;(schema.required as string[]).push(fieldKey)
       } else if (fieldSchema._required) {
         ;(schema.required as string[]).push(fieldKey)
       }
 
-      // 清除 _required 内部 key
+      // Strip the internal _required marker
       const { _required: _r, ...cleanSchema } = fieldSchema as JSONSchema & { _required?: boolean }
       void _r
       _cleanRequiredMarks(cleanSchema)
@@ -362,14 +362,14 @@ export const DslParser = {
     return schema
   },
 
-  // --------------- 私有工具 ---------------
+  // --------------- Private helpers ---------------
 
-  /** 解析 enum: 前缀语法 */
+  /** Parse enum: prefix syntax */
   _parseEnumSyntax(s: string, required: boolean): JSONSchema {
-    // 去掉 'enum:' 前缀
+    // Strip the 'enum:' prefix
     const rest = s.slice('enum:'.length)
 
-    // 检查是否有类型前缀：'enum:number:1|2|3' 或 'enum:number:1,2,3'
+    // Check for a type prefix: 'enum:number:1|2|3' or 'enum:number:1,2,3'
     const typedEnumMatch = /^(string|number|integer|boolean):(.+)$/.exec(rest)
     if (typedEnumMatch) {
       const enumType = typedEnumMatch[1] as 'string' | 'number' | 'integer' | 'boolean'
@@ -383,7 +383,7 @@ export const DslParser = {
       }
     }
 
-    // 无类型前缀：默认 string，支持 | 和 , 两种分隔符
+    // No type prefix: default to string, supporting both '|' and ',' as separators
     return {
       type: 'string',
       enum: (rest.includes('|') ? rest.split('|') : rest.split(',')).map(v => v.trim()),
@@ -391,7 +391,7 @@ export const DslParser = {
     }
   },
 
-  /** 将字符串数组转换为指定类型的枚举值 */
+  /** Convert a string array to enum values of the specified type */
   _coerceEnumValues(
     values: string[],
     type: 'string' | 'number' | 'integer' | 'boolean'
@@ -414,11 +414,11 @@ export const DslParser = {
   },
 
   /**
-   * 解析 types: 联合类型语法（v1 兼容）
+   * Parse types: union type syntax (v1 compatible)
    *
-   * 将 'string|number' 拆分为 oneOf 数组，每段独立解析。
-   * 需要智能分割：'string:3-10|number:0-100' → ['string:3-10', 'number:0-100']
-   * 单一类型时优化为普通 schema（不生成 oneOf）。
+   * Splits 'string|number' into a oneOf array, parsing each segment independently.
+   * Uses smart splitting: 'string:3-10|number:0-100' → ['string:3-10', 'number:0-100']
+   * When only a single type is present, emits a plain schema instead of a oneOf wrapper.
    */
   _parseUnionTypes(typesStr: string, required: boolean): JSONSchema {
     // Smart split by | that is a type separator (not inside constraints)

@@ -1,10 +1,10 @@
 /**
- * ConditionalBuilder — 链式条件构建器
+ * ConditionalBuilder — chainable condition builder.
  *
- * v2 修复：
- *   C-03：assert() 抛出 ValidationError 而非 plain Error
- *   C-Y01：elseIf 语义正确
- *   C-Y02：build() 作为 toSchema() 别名（IDslBuilder 接口兼容）
+ * v2 fixes:
+ *   C-03: assert() throws ValidationError instead of plain Error
+ *   C-Y01: elseIf semantics correct
+ *   C-Y02: build() as toSchema() alias (IConditionalBuilder interface compat)
  */
 
 import type { JSONSchema } from '../types/schema.js'
@@ -13,7 +13,7 @@ import { ValidationError } from '../errors/ValidationError.js'
 import { Validator } from './Validator.js'
 import { Locale } from './Locale.js'
 
-// ==================== 内部数据结构 ====================
+  // ==================== Internal Data Structures ====================
 
 type ConditionFn = (data: unknown) => boolean
 
@@ -49,7 +49,7 @@ export class ConditionalBuilder implements IConditionalBuilder {
     this._elseSchema = undefined
   }
 
-  // ==================== 条件链式方法 ====================
+  // ==================== Condition Chain Methods ====================
 
   if(conditionFn: ConditionFn | string): this {
     // v1 compat: accept string field name and convert to function
@@ -76,6 +76,15 @@ export class ConditionalBuilder implements IConditionalBuilder {
     if (!last) throw new Error('[schema-dsl] .and() must follow .if() or .elseIf()')
     last.combinedConditions.push({ op: 'and', fn: conditionFn, message: null })
     return this
+  }
+
+  /**
+   * require(field) — v1 compat: require the specified field to be truthy.
+   * Equivalent to .and(data => Boolean(data[field])).
+   * BC-5 fix.
+   */
+  require(field: string): this {
+    return this.and((data: unknown) => Boolean((data as Record<string, unknown>)[field]))
   }
 
   or(conditionFn: ConditionFn): this {
@@ -131,10 +140,10 @@ export class ConditionalBuilder implements IConditionalBuilder {
     return this
   }
 
-  // ==================== 输出方法 ====================
+  // ==================== Output Methods ====================
 
   /**
-   * 转换为包含条件数据的 Schema（供 Validator 内部使用）
+   * Produce a schema object carrying conditional data (for internal use by Validator).
    */
   toSchema(): JSONSchema {
     return {
@@ -147,13 +156,13 @@ export class ConditionalBuilder implements IConditionalBuilder {
   }
 
   /**
-   * build() — toSchema() 别名（IConditionalBuilder 接口）
+   * build() — alias for toSchema() (IConditionalBuilder interface compat).
    */
   build(): JSONSchema {
     return this.toSchema()
   }
 
-  // ==================== 验证方法 ====================
+  // ==================== Validation Methods ====================
 
   validate(data: unknown, options: Record<string, unknown> = {}): unknown {
     const validator = new Validator(options)
@@ -166,8 +175,8 @@ export class ConditionalBuilder implements IConditionalBuilder {
   }
 
   /**
-   * 同步断言 — 失败抛出 ValidationError（修复 C-03：v1 抛 plain Error）
-   * 直接同步评估条件，无需走 Validator（Validator 是异步的）
+   * assert() — synchronous assertion; throws ValidationError on failure (fixes C-03: v1 threw plain Error).
+   * Evaluates conditions synchronously without going through Validator (which is async).
    */
   assert(data: unknown, options: Record<string, unknown> = {}): unknown {
     const locale = (options.locale as string) ?? null
@@ -198,13 +207,13 @@ export class ConditionalBuilder implements IConditionalBuilder {
     }
   }
 
-  // ==================== 静态工厂方法 ====================
+  // ==================== Static Factory Methods ====================
 
   static start(conditionFn: ConditionFn | string): ConditionalBuilder {
     return new ConditionalBuilder().if(conditionFn)
   }
 
-  // ==================== 内部评估逻辑 ====================
+  // ==================== Internal Evaluation Logic ====================
 
   private _evaluateCondition(conditionObj: ConditionEntry, data: unknown): EvaluateResult {
     try {

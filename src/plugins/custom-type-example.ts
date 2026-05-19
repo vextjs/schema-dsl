@@ -6,7 +6,7 @@ export const customTypeExamplePlugin: Plugin & {
 } = {
   name: 'custom-type-example',
   version: '1.0.0',
-  description: '自定义类型注册示例插件',
+  description: 'Custom type registration example plugin',
   install(core, _options = {}, _context) {
     const coreRecord = core as { DslBuilder?: typeof DslBuilder }
     const builder = coreRecord.DslBuilder ?? DslBuilder
@@ -28,7 +28,7 @@ export const customTypeExamplePlugin: Plugin & {
       minLength: 15,
       maxLength: 15,
       _customMessages: {
-        pattern: '订单号格式不正确，应为ORD开头的15位字符',
+        pattern: 'Invalid order ID format; must be 15 characters starting with ORD',
       },
     })
 
@@ -38,7 +38,7 @@ export const customTypeExamplePlugin: Plugin & {
       minLength: 10,
       maxLength: 14,
       _customMessages: {
-        pattern: 'SKU编码格式不正确，应为SKU-开头加6-10位字母数字',
+        pattern: 'Invalid SKU format; must be SKU- followed by 6–10 alphanumeric characters',
       },
     })
 
@@ -47,8 +47,8 @@ export const customTypeExamplePlugin: Plugin & {
       minimum: 0,
       multipleOf: 0.01,
       _customMessages: {
-        minimum: '价格不能为负数',
-        multipleOf: '价格最多保留2位小数',
+        minimum: 'Price cannot be negative',
+        multipleOf: 'Price can have at most 2 decimal places',
       },
     })
 
@@ -57,8 +57,8 @@ export const customTypeExamplePlugin: Plugin & {
       minimum: 1,
       maximum: 5,
       _customMessages: {
-        minimum: '评分不能低于1星',
-        maximum: '评分不能超过5星',
+        minimum: 'Rating cannot be lower than 1 star',
+        maximum: 'Rating cannot exceed 5 stars',
       },
     })
 
@@ -75,7 +75,7 @@ export const customTypeExamplePlugin: Plugin & {
       type: 'string',
       pattern: /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/.source,
       _customMessages: {
-        pattern: '版本号格式不正确，应遵循语义化版本规范（如：1.0.0, 2.1.3-beta.1）',
+        pattern: 'Invalid version format; must follow semantic versioning (e.g. 1.0.0, 2.1.3-beta.1)',
       },
     })
 
@@ -86,8 +86,8 @@ export const customTypeExamplePlugin: Plugin & {
         minimum: 0,
         maximum: currentYear - 1900,
         _customMessages: {
-          minimum: '年龄不能为负数',
-          maximum: `年龄不能超过${currentYear - 1900}岁`,
+          minimum: 'Age cannot be negative',
+          maximum: `Age cannot exceed ${currentYear - 1900} years`,
         },
       }
     })
@@ -98,7 +98,7 @@ export const customTypeExamplePlugin: Plugin & {
       minLength: 8,
       maxLength: 15,
       _customMessages: {
-        pattern: '请输入有效的国际手机号（E.164格式）',
+        pattern: 'Please enter a valid international phone number (E.164 format)',
       },
     })
   },

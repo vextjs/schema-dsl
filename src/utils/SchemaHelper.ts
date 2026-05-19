@@ -1,17 +1,17 @@
 /**
- * SchemaHelper — Schema 辅助函数
+ * SchemaHelper — Schema utility functions.
  *
- * 提供 Schema 结构操作的常用辅助方法：
- *   isValidSchema、generateSchemaId、cloneSchema、flattenSchema、
- *   getFieldPaths、extractRequiredFields、compareSchemas、simplifySchema、
- *   isValidPropertyName、getSchemaComplexity、summarizeSchema
+ * Common helpers for JSON Schema structure manipulation:
+ *   isValidSchema, generateSchemaId, cloneSchema, flattenSchema,
+ *   getFieldPaths, extractRequiredFields, compareSchemas, simplifySchema,
+ *   isValidPropertyName, getSchemaComplexity, summarizeSchema
  */
 
 import type { JSONSchema } from '../types/schema.js'
 
 export class SchemaHelper {
   /**
-   * 检查是否为有效的 JSON Schema（至少包含 type/properties/items/$ref 之一）
+   * Check whether the value is a valid JSON Schema (must contain at least one of: type / properties / items / $ref).
    */
   static isValidSchema(schema: unknown): schema is JSONSchema {
     if (!schema || typeof schema !== 'object') return false
@@ -20,7 +20,7 @@ export class SchemaHelper {
   }
 
   /**
-   * 生成 Schema 的基于内容 hash 的唯一 ID
+   * Generate a content-hash-based unique ID for a schema.
    */
   static generateSchemaId(schema: JSONSchema): string {
     const str = JSON.stringify(schema)
@@ -34,15 +34,15 @@ export class SchemaHelper {
   }
 
   /**
-   * 深度克隆 Schema（通过 JSON 序列化，不处理 Function/RegExp 字段）
+   * Deep-clone a schema via JSON serialisation (Function/RegExp fields are not preserved).
    */
   static cloneSchema(schema: JSONSchema): JSONSchema {
     return JSON.parse(JSON.stringify(schema)) as JSONSchema
   }
 
   /**
-   * 扁平化嵌套 Schema 为点分隔路径形式
-   * @param prefix - 属性路径前缀
+   * Flatten a nested schema into dot-separated path form.
+   * @param prefix - Property path prefix.
    */
   static flattenSchema(schema: JSONSchema, prefix = ''): Record<string, JSONSchema> {
     const result: Record<string, JSONSchema> = {}
@@ -62,7 +62,7 @@ export class SchemaHelper {
   }
 
   /**
-   * 获取 Schema 中所有字段路径（含嵌套 object 和 array 路径）
+   * Get all field paths in a schema (including nested object and array paths).
    */
   static getFieldPaths(schema: JSONSchema): string[] {
     const paths: string[] = []
@@ -86,7 +86,7 @@ export class SchemaHelper {
   }
 
   /**
-   * 提取 Schema 中所有 required 字段（含嵌套路径）
+   * Extract all required fields from a schema (including nested paths).
    */
   static extractRequiredFields(schema: JSONSchema): string[] {
     const required: string[] = []
@@ -111,14 +111,14 @@ export class SchemaHelper {
   }
 
   /**
-   * 浅比较两个 Schema 是否相等（JSON 序列化比较）
+   * Shallow-compare two schemas for equality (via JSON serialisation).
    */
   static compareSchemas(schema1: JSONSchema, schema2: JSONSchema): boolean {
     return JSON.stringify(schema1) === JSON.stringify(schema2)
   }
 
   /**
-   * 简化 Schema（移除 $schema、空 properties、空 required）
+   * Simplify a schema by removing $schema, empty properties, and empty required arrays.
    */
   static simplifySchema(schema: JSONSchema): JSONSchema {
     const simplified = this.cloneSchema(schema) as Record<string, unknown>
@@ -139,14 +139,14 @@ export class SchemaHelper {
   }
 
   /**
-   * 验证属性名是否合法（字母/数字/下划线/连字符，字母或下划线开头）
+   * Validate that a property name is legal (letters/digits/underscores/hyphens; must start with a letter or underscore).
    */
   static isValidPropertyName(name: string): boolean {
     return /^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(name)
   }
 
   /**
-   * 获取 Schema 的最大嵌套深度（复杂度）
+   * Get the maximum nesting depth (complexity) of a schema.
    */
   static getSchemaComplexity(schema: JSONSchema): number {
     let maxDepth = 0
@@ -169,7 +169,7 @@ export class SchemaHelper {
   }
 
   /**
-   * 生成 Schema 摘要信息
+   * Generate a summary of schema metadata.
    */
   static summarizeSchema(schema: JSONSchema): {
     type: string

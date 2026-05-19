@@ -1,18 +1,91 @@
-import { dsl } from '../../dist/index.js';
+import { dsl, validate } from '../../dist/index.js'
+
+// ============================================================
+// JSON Schema basics — toSchema() vs toJsonSchema()
+//
+// toSchema()     → returns the internal representation (may include
+//                  _label, _customMessages, etc.) — for library internals
+// toJsonSchema() → strips all private _* fields — for external consumers
+//                  (exporters, documentation, OpenAPI, etc.)
+// ============================================================
+
+// ============================================================
+// 1. Field-level difference
+// ============================================================
 
 const emailField = dsl('email!')
-  .label('邮箱')
-  .description('主要联系邮箱')
-  .error({ required: '邮箱必填' });
+  .label('Email Address')
+  .description('Primary contact email')
+  .error({ required: 'Email is required' })
 
-const rawFieldSchema = (emailField as any).toSchema() as any;
-const cleanFieldSchema = emailField.toJsonSchema() as any;
-const objectSchema = dsl({
-  email: emailField,
-  age: dsl('number:18-100').label('年龄')
-}) as any;
+const rawFieldSchema    = (emailField as any).toSchema() as any
+const cleanFieldSchema  = emailField.toJsonSchema() as any
 
-console.log('json-schema-basics.raw.internal =', ['_label', '_customMessages', '_description'].some(key => key in rawFieldSchema));
-console.log('json-schema-basics.clean.internal =', ['_label', '_customMessages', '_description'].some(key => key in cleanFieldSchema));
-console.log('json-schema-basics.object.type =', objectSchema.type);
-console.log('json-schema-basics.object.required =', objectSchema.required.join(','));
+// Raw keeps internal tracking fields
+console.log('json-schema-basics.raw.label    =', rawFieldSchema._label)          // 'Email Address'
+console.log('json-schema-basics.raw.messages =', typeof rawFieldSchema._customMessages)  // 'object'
+
+// Clean has no private keys
+const privateKeys = ['_label', '_customMessages', '_description']
+console.log('json-schema-basics.clean.pure   =',
+  privateKeys.every(k => !(k in cleanFieldSchema)))   // true
+
+// Standard JSON Schema properties are present in both
+console.log('json-schema-basics.clean.type   =', cleanFieldSchema.type)         // 'string'
+console.log('json-schema-basics.clean.format =', cleanFieldSchema.format)       // 'email'
+console.log('json-schema-basics.clean.desc   =', cleanFieldSchema.description)  // 'Primary contact email'
+
+// ============================================================
+// 2. Object schema — required array and properties
+// ============================================================
+
+const userSchema = dsl({
+  email: dsl('email!').label('Email'),
+  age:   dsl('integer:18-100').label('Age'),
+  bio:   dsl('string:500').label('Bio'),
+}) as any
+
+console.log('json-schema-basics.obj.type     =', userSchema.type)            // 'object'
+console.log('json-schema-basics.obj.required =',
+  (userSchema.required as string[]).sort().join(','))                          // 'email'
+console.log('json-schema-basics.obj.keys     =',
+  Object.keys(userSchema.properties ?? {}).sort().join(','))                   // 'age,bio,email'
+
+// ============================================================
+// 3. Primitive string schema structure
+// ============================================================
+
+const usernameSchema = dsl('string:3-32!').toJsonSchema() as any
+
+console.log('json-schema-basics.str.type     =', usernameSchema.type)         // 'string'
+console.log('json-schema-basics.str.minLen   =', usernameSchema.minLength)    // 3
+console.log('json-schema-basics.str.maxLen   =', usernameSchema.maxLength)    // 32
+
+// ============================================================
+// 4. Number/integer schema structure
+// ============================================================
+
+const ageSchema = dsl('integer:0-150').toJsonSchema() as any
+
+console.log('json-schema-basics.int.type     =', ageSchema.type)   // 'integer'
+console.log('json-schema-basics.int.min      =', ageSchema.minimum) // 0
+console.log('json-schema-basics.int.max      =', ageSchema.maximum) // 150
+
+// ============================================================
+// 5. Array schema structure
+// ============================================================
+
+const tagsSchema = dsl('array<string:1-50>').toJsonSchema() as any
+
+console.log('json-schema-basics.arr.type     =', tagsSchema.type)             // 'array'
+console.log('json-schema-basics.arr.items    =', tagsSchema.items?.type)      // 'string'
+
+// ============================================================
+// 6. Validation works with either the builder or the JSON Schema
+// ============================================================
+
+const r1 = validate(emailField, 'hello@example.com')
+const r2 = validate(cleanFieldSchema, 'hello@example.com')
+
+console.log('json-schema-basics.validate.builder =', r1.valid)      // true
+console.log('json-schema-basics.validate.schema  =', r2.valid)      // true

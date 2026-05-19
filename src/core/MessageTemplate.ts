@@ -1,9 +1,9 @@
 import { renderTemplate } from './TemplateEngine.js'
 
 /**
- * 消息模板类
- * 委托 TemplateEngine.renderTemplate() 实现（修复 CORE-03）
- * 保持 v1 API 完全兼容（constructor + render + static render + static renderBatch）
+ * MessageTemplate — wraps a template string for rendering.
+ * Delegates to TemplateEngine.renderTemplate() (fix CORE-03).
+ * Maintains full v1 API compatibility (constructor + render + static render + static renderBatch).
  */
 export class MessageTemplate {
   private readonly template: string
@@ -13,21 +13,21 @@ export class MessageTemplate {
   }
 
   /**
-   * 渲染模板
+   * Render the template with the given context.
    */
   render(context: Record<string, unknown> = {}): string {
     return renderTemplate(this.template, context)
   }
 
   /**
-   * 静态快速渲染
+   * Statically render a template string with the given context.
    */
   static render(template: string, context: Record<string, unknown> = {}): string {
     return renderTemplate(template, context)
   }
 
   /**
-   * 批量渲染
+   * Statically render multiple templates in batch.
    */
   static renderBatch(
     templates: Record<string, string>,

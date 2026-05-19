@@ -1,5 +1,5 @@
 /**
- * src/exporters/index.ts — 导出器统一导出
+ * src/exporters/index.ts — Unified re-export for all exporters
  */
 
 export { BaseExporter } from './BaseExporter.js'

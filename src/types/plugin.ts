@@ -1,5 +1,5 @@
 /**
- * 内置钩子名称（管线执行阶段）
+ * Built-in hook names (pipeline execution phases).
  */
 export type HookName =
   | 'beforeParse'
@@ -11,48 +11,48 @@ export type HookName =
   | 'onError'
 
 /**
- * 钩子函数类型（支持任意参数，兼容 v1 自定义钩子名称）
+ * Hook function type (accepts arbitrary arguments; compatible with v1 custom hook names).
  */
 export type HookFn = (...args: unknown[]) => unknown | Promise<unknown>
 
 /**
- * 钩子上下文（内置钩子传递）
+ * Hook context (passed to built-in hooks).
  */
 export interface HookContext {
-  /** 当前钩子阶段 */
+  /** Current hook phase. */
   hook: HookName
-  /** 操作的数据 */
+  /** Data being processed. */
   data?: unknown
-  /** DSL 定义 */
+  /** DSL definition. */
   schema?: unknown
-  /** 附加元数据 */
+  /** Additional metadata. */
   meta?: Record<string, unknown>
 }
 
 /**
- * 插件接口（向后兼容 v1）
+ * Plugin interface (backwards-compatible with v1).
  */
 export interface Plugin {
-  /** 插件名称 */
+  /** Plugin name. */
   name: string
-  /** 插件版本 */
+  /** Plugin version. */
   version?: string
-  /** 插件描述 */
+  /** Plugin description. */
   description?: string
-  /** 插件选项（传入 install 的第二参数）*/
+  /** Plugin options (passed as the second argument to install). */
   options?: Record<string, unknown>
-  /** 插件钩子映射（支持任意钩子名称，兼容 v1）*/
+  /** Plugin hook map (supports arbitrary hook names for v1 compatibility). */
   hooks?: Record<string, HookFn>
-  /** 安装方法 */
+  /** Install method. */
   install?(core: unknown, options?: unknown, context?: unknown): void
-  /** 卸载方法（可选）*/
+  /** Uninstall method (optional). */
   uninstall?(core?: unknown, context?: unknown): void
 }
 
 /**
- * PluginManager 配置
+ * PluginManager configuration.
  */
 export interface PluginManagerOptions {
-  /** 是否异步执行钩子（默认 true）*/
+  /** Whether hooks are executed asynchronously (default true). */
   async?: boolean
 }

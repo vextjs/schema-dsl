@@ -7,16 +7,18 @@ type ValidateFnWithErrors = ((schema: unknown, data: unknown, parentSchema?: unk
 }
 
 /**
- * CustomKeywords — AJV 自定义关键字注册器
+ * CustomKeywords — AJV custom keyword registrar
  *
- * 修复：
- *   CK-01: 内部统一使用 getMessageText() 获取字符串，避免 v1 兼容对象形态落成 "[object Object]"
- *   CK-02: regex 关键字错误消息使用 locale key 而非拼接原始消息
- *   CK-Y04: exactLength 使用 Unicode 码点计数（[...str].length）而非 str.length，正确处理 emoji/汉字
+ * Fixes:
+ *   CK-01: internally uses getMessageText() to obtain strings, avoiding v1 compat objects
+ *          that serialized as "[object Object]"
+ *   CK-02: regex keyword error messages use locale keys instead of concatenating raw messages
+ *   CK-Y04: exactLength uses Unicode code-point counting ([...str].length) instead of
+ *           str.length, correctly handling emoji and multi-byte characters
  */
 export class CustomKeywords {
   /**
-   * 注册所有自定义关键字到 AJV 实例
+   * Register all custom keywords on an AJV instance
    */
   static registerAll(ajv: Ajv): void {
     CustomKeywords.registerRegexKeyword(ajv)
@@ -31,7 +33,7 @@ export class CustomKeywords {
     CustomKeywords.registerDateValidators(ajv)
   }
 
-  // ─── 元数据关键字 ────────────────────────────────────────────────────────
+  // ─── Metadata keywords ──────────────────────────────────────────────────
 
   static registerMetadataKeywords(ajv: Ajv): void {
     ajv.addKeyword({ keyword: '_label', metaSchema: { type: 'string' } })
@@ -39,7 +41,7 @@ export class CustomKeywords {
     ajv.addKeyword({ keyword: '_description', metaSchema: { type: 'string' } })
     ajv.addKeyword({ keyword: '_whenConditions', metaSchema: { type: 'array' } })
     ajv.addKeyword({ keyword: '_required', metaSchema: { type: 'boolean' } })
-    // 条件 schema 标记：防止 AJV strict 模式抛 unknown keyword 错误
+    // Conditional schema marker: prevents AJV strict mode from throwing an unknown-keyword error
     ajv.addKeyword({ keyword: '_isConditional', metaSchema: { type: 'boolean' } })
     ajv.addKeyword({ keyword: 'conditions' })
     ajv.addKeyword({ keyword: '_evaluateCondition' })
@@ -57,9 +59,14 @@ export class CustomKeywords {
           const result = (validator as (d: unknown) => unknown)(data)
 
           if (result instanceof Promise) {
-            // CK-01 修复：getMessage 返回 string
-            const msg = Locale.getMessageText('ASYNC_VALIDATION_NOT_SUPPORTED')
-            throw new Error(msg)
+            // BC-6: async validators are not supported in the synchronous AJV validate() path.
+            // Return an explicit error so callers know to use validateAsync() instead.
+            validate.errors = [{
+              keyword: '_customValidators',
+              message: 'Async validation not supported in sync validate(). Use validateAsync() instead.',
+              params: {},
+            }]
+            return false
           }
 
           if (result === false) {
@@ -95,7 +102,7 @@ export class CustomKeywords {
       try {
         const regex = new RegExp(String(schema))
         if (regex.test(String(data))) return true
-        // CK-02 修复：使用 locale key 而非拼接原始错误消息
+        // CK-02 fix: use locale key instead of concatenating raw error message
         validate.errors = [{
           keyword: 'regex',
           message: Locale.getMessageText('string.pattern'),
@@ -103,7 +110,7 @@ export class CustomKeywords {
         }]
         return false
       } catch (error) {
-        // CK-02 修复：Invalid regex 也使用 locale key
+        // CK-02 fix: invalid regex also uses locale key
         validate.errors = [{
           keyword: 'regex',
           message: Locale.getMessageText('string.pattern'),
@@ -116,7 +123,7 @@ export class CustomKeywords {
     ajv.addKeyword({ keyword: 'regex', type: 'string', schemaType: 'string', validate, errors: true })
   }
 
-  // ─── validate（函数验证）─────────────────────────────────────────────────
+  // ─── validate (function validator) ──────────────────────────────────────
 
   static registerFunctionKeyword(ajv: Ajv): void {
     const validate: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
@@ -180,12 +187,12 @@ export class CustomKeywords {
     ajv.addKeyword({ keyword: 'range', type: 'number', schemaType: 'object', validate, errors: true })
   }
 
-  // ─── String 验证器 ────────────────────────────────────────────────────────
+  // ─── String validators ───────────────────────────────────────────────────
 
   static registerStringValidators(ajv: Ajv): void {
-    // exactLength — 精确长度（CK-Y04 修复：Unicode 码点计数）
+    // exactLength — exact string length (CK-Y04 fix: Unicode code-point counting)
     const exactLength: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
-      // CK-Y04: 使用 spread 迭代器计数，正确处理 emoji / 多字节 Unicode
+      // CK-Y04: use spread iterator for counting — correctly handles emoji / multi-byte Unicode
       const codePointLength = [...String(data)].length
       if (codePointLength !== Number(schema)) {
         exactLength.errors = [{
@@ -257,10 +264,10 @@ export class CustomKeywords {
     ajv.addKeyword({ keyword: 'jsonString', type: 'string', schemaType: 'boolean', validate: jsonString, errors: true })
   }
 
-  // ─── Number 验证器 ────────────────────────────────────────────────────────
+  // ─── Number validators ───────────────────────────────────────────────────
 
   static registerNumberValidators(ajv: Ajv): void {
-    // precision — 小数位数限制
+    // precision — decimal place limit
     const precision: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const decimalPart = String(data as number).split('.')[1]
       const actualPrecision = decimalPart ? decimalPart.length : 0
@@ -272,7 +279,7 @@ export class CustomKeywords {
     }
     ajv.addKeyword({ keyword: 'precision', type: 'number', schemaType: 'number', validate: precision, errors: true })
 
-    // port — 端口号验证（1-65535）
+    // port — port number validation (1-65535)
     const port: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const num = data as number
       if (schema && (!Number.isInteger(num) || num < 1 || num > 65535)) {
@@ -284,10 +291,10 @@ export class CustomKeywords {
     ajv.addKeyword({ keyword: 'port', type: ['integer', 'number'], schemaType: 'boolean', validate: port, errors: true })
   }
 
-  // ─── Object 验证器 ───────────────────────────────────────────────────────
+  // ─── Object validators ──────────────────────────────────────────────────
 
   static registerObjectValidators(ajv: Ajv): void {
-    // requiredAll — 要求所有定义的属性都存在
+    // requiredAll — require all defined properties to be present
     const requiredAll: ValidateFnWithErrors = (schema: unknown, data: unknown, parentSchema?: unknown): boolean => {
       if (!schema) return true
       const props = ((parentSchema as Record<string, unknown>)?.['properties'] as Record<string, unknown>) ?? {}
@@ -304,7 +311,7 @@ export class CustomKeywords {
     }
     ajv.addKeyword({ keyword: 'requiredAll', type: 'object', schemaType: 'boolean', validate: requiredAll, errors: true })
 
-    // strictSchema — 不允许额外属性
+    // strictSchema — disallow extra properties
     const strictSchema: ValidateFnWithErrors = (schema: unknown, data: unknown, parentSchema?: unknown): boolean => {
       if (!schema) return true
       const props = ((parentSchema as Record<string, unknown>)?.['properties'] as Record<string, unknown>) ?? {}
@@ -323,10 +330,10 @@ export class CustomKeywords {
     ajv.addKeyword({ keyword: 'strictSchema', type: 'object', schemaType: 'boolean', validate: strictSchema, errors: true })
   }
 
-  // ─── Array 验证器 ────────────────────────────────────────────────────────
+  // ─── Array validators ───────────────────────────────────────────────────
 
   static registerArrayValidators(ajv: Ajv): void {
-    // noSparse — 不允许稀疏数组
+    // noSparse — disallow sparse arrays
     const noSparse: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const arr = data as unknown[]
       if (schema) {
@@ -345,7 +352,7 @@ export class CustomKeywords {
     }
     ajv.addKeyword({ keyword: 'noSparse', type: 'array', schemaType: 'boolean', validate: noSparse, errors: true })
 
-    // includesRequired — 必须包含指定元素
+    // includesRequired — must include specified elements
     const includesRequired: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       if (!Array.isArray(schema) || schema.length === 0) return true
       const arr = data as unknown[]
@@ -370,7 +377,7 @@ export class CustomKeywords {
     ajv.addKeyword({ keyword: 'includesRequired', type: 'array', schemaType: 'array', validate: includesRequired, errors: true })
   }
 
-  // ─── Date 验证器 ─────────────────────────────────────────────────────────
+  // ─── Date validators ────────────────────────────────────────────────────
 
   static registerDateValidators(ajv: Ajv): void {
     const DATE_FORMATS: Record<string, RegExp> = {
@@ -378,7 +385,7 @@ export class CustomKeywords {
       'YYYY/MM/DD': /^\d{4}\/\d{2}\/\d{2}$/,
       'DD-MM-YYYY': /^\d{2}-\d{2}-\d{4}$/,
       'DD/MM/YYYY': /^\d{2}\/\d{2}\/\d{4}$/,
-      'ISO8601':    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/,
+      'ISO8601': /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/,
     }
 
     // dateFormat

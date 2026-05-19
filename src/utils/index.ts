@@ -1,5 +1,5 @@
 /**
- * src/utils/index.ts — 工具库统一导出
+ * src/utils/index.ts — Utility library unified exports.
  */
 
 export { TypeConverter } from './TypeConverter.js'

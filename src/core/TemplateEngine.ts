@@ -1,20 +1,22 @@
 /**
- * 统一模板引擎
+ * Unified template engine.
  *
- * 合并 v1 MessageTemplate.render() 与 ErrorFormatter._interpolate() 两套逻辑，
- * 修复 CORE-03 模板注入漏洞（单次替换，避免替换结果被二次展开）。
+ * Merges the two rendering implementations from v1 — MessageTemplate.render() and
+ * ErrorFormatter._interpolate() — into a single pipeline.
+ * Fixes the CORE-03 template injection vulnerability (single-pass replacement so that
+ * substituted values are never expanded a second time).
  *
- * 支持两种占位符格式：
- *   {{#key}}  ← v1 locale 文件全部使用此格式，必须兼容
- *   {key}     ← v2 新增消息模板推荐格式
+ * Supports two placeholder formats:
+ *   {{#key}}  ← all v1 locale files use this format (must remain compatible)
+ *   {key}     ← recommended format for v2 message templates
  */
 
 /**
- * 渲染模板字符串，将占位符替换为 params 中对应的值。
+ * Render a template string by replacing placeholders with corresponding values from params.
  *
- * @param template - 模板字符串，如 "{{#label}} 长度必须至少 {{#min}} 个字符"
- * @param params   - 替换参数对象
- * @returns        渲染后的字符串；无对应 key 时原样保留占位符（便于调试）
+ * @param template - Template string, e.g. "{{#label}} must be at least {{#min}} characters"
+ * @param params   - Substitution parameter object
+ * @returns          Rendered string; placeholders with no matching key are kept as-is (aids debugging)
  *
  * @example
  * renderTemplate('{{#label}} is required', { label: 'Email' })
@@ -24,8 +26,8 @@
  * // → 'age must be 18~65'
  */
 export function renderTemplate(template: string, params: Record<string, unknown>): string {
-  // 使用单次 replace 遍历，避免替换后的值被二次展开（CORE-03 修复）
-  // 正则匹配两种格式：{{#key}} 和 {key}
+  // Single-pass replace — prevents substituted values from being expanded again (CORE-03 fix)
+  // Regex matches both formats: {{#key}} and {key}
   return template.replace(/\{\{#([^}]+)\}\}|\{([^}]+)\}/g, (match, k1: string | undefined, k2: string | undefined) => {
     const key = k1 ?? k2
     if (key !== undefined && key in params) {
@@ -37,6 +39,6 @@ export function renderTemplate(template: string, params: Record<string, unknown>
       if (val instanceof Date) return val.toISOString()
       return String(val)
     }
-    return match // 无对应 key 时原样保留
+    return match // No matching key — keep placeholder as-is
   })
 }

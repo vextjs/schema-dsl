@@ -1,25 +1,25 @@
 /**
- * TypeConverter — Schema 类型转换工具（静态方法集合）
+ * TypeConverter — Schema type conversion utilities (static methods).
  *
- * 将 JSON Schema 类型映射到目标格式类型：
+ * Maps JSON Schema types to target-format types:
  *   - JSON Schema type
  *   - MongoDB BSON type
  *   - MySQL column type
  *   - PostgreSQL column type
  *
- * 以及格式辅助方法：normalizePropertyName、formatToRegex、mergeSchemas、extractConstraints
+ * Also includes format helpers: normalizePropertyName, formatToRegex, mergeSchemas, extractConstraints.
  */
 
 import type { JSONSchema } from '../types/schema.js'
 
-// ==================== 类型别名 ====================
+// ==================== Type aliases ====================
 
 export type JSType = string | string[]
 
 // ==================== TypeConverter ====================
 
 export class TypeConverter {
-  // ========== JSON Schema 类型 ==========
+  // ========== JSON Schema types ==========
 
   static toJSONSchemaType(nativeType: string): string {
     const mapping: Record<string, string> = {
@@ -40,7 +40,7 @@ export class TypeConverter {
     return mapping[nativeType.toLowerCase()] ?? 'string'
   }
 
-  // ========== MongoDB 类型 ==========
+  // ========== MongoDB types ==========
 
   static toMongoDBType(jsonSchemaType: JSType): string {
     const t = Array.isArray(jsonSchemaType) ? jsonSchemaType[0] : jsonSchemaType
@@ -56,7 +56,7 @@ export class TypeConverter {
     return mapping[String(t).toLowerCase()] ?? 'string'
   }
 
-  // ========== MySQL 类型 ==========
+  // ========== MySQL types ==========
 
   static toMySQLType(jsonSchemaType: JSType, schema?: JSONSchema): string {
     const t = Array.isArray(jsonSchemaType) ? jsonSchemaType[0] : jsonSchemaType
@@ -101,7 +101,7 @@ export class TypeConverter {
     }
   }
 
-  // ========== PostgreSQL 类型 ==========
+  // ========== PostgreSQL types ==========
 
   static toPostgreSQLType(jsonSchemaType: JSType, schema?: JSONSchema): string {
     const t = Array.isArray(jsonSchemaType) ? jsonSchemaType[0] : jsonSchemaType
@@ -133,7 +133,7 @@ export class TypeConverter {
     }
   }
 
-  // ========== 属性名规范化 ==========
+  // ========== Property name normalisation ==========
 
   static normalizePropertyName(name: string): string {
     return name
@@ -144,7 +144,7 @@ export class TypeConverter {
       .replace(/^_+|_+$/g, '')
   }
 
-  // ========== 格式转 RegExp ==========
+  // ========== Format → RegExp ==========
 
   static formatToRegex(format: string): RegExp | null {
     const formats: Record<string, RegExp> = {
@@ -160,7 +160,7 @@ export class TypeConverter {
     return formats[format] ?? null
   }
 
-  // ========== Schema 合并 ==========
+  // ========== Schema merging ==========
 
   static mergeSchemas(...schemas: JSONSchema[]): JSONSchema {
     const result: Record<string, unknown> = {}
@@ -184,7 +184,7 @@ export class TypeConverter {
     return result as JSONSchema
   }
 
-  // ========== 约束提取 ==========
+  // ========== Constraint extraction ==========
 
   static extractConstraints(schema: JSONSchema): Record<string, unknown> {
     const constraintKeys = [

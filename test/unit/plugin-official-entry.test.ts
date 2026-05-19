@@ -18,7 +18,7 @@ describe('官方插件入口兼容', () => {
   it('应该提供与 v1 一致的 custom-format 插件对象', () => {
     expect(customFormatPlugin.name).toBe('custom-format')
     expect(customFormatPlugin.version).toBe('2.0.0')
-    expect(customFormatPlugin.description).toContain('自定义格式验证插件')
+    expect(customFormatPlugin.description).toContain('Custom format validation plugin')
     expect(typeof customFormatPlugin.install).toBe('function')
     expect(typeof customFormatPlugin.uninstall).toBe('function')
     expect(typeof customFormatPlugin.addCustomFormats).toBe('function')

@@ -1,21 +1,22 @@
 /**
- * schema-dsl v2 — 主入口文件
+ * schema-dsl v2 — main entry point
  *
- * 修复 IX-01：VERSION 从 package.json 动态读取，不再硬编码
+ * Fix IX-01: VERSION is read dynamically from package.json instead of being hard-coded
  *
  * @module schema-dsl
  * @version 2.0.0
  */
 
-// ==================== 版本（修复 IX-01）====================
+// ==================== Version (fix IX-01) ====================
 import pkg from '../package.json' with { type: 'json' }
 export const VERSION: string = (pkg as { version: string }).version
 
-// ==================== 核心类 ====================
+// ==================== Core classes ====================
 export { Validator } from './core/Validator.js'
 export { JSONSchemaCore } from './core/JSONSchemaCore.js'
 export { DslBuilder } from './core/DslBuilder.js'
 export { ConditionalBuilder } from './core/ConditionalBuilder.js'
+export { ObjectDslBuilder } from './core/ObjectDslBuilder.js'
 export { Locale } from './core/Locale.js'
 export { CacheManager } from './core/CacheManager.js'
 export { ErrorFormatter } from './core/ErrorFormatter.js'
@@ -23,23 +24,23 @@ export { MessageTemplate } from './core/MessageTemplate.js'
 export { renderTemplate } from './core/TemplateEngine.js'
 export { PluginManager } from './core/PluginManager.js'
 
-// ==================== 解析层 ====================
+// ==================== Parser layer ====================
 export { DslParser } from './parser/DslParser.js'
 export { TypeRegistry } from './parser/TypeRegistry.js'
 export { ConstraintParser } from './parser/ConstraintParser.js'
 export { SchemaCompiler } from './parser/SchemaCompiler.js'
 
-// ==================== 适配器层 ====================
+// ==================== Adapter layer ====================
 export { DslAdapter } from './adapters/DslAdapter.js'
 
-// ==================== 错误类 ====================
+// ==================== Error classes ====================
 export { ValidationError } from './errors/ValidationError.js'
 export { I18nError } from './errors/I18nError.js'
 
-// ==================== String 扩展 ====================
+// ==================== String extensions ====================
 export { uninstallStringExtensions } from './core/StringExtensions.js'
 
-// ==================== 导出器 ====================
+// ==================== Exporters ====================
 export {
   BaseExporter,
   MongoDBExporter,
@@ -48,18 +49,18 @@ export {
   MarkdownExporter,
 } from './exporters/index.js'
 
-// ==================== 工具类 ====================
+// ==================== Utilities ====================
 export { TypeConverter, SchemaHelper, SchemaUtils } from './utils/index.js'
 
-// ==================== 验证器扩展 ====================
+// ==================== Validator extensions ====================
 export { CustomKeywords } from './validators/CustomKeywords.js'
 
-// ==================== 常量 ====================
+// ==================== Constants ====================
 export { VALIDATION, CACHE, FORMATS, PATTERN_IPV4, PATTERN_IPV6 } from './config/constants.js'
 export { ErrorCodes } from './core/ErrorCodes.js'
 export { PATTERNS } from './config/patterns.js'
 
-// ==================== 类型导出 ====================
+// ==================== Type exports ====================
 export type { JSONSchema } from './types/schema.js'
 
 export type {
@@ -91,7 +92,7 @@ export type {
   MarkdownExporterOptions,
 } from './exporters/index.js'
 
-// ==================== dsl 函数（主 API）====================
+// ==================== dsl function (main API) ====================
 
 import { DslBuilder as _DslBuilder } from './core/DslBuilder.js'
 import { DslAdapter as _DslAdapter } from './adapters/DslAdapter.js'
@@ -119,23 +120,23 @@ export const exporters = _exporters
 // Import all default locales for automatic initialization
 import * as _locales from './locales/index.js'
 
-// Initialize default locales at module load time
-;(() => {
-  for (const [locale, messages] of Object.entries(_locales)) {
-    _Locale.addLocale(locale, messages as Record<string, string>)
-  }
-})()
+  // Initialize default locales at module load time
+  ; (() => {
+    for (const [locale, messages] of Object.entries(_locales)) {
+      _Locale.addLocale(locale, messages as Record<string, string>)
+    }
+  })()
 
 // ==================== smartCoerceTypes ====================
 
-// 性能优化 O5b：预计算 schema 的可转换字段候选列表
-// 避免 smartCoerceTypes 对整个 data 做 Object.keys() 再逐字段判断类型
-// 只迭代"可能需要转换"的字段（numbers/arrays/objects），减少循环次数
+// Perf O5b: pre-compute the set of coercible field candidates for a schema
+// Avoids scanning all keys of `data` on every smartCoerceTypes call.
+// Only iterates fields that may need coercion (numbers/arrays/objects).
 type _CoerceCandidates = {
-  numbers: string[]   // type: 'number' | 'integer' 字段
-  arrays: string[]    // items.type: 'number' 的数组字段
-  objects: Array<{ key: string; schema: _JSONSchema }>   // 含 properties 的嵌套对象
-} | null   // null = 无可转换字段
+  numbers: string[]   // fields with type: 'number' | 'integer'
+  arrays: string[]    // array fields whose items.type is 'number'
+  objects: Array<{ key: string; schema: _JSONSchema }>   // nested objects with properties
+} | null   // null = no coercible fields
 
 const _coerceCandidatesCache = new WeakMap<object, _CoerceCandidates>()
 
@@ -180,10 +181,10 @@ function smartCoerceTypes(data: unknown, schema: _JSONSchema): unknown {
     return data.map(item => smartCoerceTypes(item, schema))
   }
 
-  // O5b：用预计算候选列表替代 Object.keys(data) 遍历
-  // 只处理 schema 中已知可能需要转换的字段，避免无效迭代
+  // O5b: use pre-computed candidate list instead of Object.keys(data) scan
+  // Only processes fields known to potentially need coercion
   const candidates = _getCoerceCandidates(schema)
-  if (!candidates) return data   // 快速路径：无可转换字段
+  if (!candidates) return data   // fast path: no coercible fields
 
   let result: Record<string, unknown> | null = null
   const src = data as Record<string, unknown>
@@ -231,10 +232,10 @@ function smartCoerceTypes(data: unknown, schema: _JSONSchema): unknown {
     }
   }
 
-  return result ?? data   // 无转换时原样返回（零拷贝）
+  return result ?? data   // return original when no conversion needed (zero-copy)
 }
 
-// ==================== 顶层 schema 归一化（raw DSL object 支持）====================
+// ==================== Top-level schema normalization (raw DSL object support) ====================
 
 const _JSON_SCHEMA_TYPES = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'])
 
@@ -269,8 +270,8 @@ function _isDslObject(schema: unknown): schema is _DslDefinition {
   return !_isRawJsonSchemaLike(obj)
 }
 
-// 性能优化 O6：缓存 _normalizeSchemaInput 结果（避免每次调用重复 _isDslObject 检查）
-// DslBuilder.toSchema() / DslAdapter.parseObject() 只在第一次调用时执行
+// Perf O6: cache _normalizeSchemaInput results to avoid re-running _isDslObject on each call
+// DslBuilder.toSchema() / DslAdapter.parseObject() executes only on the first call
 const _normalizeSchemaCache = new WeakMap<object, _JSONSchema>()
 
 function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuilder): _JSONSchema {
@@ -285,7 +286,7 @@ function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuild
   if (typeof obj['toSchema'] === 'function') {
     result = (obj['toSchema'] as () => _JSONSchema)()
   } else if (_isDslObject(schema)) {
-    result = _DslAdapter.parseObject(schema)
+    result = _DslAdapter.parseObject(schema).toSchema()
   } else {
     result = schema as _JSONSchema
   }
@@ -293,7 +294,7 @@ function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuild
   return result
 }
 
-// ==================== i18n 目录扫描 ====================
+// ==================== i18n locale directory scan ====================
 
 const _LOCALE_NAME_RE = /^[a-z]{2,3}(-[A-Z]{2,4})?$/
 const _LOCALE_REQUIRE_EXTENSIONS = new Set(['.js', '.cjs', '.json'])
@@ -450,7 +451,7 @@ function _dslConfig(options: Partial<_DslConfigOptions> = {}): void {
   }
 }
 
-// ==================== 默认 Validator 单例 ====================
+// ==================== Default Validator singleton ====================
 
 let _defaultValidator: InstanceType<typeof _Validator> | null = null
 
@@ -462,17 +463,17 @@ function _getDefaultValidator(): InstanceType<typeof _Validator> {
 export { _getDefaultValidator as getDefaultValidator }
 
 /**
- * 重置默认 Validator 单例（用于测试环境清理状态）
+ * Reset the default Validator singleton (useful for cleaning up state in test environments)
  */
 export function resetDefaultValidator(): void {
   _defaultValidator = null
 }
 
-// ==================== 便捷验证函数 ====================
+// ==================== Convenience validation functions ====================
 
 /**
- * 便捷验证函数（使用默认 Validator 单例）
- * 当 options.coerce !== false 时，自动进行字符串→数字类型转换
+ * Convenience validate function (uses the default Validator singleton).
+ * Automatically coerces string → number when options.coerce !== false.
  */
 export function validate<T = unknown>(
   schema: _JSONSchema | _DslDefinition | _IDslBuilder,
@@ -481,7 +482,7 @@ export function validate<T = unknown>(
 ): _ValidationResult<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = options['coerce'] !== false
-  // O5b：用候选字段缓存替代 _hasCoercibleFields + Object.keys 扫描
+  // O5b: use candidate-field cache instead of _hasCoercibleFields + Object.keys scan
   const coercedData = shouldCoerce && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
@@ -489,7 +490,7 @@ export function validate<T = unknown>(
 }
 
 /**
- * 便捷异步验证函数
+ * Convenience async validate function
  */
 export async function validateAsync<T = unknown>(
   schema: _JSONSchema | _DslDefinition | _IDslBuilder,
@@ -498,14 +499,14 @@ export async function validateAsync<T = unknown>(
 ): Promise<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = options['coerce'] !== false
-  // O5b：用候选字段缓存替代 _hasCoercibleFields + Object.keys 扫描
+  // O5b: use candidate-field cache instead of _hasCoercibleFields + Object.keys scan
   const coercedData = shouldCoerce && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
   return _getDefaultValidator().validateAsync(normalizedSchema, coercedData as T, options)
 }
 
-// ==================== dsl 主函数 ====================
+// ==================== dsl main function ====================
 
 // Core dsl function: string → IDslBuilder (chain), object definition → JSONSchema
 function _dslFn(def: string): _IDslBuilder
@@ -515,7 +516,7 @@ function _dslFn(def: unknown): _IDslBuilder | _JSONSchema {
   if (def === null || def === undefined || typeof def !== 'object' || Array.isArray(def)) {
     throw new Error('[schema-dsl] Invalid DSL definition: expected string or object')
   }
-  return _DslAdapter.parseObject(def as _DslDefinition)
+  return _DslAdapter.parseObject(def as _DslDefinition).toSchema() as _JSONSchema
 }
 
 // Namespace shape (mirrors DslFn interface in types/dsl.ts)
@@ -570,14 +571,14 @@ _dslWithNS.error = {
 }
 
 /**
- * dsl — 主 API 入口
+ * dsl — main API entry point
  *
  * @example
- * // 字符串 DSL → DslBuilder（链式）
- * const builder = dsl('email!').label('邮箱')
+ * // String DSL → DslBuilder (chainable)
+ * const builder = dsl('email!').label('Email address')
  *
  * @example
- * // 对象 DSL → JSON Schema
+ * // Object DSL → JSON Schema
  * const schema = dsl({ email: 'email!', name: 'string:2-32!' })
  */
 export const dsl = _dslWithNS

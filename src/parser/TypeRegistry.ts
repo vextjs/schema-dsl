@@ -1,24 +1,24 @@
 import type { JSONSchema } from '../types/schema.js'
 
 /**
- * 类型定义（TypeRegistry 中每个条目的结构）
+ * Type definition (structure of each entry in TypeRegistry)
  */
 export interface TypeDefinition {
-  /** 此类型的基础 JSON Schema 片段 */
+  /** Base JSON Schema fragment for this type */
   baseSchema: Partial<JSONSchema>
-  /** 关联的自定义消息（如 phone 类型的错误提示 key）*/
+  /** Custom messages associated with this type (e.g., error key for phone type) */
   customMessages?: Record<string, string>
-  /** 是否为内部类型（toJsonSchema 时 schema 层不清除，但 key 自身已是标准 JSON Schema 字段）*/
+  /** Whether this type uses a pattern (keys are standard JSON Schema fields, not stripped in toJsonSchema) */
   isPattern?: boolean
 }
 
-/** 已知内部 key 集合（toJsonSchema 时需从输出中清除）*/
+/** Known internal key set (stripped from output during toJsonSchema) */
 const INTERNAL_KEYS: ReadonlySet<string> = new Set([
   '_label',
   '_customMessages',
   '_description',
   '_required',
-  // 自定义 AJV keyword（不是标准 JSON Schema 字段，输出时清除）
+  // Custom AJV keywords (non-standard JSON Schema fields, stripped on output)
   'exactLength',
   'alphanum',
   'lowercase',
@@ -34,39 +34,39 @@ const INTERNAL_KEYS: ReadonlySet<string> = new Set([
   'dateGreater',
   'dateLess',
   'precision',
-  // ⚠️ multipleOf 是标准 JSON Schema 字段，不在此列（修复 DB-01）
+  // ⚠️ multipleOf is a standard JSON Schema field and is NOT in this list (fix DB-01)
 ])
 
 /**
- * 内置类型注册表
- * 33 个类型，覆盖 v1 DslAdapter.typeMap + DslBuilder 的类型列表（修复三处不一致 DB-02、DA-01）
+ * Built-in type registry
+ * 33 types covering v1 DslAdapter.typeMap + DslBuilder type lists (fixes inconsistencies DB-02, DA-01)
  */
 const BUILTIN_TYPES: Map<string, TypeDefinition> = new Map([
-  // --- 基本类型 ---
-  ['string',  { baseSchema: { type: 'string' } }],
-  ['number',  { baseSchema: { type: 'number' } }],
+  // --- Primitive types ---
+  ['string', { baseSchema: { type: 'string' } }],
+  ['number', { baseSchema: { type: 'number' } }],
   ['integer', { baseSchema: { type: 'integer' } }],
   ['boolean', { baseSchema: { type: 'boolean' } }],
-  ['object',  { baseSchema: { type: 'object' } }],
-  ['array',   { baseSchema: { type: 'array' } }],
-  ['null',    { baseSchema: { type: 'null' } }],
-  ['any',     { baseSchema: {} }],
+  ['object', { baseSchema: { type: 'object' } }],
+  ['array', { baseSchema: { type: 'array' } }],
+  ['null', { baseSchema: { type: 'null' } }],
+  ['any', { baseSchema: {} }],
 
-  // --- 格式类型 ---
-  ['email',    { baseSchema: { type: 'string', format: 'email' } }],
-  ['url',      { baseSchema: { type: 'string', format: 'uri' } }],
-  ['uri',      { baseSchema: { type: 'string', format: 'uri' } }],
-  ['uuid',     { baseSchema: { type: 'string', format: 'uuid' } }],
-  ['ipv4',     { baseSchema: { type: 'string', format: 'ipv4' } }],
-  ['ipv6',     { baseSchema: { type: 'string', format: 'ipv6' } }],
-  ['ip',       { baseSchema: { anyOf: [{ type: 'string', format: 'ipv4' }, { type: 'string', format: 'ipv6' }] } }],
+  // --- Format types ---
+  ['email', { baseSchema: { type: 'string', format: 'email' } }],
+  ['url', { baseSchema: { type: 'string', format: 'uri' } }],
+  ['uri', { baseSchema: { type: 'string', format: 'uri' } }],
+  ['uuid', { baseSchema: { type: 'string', format: 'uuid' } }],
+  ['ipv4', { baseSchema: { type: 'string', format: 'ipv4' } }],
+  ['ipv6', { baseSchema: { type: 'string', format: 'ipv6' } }],
+  ['ip', { baseSchema: { anyOf: [{ type: 'string', format: 'ipv4' }, { type: 'string', format: 'ipv6' }] } }],
   ['hostname', { baseSchema: { type: 'string', format: 'hostname' } }],
-  ['date',     { baseSchema: { type: 'string', format: 'date' } }],
+  ['date', { baseSchema: { type: 'string', format: 'date' } }],
   ['datetime', { baseSchema: { type: 'string', format: 'date-time' } }],
-  ['time',     { baseSchema: { type: 'string', format: 'time' } }],
+  ['time', { baseSchema: { type: 'string', format: 'time' } }],
 
-  // --- 特殊字符串类型 ---
-  ['binary',   { baseSchema: { type: 'string', contentEncoding: 'base64' } }],
+  // --- Special string types ---
+  ['binary', { baseSchema: { type: 'string', contentEncoding: 'base64' } }],
   ['objectId', { baseSchema: { type: 'string', pattern: '^[0-9a-fA-F]{24}$' }, customMessages: { pattern: 'pattern.objectId' } }],
   ['hexColor', { baseSchema: { type: 'string', pattern: '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$' }, customMessages: { pattern: 'pattern.hexColor' } }],
   ['macAddress', {
@@ -86,13 +86,13 @@ const BUILTIN_TYPES: Map<string, TypeDefinition> = new Map([
     customMessages: { pattern: 'pattern.cron' },
   }],
 
-  // --- slug（修复 DB-02：v1 DslAdapter 缺少 slug 类型定义）---
+  // --- slug (fix DB-02: v1 DslAdapter was missing slug type definition) ---
   ['slug', {
     baseSchema: { type: 'string', pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' },
     customMessages: { pattern: 'pattern.slug' },
   }],
 
-  // --- 中文相关 ---
+  // --- CJK / Chinese ---
   ['chineseName', {
     baseSchema: { type: 'string', pattern: '^[\\u4e00-\\u9fa5]{2,10}$' },
     customMessages: { pattern: 'chineseName' },
@@ -101,32 +101,32 @@ const BUILTIN_TYPES: Map<string, TypeDefinition> = new Map([
     baseSchema: { type: 'string', pattern: '^[\\u4e00-\\u9fa5]+$' },
   }],
 
-  // --- 域相关（由 CustomKeywords 处理，此处仅注册 baseSchema）---
+  // --- Domain-related (handled by CustomKeywords; only baseSchema registered here) ---
   ['emailDomain', { baseSchema: { type: 'string', format: 'email' } }],
 
-  // --- v1 扩展类型（DslBuilder v1.0.2）---
+  // --- v1 extension types (DslBuilder v1.0.2) ---
   ['alphanum', { baseSchema: { type: 'string', alphanum: true } }],
-  ['lower',    { baseSchema: { type: 'string', lowercase: true } }],
-  ['upper',    { baseSchema: { type: 'string', uppercase: true } }],
-  ['json',     { baseSchema: { type: 'string', jsonString: true } }],
-  ['port',     { baseSchema: { type: 'integer', port: true } }],
+  ['lower', { baseSchema: { type: 'string', lowercase: true } }],
+  ['upper', { baseSchema: { type: 'string', uppercase: true } }],
+  ['json', { baseSchema: { type: 'string', jsonString: true } }],
+  ['port', { baseSchema: { type: 'integer', port: true } }],
 ])
 
 /**
- * 自定义类型注册表（用户通过 registerType 注册）
+ * Custom type registry (populated via registerType)
  */
 const CUSTOM_TYPES: Map<string, TypeDefinition> = new Map()
 const DYNAMIC_TYPES: Map<string, () => JSONSchema> = new Map()
 
 /**
- * TypeRegistry — 统一类型注册与解析
+ * TypeRegistry — unified type registration and resolution
  *
- * 替代 v1 中三处不一致的类型列表（修复 DB-01/DB-02/DA-01）
+ * Replaces the three inconsistent type lists in v1 (fixes DB-01/DB-02/DA-01)
  */
 export const TypeRegistry = {
   /**
-   * 解析类型名称，返回对应 TypeDefinition
-   * 内置类型优先；自定义类型可覆盖内置（除基本类型外）
+   * Resolve a type name to its TypeDefinition.
+   * Built-in types take priority; custom types may override non-primitive built-ins.
    */
   resolve(typeName: string): TypeDefinition {
     // Dynamic types: call factory function each time
@@ -141,26 +141,26 @@ export const TypeRegistry = {
     const builtin = BUILTIN_TYPES.get(typeName)
     if (builtin) return builtin
 
-    // 未知类型：warn + fallback to string
+    // Unknown type: warn and fall back to string
     console.warn(`[schema-dsl] Unknown type "${typeName}", falling back to string`)
     return { baseSchema: { type: 'string' } }
   },
 
   /**
-   * 注册自定义类型（供 DslBuilder.registerType 委托）
+   * Register a custom type (delegated from DslBuilder.registerType)
    */
   register(name: string, def: TypeDefinition | Partial<JSONSchema>): void {
     if (!name || typeof name !== 'string') {
       throw new Error('[schema-dsl] TypeRegistry.register: name must be a non-empty string')
     }
-    // 允许直接传入 Partial<JSONSchema>，自动包装
+    // Accept a raw Partial<JSONSchema> and wrap it automatically
     const normalized: TypeDefinition =
       'baseSchema' in def ? (def as TypeDefinition) : { baseSchema: def as Partial<JSONSchema> }
     CUSTOM_TYPES.set(name, normalized)
   },
 
   /**
-   * 注册动态类型（工厂函数，每次 resolve 时重新调用）
+   * Register a dynamic type (factory function invoked on every resolve call)
    */
   registerDynamic(name: string, factory: () => JSONSchema): void {
     if (!name || typeof name !== 'string') {
@@ -170,7 +170,7 @@ export const TypeRegistry = {
   },
 
   /**
-   * 注销自定义类型
+   * Unregister a custom type
    */
   unregister(name: string): void {
     CUSTOM_TYPES.delete(name)
@@ -178,26 +178,44 @@ export const TypeRegistry = {
   },
 
   /**
-   * 检查类型是否已注册（内置或自定义）
+   * Check whether a type is registered (built-in or custom)
    */
   has(typeName: string): boolean {
     return BUILTIN_TYPES.has(typeName) || CUSTOM_TYPES.has(typeName) || DYNAMIC_TYPES.has(typeName)
   },
 
   /**
-   * 获取 internal key 集合（toJsonSchema 时用于清除非标准字段）
+   * Return an iterator over all registered types (built-in + custom; custom overrides same-name built-in)
+   * BC-4 compat: consumed by the DslAdapter.typeMap getter
+   */
+  entries(): IterableIterator<[string, TypeDefinition]> {
+    const merged: Map<string, TypeDefinition> = new Map([...BUILTIN_TYPES, ...CUSTOM_TYPES])
+    return merged.entries()
+  },
+
+  /**
+   * Return the internal key set (used to strip non-standard fields during toJsonSchema)
    */
   getInternalKeys(): ReadonlySet<string> {
     return INTERNAL_KEYS
   },
 
   /**
-   * 清除 schema 中的内部 key，返回纯净的 JSON Schema
+   * Strip internal keys from a schema and return a clean JSON Schema.
+   *
+   * Special case for exactLength: translated to standard minLength + maxLength
+   * instead of being stripped. This preserves v1 DslBuilder string:N behavior
+   * (output {minLength:N, maxLength:N}) while keeping AJV's exactLength Unicode
+   * code-point counting advantage internally (CK-Y04).
    */
   toJsonSchema(schema: JSONSchema): JSONSchema {
     const result: JSONSchema = {}
     for (const [k, v] of Object.entries(schema)) {
-      if (!INTERNAL_KEYS.has(k)) {
+      if (k === 'exactLength' && typeof v === 'number') {
+        // BC-compat: exactLength (AJV custom keyword) → standard JSON Schema minLength + maxLength
+        result.minLength = v
+        result.maxLength = v
+      } else if (!INTERNAL_KEYS.has(k)) {
         result[k] = v
       }
     }

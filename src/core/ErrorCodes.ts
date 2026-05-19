@@ -1,23 +1,23 @@
 import type { ErrorCodeMap } from '../types/error.js'
 
 /**
- * 错误码常量
- * 定义所有内置的错误码，供 ErrorFormatter 和 Locale 使用
+ * Error code constants.
+ * Defines all built-in error codes used by ErrorFormatter and Locale.
  */
 export const ErrorCodes: ErrorCodeMap = {
-  // 验证错误
+  // Validation errors
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   INVALID_SCHEMA: 'INVALID_SCHEMA',
-  // 配置错误
+  // Configuration errors
   INVALID_CONFIG: 'INVALID_CONFIG',
   INVALID_LOCALE: 'INVALID_LOCALE',
-  // 插件错误
+  // Plugin errors
   PLUGIN_INSTALL_ERROR: 'PLUGIN_INSTALL_ERROR',
   PLUGIN_NOT_FOUND: 'PLUGIN_NOT_FOUND',
 }
 
 /**
- * 错误类型 → 简短 code 映射（用于 AJV keyword 映射到 schema-dsl 简写）
+ * Error type → short code mapping (maps AJV keywords to schema-dsl shorthand).
  */
 export const KEYWORD_MAP: Record<string, string> = {
   minLength: 'min',

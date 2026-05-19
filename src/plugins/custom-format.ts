@@ -101,7 +101,7 @@ export const customFormatPlugin: Plugin & {
 } = {
   name: 'custom-format',
   version: '2.0.0',
-  description: '自定义格式验证插件（支持DSL类型注册）',
+  description: 'Custom format validation plugin (with DSL type registration)',
   install(core, _options = {}, _context) {
     const ajv = getAjvLike(core)
     const dslBuilder = getDslBuilderLike(core)

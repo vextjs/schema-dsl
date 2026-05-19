@@ -1,15 +1,15 @@
 /**
- * MongoDBExporter — 将 JSON Schema 导出为 MongoDB $jsonSchema 验证 Schema
+ * MongoDBExporter — Export JSON Schema as a MongoDB $jsonSchema validation schema.
  */
 
 import type { JSONSchema } from '../types/schema.js'
 import { BaseExporter, type ExporterOptions } from './BaseExporter.js'
 import { TypeConverter } from '../utils/TypeConverter.js'
 
-// ==================== 类型定义 ====================
+// ==================== Type definitions ====================
 
 export interface MongoDBExporterOptions extends ExporterOptions {
-  /** 是否严格模式（validationLevel: 'strict' vs 'moderate'） */
+  /** Whether to use strict mode (validationLevel: 'strict' vs 'moderate'). */
   strict: boolean
 }
 
@@ -34,7 +34,7 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
   }
 
   /**
-   * 将 JSON Schema 转换为 MongoDB $jsonSchema 验证 Schema
+   * Convert a JSON Schema to a MongoDB $jsonSchema validation schema.
    */
   export(jsonSchema: unknown): MongoDBValidationSchema {
     if (!jsonSchema || typeof jsonSchema !== 'object') {
@@ -45,7 +45,7 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
   }
 
   /**
-   * 生成 db.createCollection() 命令对象
+   * Generate a db.createCollection() command object.
    */
   generateCreateCommand(collectionName: string, jsonSchema: JSONSchema): MongoDBCreateCommand {
     const validationSchema = this.export(jsonSchema)
@@ -60,7 +60,7 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
   }
 
   /**
-   * 生成可执行的 MongoDB 命令字符串
+   * Generate an executable MongoDB command string.
    */
   generateCommand(collectionName: string, jsonSchema: JSONSchema): string {
     const command = this.generateCreateCommand(collectionName, jsonSchema)
@@ -68,13 +68,13 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
   }
 
   /**
-   * 静态快速导出
+   * Static quick-export shorthand.
    */
   static export(jsonSchema: JSONSchema): MongoDBValidationSchema {
     return new MongoDBExporter().export(jsonSchema)
   }
 
-  // ==================== 私有方法 ====================
+  // ==================== Private methods ====================
 
   private _convertSchema(schema: JSONSchema): Record<string, unknown> {
     const result: Record<string, unknown> = {}
@@ -98,23 +98,23 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
       result['items'] = this._convertSchema(schema.items as JSONSchema)
     }
 
-    // 字符串约束
+    // String constraints
     if (schema.minLength !== undefined) result['minLength'] = schema.minLength
     if (schema.maxLength !== undefined) result['maxLength'] = schema.maxLength
     if (schema.pattern) result['pattern'] = schema.pattern
 
-    // 数值约束
+    // Numeric constraints
     if (schema.minimum !== undefined) result['minimum'] = schema.minimum
     if (schema.maximum !== undefined) result['maximum'] = schema.maximum
 
-    // 数组约束
+    // Array constraints
     if (schema.minItems !== undefined) result['minItems'] = schema.minItems
     if (schema.maxItems !== undefined) result['maxItems'] = schema.maxItems
 
-    // 枚举
+    // Enum
     if (schema.enum) result['enum'] = schema.enum
 
-    // 描述
+    // Description
     if (schema.description) result['description'] = schema.description
 
     return result

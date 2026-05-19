@@ -2,38 +2,38 @@ import { EventEmitter } from 'node:events'
 import type { Plugin, HookName, HookFn } from '../types/plugin.js'
 
 /**
- * PluginManager — 插件注册与钩子执行
+ * PluginManager — plugin registration and hook execution.
  *
- * v1 完全兼容 API：
- *   - hooks        : 公开的钩子 Map，支持任意钩子名称
- *   - EventEmitter 兼容：on / once / off / emit / removeListener / removeAllListeners
- *   - unhook(name, fn): 移除指定钩子
- *   - runHook(name, ...args): 传入任意参数，收集返回值
- *   - install(core, name?, opts?): 支持按名称 + 选项安装单个插件
- *   - install / uninstall 透传 context
- *   - has / get / list / clear / size / uninstall（别名）
+ * Full v1 compatible API:
+ *   - hooks        : public hooks Map; supports any hook name
+ *   - EventEmitter compat: on / once / off / emit / removeListener / removeAllListeners
+ *   - unhook(name, fn): remove a specific hook handler
+ *   - runHook(name, ...args): pass arbitrary args, collect return values
+ *   - install(core, name?, opts?): supports named + options install for a single plugin
+ *   - install / uninstall pass through context
+ *   - has / get / list / clear / size / uninstall (alias)
  */
 export class PluginManager extends EventEmitter {
   readonly plugins: Map<string, Plugin> = new Map()
 
   /**
-   * 公开钩子 Map（v1 compat: pluginManager.hooks.get('hookName')）
-   * 支持任意字符串名称，不限于内置 HookName
+   * Public hooks Map (v1 compat: pluginManager.hooks.get('hookName')).
+   * Supports any string name, not limited to built-in HookName values.
    */
   readonly hooks: Map<string, Array<HookFn>> = new Map()
 
-  /** v1 兼容上下文（供插件 install / uninstall 使用） */
+  /** v1 compat context (passed to plugin install / uninstall). */
   readonly context: { plugins: Map<string, Plugin>; hooks: Map<string, Array<HookFn>> } = {
     plugins: this.plugins,
     hooks: this.hooks,
   }
 
-  /** 每个插件注册的钩子引用（用于 unregister 时自动清理）*/
+  /** Per-plugin hook references (used for automatic cleanup on unregister). */
   private readonly _pluginHooks: Map<string, Map<string, Set<HookFn>>> = new Map()
 
   private _installedCore: unknown = undefined
 
-  /** 内置钩子名称（预初始化）*/
+  /** Built-in hook names (pre-initialized on construction). */
   private static readonly BUILTIN_HOOKS: ReadonlyArray<HookName> = [
     'beforeParse',
     'afterParse',
@@ -44,7 +44,7 @@ export class PluginManager extends EventEmitter {
     'onError',
   ]
 
-  /** v1 约定的生命周期钩子名称 */
+  /** Legacy v1 lifecycle hook names. */
   private static readonly LEGACY_HOOKS: ReadonlyArray<string> = [
     'onBeforeRegister',
     'onAfterRegister',
@@ -65,11 +65,11 @@ export class PluginManager extends EventEmitter {
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // 核心 API
+  // Core API
   // ─────────────────────────────────────────────────────────────────────
 
   /**
-   * 注册插件
+   * Register a plugin.
    */
   register(plugin: Plugin): this {
     if (!plugin || typeof plugin !== 'object') {
@@ -89,7 +89,7 @@ export class PluginManager extends EventEmitter {
 
     this.plugins.set(plugin.name, plugin)
 
-    // 自动注册插件定义的钩子
+    // Auto-register hooks declared by the plugin
     if (plugin.hooks) {
       for (const [hookName, fn] of Object.entries(plugin.hooks)) {
         if (fn) {
@@ -104,7 +104,7 @@ export class PluginManager extends EventEmitter {
   }
 
   /**
-   * 添加钩子回调（支持任意名称，不限于内置 HookName）
+   * Add a hook callback (supports any name, not limited to built-in HookName).
    */
   hook(name: string, fn: HookFn): this {
     this._ensureHook(name)
@@ -113,7 +113,7 @@ export class PluginManager extends EventEmitter {
   }
 
   /**
-   * 移除指定钩子处理器（v1 compat: unhook）
+   * Remove a specific hook handler (v1 compat: unhook).
    */
   unhook(name: string, fn: HookFn): this {
     const list = this.hooks.get(name)
@@ -125,10 +125,10 @@ export class PluginManager extends EventEmitter {
   }
 
   /**
-   * 运行指定钩子
-   * - 参数直接透传给每个 handler（v1 compat: runHook(name, arg1, arg2, ...)）
-   * - 返回所有 handler 的返回值数组
-   * - handler 抛出错误时，触发 'hook:error' 事件并运行 onError（不中断后续 handler）
+   * Run the specified hook.
+   * - Args are passed directly to each handler (v1 compat: runHook(name, arg1, arg2, ...)).
+   * - Returns an array of all handler return values.
+   * - If a handler throws, emits 'hook:error' and runs onError (does not interrupt remaining handlers).
    */
   async runHook(name: string, ...args: unknown[]): Promise<unknown[]> {
     const list = this.hooks.get(name)
@@ -149,24 +149,24 @@ export class PluginManager extends EventEmitter {
   }
 
   /**
-   * 安装插件
+   * Install plugins.
    *
-   * 支持两种调用方式（v1 compat）：
-   *   install(core)                       — 安装所有已注册插件
-   *   install(core, pluginName, options?) — 安装指定插件，合并 plugin.options + options
+   * Supports two call forms (v1 compat):
+   *   install(core)                       — install all registered plugins
+   *   install(core, pluginName, options?) — install the named plugin, merging plugin.options + options
    */
   install(core: unknown, pluginName?: string, extraOptions?: Record<string, unknown>): this {
     this._installedCore = core
 
     if (pluginName !== undefined) {
-      // 按名称安装指定插件
+      // Install the named plugin
       const plugin = this.plugins.get(pluginName)
       if (!plugin) {
         throw new Error(`[schema-dsl] Plugin "${pluginName}" is not registered`)
       }
       this._installPlugin(core, plugin, extraOptions)
     } else {
-      // 安装所有插件
+      // Install all plugins
       for (const plugin of this.plugins.values()) {
         this._installPlugin(core, plugin, extraOptions)
       }
@@ -187,9 +187,9 @@ export class PluginManager extends EventEmitter {
   }
 
   /**
-   * 卸载插件（v2 主方法）
-   * - 自动清理该插件注册的所有钩子
-   * - 触发 'plugin:uninstalled' 事件
+   * Unregister a plugin (v2 primary method).
+   * - Automatically cleans up all hooks registered by this plugin.
+   * - Emits 'plugin:uninstalled' event.
    */
   unregister(name: string, coreInstance?: unknown): this {
     const plugin = this.plugins.get(name)
@@ -207,7 +207,7 @@ export class PluginManager extends EventEmitter {
       }
     }
 
-    // 清理该插件注册的钩子
+    // Clean up hooks registered by this plugin
     const pluginHookMap = this._pluginHooks.get(name)
     if (pluginHookMap) {
       for (const [hookName, fns] of pluginHookMap) {
@@ -229,21 +229,21 @@ export class PluginManager extends EventEmitter {
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // v1 兼容 API
+  // v1 Compat API
   // ─────────────────────────────────────────────────────────────────────
 
-  /** v1 compat: 检查插件是否已注册 */
+  /** v1 compat: check whether a plugin is registered. */
   has(name: string): boolean {
     return this.plugins.has(name)
   }
 
-  /** v1 compat: 获取单个插件或全部插件 Map */
+  /** v1 compat: get a single plugin or the full plugins Map. */
   get(name?: string): Plugin | Map<string, Plugin> | undefined {
     if (name === undefined) return this.plugins
     return this.plugins.get(name)
   }
 
-  /** v1 compat: 列出所有插件元数据 */
+  /** v1 compat: list all plugin metadata. */
   list(): Array<{ name: string; version?: string; description?: string }> {
     return Array.from(this.plugins.values()).map(p => ({
       name: p.name,
@@ -252,18 +252,18 @@ export class PluginManager extends EventEmitter {
     }))
   }
 
-  /** v1 compat: 清除所有插件（含钩子清理） */
+  /** v1 compat: clear all plugins (including hook cleanup). */
   clear(coreInstance?: unknown): this {
     for (const name of Array.from(this.plugins.keys())) {
       try {
         this.unregister(name, coreInstance)
       } catch {
-        // 保持 v1 行为：clear() 忽略单个插件卸载错误，继续清理
+        // v1 behavior: clear() ignores individual plugin uninstall errors and continues
       }
     }
     this.plugins.clear()
     this._pluginHooks.clear()
-    // 清空所有自定义钩子（保留内置预初始化列表但清空其 handlers）
+    // Clear all custom hooks (keep built-in pre-initialized entries but empty their handler arrays)
     for (const [, list] of this.hooks) {
       list.length = 0
     }
@@ -271,7 +271,7 @@ export class PluginManager extends EventEmitter {
     return this
   }
 
-  /** v1 compat: 卸载指定插件（别名 unregister） */
+  /** v1 compat: uninstall a plugin (alias for unregister). */
   uninstall(name: string, coreInstance?: unknown): this {
     return this.unregister(name, coreInstance)
   }
@@ -280,13 +280,13 @@ export class PluginManager extends EventEmitter {
     return this.plugins.size
   }
 
-  /** v1 compat: 插件数量（别名 pluginCount） */
+  /** v1 compat: plugin count (alias for pluginCount). */
   get size(): number {
     return this.plugins.size
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // 私有工具方法
+  // Private Helpers
   // ─────────────────────────────────────────────────────────────────────
 
   private _ensureHook(name: string): void {
@@ -299,7 +299,7 @@ export class PluginManager extends EventEmitter {
     this._ensureHook(hookName)
     this.hooks.get(hookName)!.push(fn)
 
-    // 记录映射关系（供 unregister 清理）
+    // Record the mapping (for cleanup on unregister)
     if (!this._pluginHooks.has(pluginName)) {
       this._pluginHooks.set(pluginName, new Map())
     }

@@ -1,21 +1,21 @@
 /**
- * PostgreSQLExporter — 将 JSON Schema 导出为 PostgreSQL CREATE TABLE DDL
+ * PostgreSQLExporter — Export JSON Schema as a PostgreSQL CREATE TABLE DDL statement.
  *
- * v2 修复：
- *   标识符使用双引号转义（`"identifier"` → `"${name}"` 格式），而非 v1 的无转义原始标识符
- *   列注释中使用 `"schema"."table"."column"` 完全限定格式
+ * v2 fixes:
+ *   Identifiers are escaped with double quotes (`"identifier"` format) instead of v1's unescaped raw identifiers.
+ *   Column comments use the fully-qualified `"schema"."table"."column"` format.
  */
 
 import type { JSONSchema } from '../types/schema.js'
 import { BaseExporter, type ExporterOptions } from './BaseExporter.js'
 import { TypeConverter } from '../utils/TypeConverter.js'
 
-// ==================== 类型定义 ====================
+// ==================== Type definitions ====================
 
 export interface PostgreSQLExporterOptions extends ExporterOptions {
-  /** PostgreSQL schema 名称（默认 public）*/
+  /** PostgreSQL schema name (default: public). */
   schema: string
-  /** 是否使用双引号包裹标识符（默认 false，兼容 v1 行为）*/
+  /** Whether to wrap identifiers in double quotes (default false — compatible with v1 behaviour). */
   quoteIdentifiers?: boolean
 }
 
@@ -33,7 +33,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
   }
 
   /**
-   * 导出为 PostgreSQL CREATE TABLE 语句
+   * Export as a PostgreSQL CREATE TABLE statement.
    */
   export(tableName: string, jsonSchema: JSONSchema): string {
     if (!tableName || typeof tableName !== 'string') {
@@ -41,7 +41,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
     }
     this._assertObjectSchema(jsonSchema)
 
-    // 修复：使用双引号包裹标识符（避免保留字冲突）
+    // Fix: wrap identifiers in double quotes to avoid reserved-word conflicts
     const schemaIdent = this._quoteIdent(this.options.schema)
     const tableIdent = this._quoteIdent(tableName)
     const fullTableName = `${schemaIdent}.${tableIdent}`
@@ -71,7 +71,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
   }
 
   /**
-   * 生成 CREATE INDEX 语句
+   * Generate a CREATE INDEX statement.
    */
   generateIndex(tableName: string, columnName: string, options: GeneratePgIndexOptions = {}): string {
     const fullTableName = `${this._quoteIdent(this.options.schema)}.${this._quoteIdent(tableName)}`
@@ -82,15 +82,15 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
   }
 
   /**
-   * 静态快速导出
+   * Static quick-export shorthand.
    */
   static export(tableName: string, jsonSchema: JSONSchema): string {
     return new PostgreSQLExporter().export(tableName, jsonSchema)
   }
 
-  // ==================== 私有方法 ====================
+  // ==================== Private methods ====================
 
-  /** 条件性包裹 PG 标识符（quoteIdentifiers=true 时使用双引号）*/
+  /** Conditionally wrap a PG identifier in double quotes (when quoteIdentifiers=true). */
   private _quoteIdent(name: string): string {
     if (this.options.quoteIdentifiers) {
       return `"${name.replace(/"/g, '""')}"`
@@ -179,7 +179,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
     const comments: string[] = []
     for (const [name, propSchema] of Object.entries(schema.properties)) {
       if (propSchema.description) {
-        // 使用 fullTableName 已经是带引号的格式，column 单独引用
+        // fullTableName is already quoted; quote the column identifier separately
         const schemaIdent = this._quoteIdent(this.options.schema)
         const tableIdent = this._quoteIdent(tableName)
         const colIdent = this._quoteIdent(name)

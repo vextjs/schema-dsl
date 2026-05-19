@@ -280,7 +280,10 @@ const schema = dsl('email!').label('邮箱').toSchema();
 
 与 `toSchema()` 不同，`toJsonSchema()` 会自动清理所有 schema-dsl 内部标记：
 - **下划线前缀字段**：`_required`、`_customMessages`、`_label`、`_customValidators`、`_whenConditions`
-- **自定义验证关键字**：`exactLength`、`alphanum`、`lowercase`、`uppercase`、`trim`、`jsonString`、`port`、`requiredAll`、`strictSchema`、`noSparse`、`includesRequired`、`dateFormat`、`dateGreater`、`dateLess`、`precision`、`multipleOf`
+- **自定义验证关键字（直接清除）**：`alphanum`、`lowercase`、`uppercase`、`trim`、`jsonString`、`port`、`requiredAll`、`strictSchema`、`noSparse`、`includesRequired`、`dateFormat`、`dateGreater`、`dateLess`、`precision`
+- **`exactLength` 特殊翻译**：不直接清除，而是转换为标准 JSON Schema `{ minLength: N, maxLength: N }`（与 v1 DslBuilder `string:N` 行为兼容）
+
+> ⚠️ `multipleOf` 是标准 JSON Schema 字段，**不会**被清除（v2 修复了 v1 的错误行为）。
 
 返回的对象可直接嵌入 OpenAPI / JSON Schema 等标准文档中，无需下游再做清理。
 
@@ -302,6 +305,14 @@ builder.toSchema();
 builder.toJsonSchema();
 // { type: 'string', minLength: 3, maxLength: 32 }
 // 注意：不含 _required、_label、_customMessages 等内部字段
+
+// string:N 单值语法（exactLength → minLength + maxLength）
+const exact = dsl('string:6!');
+exact.toSchema();
+// { type: 'string', exactLength: 6, _required: true }
+exact.toJsonSchema();
+// { type: 'string', minLength: 6, maxLength: 6 }
+// 注：exactLength 自动翻译为标准 JSON Schema 的 minLength + maxLength（v1 兼容行为）
 
 // enum 示例
 const enumBuilder = dsl('enum:admin,user,guest!');
@@ -874,7 +885,8 @@ email, url, uuid, date, datetime
 ### 约束
 
 ```text
-string:min-max      # 字符串长度
+string:N            # 精确长度（exactLength = N，等同于 minLength: N, maxLength: N）
+string:min-max      # 字符串长度范围
 number:min-max      # 数字范围
 value1|value2       # 枚举
 !                   # 必填

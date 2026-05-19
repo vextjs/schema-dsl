@@ -1,18 +1,87 @@
-import { dsl, SchemaUtils } from '../../dist/index.js'
+import { DslBuilder, dsl, SchemaUtils } from '../../dist/index.js'
 
-const builder = dsl('string!').label('用户名') as any
-const rawSchema = builder.toSchema() as Record<string, unknown>
-const jsonSchema = builder.toJsonSchema() as Record<string, unknown>
+// ============================================================
+// SchemaUtils advanced issues — internal schema format deep-dive
+// ============================================================
+
+// ============================================================
+// 1. toSchema() keeps internal metadata (_label, _customMessages)
+//    toJsonSchema() strips all private fields for external output
+// ============================================================
+
+const emailBuilder = dsl('email!').label('Email Address').error({ required: 'Email is required' })
+
+const rawSchema   = (emailBuilder as any).toSchema()  as Record<string, unknown>
+const cleanSchema = emailBuilder.toJsonSchema()         as Record<string, unknown>
+
+console.log('advanced.rawHasLabel       =', '_label' in rawSchema)            // true
+console.log('advanced.rawHasMessages    =', '_customMessages' in rawSchema)   // true
+console.log('advanced.cleanNoLabel      =', !('_label' in cleanSchema))       // true
+console.log('advanced.cleanNoMessages   =', !('_customMessages' in cleanSchema))  // true
+
+// ============================================================
+// 2. Exporter expects toJsonSchema() — not raw internal schema
+// ============================================================
+
+const withMetadata = (dsl('string:3-32!').label('Username') as any).toSchema()
+const cleanJson    = dsl('string:3-32!').label('Username').toJsonSchema()
+
+// Internal _label is harmless for validate() but should be stripped before export
+console.log('advanced.raw._label        =', withMetadata._label)    // 'Username'
+console.log('advanced.clean._label      =', cleanJson._label)       // undefined
+
+// ============================================================
+// 3. required vs _required — how SchemaUtils detects required fields
+// ============================================================
 
 const userSchema = dsl({
-  name: dsl('string!').label('姓名'),
-  password: 'string:8-32!',
+  name:     dsl('string!').label('Name'),
+  email:    dsl('email!'),
+  optional: 'string',
 })
 
-const omittedSchema = SchemaUtils.omit(userSchema, ['password'])
-const clonedSchema = SchemaUtils.clone(userSchema)
+// omit() preserves required status for remaining fields
+const partial  = SchemaUtils.omit(userSchema, ['optional'])
+const allOptional = SchemaUtils.partial(userSchema)
 
-console.log('schema-utils-advanced.rawHasLabel =', '_label' in rawSchema)
-console.log('schema-utils-advanced.jsonHasLabel =', '_label' in jsonSchema)
-console.log('schema-utils-advanced.required =', omittedSchema.required?.join(',') ?? 'none')
-console.log('schema-utils-advanced.cloneNewObject =', clonedSchema !== userSchema)
+console.log('advanced.partial.required  =', partial.required?.sort().join(','))       // 'email,name'
+console.log('advanced.partial.noOpt     =', !partial.required?.includes('optional'))  // true
+console.log('advanced.allOpt.required   =', allOptional.required)                     // undefined / []
+
+// ============================================================
+// 4. clone() — deep independent copy (mutations don't cross-contaminate)
+// ============================================================
+
+const original = dsl({ id: 'uuid!', name: 'string!' })
+const cloned   = SchemaUtils.clone(original)
+
+// Modify the clone's required array
+if (cloned.required) { cloned.required.push('__extra__') }
+
+console.log('advanced.clone.isNew       =', cloned !== original)                          // true
+console.log('advanced.clone.noLeak      =', !original.required?.includes('__extra__'))    // true
+
+// ============================================================
+// 5. validateNestingDepth() — counts object property depth
+// ============================================================
+
+const shallowSchema = dsl({
+  name:  'string!',
+  email: 'email!',
+})
+
+const deepSchema = dsl({
+  a: dsl({
+    b: dsl({
+      c: { d: 'string!' },
+    }),
+  }),
+})
+
+const shallowResult = DslBuilder.validateNestingDepth(shallowSchema, 5)
+const deepResult    = DslBuilder.validateNestingDepth(deepSchema, 2)
+
+console.log('advanced.shallow.depth     =', shallowResult.depth)    // 1
+console.log('advanced.shallow.valid     =', shallowResult.valid)    // true
+console.log('advanced.deep.depth        =', deepResult.depth)       // 4
+console.log('advanced.deep.valid        =', deepResult.valid)       // false (exceeds limit 2)

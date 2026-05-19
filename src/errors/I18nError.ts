@@ -1,7 +1,7 @@
 import { renderTemplate } from '../core/TemplateEngine.js'
 import { Locale } from '../core/Locale.js'
 
-// V8/Node.js 扩展
+// V8/Node.js extension
 type ErrorWithCaptureStackTrace = typeof Error & {
   captureStackTrace?: (target: object, ctor: unknown) => void
 }
@@ -34,8 +34,8 @@ function normalizeParams(
 }
 
 /**
- * 多语言错误类
- * 保持 v1 API 完全兼容：create / throw / assert / is / toJSON / toString
+ * Internationalised error class.
+ * Maintains full v1 API compatibility: create / throw / assert / is / toJSON / toString
  */
 export class I18nError extends Error {
   readonly name = 'I18nError' as const
@@ -50,7 +50,7 @@ export class I18nError extends Error {
     params: Record<string, unknown> = {},
     statusCode = 400,
     locale: string | null = null,
-    /** 内部：已解析的消息模板，跳过 Locale 查找（用于解耦初始化顺序）*/
+    /** Internal: pre-resolved message template, bypasses Locale lookup (used to decouple init ordering). */
     _resolvedTemplate?: string,
     _resolvedCode?: string | number
   ) {
@@ -92,7 +92,7 @@ export class I18nError extends Error {
     }
   }
 
-  /** 工厂方法 — 创建错误实例 */
+  /** Factory method — create an error instance. */
   static create(
     code: string,
     paramsOrLocale?: ParamsOrLocale,
@@ -103,7 +103,7 @@ export class I18nError extends Error {
     return new I18nError(code, normalized.params, normalized.statusCode, normalized.locale)
   }
 
-  /** 工厂方法 — 创建并抛出 */
+  /** Factory method — create and throw an error. */
   static throw(
     code: string,
     paramsOrLocale?: ParamsOrLocale,
@@ -114,7 +114,7 @@ export class I18nError extends Error {
     throw new I18nError(code, normalized.params, normalized.statusCode, normalized.locale)
   }
 
-  /** 断言 — 条件不满足时抛错 */
+  /** Assert — throw when condition is falsy. */
   static assert(
     condition: unknown,
     code: string,
@@ -128,7 +128,7 @@ export class I18nError extends Error {
     }
   }
 
-  /** 检查错误是否为指定 code 或原始 key */
+  /** Check whether the error matches the given code or original key. */
   is(codeOrKey: string | number): boolean {
     return this.code === codeOrKey || this.originalKey === codeOrKey
   }

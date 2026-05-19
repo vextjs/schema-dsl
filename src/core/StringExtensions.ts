@@ -1,21 +1,22 @@
 /**
- * StringExtensions — String.prototype 链式 DSL 扩展（opt-in）
+ * StringExtensions — opt-in String.prototype chainable DSL extensions.
  *
- * v2 修复：
- *   S-01/S-02：数组驱动对称 install/uninstall（v1 uninstall 遗漏了 `format` 和 `phoneNumber`）
- *              现在通过 EXTENSION_METHODS 数组统一维护，确保两个操作完全对称
+ * v2 fixes:
+ *   S-01/S-02: array-driven symmetric install/uninstall (v1 uninstall was missing `format` and
+ *              `phoneNumber`). All method names are now maintained in the EXTENSION_METHODS
+ *              array so both operations are guaranteed to be in sync.
  *
  * @example
  * import { installStringExtensions } from 'schema-dsl'
  * installStringExtensions(dsl)
- * // 之后可使用：
- * 'email!'.label('邮箱').messages({ format: '格式不正确' })
+ * // Then you can use:
+ * 'email!'.label('Email address').messages({ format: 'Invalid format' })
  * 'string:3-32!'.username('medium')
  */
 
 import type { DslBuilder } from './DslBuilder.js'
 
-// 修复 S-01/S-02：所有扩展方法名统一在此数组管理，install/uninstall 对称
+// S-01/S-02 fix: all extension method names are managed here so install/uninstall stay symmetric
 const EXTENSION_METHODS = [
   'pattern',
   'label',
@@ -68,11 +69,11 @@ const EXTENSION_METHODS = [
 type DslFn = (dslStr: string) => DslBuilder
 
 /**
- * 安装 String.prototype 扩展
- * @param dslFunction - dsl() 函数（用于将字符串转为 DslBuilder 实例）
+ * Install String.prototype extensions.
+ * @param dslFunction - dsl() function (converts a string to a DslBuilder instance)
  */
 export function installStringExtensions(dslFunction: DslFn): void {
-  // 幂等性：已安装则跳过
+  // Idempotent: skip if already installed
   if ((String.prototype as unknown as Record<string, unknown>)['_dslExtensionsInstalled']) return
 
   const proto = String.prototype as unknown as Record<string, unknown>
@@ -81,7 +82,7 @@ export function installStringExtensions(dslFunction: DslFn): void {
     proto[name] = fn
   }
 
-  // 委托到 DslBuilder 实例的同名方法（透明代理）
+  // Proxy all listed methods transparently to the DslBuilder instance
   const delegatedMethods: string[] = [
     'pattern', 'label', 'messages', 'error', 'description', 'format', 'custom',
     'default', 'username', 'password', 'phone', 'phoneNumber', 'idCard', 'creditCard',
@@ -99,12 +100,12 @@ export function installStringExtensions(dslFunction: DslFn): void {
     })
   }
 
-  // enum 方法接受 rest 参数
+  // enum method accepts rest parameters
   extend('enum', function (this: string, ...values: unknown[]): DslBuilder {
     return dslFunction(String(this)).enum(...values)
   })
 
-  // toSchema / toJsonSchema 返回 JSONSchema（非 DslBuilder）
+  // toSchema / toJsonSchema return JSONSchema (not DslBuilder)
   extend('toSchema', function (this: string) {
     return dslFunction(String(this)).toSchema()
   })
@@ -112,13 +113,13 @@ export function installStringExtensions(dslFunction: DslFn): void {
     return dslFunction(String(this)).toJsonSchema()
   })
 
-  // 安装完成标记（v1 BC）
+  // Installation marker (v1 BC)
   proto['_dslExtensionsInstalled'] = true
 }
 
 /**
- * 卸载 String.prototype 扩展（用于测试或清理）
- * 修复 S-01/S-02：使用 EXTENSION_METHODS 数组确保与 install 完全对称
+ * Uninstall String.prototype extensions (useful for tests or clean-up).
+ * S-01/S-02 fix: uses EXTENSION_METHODS array to guarantee perfect symmetry with install.
  */
 export function uninstallStringExtensions(): void {
   if (!(String.prototype as unknown as Record<string, unknown>)['_dslExtensionsInstalled']) return
