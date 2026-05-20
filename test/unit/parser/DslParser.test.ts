@@ -1,13 +1,13 @@
 ﻿/**
- * DslParser 单元测试
- * 覆盖字符串解析 + 对象解析 + 负向测试
+ * DslParser unit tests
+ * Covers string parsing + object parsing + negative tests
  */
 
 import { describe, it, expect } from 'vitest'
 import { DslParser } from '../../../src/parser/DslParser.js'
 
 describe('DslParser', () => {
-  describe('parseString() — 基本类型', () => {
+  describe('parseString() — basic types', () => {
     it('string', () => {
       const s = DslParser.parseString('string')
       expect(s.type).toBe('string')
@@ -45,7 +45,7 @@ describe('DslParser', () => {
     })
   })
 
-  describe('parseString() — 长度/范围约束', () => {
+  describe('parseString() — length/range constraints', () => {
     it('string:3-32 → minLength/maxLength', () => {
       const s = DslParser.parseString('string:3-32')
       expect(s.minLength).toBe(3)
@@ -54,7 +54,7 @@ describe('DslParser', () => {
 
     it('string:100 → exactLength:100', () => {
       const s = DslParser.parseString('string:100')
-      // string:N → exactLength:N（精确长度）
+      // string:N → exactLength:N (exact length)
       expect(s.exactLength).toBe(100)
     })
 
@@ -77,15 +77,15 @@ describe('DslParser', () => {
     })
   })
 
-  describe('parseString() — 必填标记', () => {
+  describe('parseString() — required marker', () => {
     it('string! → _required: true', () => {
       const s = DslParser.parseString('string!')
       expect(s._required).toBe(true)
     })
 
-    it('string (no !) → _required 字段不存在', () => {
+    it('string (no !) → _required field absent', () => {
       const s = DslParser.parseString('string')
-      // SchemaCompiler 只在 required=true 时注入 _required
+      // SchemaCompiler only injects _required when required=true
       expect(s._required).toBeFalsy()
     })
 
@@ -103,8 +103,8 @@ describe('DslParser', () => {
     })
   })
 
-  describe('parseObject() — 对象 DSL', () => {
-    it('扁平字段映射', () => {
+  describe('parseObject() — object DSL', () => {
+    it('flat field mapping', () => {
       const schema = DslParser.parseObject({
         name: 'string!',
         age: 'number',
@@ -114,7 +114,7 @@ describe('DslParser', () => {
       expect(schema.properties?.['age']?.type).toBe('number')
     })
 
-    it('required[] 收集必填字段', () => {
+    it('required[] collects required fields', () => {
       const schema = DslParser.parseObject({
         name: 'string!',
         age: 'number',
@@ -125,7 +125,7 @@ describe('DslParser', () => {
       expect(schema.required).not.toContain('age')
     })
 
-    it('嵌套对象', () => {
+    it('nested objects', () => {
       const schema = DslParser.parseObject({
         user: {
           name: 'string!',
@@ -136,18 +136,18 @@ describe('DslParser', () => {
       expect(schema.properties?.['user']?.properties?.['name']?.type).toBe('string')
     })
 
-    it('空对象 → 无 required 数组', () => {
+    it('empty object → no required array', () => {
       const schema = DslParser.parseObject({ name: 'string' })
       expect(schema.required ?? []).not.toContain('name')
     })
   })
 
-  describe('parseString() — 负向测试', () => {
-    it('空字符串不抛错，返回合理 schema', () => {
+  describe('parseString() — negative tests', () => {
+    it('empty string does not throw, returns a valid schema', () => {
       expect(() => DslParser.parseString('')).not.toThrow()
     })
 
-    it('超大约束数字不崩溃', () => {
+    it('very large constraint number does not crash', () => {
       const s = DslParser.parseString('string:0-99999999')
       expect(s.maxLength).toBe(99999999)
     })

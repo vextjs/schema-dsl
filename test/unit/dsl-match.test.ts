@@ -1,15 +1,15 @@
 ﻿/**
- * DSL Match 语法测试 — v2 迁移（v1 dsl-match.test.js）
+ * DSL Match Syntax Tests — v2 migration (v1 dsl-match.test.js)
  */
 
 import { describe, it, expect } from 'vitest'
 import { dsl, validate } from '../../src/index.js'
 
-describe('DSL Match 语法 (v2.1.0)', () => {
-  // v2 dsl.match(fieldName, cases) 完整支持字段名语法（与 v1 行为一致）
-  // v2 dsl.if(fieldName, thenSchema, elseSchema) 支持字段名字符串（truthy check）
+describe('DSL Match Syntax (v2.1.0)', () => {
+  // v2 dsl.match(fieldName, cases) fully supports field name syntax (consistent with v1 behavior)
+  // v2 dsl.if(fieldName, thenSchema, elseSchema) supports field name strings (truthy check)
   describe('dsl.match', () => {
-    it('应该支持基本的 match 语法', () => {
+    it('should support basic match syntax', () => {
       const schema = dsl({
         type: 'string',
         value: dsl.match('type', {
@@ -28,7 +28,7 @@ describe('DSL Match 语法 (v2.1.0)', () => {
       expect(validate(schema, { type: 'other', value: 'any string' }).valid).toBe(true)
     })
 
-    it('应该支持非英文值（带引号）', () => {
+    it('should support non-ASCII values (with quotes)', () => {
       const schema = dsl({
         level: 'string',
         discount: dsl.match('level', {
@@ -45,7 +45,7 @@ describe('DSL Match 语法 (v2.1.0)', () => {
       expect(validate(schema, { level: '100', discount: 40 }).valid).toBe(true)
     })
 
-    it('应该支持嵌套对象作为规则', () => {
+    it('should support nested objects as rules', () => {
       const schema = dsl({
         type: 'string',
         config: dsl.match('type', {
@@ -59,8 +59,8 @@ describe('DSL Match 语法 (v2.1.0)', () => {
     })
   })
 
-  describe('dsl.if 字段名语法', () => {
-    it('应该支持 dsl.if(fieldName, thenSchema, elseSchema)', () => {
+  describe('dsl.if field name syntax', () => {
+    it('should support dsl.if(fieldName, thenSchema, elseSchema)', () => {
       const schema = dsl({
         isVip: 'boolean',
         discount: dsl.if('isVip', 'number:0-50', 'number:0-10'),
@@ -72,8 +72,8 @@ describe('DSL Match 语法 (v2.1.0)', () => {
     })
   })
 
-  describe('dsl() 包裹 (v1.0.6)', () => {
-    it('应该支持在 dsl.match 值中使用 dsl() 包裹', () => {
+  describe('dsl() Wrapping (v1.0.6)', () => {
+    it('should support using dsl() wrapping in dsl.match values', () => {
       const schema = dsl({
         payment_type: 'string',
         price: dsl.match('payment_type', {
@@ -92,7 +92,7 @@ describe('DSL Match 语法 (v2.1.0)', () => {
       expect(validate(schema, { payment_type: 'card', price: 1500 }).valid).toBe(true)
     })
 
-    it('应该支持 dsl.if 嵌套 dsl.match', () => {
+    it('should support dsl.if nested inside dsl.match', () => {
       const schema = dsl({
         enabled: 'boolean',
         payment_type: 'string',

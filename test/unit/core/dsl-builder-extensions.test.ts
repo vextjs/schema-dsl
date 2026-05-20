@@ -1,10 +1,10 @@
 ﻿/**
- * DslBuilder Extensions & Fixes 测试 — v2 迁移
+ * DslBuilder Extensions & Fixes Tests — v2 Migration
  *
- * v2 变更：
- * - 使用 installStringExtensions（opt-in）
- * - SchemaUtils.createLibrary 仍然可用
- * - DslBuilder.validateNestingDepth 静态方法存在
+ * v2 changes:
+ * - use installStringExtensions (opt-in)
+ * - SchemaUtils.createLibrary is still available
+ * - DslBuilder.validateNestingDepth static method exists
  */
 
 import { describe, it, expect } from 'vitest'

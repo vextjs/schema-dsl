@@ -1,6 +1,6 @@
 ﻿/**
- * 格式本地化测试 (v2 TypeScript)
- * 测试格式验证错误消息的本地化
+ * Format Localization Tests (v2 TypeScript)
+ * Tests for localization of format validation error messages
  *
  * NOTE: v2 default locale is 'zh-CN'. Expected messages use {{#label}} which renders
  * as 'value' when validating a non-object scalar value (the default label).

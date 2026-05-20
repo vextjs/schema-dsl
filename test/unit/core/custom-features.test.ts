@@ -1,13 +1,13 @@
 ﻿/**
- * Custom Features & Error Messages 测试 — v2 迁移
+ * Custom Features & Error Messages Tests — v2 Migration
  *
- * v2 变更：使用 installStringExtensions 启用字符串扩展（opt-in）
+ * v2 changes: use installStringExtensions to enable string extensions (opt-in)
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { dsl, Validator, Locale, installStringExtensions } from '../../../src/index.js'
 
-// v2: 手动安装字符串扩展
+// v2: manually install string extensions
 installStringExtensions(dsl as any)
 
 describe('Custom Features & Error Messages', () => {

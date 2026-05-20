@@ -1,20 +1,20 @@
 ﻿/**
- * CustomKeywords v1.0.2 新增验证器测试
+ * CustomKeywords v1.0.2 new validator tests
  *
- * 测试 v1.0.2 版本新增的 15 个自定义验证器
+ * Tests for the 15 custom validators added in v1.0.2
  */
 
 import { describe, it, expect } from 'vitest';
 import { dsl, validate } from '../../../src/index.js';
 
-describe('CustomKeywords - v1.0.2 新增验证器', () => {
+describe('CustomKeywords - v1.0.2 new validators', () => {
 
-  // ==================== String 验证器 ====================
+  // ==================== String Validators ====================
 
-  describe('String 验证器', () => {
+  describe('String validators', () => {
 
-    describe('1. exactLength - 精确长度验证', () => {
-      it('应该通过精确长度验证', () => {
+    describe('1. exactLength - exact length validation', () => {
+      it('should pass exact length validation', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -29,7 +29,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝长度不足', () => {
+      it('should reject insufficient length', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -46,7 +46,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.errors.length).toBeGreaterThanOrEqual(1);
       });
 
-      it('应该拒绝长度超出', () => {
+      it('should reject length exceeded', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -61,7 +61,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该处理边界情况 - 长度为0', () => {
+      it('should handle edge case - length 0', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -76,7 +76,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该处理边界情况 - 长度为100', () => {
+      it('should handle edge case - length 100', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -93,8 +93,8 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
       });
     });
 
-    describe('2. alphanum - 字母和数字', () => {
-      it('应该通过只包含字母和数字的字符串', () => {
+    describe('2. alphanum - letters and numbers', () => {
+      it('should pass strings containing only letters and numbers', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -109,7 +109,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过只包含字母', () => {
+      it('should pass strings containing only letters', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -124,7 +124,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过只包含数字', () => {
+      it('should pass strings containing only numbers', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -139,7 +139,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝包含特殊字符', () => {
+      it('should reject strings containing special characters', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -154,7 +154,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝包含空格', () => {
+      it('should reject strings containing spaces', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -170,8 +170,8 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
       });
     });
 
-    describe('3. trim - 前后空格检查', () => {
-      it('应该通过无前后空格的字符串', () => {
+    describe('3. trim - leading/trailing whitespace check', () => {
+      it('should pass strings with no leading/trailing whitespace', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -186,7 +186,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过包含中间空格的字符串', () => {
+      it('should pass strings with internal spaces', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -201,7 +201,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝前导空格', () => {
+      it('should reject leading whitespace', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -216,7 +216,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝尾随空格', () => {
+      it('should reject trailing whitespace', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -231,7 +231,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝前后都有空格', () => {
+      it('should reject leading and trailing whitespace', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -247,8 +247,8 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
       });
     });
 
-    describe('4. lowercase - 小写检查', () => {
-      it('应该通过全小写字符串', () => {
+    describe('4. lowercase - lowercase check', () => {
+      it('should pass all-lowercase strings', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -263,7 +263,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过只包含小写字母和数字', () => {
+      it('should pass strings containing only lowercase letters and numbers', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -278,7 +278,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝包含大写字母', () => {
+      it('should reject strings containing uppercase letters', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -293,7 +293,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝全大写字符串', () => {
+      it('should reject all-uppercase strings', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -308,7 +308,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该通过空字符串', () => {
+      it('should pass empty string', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -324,8 +324,8 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
       });
     });
 
-    describe('5. uppercase - 大写检查', () => {
-      it('应该通过全大写字符串', () => {
+    describe('5. uppercase - uppercase check', () => {
+      it('should pass all-uppercase strings', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -340,7 +340,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过只包含大写字母和数字', () => {
+      it('should pass strings containing only uppercase letters and numbers', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -355,7 +355,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝包含小写字母', () => {
+      it('should reject strings containing lowercase letters', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -370,7 +370,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝全小写字符串', () => {
+      it('should reject all-lowercase strings', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -385,7 +385,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该通过空字符串', () => {
+      it('should pass empty string', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -401,8 +401,8 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
       });
     });
 
-    describe('6. jsonString - JSON字符串验证', () => {
-      it('应该通过有效的JSON对象', () => {
+    describe('6. jsonString - JSON string validation', () => {
+      it('should pass valid JSON objects', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -417,7 +417,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过有效的JSON数组', () => {
+      it('should pass valid JSON arrays', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -432,7 +432,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过有效的JSON原始值', () => {
+      it('should pass valid JSON primitive values', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -449,7 +449,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(validate(schema, { config: 'null' }).valid).toBe(true);
       });
 
-      it('应该拒绝无效的JSON - 键未加引号', () => {
+      it('should reject invalid JSON - unquoted key', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -464,7 +464,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝无效的JSON - 单引号', () => {
+      it('should reject invalid JSON - single quotes', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -481,12 +481,12 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
     });
   });
 
-  // ==================== Number 验证器 ====================
+  // ==================== Number Validators ====================
 
-  describe('Number 验证器', () => {
+  describe('Number validators', () => {
 
-    describe('7. precision - 小数位数限制', () => {
-      it('应该通过符合精度要求的数字', () => {
+    describe('7. precision - decimal places limit', () => {
+      it('should pass numbers meeting precision requirements', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -501,7 +501,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过整数（0位小数）', () => {
+      it('should pass integers (0 decimal places)', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -516,7 +516,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过1位小数', () => {
+      it('should pass 1 decimal place', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -531,7 +531,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝小数位数超出', () => {
+      it('should reject decimal places exceeded', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -546,7 +546,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝小数位数远超出', () => {
+      it('should reject far-exceeded decimal places', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -562,8 +562,8 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
       });
     });
 
-    describe('8. port - 端口号验证', () => {
-      it('应该通过有效的端口号', () => {
+    describe('8. port - port number validation', () => {
+      it('should pass valid port numbers', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -579,7 +579,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(validate(schema, { port: 3000 }).valid).toBe(true);
       });
 
-      it('应该通过边界值 - 最小端口1', () => {
+      it('should pass boundary value - minimum port 1', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -594,7 +594,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过边界值 - 最大端口65535', () => {
+      it('should pass boundary value - maximum port 65535', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -609,7 +609,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝端口0', () => {
+      it('should reject port 0', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -624,7 +624,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝端口超过65535', () => {
+      it('should reject port exceeding 65535', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -639,7 +639,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝负数端口', () => {
+      it('should reject negative port', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -654,7 +654,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝非整数端口', () => {
+      it('should reject non-integer port', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -671,12 +671,12 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
     });
   });
 
-  // ==================== Object 验证器 ====================
+  // ==================== Object Validators ====================
 
-  describe('Object 验证器', () => {
+  describe('Object validators', () => {
 
-    describe('9. requiredAll - 要求所有属性', () => {
-      it('应该通过所有属性都存在', () => {
+    describe('9. requiredAll - require all properties', () => {
+      it('should pass when all properties exist', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -695,7 +695,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝缺少一个属性', () => {
+      it('should reject when one property is missing', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -713,7 +713,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝缺少多个属性', () => {
+      it('should reject when multiple properties are missing', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -730,7 +730,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝空对象', () => {
+      it('should reject empty object', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -744,7 +744,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该通过包含额外属性', () => {
+      it('should pass with extra properties', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -763,8 +763,8 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
       });
     });
 
-    describe('10. strictSchema - 严格模式', () => {
-      it('应该通过只包含定义的属性', () => {
+    describe('10. strictSchema - strict mode', () => {
+      it('should pass with only defined properties', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -781,7 +781,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝包含一个额外属性', () => {
+      it('should reject with one extra property', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -799,7 +799,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝包含多个额外属性', () => {
+      it('should reject with multiple extra properties', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -816,7 +816,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该通过缺少可选属性', () => {
+      it('should pass with optional property missing', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -832,7 +832,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过空对象', () => {
+      it('should pass with empty object', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -847,12 +847,12 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
     });
   });
 
-  // ==================== Array 验证器 ====================
+  // ==================== Array Validators ====================
 
-  describe('Array 验证器', () => {
+  describe('Array validators', () => {
 
-    describe('11. noSparse - 禁止稀疏数组', () => {
-      it('应该通过密集数组', () => {
+    describe('11. noSparse - disallow sparse arrays', () => {
+      it('should pass dense arrays', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -867,7 +867,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过空数组', () => {
+      it('should pass empty arrays', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -882,7 +882,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝稀疏数组', () => {
+      it('should reject sparse arrays', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -893,12 +893,12 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
           }
         };
 
-        const sparseArray = [1, , 3]; // eslint-disable-line no-sparse-arrays
+        const sparseArray = [1, , 3];// eslint-disable-line no-sparse-arrays
         const result = validate(schema, { items: sparseArray });
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝使用new Array创建的稀疏数组', () => {
+      it('should reject sparse arrays created with new Array', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -914,7 +914,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝delete后的稀疏数组', () => {
+      it('should reject sparse arrays after delete', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -932,8 +932,8 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
       });
     });
 
-    describe('12. includesRequired - 必须包含元素', () => {
-      it('应该通过包含所有必需元素', () => {
+    describe('12. includesRequired - must include elements', () => {
+      it('should pass containing all required elements', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -950,7 +950,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过包含必需元素（顺序无关）', () => {
+      it('should pass containing required elements (order-independent)', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -967,7 +967,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝缺少一个必需元素', () => {
+      it('should reject missing one required element', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -984,7 +984,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝缺少所有必需元素', () => {
+      it('should reject missing all required elements', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1001,7 +1001,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝空数组', () => {
+      it('should reject empty array', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1018,12 +1018,12 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
     });
   });
 
-  // ==================== Date 验证器 ====================
+  // ==================== Date Validators ====================
 
-  describe('Date 验证器', () => {
+  describe('Date validators', () => {
 
-    describe('13. dateFormat - 日期格式验证', () => {
-      it('应该通过YYYY-MM-DD格式', () => {
+    describe('13. dateFormat - date format validation', () => {
+      it('should pass YYYY-MM-DD format', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1038,7 +1038,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过YYYY/MM/DD格式', () => {
+      it('should pass YYYY/MM/DD format', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1053,7 +1053,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过DD-MM-YYYY格式', () => {
+      it('should pass DD-MM-YYYY format', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1068,7 +1068,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过DD/MM/YYYY格式', () => {
+      it('should pass DD/MM/YYYY format', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1083,7 +1083,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该通过ISO8601格式', () => {
+      it('should pass ISO8601 format', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1098,7 +1098,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(validate(schema, { date: '2025-12-31T15:30:00Z' }).valid).toBe(true);
       });
 
-      it('应该拒绝格式不匹配', () => {
+      it('should reject format mismatch', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1114,8 +1114,8 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
       });
     });
 
-    describe('14. dateGreater - 日期大于', () => {
-      it('应该通过日期在指定日期之后', () => {
+    describe('14. dateGreater - date greater than', () => {
+      it('should pass date after the specified date', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1130,7 +1130,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝日期等于指定日期', () => {
+      it('should reject date equal to specified date', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1145,7 +1145,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝日期在指定日期之前', () => {
+      it('should reject date before the specified date', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1160,7 +1160,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝无效日期', () => {
+      it('should reject invalid date', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1175,7 +1175,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该处理时间戳比较', () => {
+      it('should handle timestamp comparison', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1191,8 +1191,8 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
       });
     });
 
-    describe('15. dateLess - 日期小于', () => {
-      it('应该通过日期在指定日期之前', () => {
+    describe('15. dateLess - date less than', () => {
+      it('should pass date before the specified date', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1207,7 +1207,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(true);
       });
 
-      it('应该拒绝日期等于指定日期', () => {
+      it('should reject date equal to specified date', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1222,7 +1222,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝日期在指定日期之后', () => {
+      it('should reject date after the specified date', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1237,7 +1237,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该拒绝无效日期', () => {
+      it('should reject invalid date', () => {
         const schema = {
           type: 'object',
           properties: {
@@ -1252,7 +1252,7 @@ describe('CustomKeywords - v1.0.2 新增验证器', () => {
         expect(result.valid).toBe(false);
       });
 
-      it('应该处理时间戳比较', () => {
+      it('should handle timestamp comparison', () => {
         const schema = {
           type: 'object',
           properties: {

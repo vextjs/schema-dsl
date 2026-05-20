@@ -1,11 +1,11 @@
 ﻿/**
- * ErrorFormatter 单元测试 — v2 迁移
+ * ErrorFormatter Unit Tests — v2 Migration
  *
- * v2 变更：
- * - ErrorFormatter 构造函数：constructor(_locale, messages) — locale 内部，不暴露 this.locale
- * - 无 format() 方法（仅 formatDetailed()）
- * - Locale.reset() 方法在 v2 中可能不存在 — 使用 setLocale 代替
- * - formatDetailed 接收 AJV 原始错误数组
+ * v2 Changes:
+ * - ErrorFormatter constructor: constructor(_locale, messages) — locale is internal, does not expose this.locale
+ * - No format() method (only formatDetailed())
+ * - Locale.reset() may not exist in v2 — use setLocale instead
+ * - formatDetailed receives raw AJV error array
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -16,24 +16,24 @@ describe('ErrorFormatter', () => {
 
   beforeEach(() => {
     Locale.setLocale('zh-CN')
-    // v2: ErrorFormatter 不自动加载 Locale，需显式传入消息
+    // v2: ErrorFormatter does not auto-load Locale, must be passed messages explicitly
     formatter = new ErrorFormatter('zh-CN', Locale.getMessages())
 
   })
 
-  describe('基础功能', () => {
-    it('应该正确创建实例', () => {
+  describe('Basic Functionality', () => {
+    it('should correctly create instance', () => {
       expect(formatter).toBeInstanceOf(ErrorFormatter)
     })
 
-    it('应该支持不同语言构造', () => {
+    it('should support construction with different locales', () => {
       const enFormatter = new ErrorFormatter('en-US')
       expect(enFormatter).toBeInstanceOf(ErrorFormatter)
     })
   })
 
-  describe('错误格式化', () => {
-    it('应该处理 required 错误（formatDetailed）', () => {
+  describe('Error Formatting', () => {
+    it('should handle required error (formatDetailed)', () => {
       const errors = [
         {
           keyword: 'required',
@@ -48,7 +48,7 @@ describe('ErrorFormatter', () => {
       expect(result[0]).toHaveProperty('message')
     })
 
-    it('应该支持自定义 label（通过 parentSchema._label）', () => {
+    it('should support custom label (via parentSchema._label)', () => {
       const errors = [
         {
           keyword: 'minLength',
@@ -65,7 +65,7 @@ describe('ErrorFormatter', () => {
       expect(result[0].message).toContain('用户名')
     })
 
-    it('应该支持自定义消息模板（_customMessages）', () => {
+    it('should support custom message templates (_customMessages)', () => {
       const errors = [
         {
           keyword: 'pattern',
@@ -80,14 +80,14 @@ describe('ErrorFormatter', () => {
       expect(result[0].message).toBe('手机号格式不正确')
     })
 
-    it('空错误数组应返回空数组', () => {
+    it('empty error array should return empty array', () => {
       const result = formatter.formatDetailed([])
       expect(result).toEqual([])
     })
   })
 
-  describe('国际化', () => {
-    it('应该支持 locale 参数切换语言', () => {
+  describe('Internationalization', () => {
+    it('should support locale parameter for language switching', () => {
       const errors = [
         {
           keyword: 'required',
@@ -97,12 +97,12 @@ describe('ErrorFormatter', () => {
       ]
       const zhResult = formatter.formatDetailed(errors as any, 'zh-CN')
       const enResult = formatter.formatDetailed(errors as any, 'en-US')
-      // 两个不同 locale 的消息可能不同（如果内置消息存在差异）
+      // messages from two different locales may differ (if built-in messages diverge)
       expect(typeof zhResult[0].message).toBe('string')
       expect(typeof enResult[0].message).toBe('string')
     })
 
-    it('setLocale 不应抛出错误', () => {
+    it('setLocale should not throw', () => {
       expect(() => Locale.setLocale('en-US')).not.toThrow()
     })
   })

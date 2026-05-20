@@ -1,13 +1,13 @@
 ﻿/**
- * MarkdownExporter 测试 — v2 迁移（v1 MarkdownExporter.test.js）
+ * MarkdownExporter tests — v2 migration (v1 MarkdownExporter.test.js)
  */
 
 import { describe, it, expect } from 'vitest'
 import { MarkdownExporter } from '../../../src/index.js'
 
 describe('MarkdownExporter', () => {
-  describe('基础导出', () => {
-    it('应该导出简单 Schema', () => {
+  describe('basic export', () => {
+    it('should export a simple schema', () => {
       const schema = {
         type: 'object',
         properties: {
@@ -21,13 +21,13 @@ describe('MarkdownExporter', () => {
       expect(result.length).toBeGreaterThan(0)
     })
 
-    it('应该支持自定义标题', () => {
+    it('should support custom title', () => {
       const schema = { type: 'object', properties: {} }
       const result = MarkdownExporter.export(schema, { title: '用户 Schema' })
       expect(result).toContain('用户 Schema')
     })
 
-    it('应该支持描述', () => {
+    it('should support description', () => {
       const schema = {
         type: 'object',
         description: '用户对象',
@@ -37,7 +37,7 @@ describe('MarkdownExporter', () => {
       expect(result).toContain('用户对象')
     })
 
-    it('应该包含字段信息', () => {
+    it('should include field info', () => {
       const schema = {
         type: 'object',
         properties: {
@@ -51,7 +51,7 @@ describe('MarkdownExporter', () => {
       expect(result).toContain('age')
     })
 
-    it('必填字段应有标记', () => {
+    it('required fields should be marked', () => {
       const schema = {
         type: 'object',
         properties: {
@@ -61,13 +61,13 @@ describe('MarkdownExporter', () => {
         required: ['name'],
       }
       const result = MarkdownExporter.export(schema)
-      // 必填字段应在输出中有区分标记
+      // required fields should have a distinguishing marker in output
       expect(result).toContain('name')
     })
   })
 
-  describe('复杂 Schema', () => {
-    it('应该处理嵌套对象', () => {
+  describe('complex schema', () => {
+    it('should handle nested objects', () => {
       const schema = {
         type: 'object',
         properties: {
@@ -84,7 +84,7 @@ describe('MarkdownExporter', () => {
       expect(result.length).toBeGreaterThan(0)
     })
 
-    it('应该处理枚举类型', () => {
+    it('should handle enum types', () => {
       const schema = {
         type: 'object',
         properties: {
@@ -95,7 +95,7 @@ describe('MarkdownExporter', () => {
       expect(typeof result).toBe('string')
     })
 
-    it('应该处理带约束的字段', () => {
+    it('should handle fields with constraints', () => {
       const schema = {
         type: 'object',
         properties: {

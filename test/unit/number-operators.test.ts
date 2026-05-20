@@ -1,7 +1,7 @@
 ﻿/**
  * Number Comparison Operators Tests (v1.1.2)
  *
- * 测试 number 和 integer 类型的比较运算符：>, >=, <, <=, =
+ * Tests for number and integer type comparison operators: >, >=, <, <=, =
  */
 
 import { describe, it, expect } from 'vitest';
@@ -9,18 +9,18 @@ import { dsl, validate } from '../../src/index.js';
 
 describe('Number Comparison Operators (v1.1.2)', () => {
 
-  describe('大于运算符 (>)', () => {
-    it('应该正确验证 number:>0', () => {
+  describe('Greater Than Operator (>)', () => {
+    it('should correctly validate number:>0', () => {
       const schema = dsl({ value: 'number:>0' });
 
-      // 边界测试
+      // boundary test
       expect(validate(schema, { value: 1 }).valid).toBe(true);
       expect(validate(schema, { value: 0.1 }).valid).toBe(true);
       expect(validate(schema, { value: 0 }).valid).toBe(false);
       expect(validate(schema, { value: -1 }).valid).toBe(false);
     });
 
-    it('应该支持小数 number:>0.5', () => {
+    it('should support decimal number:>0.5', () => {
       const schema = dsl({ value: 'number:>0.5' });
 
       expect(validate(schema, { value: 0.6 }).valid).toBe(true);
@@ -29,7 +29,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { value: 0.4 }).valid).toBe(false);
     });
 
-    it('应该支持负数边界 number:>-10', () => {
+    it('should support negative boundary number:>-10', () => {
       const schema = dsl({ value: 'number:>-10' });
 
       expect(validate(schema, { value: -9 }).valid).toBe(true);
@@ -38,15 +38,15 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { value: -11 }).valid).toBe(false);
     });
 
-    it('应该支持必填标记 number:>0!', () => {
+    it('should support required marker number:>0!', () => {
       const schema = dsl({ value: 'number:>0!' });
 
       expect(validate(schema, { value: 1 }).valid).toBe(true);
-      expect(validate(schema, {}).valid).toBe(false); // 必填
-      expect(validate(schema, { value: 0 }).valid).toBe(false); // 不满足>0
+      expect(validate(schema, {}).valid).toBe(false); // required
+      expect(validate(schema, { value: 0 }).valid).toBe(false); // does not satisfy >0
     });
 
-    it('应该支持 integer 类型', () => {
+    it('should support integer type', () => {
       const schema = dsl({ count: 'integer:>0' });
 
       expect(validate(schema, { count: 1 }).valid).toBe(true);
@@ -54,8 +54,8 @@ describe('Number Comparison Operators (v1.1.2)', () => {
     });
   });
 
-  describe('大于等于运算符 (>=)', () => {
-    it('应该正确验证 number:>=18', () => {
+  describe('Greater Than or Equal Operator (>=)', () => {
+    it('should correctly validate number:>=18', () => {
       const schema = dsl({ age: 'number:>=18' });
 
       expect(validate(schema, { age: 18 }).valid).toBe(true);
@@ -64,7 +64,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { age: 17.9 }).valid).toBe(false);
     });
 
-    it('应该支持小数 number:>=18.5', () => {
+    it('should support decimal number:>=18.5', () => {
       const schema = dsl({ value: 'number:>=18.5' });
 
       expect(validate(schema, { value: 18.5 }).valid).toBe(true);
@@ -72,7 +72,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { value: 18.4 }).valid).toBe(false);
     });
 
-    it('应该支持零边界 number:>=0', () => {
+    it('should support zero boundary number:>=0', () => {
       const schema = dsl({ value: 'number:>=0' });
 
       expect(validate(schema, { value: 0 }).valid).toBe(true);
@@ -81,8 +81,8 @@ describe('Number Comparison Operators (v1.1.2)', () => {
     });
   });
 
-  describe('小于运算符 (<)', () => {
-    it('应该正确验证 number:<100', () => {
+  describe('Less Than Operator (<)', () => {
+    it('should correctly validate number:<100', () => {
       const schema = dsl({ value: 'number:<100' });
 
       expect(validate(schema, { value: 99 }).valid).toBe(true);
@@ -91,7 +91,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { value: 101 }).valid).toBe(false);
     });
 
-    it('应该支持小数 number:<99.99', () => {
+    it('should support decimal number:<99.99', () => {
       const schema = dsl({ price: 'number:<99.99' });
 
       expect(validate(schema, { price: 99.98 }).valid).toBe(true);
@@ -99,7 +99,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { price: 100 }).valid).toBe(false);
     });
 
-    it('应该支持负数边界 number:<0', () => {
+    it('should support negative boundary number:<0', () => {
       const schema = dsl({ value: 'number:<0' });
 
       expect(validate(schema, { value: -1 }).valid).toBe(true);
@@ -109,8 +109,8 @@ describe('Number Comparison Operators (v1.1.2)', () => {
     });
   });
 
-  describe('小于等于运算符 (<=)', () => {
-    it('应该正确验证 number:<=100', () => {
+  describe('Less Than or Equal Operator (<=)', () => {
+    it('should correctly validate number:<=100', () => {
       const schema = dsl({ score: 'number:<=100' });
 
       expect(validate(schema, { score: 100 }).valid).toBe(true);
@@ -118,7 +118,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { score: 101 }).valid).toBe(false);
     });
 
-    it('应该支持小数 number:<=100.5', () => {
+    it('should support decimal number:<=100.5', () => {
       const schema = dsl({ value: 'number:<=100.5' });
 
       expect(validate(schema, { value: 100.5 }).valid).toBe(true);
@@ -127,8 +127,8 @@ describe('Number Comparison Operators (v1.1.2)', () => {
     });
   });
 
-  describe('等于运算符 (=)', () => {
-    it('应该正确验证 number:=100', () => {
+  describe('Equal Operator (=)', () => {
+    it('should correctly validate number:=100', () => {
       const schema = dsl({ score: 'number:=100' });
 
       expect(validate(schema, { score: 100 }).valid).toBe(true);
@@ -136,7 +136,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { score: 101 }).valid).toBe(false);
     });
 
-    it('应该支持小数精确匹配 number:=99.99', () => {
+    it('should support exact decimal match number:=99.99', () => {
       const schema = dsl({ price: 'number:=99.99' });
 
       expect(validate(schema, { price: 99.99 }).valid).toBe(true);
@@ -144,7 +144,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { price: 100 }).valid).toBe(false);
     });
 
-    it('应该支持零值 number:=0', () => {
+    it('should support zero value number:=0', () => {
       const schema = dsl({ value: 'number:=0' });
 
       expect(validate(schema, { value: 0 }).valid).toBe(true);
@@ -153,8 +153,8 @@ describe('Number Comparison Operators (v1.1.2)', () => {
     });
   });
 
-  describe('向后兼容性', () => {
-    it('应该保持原有范围语法不变 number:18-120', () => {
+  describe('Backward Compatibility', () => {
+    it('should keep existing range syntax unchanged number:18-120', () => {
       const schema = dsl({ age: 'number:18-120' });
 
       expect(validate(schema, { age: 18 }).valid).toBe(true);
@@ -164,7 +164,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { age: 121 }).valid).toBe(false);
     });
 
-    it('应该保持单边范围语法不变 number:18-', () => {
+    it('should keep one-sided range syntax unchanged number:18-', () => {
       const schema = dsl({ age: 'number:18-' });
 
       expect(validate(schema, { age: 18 }).valid).toBe(true);
@@ -172,7 +172,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { age: 17 }).valid).toBe(false);
     });
 
-    it('应该保持单边范围语法不变 number:-100', () => {
+    it('should keep one-sided range syntax unchanged number:-100', () => {
       const schema = dsl({ score: 'number:-100' });
 
       expect(validate(schema, { score: 0 }).valid).toBe(true);
@@ -180,7 +180,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { score: 101 }).valid).toBe(false);
     });
 
-    it('应该保持单个值语法不变 number:100', () => {
+    it('should keep single value syntax unchanged number:100', () => {
       const schema = dsl({ count: 'number:100' });
 
       expect(validate(schema, { count: 50 }).valid).toBe(true);
@@ -189,8 +189,8 @@ describe('Number Comparison Operators (v1.1.2)', () => {
     });
   });
 
-  describe('实际应用场景', () => {
-    it('场景1：年龄验证（必须大于等于18岁）', () => {
+  describe('Real-world Scenarios', () => {
+    it('scenario 1: age validation (must be at least 18)', () => {
       const schema = dsl({ age: 'number:>=18!' });
 
       expect(validate(schema, { age: 18 }).valid).toBe(true);
@@ -199,7 +199,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, {}).valid).toBe(false);
     });
 
-    it('场景2：价格验证（大于0）', () => {
+    it('scenario 2: price validation (greater than 0)', () => {
       const schema = dsl({ price: 'number:>0!' });
 
       expect(validate(schema, { price: 0.01 }).valid).toBe(true);
@@ -208,7 +208,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { price: -1 }).valid).toBe(false);
     });
 
-    it('场景3：等级验证（必须等于特定值）', () => {
+    it('scenario 3: level validation (must equal specific value)', () => {
       const schema = dsl({ level: 'number:=5!' });
 
       expect(validate(schema, { level: 5 }).valid).toBe(true);
@@ -216,7 +216,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { level: 6 }).valid).toBe(false);
     });
 
-    it('场景4：温度上限（小于100度）', () => {
+    it('scenario 4: temperature upper limit (less than 100)', () => {
       const schema = dsl({ temperature: 'number:<100' });
 
       expect(validate(schema, { temperature: 50 }).valid).toBe(true);
@@ -224,7 +224,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { temperature: 100 }).valid).toBe(false);
     });
 
-    it('场景5：最低分数（大于等于0）', () => {
+    it('scenario 5: minimum score (greater than or equal to 0)', () => {
       const schema = dsl({ score: 'number:>=0' });
 
       expect(validate(schema, { score: 0 }).valid).toBe(true);
@@ -233,15 +233,15 @@ describe('Number Comparison Operators (v1.1.2)', () => {
     });
   });
 
-  describe('边界情况', () => {
-    it('应该正确处理浮点数精度', () => {
+  describe('Edge Cases', () => {
+    it('should correctly handle floating point precision', () => {
       const schema = dsl({ value: 'number:>0.1' });
 
       expect(validate(schema, { value: 0.2 }).valid).toBe(true);
       expect(validate(schema, { value: 0.1 }).valid).toBe(false);
     });
 
-    it('应该正确处理负数范围', () => {
+    it('should correctly handle negative range', () => {
       const schema = dsl({ value: 'number:>-100' });
 
       expect(validate(schema, { value: -99 }).valid).toBe(true);
@@ -249,7 +249,7 @@ describe('Number Comparison Operators (v1.1.2)', () => {
       expect(validate(schema, { value: -100 }).valid).toBe(false);
     });
 
-    it('应该正确处理大数值', () => {
+    it('should correctly handle large values', () => {
       const schema = dsl({ value: 'number:>1000000' });
 
       expect(validate(schema, { value: 1000001 }).valid).toBe(true);

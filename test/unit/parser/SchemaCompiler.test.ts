@@ -1,6 +1,6 @@
 ﻿/**
- * SchemaCompiler 单元测试
- * 测试最终 JSON Schema 编译（内部键剥离、组装 required 数组等）
+ * SchemaCompiler unit tests
+ * Tests final JSON Schema compilation (internal key stripping, assembling required array, etc.)
  */
 
 import { describe, it, expect } from 'vitest'
@@ -9,7 +9,7 @@ import { TypeRegistry } from '../../../src/parser/TypeRegistry.js'
 
 describe('SchemaCompiler', () => {
   describe('compile(typeDef, constraints, meta)', () => {
-    it('合并 baseSchema + constraints', () => {
+    it('merges baseSchema + constraints', () => {
       const typeDef = TypeRegistry.resolve('string')
       const out = SchemaCompiler.compile(typeDef, { minLength: 3, maxLength: 32 })
       expect(out.type).toBe('string')
@@ -17,27 +17,27 @@ describe('SchemaCompiler', () => {
       expect(out.maxLength).toBe(32)
     })
 
-    it('meta.required 注入 _required', () => {
+    it('meta.required injects _required', () => {
       const typeDef = TypeRegistry.resolve('string')
       const out = SchemaCompiler.compile(typeDef, {}, { required: true })
       expect(out._required).toBe(true)
     })
 
-    it('meta.label 注入 _label', () => {
+    it('meta.label injects _label', () => {
       const typeDef = TypeRegistry.resolve('string')
       const out = SchemaCompiler.compile(typeDef, {}, { label: '姓名' })
       expect(out._label).toBe('姓名')
     })
 
-    it('constraints 覆盖 baseSchema 同名字段', () => {
+    it('constraints override same-name fields in baseSchema', () => {
       const typeDef = TypeRegistry.resolve('email')
-      const out = SchemaCompiler.compile(typeDef, { format: 'date' }) // 覆盖 email format
+      const out = SchemaCompiler.compile(typeDef, { format: 'date' }) // override email format
       expect(out.format).toBe('date')
     })
   })
 
   describe('toJsonSchema(schema, internalKeys)', () => {
-    it('剥离内部键 _label/_required', () => {
+    it('strips internal keys _label/_required', () => {
       const raw = { type: 'string', minLength: 3, _label: '姓名', _required: true }
       const internalKeys = TypeRegistry.getInternalKeys()
       const out = SchemaCompiler.toJsonSchema(raw, internalKeys)
@@ -45,7 +45,7 @@ describe('SchemaCompiler', () => {
       expect('_required' in out).toBe(false)
     })
 
-    it('保留标准键 type/minLength', () => {
+    it('retains standard keys type/minLength', () => {
       const raw = { type: 'string', minLength: 3, _required: true }
       const internalKeys = TypeRegistry.getInternalKeys()
       const out = SchemaCompiler.toJsonSchema(raw, internalKeys)

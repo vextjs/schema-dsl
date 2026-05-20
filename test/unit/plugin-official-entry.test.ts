@@ -5,7 +5,7 @@ import customFormatPlugin from '../../src/plugins/custom-format.js'
 import customValidatorPlugin from '../../src/plugins/custom-validator.js'
 import customTypeExamplePlugin from '../../src/plugins/custom-type-example.js'
 
-describe('官方插件入口兼容', () => {
+describe('Official Plugin Entry Compatibility', () => {
   let pluginManager: PluginManager
 
   beforeEach(() => {
@@ -15,7 +15,7 @@ describe('官方插件入口兼容', () => {
     delete (globalThis as typeof globalThis & { __schemaDsl_plugins?: Record<string, unknown> }).__schemaDsl_plugins
   })
 
-  it('应该提供与 v1 一致的 custom-format 插件对象', () => {
+  it('should provide a custom-format plugin object consistent with v1', () => {
     expect(customFormatPlugin.name).toBe('custom-format')
     expect(customFormatPlugin.version).toBe('2.0.0')
     expect(customFormatPlugin.description).toContain('Custom format validation plugin')
@@ -24,7 +24,7 @@ describe('官方插件入口兼容', () => {
     expect(typeof customFormatPlugin.addCustomFormats).toBe('function')
   })
 
-  it('应该通过官方 custom-format 插件入口注册 phone-cn 类型', () => {
+  it('should register phone-cn type via official custom-format plugin entry', () => {
     pluginManager.register(customFormatPlugin)
     pluginManager.install(schemaDsl, 'custom-format')
 
@@ -33,7 +33,7 @@ describe('官方插件入口兼容', () => {
     expect(validate(dsl({ phone: 'phone-cn!' }), { phone: '123' }).valid).toBe(false)
   })
 
-  it('应该通过官方 custom-type-example 插件入口注册 order-id 类型', () => {
+  it('should register order-id type via official custom-type-example plugin entry', () => {
     pluginManager.register(customTypeExamplePlugin)
     pluginManager.install(schemaDsl, 'custom-type-example')
 
@@ -42,7 +42,7 @@ describe('官方插件入口兼容', () => {
     expect(validate(dsl({ orderId: 'order-id!' }), { orderId: 'BAD' }).valid).toBe(false)
   })
 
-  it('应该通过官方 custom-validator 插件入口暴露同步关键字能力', () => {
+  it('should expose sync keyword capability via official custom-validator plugin entry', () => {
     pluginManager.register(customValidatorPlugin)
     pluginManager.install(schemaDsl, 'custom-validator')
 
@@ -61,7 +61,7 @@ describe('官方插件入口兼容', () => {
     expect(validate(schema, { password: 'weak' }).valid).toBe(false)
   })
 
-  it('应该在安装 custom-validator 后写入 v1 风格全局插件桶', () => {
+  it('should write to v1-style global plugin bucket after installing custom-validator', () => {
     pluginManager.register(customValidatorPlugin)
     pluginManager.install(schemaDsl, 'custom-validator')
 
@@ -73,7 +73,7 @@ describe('官方插件入口兼容', () => {
     expect(globalBucket?.['custom-validator']).toBe(customValidatorPlugin)
   })
 
-  it('应该安装 custom-validator 且不输出 AJV deprecated addKeyword 警告', () => {
+  it('should install custom-validator without emitting AJV deprecated addKeyword warning', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     try {

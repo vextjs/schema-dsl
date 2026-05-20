@@ -1,13 +1,13 @@
 ﻿/**
- * ConditionalBuilder 链式条件构建器测试 — v2 迁移（v1 conditional-builder.test.js）
+ * ConditionalBuilder Chain Condition Builder Tests — v2 Migration (v1 conditional-builder.test.js)
  */
 
 import { describe, it, expect } from 'vitest'
 import { dsl, validate } from '../../src/index.js'
 
-describe('ConditionalBuilder - 链式条件构建器', () => {
-  describe('基础功能', () => {
-    it('应该支持简单条件 + message（不满足抛错）', () => {
+describe('ConditionalBuilder - Chain Condition Builder', () => {
+  describe('Basic Features', () => {
+    it('should support simple condition + message (throw on failure)', () => {
       const schema = dsl({
         age: 'number!',
         status: dsl.if((data: any) => data.age < 18).message('未成年用户不能注册'),
@@ -21,7 +21,7 @@ describe('ConditionalBuilder - 链式条件构建器', () => {
       expect(result2.errors![0].message).toBe('未成年用户不能注册')
     })
 
-    it('应该支持条件 + then（动态Schema）', () => {
+    it('should support condition + then (dynamic Schema)', () => {
       const schema = dsl({
         userType: 'string!',
         email: dsl.if((data: any) => data.userType === 'admin').then('email!').else('email'),
@@ -37,7 +37,7 @@ describe('ConditionalBuilder - 链式条件构建器', () => {
       expect(result3.valid).toBe(true)
     })
 
-    it('应该支持 else 可选（不写 else 就不验证）', () => {
+    it('should support optional else (no validation when else is omitted)', () => {
       const schema = dsl({
         userType: 'string!',
         vipLevel: dsl.if((data: any) => data.userType === 'vip').then('active|gold|silver'),
@@ -50,7 +50,7 @@ describe('ConditionalBuilder - 链式条件构建器', () => {
       expect(result2.valid).toBe(true)
     })
 
-    it('应该支持多个 .and() 链式条件', () => {
+    it('should support multiple .and() chained conditions', () => {
       const schema = dsl({
         age: 'number!',
         income: 'number!',
@@ -70,22 +70,22 @@ describe('ConditionalBuilder - 链式条件构建器', () => {
     })
   })
 
-  describe('.assert() 方法', () => {
-    it('条件成立时应该抛出错误', () => {
+  describe('.assert() Method', () => {
+    it('should throw error when condition is met', () => {
       const validator = dsl.if((d: any) => d.age < 18).message('未成年')
 
       expect(() => validator.assert({ age: 16 })).toThrow('未成年')
     })
 
-    it('条件不成立时不应抛出错误', () => {
+    it('should not throw error when condition is not met', () => {
       const validator = dsl.if((d: any) => d.age < 18).message('未成年')
 
       expect(() => validator.assert({ age: 20 })).not.toThrow()
     })
   })
 
-  describe('.validate() 方法', () => {
-    it('应该返回验证结果对象', () => {
+  describe('.validate() Method', () => {
+    it('should return validation result object', () => {
       const result = dsl
         .if((d: any) => d.age < 18)
         .message('未成年')
@@ -95,7 +95,7 @@ describe('ConditionalBuilder - 链式条件构建器', () => {
       expect(result.errors![0].message).toBe('未成年')
     })
 
-    it('通过时返回 valid: true', () => {
+    it('should return valid: true when passing', () => {
       const result = dsl
         .if((d: any) => d.age < 18)
         .message('未成年')
@@ -105,8 +105,8 @@ describe('ConditionalBuilder - 链式条件构建器', () => {
     })
   })
 
-  describe('嵌套场景', () => {
-    it('应该在嵌套对象中正常工作', () => {
+  describe('Nested Scenarios', () => {
+    it('should work correctly in nested objects', () => {
       const schema = dsl({
         user: {
           age: 'number!',

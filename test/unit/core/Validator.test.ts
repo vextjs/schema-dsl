@@ -1,6 +1,6 @@
 ﻿/**
- * Validator 单元测试
- * 测试 AJV 集成、错误收集、自定义关键字
+ * Validator Unit Tests
+ * Tests AJV integration, error collection, custom keywords
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -14,19 +14,19 @@ describe('Validator', () => {
     validator = new Validator()
   })
 
-  describe('构造函数', () => {
-    it('创建实例', () => {
+  describe('Constructor', () => {
+    it('creates an instance', () => {
       expect(validator).toBeInstanceOf(Validator)
     })
 
-    it('接受自定义 AJV 选项', () => {
+    it('accepts custom AJV options', () => {
       const v = new Validator({ strict: false })
       expect(v).toBeInstanceOf(Validator)
     })
   })
 
-  describe('validate() — 有效数据', () => {
-    it('简单对象通过', () => {
+  describe('validate() — valid data', () => {
+    it('simple object passes', () => {
       const schema = {
         type: 'object' as const,
         properties: { name: { type: 'string' as const } },
@@ -34,11 +34,11 @@ describe('Validator', () => {
       }
       const result = validator.validate(schema, { name: 'Alice' })
       expect(result.valid).toBe(true)
-      // v1 compat: 成功时 errors 为空数组
+      // v1 compat: errors is empty array on success
       expect(result.errors ?? []).toHaveLength(0)
     })
 
-    it('嵌套对象通过', () => {
+    it('nested object passes', () => {
       const schema = {
         type: 'object' as const,
         properties: {
@@ -53,8 +53,8 @@ describe('Validator', () => {
     })
   })
 
-  describe('validate() — 无效数据', () => {
-    it('缺少必填字段报错', () => {
+  describe('validate() — invalid data', () => {
+    it('missing required field triggers error', () => {
       const schema = {
         type: 'object' as const,
         properties: { name: { type: 'string' as const } },
@@ -65,33 +65,33 @@ describe('Validator', () => {
       expect(result.errors?.length).toBeGreaterThan(0)
     })
 
-    it('类型错误报错', () => {
+    it('type error triggers error', () => {
       const schema = { type: 'number' as const }
       const result = validator.validate(schema, 'notanumber')
       expect(result.valid).toBe(false)
     })
 
-    it('minLength 约束报错', () => {
+    it('minLength constraint triggers error', () => {
       const schema = { type: 'string' as const, minLength: 5 }
       const result = validator.validate(schema, 'ab')
       expect(result.valid).toBe(false)
     })
 
-    it('maximum 约束报错', () => {
+    it('maximum constraint triggers error', () => {
       const schema = { type: 'number' as const, maximum: 10 }
       const result = validator.validate(schema, 99)
       expect(result.valid).toBe(false)
     })
 
-    it('format:email 报错', () => {
+    it('format:email triggers error', () => {
       const schema = { type: 'string' as const, format: 'email' }
       const result = validator.validate(schema, 'not-an-email')
       expect(result.valid).toBe(false)
     })
   })
 
-  describe('validate() — 错误格式', () => {
-    it('errors 包含 message 和 path', () => {
+  describe('validate() — error format', () => {
+    it('errors contain message and path', () => {
       const schema = {
         type: 'object' as const,
         properties: { age: { type: 'number' as const } },
@@ -104,7 +104,7 @@ describe('Validator', () => {
   })
 
   describe('validate() — schema allErrors', () => {
-    it('收集所有错误（不仅首个）', () => {
+    it('collects all errors (not just the first)', () => {
       const schema = {
         type: 'object' as const,
         properties: {
@@ -119,14 +119,14 @@ describe('Validator', () => {
   })
 
   describe('validateAsync()', () => {
-    it('异步验证有效数据 — 直接返回数据', async () => {
+    it('async validate valid data — returns data directly', async () => {
       const schema = { type: 'string' as const, minLength: 1 }
       const result = await validator.validateAsync(schema, 'hello')
-      // validateAsync 成功时返回原始数据，不是 ValidationResult 对象
+      // validateAsync returns raw data on success, not a ValidationResult object
       expect(result).toBe('hello')
     })
 
-    it('异步验证无效数据 — 抛出 ValidationError', async () => {
+    it('async validate invalid data — throws ValidationError', async () => {
       const schema = { type: 'string' as const, minLength: 10 }
       await expect(validator.validateAsync(schema, 'hi')).rejects.toThrow()
     })

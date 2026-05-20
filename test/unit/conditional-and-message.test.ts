@@ -1,13 +1,13 @@
 ﻿/**
- * ConditionalBuilder .and()/.or() 独立消息测试 — v2 迁移（v1 conditional-and-message.test.js）
+ * ConditionalBuilder .and()/.or() Independent Message Tests — v2 Migration (v1 conditional-and-message.test.js)
  */
 
 import { describe, it, expect } from 'vitest'
 import { dsl } from '../../src/index.js'
 
-describe('ConditionalBuilder - .and()/.or() 独立消息', () => {
-  describe('.and() 独立消息', () => {
-    it('应该支持为 .and() 条件设置独立消息', () => {
+describe('ConditionalBuilder - .and()/.or() Independent Messages', () => {
+  describe('.and() Independent Messages', () => {
+    it('should support setting independent messages for .and() conditions', () => {
       const amount = 100
       const account = { tradable_credits: 50 }
 
@@ -19,13 +19,14 @@ describe('ConditionalBuilder - .and()/.or() 独立消息', () => {
           .message('INSUFFICIENT_TRADABLE_CREDITS')
           .assert(account)
 
-        expect.fail('应该抛出错误')
+        expect.fail('should have thrown an error')
       } catch (error: any) {
+        // second condition fires: tradable_credits(50) < amount(100) → INSUFFICIENT_TRADABLE_CREDITS
         expect(error.errors[0].message).toBe('INSUFFICIENT_TRADABLE_CREDITS')
       }
     })
 
-    it('第一个条件失败时应该返回第一个消息', () => {
+    it('should return the first message when the first condition fails', () => {
       const amount = 100
 
       try {
@@ -36,13 +37,13 @@ describe('ConditionalBuilder - .and()/.or() 独立消息', () => {
           .message('INSUFFICIENT_TRADABLE_CREDITS')
           .assert(null)
 
-        expect.fail('应该抛出错误')
+        expect.fail('should have thrown an error')
       } catch (error: any) {
         expect(error.errors[0].message).toBe('ACCOUNT_NOT_FOUND')
       }
     })
 
-    it('所有条件通过时不应抛错', () => {
+    it('should not throw when all conditions pass', () => {
       const amount = 100
       const account = { tradable_credits: 150 }
 
@@ -56,7 +57,7 @@ describe('ConditionalBuilder - .and()/.or() 独立消息', () => {
       expect(result.valid).toBe(true)
     })
 
-    it('应该支持多个 .and() 条件各有独立消息', () => {
+    it('should support multiple .and() conditions each with independent messages', () => {
       const amount = 100
       const account = { tradable_credits: 50, status: 'inactive' }
 
@@ -70,20 +71,20 @@ describe('ConditionalBuilder - .and()/.or() 独立消息', () => {
           .message('INSUFFICIENT_TRADABLE_CREDITS')
           .assert(account)
 
-        expect.fail('应该抛出错误')
+        expect.fail('should have thrown an error')
       } catch (error: any) {
-        // status 不是 active → ACCOUNT_INACTIVE
+        // status is not active → ACCOUNT_INACTIVE
         expect(error.errors[0].message).toBe('ACCOUNT_INACTIVE')
       }
     })
   })
 
-  describe('.or() 独立消息', () => {
-    it('应该支持为 .or() 条件设置独立消息', () => {
+  describe('.or() Independent Messages', () => {
+    it('should support setting independent messages for .or() conditions', () => {
       const account = { tradable_credits: 50, bonus: 30 }
       const amount = 100
 
-      // 检查失败状态：余额不足 → 抛出对应消息
+      // check failure state: insufficient balance → throw corresponding message
       try {
         dsl
           .if((d: any) => d.tradable_credits < amount)
@@ -92,14 +93,14 @@ describe('ConditionalBuilder - .and()/.or() 独立消息', () => {
           .message('INSUFFICIENT_BONUS')
           .assert(account)
 
-        expect.fail('应该抛出错误')
+        expect.fail('should have thrown an error')
       } catch (error: any) {
-        // chain-check: 第一个 TRUE 的条件的消息
+        // chain-check: message of the first TRUE condition
         expect(error.errors[0].message).toBe('INSUFFICIENT_CREDITS')
       }
     })
 
-    it('or 中任一条件满足时应通过', () => {
+    it('should pass when any .or() condition is satisfied', () => {
       const account = { tradable_credits: 150, bonus: 30 }
       const amount = 100
 

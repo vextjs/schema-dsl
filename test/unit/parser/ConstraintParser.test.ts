@@ -1,13 +1,13 @@
 ﻿/**
- * ConstraintParser 单元测试
- * 测试约束字符串解析：范围/格式/枚举/自定义
+ * ConstraintParser unit tests
+ * Tests constraint string parsing: ranges/formats/enums/custom
  */
 
 import { describe, it, expect } from 'vitest'
 import { ConstraintParser } from '../../../src/parser/ConstraintParser.js'
 
 describe('ConstraintParser', () => {
-  describe('parse(str, baseType) — string 范围', () => {
+  describe('parse(str, baseType) — string range', () => {
     it('3-32 → minLength/maxLength', () => {
       const r = ConstraintParser.parse('3-32', 'string')
       expect(r.minLength).toBe(3)
@@ -26,7 +26,7 @@ describe('ConstraintParser', () => {
     })
   })
 
-  describe('parse(str, baseType) — number 范围', () => {
+  describe('parse(str, baseType) — number range', () => {
     it('0-100 → minimum/maximum', () => {
       const r = ConstraintParser.parse('0-100', 'number')
       expect(r.minimum).toBe(0)
@@ -40,7 +40,7 @@ describe('ConstraintParser', () => {
     })
   })
 
-  describe('parse(str, baseType) — 比较运算符', () => {
+  describe('parse(str, baseType) — comparison operators', () => {
     it('>=18 → minimum:18', () => {
       const r = ConstraintParser.parse('>=18', 'number')
       expect(r.minimum).toBe(18)
@@ -52,15 +52,15 @@ describe('ConstraintParser', () => {
     })
   })
 
-  describe('parse(str, baseType) — 枚举', () => {
+  describe('parse(str, baseType) — enum', () => {
     it('a|b|c → enum', () => {
       const r = ConstraintParser.parse('a|b|c', 'string')
       expect(r.enum).toEqual(['a', 'b', 'c'])
     })
   })
 
-  describe('parse(str, baseType) — 空/无效', () => {
-    it('空字符串返回 {}', () => {
+  describe('parse(str, baseType) — empty/invalid', () => {
+    it('empty string returns {}', () => {
       const r = ConstraintParser.parse('', 'string')
       expect(r).toEqual({})
     })

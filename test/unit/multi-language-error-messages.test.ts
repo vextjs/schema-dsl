@@ -1,6 +1,6 @@
 ﻿/**
- * 多语言错误消息测试 (v2 TypeScript)
- * 完整覆盖所有语言
+ * Multi-language Error Message Tests (v2 TypeScript)
+ * Full coverage of all languages
  */
 
 import { describe, it, expect } from 'vitest'
@@ -8,9 +8,9 @@ import Ajv from 'ajv'
 import { validate, Validator } from '../../src/index.js'
 import { ErrorFormatter } from '../../src/core/ErrorFormatter.js'
 
-describe('ErrorFormatter - 多语言完整性测试', () => {
+describe('ErrorFormatter - Multi-language Completeness Tests', () => {
 
-  describe('enum 错误消息 - 所有语言', () => {
+  describe('enum error messages - all languages', () => {
 
     const schema = {
       type: 'object',
@@ -26,7 +26,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
     const compiledSchema = validator.compile(schema)
     const testData = { plan_type: 'premium' }
 
-    it('应该正确显示枚举值（英文 en-US）', () => {
+    it('should correctly display enum values (English en-US)', () => {
       const valid = compiledSchema(testData)
       expect(valid).toBe(false)
 
@@ -41,7 +41,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
       expect(errors[0].message).not.toContain('{{#allowed}}')
     })
 
-    it('应该正确显示枚举值（中文 zh-CN）', () => {
+    it('should correctly display enum values (Chinese zh-CN)', () => {
       const valid = compiledSchema(testData)
       expect(valid).toBe(false)
 
@@ -55,7 +55,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
       expect(errors[0].message).not.toContain('{{#valids}}')
     })
 
-    it('应该正确显示枚举值（西班牙语 es-ES）', () => {
+    it('should correctly display enum values (Spanish es-ES)', () => {
       const valid = compiledSchema(testData)
       expect(valid).toBe(false)
 
@@ -69,7 +69,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
       expect(errors[0].message).not.toContain('{{#valids}}')
     })
 
-    it('应该正确显示枚举值（法语 fr-FR）', () => {
+    it('should correctly display enum values (French fr-FR)', () => {
       const valid = compiledSchema(testData)
       expect(valid).toBe(false)
 
@@ -83,7 +83,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
       expect(errors[0].message).not.toContain('{{#valids}}')
     })
 
-    it('应该正确显示枚举值（日语 ja-JP）', () => {
+    it('should correctly display enum values (Japanese ja-JP)', () => {
       const valid = compiledSchema(testData)
       expect(valid).toBe(false)
 
@@ -99,7 +99,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
 
   })
 
-  describe('additionalProperties 错误消息 - 所有语言', () => {
+  describe('additionalProperties error messages - all languages', () => {
 
     const ajv = new Ajv({ allErrors: true })
     const schema = {
@@ -115,7 +115,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
     const compiledSchema = ajv.compile(schema)
     const testData = { name: 'John', age: 30, email: 'john@example.com' }
 
-    it('应该正确显示未知属性名（英文 en-US）', () => {
+    it('should correctly display unknown property name (English en-US)', () => {
       const valid = compiledSchema(testData)
       expect(valid).toBe(false)
 
@@ -130,7 +130,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
       }
     })
 
-    it('应该正确显示未知属性名（中文 zh-CN）', () => {
+    it('should correctly display unknown property name (Chinese zh-CN)', () => {
       const valid = compiledSchema(testData)
       expect(valid).toBe(false)
 
@@ -145,7 +145,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
       }
     })
 
-    it('应该正确显示未知属性名（西班牙语 es-ES）', () => {
+    it('should correctly display unknown property name (Spanish es-ES)', () => {
       const valid = compiledSchema(testData)
       expect(valid).toBe(false)
 
@@ -160,7 +160,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
       }
     })
 
-    it('应该正确显示未知属性名（法语 fr-FR）', () => {
+    it('should correctly display unknown property name (French fr-FR)', () => {
       const valid = compiledSchema(testData)
       expect(valid).toBe(false)
 
@@ -175,7 +175,7 @@ describe('ErrorFormatter - 多语言完整性测试', () => {
       }
     })
 
-    it('应该正确显示未知属性名（日语 ja-JP）', () => {
+    it('should correctly display unknown property name (Japanese ja-JP)', () => {
       const valid = compiledSchema(testData)
       expect(valid).toBe(false)
 

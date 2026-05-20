@@ -1,6 +1,6 @@
 ﻿/**
- * 语言包完整性测试
- * 测试 zh-CN / en-US / ja-JP 三包关键 key 一致且非空
+ * Locale Package Completeness Tests
+ * Tests that the zh-CN / en-US / ja-JP packs have consistent, non-empty keys
  */
 
 import { describe, it, expect } from 'vitest'
@@ -20,10 +20,10 @@ const REQUIRED_KEYS = [
   'format.url',
 ]
 
-describe('语言包完整性', () => {
+describe('Locale Package Completeness', () => {
   describe('zh-CN', () => {
     for (const key of REQUIRED_KEYS) {
-      it(`包含 key: ${key}`, () => {
+      it(`contains key: ${key}`, () => {
         const val = (zhCN as Record<string, unknown>)[key]
         expect(val).toBeTruthy()
       })
@@ -32,7 +32,7 @@ describe('语言包完整性', () => {
 
   describe('en-US', () => {
     for (const key of REQUIRED_KEYS) {
-      it(`包含 key: ${key}`, () => {
+      it(`contains key: ${key}`, () => {
         const val = (enUS as Record<string, unknown>)[key]
         expect(val).toBeTruthy()
       })
@@ -41,15 +41,15 @@ describe('语言包完整性', () => {
 
   describe('ja-JP', () => {
     for (const key of REQUIRED_KEYS) {
-      it(`包含 key: ${key}`, () => {
+      it(`contains key: ${key}`, () => {
         const val = (jaJP as Record<string, unknown>)[key]
         expect(val).toBeTruthy()
       })
     }
   })
 
-  describe('三包 key 集合一致', () => {
-    it('zh-CN 与 en-US 的 key 集合相同', () => {
+  describe('Three-pack key sets are identical', () => {
+    it('zh-CN and en-US should have the same key set', () => {
       const zhKeys = new Set(Object.keys(zhCN))
       const enKeys = new Set(Object.keys(enUS))
       const onlyInZh = [...zhKeys].filter(k => !enKeys.has(k))
@@ -58,7 +58,7 @@ describe('语言包完整性', () => {
       expect(onlyInEn).toHaveLength(0)
     })
 
-    it('zh-CN 与 ja-JP 的 key 集合相同', () => {
+    it('zh-CN and ja-JP should have the same key set', () => {
       const zhKeys = new Set(Object.keys(zhCN))
       const jaKeys = new Set(Object.keys(jaJP))
       const onlyInZh = [...zhKeys].filter(k => !jaKeys.has(k))

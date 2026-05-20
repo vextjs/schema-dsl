@@ -1,6 +1,6 @@
 ﻿/**
- * 导出器单元测试
- * 覆盖 MongoDB / MySQL / PostgreSQL / Markdown 四个导出器
+ * Exporter unit tests
+ * Covers MongoDB / MySQL / PostgreSQL / Markdown four exporters
  */
 
 import { describe, it, expect } from 'vitest'
@@ -27,18 +27,18 @@ const USER_SCHEMA: JSONSchema = {
 
 describe('MongoDBExporter', () => {
   describe('static export()', () => {
-    it('返回非空对象', () => {
+    it('returns a non-empty object', () => {
       const result = MongoDBExporter.export(USER_SCHEMA)
       expect(result).toBeTruthy()
       expect(typeof result).toBe('object')
     })
 
-    it('包含 $jsonSchema', () => {
+    it('contains $jsonSchema', () => {
       const result = MongoDBExporter.export(USER_SCHEMA)
       expect(result.$jsonSchema).toBeDefined()
     })
 
-    it('properties 中包含 name 字段', () => {
+    it('properties contains name field', () => {
       const result = MongoDBExporter.export(USER_SCHEMA)
       const props = result.$jsonSchema?.properties as Record<string, unknown>
       expect(props?.['name']).toBeDefined()
@@ -46,7 +46,7 @@ describe('MongoDBExporter', () => {
   })
 
   describe('generateCommand()', () => {
-    it('生成 db.createCollection() 命令字符串', () => {
+    it('generates db.createCollection() command string', () => {
       const exp = new MongoDBExporter()
       const cmd = exp.generateCommand('users', USER_SCHEMA)
       expect(cmd).toContain('createCollection')
@@ -59,23 +59,23 @@ describe('MongoDBExporter', () => {
 
 describe('MySQLExporter', () => {
   describe('static export()', () => {
-    it('返回 CREATE TABLE 语句', () => {
+    it('returns CREATE TABLE statement', () => {
       const sql = MySQLExporter.export('users', USER_SCHEMA)
       expect(sql).toContain('CREATE TABLE')
       expect(sql).toContain('users')
     })
 
-    it('包含 name 列', () => {
+    it('contains name column', () => {
       const sql = MySQLExporter.export('users', USER_SCHEMA)
       expect(sql.toLowerCase()).toContain('name')
     })
 
-    it('VARCHAR 长度约束正确', () => {
+    it('VARCHAR length constraint is correct', () => {
       const sql = MySQLExporter.export('users', USER_SCHEMA)
       expect(sql).toContain('VARCHAR(32)')
     })
 
-    it('INTEGER 类型正确', () => {
+    it('INTEGER type is correct', () => {
       const sql = MySQLExporter.export('users', USER_SCHEMA)
       expect(sql.toUpperCase()).toContain('INT')
     })
@@ -86,25 +86,25 @@ describe('MySQLExporter', () => {
 
 describe('PostgreSQLExporter', () => {
   describe('static export()', () => {
-    it('返回 CREATE TABLE 语句', () => {
+    it('returns CREATE TABLE statement', () => {
       const sql = PostgreSQLExporter.export('users', USER_SCHEMA)
       expect(sql).toContain('CREATE TABLE')
       expect(sql).toContain('users')
     })
 
-    it('包含 name 列', () => {
+    it('contains name column', () => {
       const sql = PostgreSQLExporter.export('users', USER_SCHEMA)
       expect(sql.toLowerCase()).toContain('name')
     })
 
-    it('使用双引号标识符（_quoteIdent 修复）', () => {
+    it('uses double-quoted identifiers (_quoteIdent fix)', () => {
       const exporter = new PostgreSQLExporter({ quoteIdentifiers: true })
       const sql = exporter.export('my table', USER_SCHEMA)
-      // quoteIdentifiers=true 时，含空格的表名应被双引号包裹
+      // when quoteIdentifiers=true, table name with spaces should be wrapped in double quotes
       expect(sql).toContain('"my table"')
     })
 
-    it('VARCHAR/TEXT 类型正确', () => {
+    it('VARCHAR/TEXT type is correct', () => {
       const sql = PostgreSQLExporter.export('users', USER_SCHEMA)
       expect(sql.toUpperCase()).toMatch(/VARCHAR|TEXT/)
     })
@@ -115,24 +115,24 @@ describe('PostgreSQLExporter', () => {
 
 describe('MarkdownExporter', () => {
   describe('static export()', () => {
-    it('返回 markdown 字符串', () => {
+    it('returns a markdown string', () => {
       const md = MarkdownExporter.export(USER_SCHEMA)
       expect(typeof md).toBe('string')
       expect(md.length).toBeGreaterThan(0)
     })
 
-    it('包含 # 标题', () => {
+    it('contains # heading', () => {
       const md = MarkdownExporter.export(USER_SCHEMA)
       expect(md).toContain('#')
     })
 
-    it('包含 name 字段', () => {
+    it('contains name field', () => {
       const md = MarkdownExporter.export(USER_SCHEMA, { locale: 'zh-CN' })
       expect(md.toLowerCase()).toContain('name')
     })
 
-    it('EX-01 fix：_required 和 schema.required 都能识别必填', () => {
-      // 通过 schema.required 数组标记必填
+    it('EX-01 fix: both _required and schema.required recognize required fields', () => {
+      // mark required fields via schema.required array
       const schema: JSONSchema = {
         type: 'object',
         properties: {
@@ -141,7 +141,7 @@ describe('MarkdownExporter', () => {
         required: ['email'],
       }
       const md = MarkdownExporter.export(schema, { locale: 'zh-CN' })
-      // 必填字段在 markdown 中应有标记
+      // required fields should have a marker in markdown
       expect(md).toBeTruthy()
     })
   })

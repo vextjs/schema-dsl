@@ -1,17 +1,17 @@
 ﻿/**
- * ErrorCodes 单元测试 — v2 迁移
+ * ErrorCodes Unit Tests — v2 Migration
  *
- * v2 变更：
- * - ErrorCodes 模块未对外导出（内部使用 KEYWORD_MAP）
- * - 通过验证行为间接验证错误代码功能
+ * v2 Changes:
+ * - ErrorCodes module is not exported externally (uses KEYWORD_MAP internally)
+ * - Validates error code functionality indirectly through validation behavior
  */
 
 import { describe, it, expect } from 'vitest'
 import { dsl, validate, Validator } from '../../../src/index.js'
 
 describe('ErrorCodes', () => {
-  describe('错误代码验证（通过验证行为）', () => {
-    it('应该产生 required 错误', () => {
+  describe('Error Code Validation (via validation behavior)', () => {
+    it('should produce required error', () => {
       const schema = dsl({ username: 'string!' })
       const result = validate(schema, {})
       expect(result.valid).toBe(false)
@@ -20,7 +20,7 @@ describe('ErrorCodes', () => {
       expect(err).toHaveProperty('message')
     })
 
-    it('应该产生 minLength 错误', () => {
+    it('should produce minLength error', () => {
       const schema = dsl({ username: 'string:5-!' })
       const result = validate(schema, { username: 'ab' })
       expect(result.valid).toBe(false)
@@ -28,8 +28,8 @@ describe('ErrorCodes', () => {
     })
   })
 
-  describe('验证器返回错误结构', () => {
-    it('错误对象应包含 path 和 message', () => {
+  describe('Validator Error Structure', () => {
+    it('error object should contain path and message', () => {
       const validator = new Validator()
       const schema = dsl({ age: 'number!' })
       const result = validator.validate(schema, {})

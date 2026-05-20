@@ -1,17 +1,17 @@
 ﻿/**
- * 错误消息过滤优化测试 (v2 TypeScript)
+ * Error Message Filter Optimization Tests (v2 TypeScript)
  *
- * v2 完全支持 dsl.if('fieldName', ...) 和 dsl.match('fieldName', ...) API，
- * 行为与 v1 一致。
+ * v2 fully supports dsl.if('fieldName', ...) and dsl.match('fieldName', ...) API,
+ * with behavior consistent with v1.
  */
 
 import { describe, it, expect } from 'vitest'
 import { dsl, validate } from '../../src/index.js'
 
-describe('错误消息过滤优化 (v1.0.7)', () => {
-  describe('去除冗余的 if-then 包装错误', () => {
+describe('Error Message Filter Optimization (v1.0.7)', () => {
+  describe('Remove Redundant if-then Wrapper Errors', () => {
 
-    it('应该只显示具体的字段错误，不显示重复的 "must match then schema"', () => {
+    it('should only show specific field errors, not duplicate "must match then schema"', () => {
       const schema = dsl({
         payment_type: 'string',
         enabled: 'boolean',
@@ -27,7 +27,7 @@ describe('错误消息过滤优化 (v1.0.7)', () => {
       const result = validate(schema, {
         payment_type: 'credit',
         enabled: true,
-        // credit_price 缺失
+        // credit_price is missing
       })
 
       expect(result.valid).toBe(false)
@@ -38,7 +38,7 @@ describe('错误消息过滤优化 (v1.0.7)', () => {
       expect(result.errors![0].message).not.toContain('must match')
     })
 
-    it('应该过滤掉多层嵌套产生的重复 if 错误', () => {
+    it('should filter out duplicate if errors from multiple nesting levels', () => {
       const schema = dsl({
         level1: 'boolean',
         level2: 'boolean',
@@ -61,7 +61,7 @@ describe('错误消息过滤优化 (v1.0.7)', () => {
       expect(hasIfError).toBe(false)
     })
 
-    it('类型错误时也不应该显示 if 包装错误', () => {
+    it('should not show if wrapper errors for type errors either', () => {
       const schema = dsl({
         flag: 'boolean!',
         value: dsl.if('flag', 'integer!', 'string!'),
@@ -82,7 +82,7 @@ describe('错误消息过滤优化 (v1.0.7)', () => {
       expect(hasIfError).toBe(false)
     })
 
-    it('当只有 if 错误时，应该显示类型错误', () => {
+    it('should display type errors when only if errors exist', () => {
       const schema = dsl({
         flag: 'boolean',
         value: dsl.if('flag', 'string', 'integer'),
@@ -103,7 +103,7 @@ describe('错误消息过滤优化 (v1.0.7)', () => {
       expect(hasIfError).toBe(false)
     })
 
-    it('多个字段错误时，应该全部显示，不显示 if 错误', () => {
+    it('should display all errors when multiple field errors exist, without if errors', () => {
       const schema = dsl({
         enabled: 'boolean',
         name: dsl.if('enabled', 'string:3-10!', 'string'),

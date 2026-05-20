@@ -1,5 +1,5 @@
 ﻿/**
- * 新类型本地化测试 (v2 TypeScript)
+ * New Types Localization Tests (v2 TypeScript)
  */
 
 import { describe, it, expect } from 'vitest'

@@ -1,33 +1,33 @@
 ﻿/**
- * DslAdapter 测试 — v2 迁移
+ * DslAdapter tests — v2 migration
  *
- * v2 变更：DslAdapter 委托 DslParser 实现，string:N 单值 → exactLength:N（DA-03 fix）
- * toCore() 依赖 JSONSchemaCore（v2 不导出），用 SchemaHelper.isValidSchema 替代
+ * v2 changes: DslAdapter delegates to DslParser, string:N single value → exactLength:N (DA-03 fix)
+ * toCore() depends on JSONSchemaCore (not exported in v2), replaced with SchemaHelper.isValidSchema
  */
 
 import { describe, it, expect } from 'vitest'
 import { DslAdapter } from '../../../src/adapters/DslAdapter.js'
 
 describe('DslAdapter', () => {
-  describe('parse() - 基本类型', () => {
-    it('应该解析字符串类型', () => {
+  describe('parse() - basic types', () => {
+    it('should parse string type', () => {
       const result = DslAdapter.parse('string')
       expect(result.type).toBe('string')
     })
 
-    it('应该解析数字类型', () => {
+    it('should parse number type', () => {
       const result = DslAdapter.parse('number')
       expect(result.type).toBe('number')
     })
 
-    it('应该解析布尔类型', () => {
+    it('should parse boolean type', () => {
       const result = DslAdapter.parse('boolean')
       expect(result.type).toBe('boolean')
     })
   })
 
-  describe('parse() - 约束条件', () => {
-    it('应该解析字符串长度范围', () => {
+  describe('parse() - constraints', () => {
+    it('should parse string length range', () => {
       const result = DslAdapter.parse('string:3-32')
       expect(result).toMatchObject({
         type: 'string',
@@ -36,7 +36,7 @@ describe('DslAdapter', () => {
       })
     })
 
-    it('应该解析数字范围', () => {
+    it('should parse number range', () => {
       const result = DslAdapter.parse('number:0-100')
       expect(result).toMatchObject({
         type: 'number',
@@ -45,8 +45,8 @@ describe('DslAdapter', () => {
       })
     })
 
-    it('应该解析单值长度（string:N → exactLength）', () => {
-      // string:100 → exactLength:100（精确长度）
+    it('should parse single-value length (string:N → exactLength)', () => {
+      // string:100 → exactLength:100 (exact length)
       const result = DslAdapter.parse('string:100')
       expect(result).toMatchObject({
         type: 'string',
@@ -55,21 +55,21 @@ describe('DslAdapter', () => {
     })
   })
 
-  describe('parse() - 必填标记', () => {
-    it('应该识别必填标记', () => {
+  describe('parse() - required marker', () => {
+    it('should recognize required marker', () => {
       const result = DslAdapter.parse('string:3-32!')
       expect(result._required).toBe(true)
     })
 
-    it('应该处理可选字段', () => {
-      // v2: 无 ! 时 _required 不注入（为 falsy）
+    it('should handle optional fields', () => {
+      // v2: without !, _required is not injected (is falsy)
       const result = DslAdapter.parse('string:3-32')
       expect(result._required).toBeFalsy()
     })
   })
 
-  describe('parse() - 格式类型', () => {
-    it('应该解析 email 格式', () => {
+  describe('parse() - format types', () => {
+    it('should parse email format', () => {
       const result = DslAdapter.parse('email')
       expect(result).toMatchObject({
         type: 'string',
@@ -77,7 +77,7 @@ describe('DslAdapter', () => {
       })
     })
 
-    it('应该解析 url 格式', () => {
+    it('should parse url format', () => {
       const result = DslAdapter.parse('url')
       expect(result).toMatchObject({
         type: 'string',
@@ -85,7 +85,7 @@ describe('DslAdapter', () => {
       })
     })
 
-    it('应该解析 uuid 格式', () => {
+    it('should parse uuid format', () => {
       const result = DslAdapter.parse('uuid')
       expect(result).toMatchObject({
         type: 'string',
@@ -93,7 +93,7 @@ describe('DslAdapter', () => {
       })
     })
 
-    it('应该解析 date 格式', () => {
+    it('should parse date format', () => {
       const result = DslAdapter.parse('date')
       expect(result).toMatchObject({
         type: 'string',
@@ -102,8 +102,8 @@ describe('DslAdapter', () => {
     })
   })
 
-  describe('parse() - 枚举值', () => {
-    it('应该解析枚举值', () => {
+  describe('parse() - enum values', () => {
+    it('should parse enum values', () => {
       const result = DslAdapter.parse('active|inactive|pending')
       expect(result).toMatchObject({
         type: 'string',
@@ -111,32 +111,32 @@ describe('DslAdapter', () => {
       })
     })
 
-    it('应该处理枚举值的空格', () => {
+    it('should handle whitespace in enum values', () => {
       const result = DslAdapter.parse('a | b | c')
       expect(result.enum).toEqual(['a', 'b', 'c'])
     })
   })
 
-  describe('parse() - 数组类型', () => {
-    it('应该解析 array<type> DSL 字符串语法', () => {
+  describe('parse() - array types', () => {
+    it('should parse array<type> DSL string syntax', () => {
       const result = DslAdapter.parse('array<string>')
       expect(result.type).toBe('array')
       expect((result as any).items).toMatchObject({ type: 'string' })
     })
 
-    it('应该在对象上下文中解析带约束的数组', () => {
+    it('should parse array with constraints in object context', () => {
       const result = DslAdapter.parse('array<string:1-20>')
       expect(result.type).toBe('array')
       expect((result as any).items).toMatchObject({ type: 'string', minLength: 1, maxLength: 20 })
     })
 
-    it('应该在对象上下文中解析数字数组', () => {
+    it('should parse number array in object context', () => {
       const result = DslAdapter.parse('array<number:0-100>')
       expect(result.type).toBe('array')
       expect((result as any).items).toMatchObject({ type: 'number', minimum: 0, maximum: 100 })
     })
 
-    it('应该解析带数组长度约束的 array:N-M<type> 语法', () => {
+    it('should parse array:N-M<type> syntax with array length constraints', () => {
       const result = DslAdapter.parse('array:1-5<string:1-20>')
       expect(result.type).toBe('array')
       expect((result as any).minItems).toBe(1)
@@ -145,8 +145,8 @@ describe('DslAdapter', () => {
     })
   })
 
-  describe('parseObject() - 对象Schema', () => {
-    it('应该解析简单对象', () => {
+  describe('parseObject() - object Schema', () => {
+    it('should parse simple object', () => {
       // BC-2: parseObject() returns ObjectDslBuilder; call .toSchema() to get JSONSchema
       const builder = DslAdapter.parseObject({
         name: 'string!',
@@ -159,7 +159,7 @@ describe('DslAdapter', () => {
       expect(result.required).toEqual(['name'])
     })
 
-    it('应该解析复杂对象', () => {
+    it('should parse complex object', () => {
       const builder = DslAdapter.parseObject({
         username: 'string:3-32!',
         email: 'email!',
@@ -180,7 +180,7 @@ describe('DslAdapter', () => {
       expect(result.required).toEqual(['username', 'email'])
     })
 
-    it('应该解析嵌套对象', () => {
+    it('should parse nested object', () => {
       const builder = DslAdapter.parseObject({
         user: {
           name: 'string!',
@@ -196,7 +196,7 @@ describe('DslAdapter', () => {
       expect((result.properties!.user as any).properties.profile.type).toBe('object')
     })
 
-    it('应该清理 _required 标记', () => {
+    it('should clean up _required marker', () => {
       const builder = DslAdapter.parseObject({
         name: 'string!',
         age: 'number',
@@ -207,16 +207,16 @@ describe('DslAdapter', () => {
     })
   })
 
-  describe('边界情况', () => {
-    it('应该对空字符串抛出错误', () => {
+  describe('edge cases', () => {
+    it('should throw error for empty string', () => {
       expect(() => DslAdapter.parse('')).toThrow()
     })
 
-    it('应该对 null 输入抛出错误', () => {
+    it('should throw error for null input', () => {
       expect(() => DslAdapter.parse(null as any)).toThrow()
     })
 
-    it('应该处理空对象', () => {
+    it('should handle empty object', () => {
       // BC-2: parseObject() returns ObjectDslBuilder; call .toSchema() to get JSONSchema
       const result = DslAdapter.parseObject({}).toSchema()
       expect(result.type).toBe('object')

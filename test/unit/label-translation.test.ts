@@ -1,5 +1,5 @@
 ﻿/**
- * Label 翻译测试 (v2 TypeScript)
+ * Label Translation Tests (v2 TypeScript)
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'

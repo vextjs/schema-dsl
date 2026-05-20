@@ -1,12 +1,13 @@
 ﻿/**
- * 插件系统测试
+/**
+ * Plugin System Tests
  *
- * v2 PluginManager 现已兼容 v1 PluginManager 核心 API：
- *   - EventEmitter 事件系统
- *   - hooks 公开 Map，支持任意钩子名称
- *   - unhook() 移除钩子
- *   - runHook(name, ...args) 透传参数，返回结果数组
- *   - install(core, name?, opts?) 支持按名称单插件安装 + 选项合并 + context
+ * v2 PluginManager is now compatible with the core API of v1 PluginManager:
+ *   - EventEmitter event system
+ *   - hooks exposed Map, supports any hook name
+ *   - unhook() removes a hook
+ *   - runHook(name, ...args) passes args through, returns results array
+ *   - install(core, name?, opts?) supports single plugin install by name + option merging + context
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -20,8 +21,8 @@ describe('PluginManager', () => {
     pluginManager = new PluginManager();
   });
 
-  describe('插件注册', () => {
-    it('应该成功注册插件', () => {
+  describe('Plugin Registration', () => {
+    it('should successfully register a plugin', () => {
       const plugin = {
         name: 'test-plugin',
         install() { }
@@ -34,7 +35,7 @@ describe('PluginManager', () => {
       expect(pluginManager.pluginCount).toBe(1);
     });
 
-    it('应该拒绝无效的插件配置', () => {
+    it('should reject invalid plugin configuration', () => {
       expect(() => {
         pluginManager.register(null as any);
       }).toThrow('Plugin must be an object');
@@ -48,7 +49,7 @@ describe('PluginManager', () => {
       }).toThrow('Plugin must have an install function');
     });
 
-    it('应该拒绝重复注册同名插件', () => {
+    it('should reject registering a plugin with a duplicate name', () => {
       const plugin = {
         name: 'test-plugin',
         install() { }
@@ -61,7 +62,7 @@ describe('PluginManager', () => {
       }).toThrow('Plugin "test-plugin" is already registered');
     });
 
-    it('应该触发注册事件', () => {
+    it('should emit registration event', () => {
       const plugin = {
         name: 'test-plugin',
         install() { }
@@ -75,7 +76,7 @@ describe('PluginManager', () => {
       expect(emittedPlugin).toBe(plugin);
     });
 
-    it('应该触发注册前后钩子', () => {
+    it('should trigger before/after register hooks', () => {
       const calls: string[] = [];
 
       pluginManager.hook('onBeforeRegister', (plugin: any) => {
@@ -93,7 +94,7 @@ describe('PluginManager', () => {
       expect(calls).toEqual(['before:test-plugin', 'after:test-plugin']);
     });
 
-    it('应该兼容 EventEmitter once()', () => {
+    it('should be compatible with EventEmitter once()', () => {
       let count = 0;
 
       pluginManager.once('plugin:registered', () => { count += 1; });
@@ -105,8 +106,8 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('插件安装', () => {
-    it('应该成功安装单个插件', () => {
+  describe('Plugin Installation', () => {
+    it('should successfully install a single plugin', () => {
       let installed = false;
 
       const plugin = {
@@ -126,7 +127,7 @@ describe('PluginManager', () => {
       expect(coreInstance.testMethod()).toBe('test');
     });
 
-    it('应该安装所有已注册的插件', () => {
+    it('should install all registered plugins', () => {
       const installed: string[] = [];
 
       const plugin1 = {
@@ -148,7 +149,7 @@ describe('PluginManager', () => {
       expect(installed).toHaveLength(2);
     });
 
-    it('应该传递安装选项（install(core, name, opts) 合并 plugin.options + opts）', () => {
+    it('should pass install options (install(core, name, opts) merges plugin.options + opts)', () => {
       let receivedOptions: any;
 
       const plugin = {
@@ -168,7 +169,7 @@ describe('PluginManager', () => {
       });
     });
 
-    it('应该处理安装错误', () => {
+    it('should handle installation errors', () => {
       const plugin = {
         name: 'error-plugin',
         install() {
@@ -183,7 +184,7 @@ describe('PluginManager', () => {
       }).toThrow('Failed to install plugin "error-plugin"');
     });
 
-    it('应该触发安装事件', () => {
+    it('should emit installation event', () => {
       const plugin = {
         name: 'test-plugin',
         install() { }
@@ -198,7 +199,7 @@ describe('PluginManager', () => {
       expect(emittedPlugin).toBe(plugin);
     });
 
-    it('应该向 install 传递 context', () => {
+    it('should pass context to install', () => {
       let receivedContext: any;
 
       const plugin = {
@@ -215,7 +216,7 @@ describe('PluginManager', () => {
       expect(receivedContext.hooks).toBe(pluginManager.hooks);
     });
 
-    it('应该在安装失败时触发 plugin:error', () => {
+    it('should emit plugin:error when installation fails', () => {
       let payload: any;
 
       const plugin = {
@@ -237,8 +238,8 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('插件卸载', () => {
-    it('应该成功卸载插件', () => {
+  describe('Plugin Uninstall', () => {
+    it('should successfully uninstall a plugin', () => {
       let uninstalled = false;
 
       const plugin = {
@@ -263,7 +264,7 @@ describe('PluginManager', () => {
       expect(pluginManager.has('test-plugin')).toBe(false);
     });
 
-    it('应该处理没有 uninstall 方法的插件', () => {
+    it('should handle plugins without an uninstall method', () => {
       const plugin = {
         name: 'test-plugin',
         install() { }
@@ -277,7 +278,7 @@ describe('PluginManager', () => {
       }).not.toThrow();
     });
 
-    it('应该触发卸载事件', () => {
+    it('should emit uninstall event', () => {
       const plugin = {
         name: 'test-plugin',
         install() { },
@@ -295,7 +296,7 @@ describe('PluginManager', () => {
       expect(emittedPlugin).toBe(plugin);
     });
 
-    it('应该向 uninstall 传递 core 和 context', () => {
+    it('should pass core and context to uninstall', () => {
       let receivedCore: any;
       let receivedContext: any;
 
@@ -318,7 +319,7 @@ describe('PluginManager', () => {
       expect(receivedContext.hooks).toBe(pluginManager.hooks);
     });
 
-    it('应该在卸载失败时触发 plugin:error', () => {
+    it('should emit plugin:error when uninstall fails', () => {
       let payload: any;
 
       const plugin = {
@@ -342,8 +343,8 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('钩子系统', () => {
-    it('应该注册钩子', () => {
+  describe('Hook System', () => {
+    it('should register a hook', () => {
       const handler = () => { };
 
       pluginManager.hook('onBeforeValidate', handler);
@@ -352,7 +353,7 @@ describe('PluginManager', () => {
       expect(handlers).toContain(handler);
     });
 
-    it('应该运行钩子', async () => {
+    it('should run hooks', async () => {
       const results: string[] = [];
 
       pluginManager.hook('testHook', (arg: any) => {
@@ -368,7 +369,7 @@ describe('PluginManager', () => {
       expect(results).toEqual(['hook1:test', 'hook2:test']);
     });
 
-    it('应该支持异步钩子', async () => {
+    it('should support async hooks', async () => {
       pluginManager.hook('asyncHook', async (value: any) => {
         await new Promise(resolve => setTimeout(resolve, 10));
         return value * 2;
@@ -379,7 +380,7 @@ describe('PluginManager', () => {
       expect(results).toEqual([10]);
     });
 
-    it('应该处理钩子错误', async () => {
+    it('should handle hook errors', async () => {
       let payload: any;
 
       pluginManager.on('hook:error', (event) => { payload = event; });
@@ -394,7 +395,7 @@ describe('PluginManager', () => {
       expect(payload.error.message).toBe('Hook error');
     });
 
-    it('应该在钩子报错时触发 onError', async () => {
+    it('should trigger onError when a hook throws', async () => {
       const errors: Array<{ message: string; hookName: string }> = [];
 
       pluginManager.hook('onError', (error: any, meta: any) => {
@@ -410,7 +411,7 @@ describe('PluginManager', () => {
       expect(errors).toEqual([{ message: 'Hook error', hookName: 'errorHook' }]);
     });
 
-    it('应该移除钩子', () => {
+    it('should remove a hook', () => {
       const handler = () => { };
 
       pluginManager.hook('testHook', handler);
@@ -421,8 +422,8 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('插件钩子', () => {
-    it('应该注册插件定义的钩子', () => {
+  describe('Plugin Hooks', () => {
+    it('should register plugin-defined hooks', () => {
       const hook1 = () => { };
       const hook2 = () => { };
 
@@ -441,7 +442,7 @@ describe('PluginManager', () => {
       expect(pluginManager.hooks.get('onAfterValidate')).toContain(hook2);
     });
 
-    it('应该在卸载时移除插件钩子', () => {
+    it('should remove plugin hooks on uninstall', () => {
       const hook = () => { };
 
       const plugin = {
@@ -462,8 +463,8 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('插件管理', () => {
-    it('应该获取插件', () => {
+  describe('Plugin Management', () => {
+    it('should get a plugin', () => {
       const plugin = {
         name: 'test-plugin',
         install() { }
@@ -475,7 +476,7 @@ describe('PluginManager', () => {
       expect(retrieved).toBe(plugin);
     });
 
-    it('应该获取所有插件', () => {
+    it('should get all plugins', () => {
       const plugin1 = { name: 'plugin1', install() { } };
       const plugin2 = { name: 'plugin2', install() { } };
 
@@ -488,7 +489,7 @@ describe('PluginManager', () => {
       expect(allPlugins.has('plugin2')).toBe(true);
     });
 
-    it('应该列出插件', () => {
+    it('should list plugins', () => {
       const plugin = {
         name: 'test-plugin',
         version: '1.0.0',
@@ -502,7 +503,7 @@ describe('PluginManager', () => {
       expect(list).toEqual([{ name: 'test-plugin', version: '1.0.0', description: 'Test plugin' }]);
     });
 
-    it('应该清空所有插件', () => {
+    it('should clear all plugins', () => {
       const plugin1 = { name: 'plugin1', install() { }, uninstall() { } };
       const plugin2 = { name: 'plugin2', install() { }, uninstall() { } };
 
@@ -514,7 +515,7 @@ describe('PluginManager', () => {
       expect(pluginManager.size).toBe(0);
     });
 
-    it('应该在 clear() 后触发 plugins:cleared', () => {
+    it('should emit plugins:cleared after clear()', () => {
       let cleared = false;
 
       pluginManager.on('plugins:cleared', () => { cleared = true; });
@@ -526,8 +527,8 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('上下文', () => {
-    it('应该提供上下文给插件（install 参数传递 core 实例）', () => {
+  describe('Context', () => {
+    it('should provide context to plugins (install passes core instance)', () => {
       let receivedCore: any;
 
       const plugin = {
@@ -544,7 +545,7 @@ describe('PluginManager', () => {
       expect(receivedCore).toBe(core);
     });
 
-    it('应该允许插件访问其他插件（通过外部引用）', () => {
+    it('should allow plugins to access other plugins (via external reference)', () => {
       const plugin1 = { name: 'plugin1', install() { } };
       const plugin2 = { name: 'plugin2', install() { } };
 
@@ -557,8 +558,8 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('真实场景测试', () => {
-    it('应该支持自定义验证器插件', () => {
+  describe('Real-world Scenario Tests', () => {
+    it('should support custom validator plugins', () => {
       const customValidatorPlugin = {
         name: 'custom-validator',
         install(coreInstance: any) {
@@ -582,7 +583,7 @@ describe('PluginManager', () => {
       expect(coreInstance.customValidators.unique('unique')).toBe(true);
     });
 
-    it('应该支持日志插件', async () => {
+    it('should support logging plugins', async () => {
       const logs: string[] = [];
 
       const loggingPlugin = {

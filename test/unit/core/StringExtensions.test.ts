@@ -1,10 +1,10 @@
 ﻿/**
- * StringExtensions 完整测试 — v2 迁移
+ * StringExtensions Complete Tests — v2 Migration
  *
- * v2 变更：
- * - 需要显式调用 installStringExtensions(dsl) 安装（opt-in）
- * - 'length' 和 'trim' 从扩展列表移除（v2 bugfix）
- * - uninstallStringExtensions() 可还原
+ * v2 changes:
+ * - requires explicit call to installStringExtensions(dsl) to install (opt-in)
+ * - 'length' and 'trim' removed from extension list (v2 bugfix)
+ * - uninstallStringExtensions() can uninstall
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
@@ -15,7 +15,7 @@ import {
   uninstallStringExtensions,
 } from '../../../src/index.js'
 
-describe('StringExtensions - 完整测试', () => {
+describe('StringExtensions - Complete Tests', () => {
   beforeAll(() => {
     installStringExtensions(dsl as any)
   })
@@ -24,58 +24,58 @@ describe('StringExtensions - 完整测试', () => {
     uninstallStringExtensions(dsl as any)
   })
 
-  describe('链式调用基础', () => {
-    it('应支持字符串直接调用 pattern 方法', () => {
+  describe('Chaining Basics', () => {
+    it('should support calling pattern method directly on strings', () => {
       expect(typeof ('string' as any).pattern).toBe('function')
     })
 
-    it('应支持字符串直接调用 label 方法', () => {
+    it('should support calling label method directly on strings', () => {
       expect(typeof ('string' as any).label).toBe('function')
     })
 
-    it('应支持字符串直接调用 messages 方法', () => {
+    it('should support calling messages method directly on strings', () => {
       expect(typeof ('string' as any).messages).toBe('function')
     })
 
-    it('应支持字符串直接调用 description 方法', () => {
+    it('should support calling description method directly on strings', () => {
       expect(typeof ('string' as any).description).toBe('function')
     })
 
-    it('应支持字符串直接调用 custom 方法', () => {
+    it('should support calling custom method directly on strings', () => {
       expect(typeof ('string' as any).custom).toBe('function')
     })
 
-    it('应支持字符串直接调用 default 方法', () => {
+    it('should support calling default method directly on strings', () => {
       expect(typeof ('string' as any).default).toBe('function')
     })
 
-    it('应支持带必填标记的字符串', () => {
+    it('should support strings with required marker', () => {
       expect(typeof ('string!' as any).pattern).toBe('function')
       expect(typeof ('email!' as any).label).toBe('function')
     })
 
-    it('应支持带约束的字符串', () => {
+    it('should support strings with constraints', () => {
       expect(typeof ('string:3-32' as any).pattern).toBe('function')
       expect(typeof ('string:10-!' as any).label).toBe('function')
     })
   })
 
-  describe('.pattern() 方法', () => {
-    it('应添加正则验证', () => {
+  describe('.pattern() method', () => {
+    it('should add regex validation', () => {
       const schema = dsl({
         username: ('string!' as any).pattern(/^[a-zA-Z0-9_]+$/),
       })
       expect((schema as any).properties.username.pattern).toBeDefined()
     })
 
-    it('应支持正则字符串', () => {
+    it('should support regex string', () => {
       const schema = dsl({
         code: ('string!' as any).pattern('^[A-Z]{3}$'),
       })
       expect((schema as any).properties.code.pattern).toBeDefined()
     })
 
-    it('应在验证时生效', () => {
+    it('should take effect during validation', () => {
       const schema = dsl({
         username: ('string!' as any).pattern(/^[a-z]+$/),
       })
@@ -84,20 +84,20 @@ describe('StringExtensions - 完整测试', () => {
     })
   })
 
-  describe('.label() 方法', () => {
-    it('应设置字段标签', () => {
+  describe('.label() method', () => {
+    it('should set field label', () => {
       const result = ('string!' as any).label('用户名')
       expect(result).toBeDefined()
     })
 
-    it('应支持链式调用', () => {
+    it('should support chaining', () => {
       const result = ('string:3-32!' as any).label('用户名').pattern(/^[a-z]+$/)
       expect(result).toBeDefined()
     })
   })
 
-  describe('.messages() 方法', () => {
-    it('应设置自定义错误消息', () => {
+  describe('.messages() method', () => {
+    it('should set custom error messages', () => {
       const result = ('string:3-32!' as any).messages({
         min: '最少3个字符',
         max: '最多32个字符',
@@ -106,7 +106,7 @@ describe('StringExtensions - 完整测试', () => {
       expect(result).toBeDefined()
     })
 
-    it('应支持模板变量', () => {
+    it('should support template variables', () => {
       const result = ('string:3-32!' as any).messages({
         min: '最少{{#limit}}个字符',
       })
@@ -114,20 +114,20 @@ describe('StringExtensions - 完整测试', () => {
     })
   })
 
-  describe('.description() 方法', () => {
-    it('应设置字段描述', () => {
+  describe('.description() method', () => {
+    it('should set field description', () => {
       const result = ('string!' as any).description('用于登录的用户名')
       expect(result).toBeDefined()
     })
 
-    it('应支持多行描述', () => {
+    it('should support multi-line description', () => {
       const result = ('string!' as any).description('用户名规则：\n1. 3-32个字符\n2. 只能包含字母和数字')
       expect(result).toBeDefined()
     })
   })
 
-  describe('.custom() 方法', () => {
-    it('应支持同步验证器', () => {
+  describe('.custom() method', () => {
+    it('should support synchronous validator', () => {
       const result = ('string!' as any).custom((value: string) => {
         if (value === 'admin') return '不能使用admin'
         return true
@@ -135,14 +135,14 @@ describe('StringExtensions - 完整测试', () => {
       expect(result).toBeDefined()
     })
 
-    it('应支持异步验证器', () => {
+    it('should support async validator', () => {
       const result = ('email!' as any).custom(async (_value: string) => {
         return new Promise<boolean>(resolve => setTimeout(() => resolve(true), 10))
       })
       expect(result).toBeDefined()
     })
 
-    it('应支持返回错误对象', () => {
+    it('should support returning error object', () => {
       const result = ('string!' as any).custom((value: string) => {
         if (value === 'test') return { error: 'custom.test', message: '不能使用test' }
       })
@@ -150,15 +150,15 @@ describe('StringExtensions - 完整测试', () => {
     })
   })
 
-  describe('.default() 方法', () => {
-    it('应设置默认值', () => {
+  describe('.default() method', () => {
+    it('should set default value', () => {
       const schema = dsl({
         name: ('string' as any).default('guest'),
       })
       expect((schema as any).properties.name.default).toBe('guest')
     })
 
-    it('应支持不同类型的默认值', () => {
+    it('should support default values of different types', () => {
       const schema = dsl({
         name: ('string' as any).default('guest'),
         age: ('number' as any).default(18),
@@ -169,7 +169,7 @@ describe('StringExtensions - 完整测试', () => {
       expect((schema as any).properties.active.default).toBe(true)
     })
 
-    it('默认值应在验证时生效', () => {
+    it('default value should take effect during validation', () => {
       const schema = dsl({
         role: ('string' as any).default('user'),
       })
@@ -178,15 +178,15 @@ describe('StringExtensions - 完整测试', () => {
     })
   })
 
-  describe('多方法链式调用', () => {
-    it('应支持 pattern + label 链式', () => {
+  describe('Multi-method chaining', () => {
+    it('should support pattern + label chaining', () => {
       const schema = dsl({
         username: ('string:3-32!' as any).pattern(/^[a-z]+$/).label('用户名'),
       })
       expect((schema as any).properties.username.pattern).toBeDefined()
     })
 
-    it('应支持 label + description + messages 链式', () => {
+    it('should support label + description + messages chaining', () => {
       const schema = dsl({
         email: ('email!' as any)
           .label('邮箱')
@@ -196,7 +196,7 @@ describe('StringExtensions - 完整测试', () => {
       expect((schema as any).properties.email.format).toBe('email')
     })
 
-    it('应支持所有方法链式', () => {
+    it('should support chaining all methods', () => {
       const schema = dsl({
         username: ('string:3-32!' as any)
           .pattern(/^[a-z]+$/)
@@ -209,8 +209,8 @@ describe('StringExtensions - 完整测试', () => {
     })
   })
 
-  describe('与 DslBuilder 内置方法结合', () => {
-    it('username() + 链式调用', () => {
+  describe('Combined with DslBuilder built-in methods', () => {
+    it('username() + chained call', () => {
       const schema = dsl({
         username: ('string!' as any).username('5-20').label('用户名'),
       })
@@ -218,14 +218,14 @@ describe('StringExtensions - 完整测试', () => {
       expect((schema as any).properties.username.maxLength).toBe(20)
     })
 
-    it('phone() + 链式调用', () => {
+    it('phone() + chained call', () => {
       const schema = dsl({
         phone: ('string!' as any).phone('cn').label('手机号'),
       })
       expect((schema as any).properties.phone.minLength).toBe(11)
     })
 
-    it('password() + 链式调用', () => {
+    it('password() + chained call', () => {
       const schema = dsl({
         password: ('string!' as any).password('strong').label('密码'),
       })
@@ -233,8 +233,8 @@ describe('StringExtensions - 完整测试', () => {
     })
   })
 
-  describe('嵌套对象中使用', () => {
-    it('应在嵌套对象中正常工作', () => {
+  describe('Usage in nested objects', () => {
+    it('should work correctly in nested objects', () => {
       const schema = dsl({
         user: {
           username: ('string:3-32!' as any).pattern(/^[a-z]+$/).label('用户名'),
@@ -250,8 +250,8 @@ describe('StringExtensions - 完整测试', () => {
     })
   })
 
-  describe('完整示例', () => {
-    it('表单验证示例', () => {
+  describe('Complete examples', () => {
+    it('form validation example', () => {
       const schema = dsl({
         username: ('string:3-32!' as any)
           .pattern(/^[a-zA-Z0-9_]+$/)
@@ -280,7 +280,7 @@ describe('StringExtensions - 完整测试', () => {
       expect(result.valid).toBe(true)
     })
 
-    it('复杂嵌套示例', () => {
+    it('complex nested example', () => {
       const schema = dsl({
         user: {
           username: ('string!' as any).username('5-20').label('用户名'),
@@ -303,7 +303,7 @@ describe('StringExtensions - 完整测试', () => {
   })
 
   describe('uninstall', () => {
-    it('卸载后字符串扩展不再可用', () => {
+    it('string extensions no longer available after uninstall', () => {
       uninstallStringExtensions(dsl as any)
       expect(typeof ('string' as any).label).not.toBe('function')
       // reinstall for afterAll cleanup

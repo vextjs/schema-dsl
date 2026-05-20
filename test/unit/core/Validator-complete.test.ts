@@ -1,9 +1,9 @@
 ﻿/**
- * Validator 完整测试 — v2 迁移（v1 Validator-complete.test.js）
+ * Validator Complete Tests — v2 Migration (v1 Validator-complete.test.js)
  *
- * v2 变更：
- * - 字符串扩展（.username()/.phone()/.password()）需要 installStringExtensions
- * - array<string:1-20> 语法不支持，改为 'array'
+ * v2 changes:
+ * - string extensions (.username()/.phone()/.password()) require installStringExtensions
+ * - array<string:1-20> syntax not supported, use 'array' instead
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
@@ -17,15 +17,15 @@ afterAll(() => {
   uninstallStringExtensions(dsl as any)
 })
 
-describe('Validator - 完整验证测试', () => {
-  describe('边界条件验证', () => {
-    it('应正确验证字符串最小长度边界', () => {
+describe('Validator - Complete Validation Tests', () => {
+  describe('Boundary Condition Validation', () => {
+    it('should correctly validate string minimum length boundary', () => {
       const schema = dsl({ username: 'string:3-32' })
       expect(validate(schema, { username: 'ab' }).valid).toBe(false)
       expect(validate(schema, { username: 'abc' }).valid).toBe(true)
     })
 
-    it('应正确验证字符串最大长度边界', () => {
+    it('should correctly validate string maximum length boundary', () => {
       const schema = dsl({ username: 'string:3-32' })
       const str32 = 'a'.repeat(32)
       const str33 = 'a'.repeat(33)
@@ -33,21 +33,21 @@ describe('Validator - 完整验证测试', () => {
       expect(validate(schema, { username: str33 }).valid).toBe(false)
     })
 
-    it('应正确验证数字最小值边界', () => {
+    it('should correctly validate number minimum value boundary', () => {
       const schema = dsl({ age: 'number:18-120' })
       expect(validate(schema, { age: 17 }).valid).toBe(false)
       expect(validate(schema, { age: 18 }).valid).toBe(true)
     })
 
-    it('应正确验证数字最大值边界', () => {
+    it('should correctly validate number maximum value boundary', () => {
       const schema = dsl({ age: 'number:18-120' })
       expect(validate(schema, { age: 120 }).valid).toBe(true)
       expect(validate(schema, { age: 121 }).valid).toBe(false)
     })
   })
 
-  describe('类型验证', () => {
-    it('应检测字符串类型错误', () => {
+  describe('Type Validation', () => {
+    it('should detect string type errors', () => {
       const schema = dsl({ name: 'string!' })
       expect(validate(schema, { name: 123 }).valid).toBe(false)
       expect(validate(schema, { name: true }).valid).toBe(false)
@@ -55,49 +55,49 @@ describe('Validator - 完整验证测试', () => {
       expect(validate(schema, { name: {} }).valid).toBe(false)
     })
 
-    it('应检测数字类型错误', () => {
+    it('should detect number type errors', () => {
       const schema = dsl({ age: 'number!' })
       expect(validate(schema, { age: 'abc' }).valid).toBe(false)
       expect(validate(schema, { age: true }).valid).toBe(false)
       expect(validate(schema, { age: [] }).valid).toBe(false)
     })
 
-    it('应检测布尔类型错误', () => {
+    it('should detect boolean type errors', () => {
       const schema = dsl({ active: 'boolean!' })
       expect(validate(schema, { active: 'true' }).valid).toBe(false)
       expect(validate(schema, { active: 1 }).valid).toBe(false)
       expect(validate(schema, { active: [] }).valid).toBe(false)
     })
 
-    it('应检测整数类型', () => {
+    it('should validate integer type', () => {
       const schema = dsl({ count: 'integer!' })
       expect(validate(schema, { count: 10 }).valid).toBe(true)
       expect(validate(schema, { count: 10.5 }).valid).toBe(false)
     })
   })
 
-  describe('格式验证', () => {
-    it('应验证 email 格式', () => {
+  describe('Format Validation', () => {
+    it('should validate email format', () => {
       const schema = dsl({ email: 'email!' })
       expect(validate(schema, { email: 'test@example.com' }).valid).toBe(true)
       expect(validate(schema, { email: 'invalid-email' }).valid).toBe(false)
     })
 
-    it('应验证 url 格式', () => {
+    it('should validate url format', () => {
       const schema = dsl({ website: 'url!' })
       expect(validate(schema, { website: 'https://example.com' }).valid).toBe(true)
       expect(validate(schema, { website: 'not-a-url' }).valid).toBe(false)
     })
 
-    it('应验证 uuid 格式', () => {
+    it('should validate uuid format', () => {
       const schema = dsl({ id: 'uuid!' })
       expect(validate(schema, { id: '550e8400-e29b-41d4-a716-446655440000' }).valid).toBe(true)
       expect(validate(schema, { id: 'not-uuid' }).valid).toBe(false)
     })
   })
 
-  describe('嵌套对象验证', () => {
-    it('应验证嵌套对象结构', () => {
+  describe('Nested Object Validation', () => {
+    it('should validate nested object structure', () => {
       const schema = dsl({
         user: {
           name: 'string!',
@@ -108,7 +108,7 @@ describe('Validator - 完整验证测试', () => {
       expect(validate(schema, { user: { age: 25 } }).valid).toBe(false)
     })
 
-    it('应验证深层嵌套', () => {
+    it('should validate deep nesting', () => {
       const schema = dsl({
         a: {
           b: {
@@ -121,30 +121,30 @@ describe('Validator - 完整验证测试', () => {
     })
   })
 
-  describe('必填字段验证', () => {
-    it('应检测缺失的必填字段', () => {
+  describe('Required Field Validation', () => {
+    it('should detect missing required fields', () => {
       const schema = dsl({ name: 'string!', email: 'email!' })
       const result = validate(schema, {})
       expect(result.valid).toBe(false)
       expect(result.errors!.length).toBeGreaterThanOrEqual(2)
     })
 
-    it('可选字段不提供时应通过', () => {
+    it('should pass when optional fields are not provided', () => {
       const schema = dsl({ name: 'string!' })
       expect(validate(schema, { name: 'John' }).valid).toBe(true)
     })
   })
 
-  describe('枚举值验证', () => {
-    it('应验证枚举值', () => {
+  describe('Enum Value Validation', () => {
+    it('should validate enum values', () => {
       const schema = dsl({ status: 'active|inactive|pending' })
       expect(validate(schema, { status: 'active' }).valid).toBe(true)
       expect(validate(schema, { status: 'unknown' }).valid).toBe(false)
     })
   })
 
-  describe('复杂场景', () => {
-    it('应验证复杂表单（v2 不支持 array<string> 语法，用 array 代替）', () => {
+  describe('Complex Scenarios', () => {
+    it('should validate complex form (v2 does not support array<string> syntax, use array instead)', () => {
       const schema = dsl({
         username: 'string:3-32!',
         email: 'email!',
@@ -168,7 +168,7 @@ describe('Validator - 完整验证测试', () => {
       expect(validate(schema, validData).valid).toBe(true)
     })
 
-    it('应检测复杂表单的多个错误', () => {
+    it('should detect multiple errors in complex form', () => {
       const schema = dsl({
         username: 'string:3-32!',
         email: 'email!',
@@ -176,9 +176,9 @@ describe('Validator - 完整验证测试', () => {
       })
 
       const invalidData = {
-        username: 'ab',     // 太短
-        email: 'invalid',   // 格式错误
-        age: 150,           // 超出范围
+        username: 'ab',     // too short
+        email: 'invalid',   // invalid format
+        age: 150,           // out of range
       }
 
       const result = validate(schema, invalidData)
@@ -187,8 +187,8 @@ describe('Validator - 完整验证测试', () => {
     })
   })
 
-  describe('默认验证器验证（需要 installStringExtensions）', () => {
-    it('应验证 username 格式', () => {
+  describe('Default validator validation (requires installStringExtensions)', () => {
+    it('should validate username format', () => {
       const schema = dsl({
         username: ('string!' as any).username(),
       })
@@ -198,7 +198,7 @@ describe('Validator - 完整验证测试', () => {
       expect(validate(schema, { username: 'a'.repeat(33) }).valid).toBe(false)
     })
 
-    it('应验证 phone 格式', () => {
+    it('should validate phone format', () => {
       const schema = dsl({
         phone: ('string!' as any).phone('cn'),
       })
@@ -208,7 +208,7 @@ describe('Validator - 完整验证测试', () => {
       expect(validate(schema, { phone: '138001380000' }).valid).toBe(false)
     })
 
-    it('应验证 password 强度', () => {
+    it('should validate password strength', () => {
       const schema = dsl({
         password: ('string!' as any).password('strong'),
       })
@@ -219,18 +219,18 @@ describe('Validator - 完整验证测试', () => {
     })
   })
 
-  describe('特殊情况', () => {
-    it('应处理空对象', () => {
+  describe('Special Cases', () => {
+    it('should handle empty object', () => {
       const schema = dsl({ name: 'string' })
       expect(validate(schema, {}).valid).toBe(true)
     })
 
-    it('应处理 null 值（类型错误）', () => {
+    it('should handle null values (type error)', () => {
       const schema = dsl({ name: 'string' })
       expect(validate(schema, { name: null }).valid).toBe(false)
     })
 
-    it('应处理额外字段（默认允许）', () => {
+    it('should handle additional fields (allowed by default)', () => {
       const schema = dsl({ name: 'string!' })
       const result = validate(schema, { name: 'John', extra: 'field' })
       expect(result.valid).toBe(true)

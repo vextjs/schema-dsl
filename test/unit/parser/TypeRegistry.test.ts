@@ -1,13 +1,13 @@
 ﻿/**
- * TypeRegistry 单元测试
- * 测试类型注册表的基本类型映射与自定义类型扩展
+ * TypeRegistry unit tests
+ * Tests basic type mapping and custom type extension of the type registry
  */
 
 import { describe, it, expect } from 'vitest'
 import { TypeRegistry } from '../../../src/parser/TypeRegistry.js'
 
 describe('TypeRegistry', () => {
-  describe('resolve() — 返回 TypeDefinition', () => {
+  describe('resolve() — returns TypeDefinition', () => {
     it('string → baseSchema.type: string', () => {
       const def = TypeRegistry.resolve('string')
       expect(def.baseSchema.type).toBe('string')
@@ -65,15 +65,15 @@ describe('TypeRegistry', () => {
     })
   })
 
-  describe('未知类型', () => {
-    it('未知类型返回 fallback string', () => {
+  describe('unknown types', () => {
+    it('unknown type returns fallback string', () => {
       const def = TypeRegistry.resolve('nonexistent_xyz')
       expect(def.baseSchema.type).toBe('string')
     })
   })
 
   describe('toJsonSchema()', () => {
-    it('剥离内部键（_label / _required 等）', () => {
+    it('strips internal keys (_label / _required etc.)', () => {
       const raw = { type: 'string', _label: '姓名', _required: true }
       const json = TypeRegistry.toJsonSchema(raw)
       expect('_label' in json).toBe(false)

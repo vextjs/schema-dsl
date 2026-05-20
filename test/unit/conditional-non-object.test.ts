@@ -1,13 +1,13 @@
 ﻿/**
- * ConditionalBuilder 非对象类型支持测试 — v2 迁移（v1 conditional-non-object.test.js）
+ * ConditionalBuilder Non-Object Type Support Tests — v2 migration (v1 conditional-non-object.test.js)
  */
 
 import { describe, it, expect } from 'vitest'
 import { dsl, validate } from '../../src/index.js'
 
-describe('ConditionalBuilder - 非对象类型支持', () => {
-  describe('顶层条件（直接验证值）', () => {
-    it('应该支持直接验证字符串', () => {
+describe('ConditionalBuilder - Non-Object Type Support', () => {
+  describe('Top-Level Conditions (Direct Value Validation)', () => {
+    it('should support directly validating strings', () => {
       const schema = dsl
         .if((data: any) => typeof data === 'string' && data.length > 10)
         .then('string:1-20')
@@ -23,7 +23,7 @@ describe('ConditionalBuilder - 非对象类型支持', () => {
       expect(result3.valid).toBe(false)
     })
 
-    it('应该支持直接验证数组', () => {
+    it('should support directly validating arrays', () => {
       const schema = dsl
         .if((data: any) => Array.isArray(data) && data.length > 5)
         .message('数组最多5个元素')
@@ -36,7 +36,7 @@ describe('ConditionalBuilder - 非对象类型支持', () => {
       expect(result2.errors![0].message).toBe('数组最多5个元素')
     })
 
-    it('应该支持直接验证数字', () => {
+    it('should support directly validating numbers', () => {
       const schema = dsl
         .if((data: any) => typeof data === 'number' && data < 0)
         .message('不允许负数')
@@ -49,7 +49,7 @@ describe('ConditionalBuilder - 非对象类型支持', () => {
       expect(result2.errors![0].message).toBe('不允许负数')
     })
 
-    it('应该支持直接验证布尔值', () => {
+    it('should support directly validating booleans', () => {
       const schema = dsl.if((data: any) => data === false).message('必须为 true')
 
       const result1 = validate(schema, true)
@@ -61,8 +61,8 @@ describe('ConditionalBuilder - 非对象类型支持', () => {
     })
   })
 
-  describe('条件内使用非对象Schema', () => {
-    it('应该在 then/else 中使用字符串Schema', () => {
+  describe('Non-Object Schemas Inside Conditions', () => {
+    it('should use string schemas in then/else', () => {
       const schema = dsl
         .if((data: any) => typeof data === 'string' && data.includes('@'))
         .then('email')

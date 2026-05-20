@@ -1,5 +1,5 @@
 ﻿/**
- * MongoDBExporter 测试 — v2 迁移（v1 MongoDBExporter.test.js）
+ * MongoDBExporter tests — v2 migration (v1 MongoDBExporter.test.js)
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -12,23 +12,23 @@ describe('MongoDBExporter', () => {
     exporter = new MongoDBExporter()
   })
 
-  describe('构造函数', () => {
-    it('应该创建 MongoDBExporter 实例', () => {
+  describe('constructor', () => {
+    it('should create a MongoDBExporter instance', () => {
       expect(exporter).toBeInstanceOf(MongoDBExporter)
     })
 
-    it('应该使用默认选项（strict: false）', () => {
+    it('should use default options (strict: false)', () => {
       expect((exporter as any).options.strict).toBe(false)
     })
 
-    it('应该接受自定义选项', () => {
+    it('should accept custom options', () => {
       const customExporter = new MongoDBExporter({ strict: true })
       expect((customExporter as any).options.strict).toBe(true)
     })
   })
 
   describe('export()', () => {
-    it('应该导出基本 Schema', () => {
+    it('should export basic schema', () => {
       const jsonSchema = {
         type: 'object',
         properties: {
@@ -45,7 +45,7 @@ describe('MongoDBExporter', () => {
       expect((result as any).$jsonSchema.required).toEqual(['name'])
     })
 
-    it('应该转换类型为 bsonType', () => {
+    it('should convert types to bsonType', () => {
       const jsonSchema = {
         type: 'object',
         properties: {
@@ -65,7 +65,7 @@ describe('MongoDBExporter', () => {
       expect(props.active.bsonType).toBe('bool')
     })
 
-    it('应该转换字符串约束', () => {
+    it('should convert string constraints', () => {
       const jsonSchema = {
         type: 'string',
         minLength: 3,
@@ -80,7 +80,7 @@ describe('MongoDBExporter', () => {
       expect((result as any).$jsonSchema.pattern).toBe('^[a-z]+$')
     })
 
-    it('应该转换数值约束', () => {
+    it('should convert numeric constraints', () => {
       const jsonSchema = {
         type: 'number',
         minimum: 0,
@@ -93,7 +93,7 @@ describe('MongoDBExporter', () => {
       expect((result as any).$jsonSchema.maximum).toBe(100)
     })
 
-    it('应该转换数组约束', () => {
+    it('should convert array constraints', () => {
       const jsonSchema = {
         type: 'array',
         items: { type: 'string' },
@@ -109,7 +109,7 @@ describe('MongoDBExporter', () => {
       expect((result as any).$jsonSchema.maxItems).toBe(10)
     })
 
-    it('应该转换枚举值', () => {
+    it('should convert enum values', () => {
       const jsonSchema = {
         type: 'string',
         enum: ['active', 'inactive', 'pending'],
@@ -120,7 +120,7 @@ describe('MongoDBExporter', () => {
       expect((result as any).$jsonSchema.enum).toEqual(['active', 'inactive', 'pending'])
     })
 
-    it('应该保留描述信息', () => {
+    it('should preserve description', () => {
       const jsonSchema = {
         type: 'string',
         description: 'User name',
@@ -133,7 +133,7 @@ describe('MongoDBExporter', () => {
   })
 
   describe('generateCreateCommand()', () => {
-    it('应该生成 createCollection 命令对象', () => {
+    it('should generate a createCollection command object', () => {
       const jsonSchema = {
         type: 'object',
         properties: {
@@ -150,7 +150,7 @@ describe('MongoDBExporter', () => {
       expect((command as any).options.validationAction).toBe('error')
     })
 
-    it('应该支持严格模式', () => {
+    it('should support strict mode', () => {
       const strictExporter = new MongoDBExporter({ strict: true })
       const jsonSchema = {
         type: 'object',
@@ -164,7 +164,7 @@ describe('MongoDBExporter', () => {
   })
 
   describe('generateCommand()', () => {
-    it('应该生成可执行的 MongoDB 命令字符串', () => {
+    it('should generate an executable MongoDB command string', () => {
       const jsonSchema = {
         type: 'object',
         properties: {
@@ -180,8 +180,8 @@ describe('MongoDBExporter', () => {
     })
   })
 
-  describe('静态方法', () => {
-    it('MongoDBExporter.export() 应该快速导出', () => {
+  describe('static methods', () => {
+    it('MongoDBExporter.export() should export quickly', () => {
       const jsonSchema = {
         type: 'object',
         properties: { name: { type: 'string' } },
@@ -193,8 +193,8 @@ describe('MongoDBExporter', () => {
     })
   })
 
-  describe('嵌套对象', () => {
-    it('应该正确处理嵌套对象', () => {
+  describe('nested objects', () => {
+    it('should correctly handle nested objects', () => {
       const jsonSchema = {
         type: 'object',
         properties: {

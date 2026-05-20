@@ -21,11 +21,11 @@ import defaultDsl, {
 import type { DslConditionMarker } from '../../src/index.js'
 
 describe('v1 entry compatibility', () => {
-  it('ESM default export 应该指向 dsl 主入口', () => {
+  it('ESM default export should point to dsl main entry', () => {
     expect(defaultDsl).toBe(dsl)
   })
 
-  it('应该导出 v1 主入口 legacy 符号', () => {
+  it('should export v1 entry legacy symbols', () => {
     expect(typeof config).toBe('function')
     expect(CONSTANTS).toHaveProperty('VALIDATION')
     expect(ErrorCodes).toHaveProperty('VALIDATION_ERROR')
@@ -35,7 +35,7 @@ describe('v1 entry compatibility', () => {
     expect(exporters).toHaveProperty('MongoDBExporter')
   })
 
-  it('installStringExtensions() 应该支持无参数调用', () => {
+  it('installStringExtensions() should support being called with no arguments', () => {
     uninstallStringExtensions()
     expect(typeof ('email!' as any).label).toBe('undefined')
 
@@ -49,7 +49,7 @@ describe('v1 entry compatibility', () => {
     })
   })
 
-  it('Locale.getMessage() 应该保持 v1 的 { code, message } 返回形态', () => {
+  it('Locale.getMessage() should retain the v1 { code, message } return shape', () => {
     Locale.addLocale('compat-locale', {
       'compat.key': { code: 40001, message: '兼容消息' },
     })
@@ -61,7 +61,7 @@ describe('v1 entry compatibility', () => {
     expect(Locale.getMessageText('compat.key', {}, 'compat-locale')).toBe('兼容消息')
   })
 
-  it('dsl.if(field, then, else) 应该生成 v1 allOf 条件结构', () => {
+  it('dsl.if(field, then, else) should generate a v1 allOf conditional structure', () => {
     const conditional = dsl.if('flag', 'string!', 'number!') as DslConditionMarker
     const schema = dsl({
       flag: 'boolean',
@@ -76,7 +76,7 @@ describe('v1 entry compatibility', () => {
     })
   })
 
-  it('dsl.match(field, cases) 应该生成 v1 if/then/else 链', () => {
+  it('dsl.match(field, cases) should generate a v1 if/then/else chain', () => {
     const conditional = dsl.match('type', {
       email: 'email!',
       phone: 'string:11!',
@@ -99,7 +99,7 @@ describe('v1 entry compatibility', () => {
     })
   })
 
-  it('dsl._if 应该作为 dsl.if 的兼容别名存在', () => {
+  it('dsl._if should exist as a compatibility alias for dsl.if', () => {
     expect(dsl._if).toBe(dsl.if)
 
     const conditional = dsl._if('flag', 'string!', 'number!') as DslConditionMarker
@@ -115,7 +115,7 @@ describe('v1 entry compatibility', () => {
     })
   })
 
-  it('顶层 validate() 应该支持直接传入 DSL 对象并保持 coerce 行为', () => {
+  it('top-level validate() should accept a DSL object directly and preserve coerce behaviour', () => {
     const result = validate(
       {
         email: 'email!',
@@ -134,7 +134,7 @@ describe('v1 entry compatibility', () => {
     })
   })
 
-  it('顶层 validateAsync() 应该支持直接传入 DSL 对象', async () => {
+  it('top-level validateAsync() should accept a DSL object directly', async () => {
     await expect(validateAsync(
       {
         email: 'email!',

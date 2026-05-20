@@ -1,6 +1,6 @@
 ﻿/**
- * Locale 单元测试
- * 测试语言包注册、查找、fallback
+ * Locale Unit Tests
+ * Tests locale registration, lookup, and fallback
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -8,23 +8,23 @@ import { Locale } from '../../../src/core/Locale.js'
 
 describe('Locale', () => {
   afterEach(() => {
-    // 恢复默认语言
+    // restore default locale
     Locale.setLocale('zh-CN')
   })
 
   describe('setLocale() / getLocale()', () => {
-    it('设置并读取当前语言', () => {
+    it('set and get current locale', () => {
       Locale.setLocale('en-US')
       expect(Locale.getLocale()).toBe('en-US')
     })
 
-    it('默认语言为 zh-CN', () => {
+    it('default locale is zh-CN', () => {
       expect(Locale.getLocale()).toBe('zh-CN')
     })
   })
 
   describe('addLocale()', () => {
-    it('注册自定义语言包后可查找', () => {
+    it('can look up after registering custom locale pack', () => {
       Locale.addLocale('custom-test', { greeting: 'Hello' })
       const msg = Locale.getMessage('greeting', {}, 'custom-test')
       expect(msg).toEqual({ code: 'greeting', message: 'Hello' })
@@ -33,17 +33,17 @@ describe('Locale', () => {
   })
 
   describe('getMessage()', () => {
-    it('caller 自定义消息优先级最高', () => {
+    it('caller custom messages have highest priority', () => {
       const msg = Locale.getMessage('required', { required: '这是自定义' })
       expect(msg).toEqual({ code: 'required', message: '这是自定义' })
     })
 
-    it('未注册 key fallback 返回 key 本身', () => {
+    it('unregistered key fallback returns key itself', () => {
       const msg = Locale.getMessage('no_such_key_xyz_abc')
       expect(msg).toBe('no_such_key_xyz_abc')
     })
 
-    it('v1 兼容：对象消息保留 code 与 message', () => {
+    it('v1 compatibility: object messages preserve code and message', () => {
       Locale.addLocale('compat-locale', {
         'account.notFound': { code: 40001, message: '账户不存在' },
       })
@@ -57,7 +57,7 @@ describe('Locale', () => {
   })
 
   describe('getAvailableLocales()', () => {
-    it('返回数组，包含 zh-CN 和 en-US', () => {
+    it('returns array containing zh-CN and en-US', () => {
       const locales = Locale.getAvailableLocales()
       expect(Array.isArray(locales)).toBe(true)
       expect(locales).toContain('zh-CN')
@@ -66,11 +66,11 @@ describe('Locale', () => {
   })
 
   describe('isSupportedLocale()', () => {
-    it('zh-CN 是支持的语言', () => {
+    it('zh-CN is a supported locale', () => {
       expect(Locale.isSupportedLocale('zh-CN')).toBe(true)
     })
 
-    it('nonexistent-xyz 不支持', () => {
+    it('nonexistent-xyz is not supported', () => {
       expect(Locale.isSupportedLocale('nonexistent-xyz')).toBe(false)
     })
   })

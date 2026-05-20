@@ -1,5 +1,5 @@
 ﻿/**
- * PostgreSQLExporter 测试 — v2 迁移（v1 PostgreSQLExporter.test.js）
+ * PostgreSQLExporter tests — v2 migration (v1 PostgreSQLExporter.test.js)
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -12,40 +12,40 @@ describe('PostgreSQLExporter', () => {
     exporter = new PostgreSQLExporter({ quoteIdentifiers: true })
   })
 
-  describe('构造函数', () => {
-    it('应该创建 PostgreSQLExporter 实例', () => {
+  describe('constructor', () => {
+    it('should create a PostgreSQLExporter instance', () => {
       expect(exporter).toBeInstanceOf(PostgreSQLExporter)
     })
 
-    it('应该使用默认选项', () => {
+    it('should use default options', () => {
       expect((exporter as any).options.schema).toBe('public')
     })
 
-    it('应该接受自定义选项', () => {
+    it('should accept custom options', () => {
       const customExporter = new PostgreSQLExporter({ schema: 'app' })
       expect((customExporter as any).options.schema).toBe('app')
     })
   })
 
   describe('export()', () => {
-    it('应该导出基本 Schema', () => {
+    it('should export basic schema', () => {
       const schema = dsl({ name: 'string!', age: 'number' })
       const ddl = exporter.export('users', schema)
 
-      // v2: quoteIdentifiers=true 时标识符使用双引号，string 无 maxLength → VARCHAR(255)
+      // v2: when quoteIdentifiers=true, identifiers use double quotes; string with no maxLength → VARCHAR(255)
       expect(ddl).toContain('CREATE TABLE "public"."users"')
       expect(ddl).toContain('"name" VARCHAR(255) NOT NULL')
       expect(ddl).toContain('"age" DOUBLE PRECISION')
     })
 
-    it('应该处理主键 (id)', () => {
+    it('should handle primary key (id)', () => {
       const schema = dsl({ id: 'number!', name: 'string' })
       const ddl = exporter.export('users', schema)
-      // v2: 主键标识符也使用双引号
+      // v2: primary key identifiers also use double quotes
       expect(ddl).toContain('PRIMARY KEY ("id")')
     })
 
-    it('应该转换字符串约束', () => {
+    it('should convert string constraints', () => {
       const schema = dsl({ bio: 'string:-1000', code: 'string:-10' })
       const ddl = exporter.export('profiles', schema)
 
@@ -54,7 +54,7 @@ describe('PostgreSQLExporter', () => {
       expect(ddl).toContain('"code" VARCHAR(10)')
     })
 
-    it('应该转换数值约束', () => {
+    it('should convert numeric constraints', () => {
       const schema = dsl({ count: 'integer', score: 'number' })
       const ddl = exporter.export('stats', schema)
 
@@ -63,52 +63,52 @@ describe('PostgreSQLExporter', () => {
       expect(ddl).toContain('"score" DOUBLE PRECISION')
     })
 
-    it('应该转换布尔值', () => {
+    it('should convert booleans', () => {
       const schema = dsl({ active: 'boolean!' })
       const ddl = exporter.export('flags', schema)
       expect(ddl).toContain('"active" BOOLEAN NOT NULL')
     })
 
-    it('应该转换日期', () => {
+    it('should convert dates', () => {
       const schema = dsl({ created_at: 'date!' })
       const ddl = exporter.export('logs', schema)
       // v2: date DSL → {type:'string',format:'date'} → DATE
       expect(ddl).toContain('"created_at" DATE NOT NULL')
     })
 
-    it('应该转换对象为JSONB', () => {
+    it('should convert objects to JSONB', () => {
       const schema = dsl({ meta: 'object' })
       const ddl = exporter.export('data', schema)
       expect(ddl).toContain('"meta" JSONB')
     })
 
-    it('应该转换数组为JSONB（v2: array 类型 → JSONB）', () => {
+    it('should convert arrays to JSONB (v2: array type → JSONB)', () => {
       const schema = { type: 'object', properties: { tags: { type: 'array' } } } as any
       const ddl = exporter.export('posts', schema)
       expect(ddl).toContain('"tags" JSONB')
     })
 
-    it('应该添加表注释', () => {
+    it('should add table comment', () => {
       const schema = dsl({ name: 'string' }) as any
       schema.description = 'User table'
       const ddl = exporter.export('users', schema)
-      // v2: 使用带引号的标识符
+      // v2: use quoted identifiers
       expect(ddl).toContain(`COMMENT ON TABLE "public"."users" IS 'User table'`)
     })
 
-    it('应该添加列注释', () => {
+    it('should add column comment', () => {
       const schema = dsl({ name: 'string' }) as any
       schema.properties.name.description = 'User name'
       const ddl = exporter.export('users', schema)
-      // v2: 使用带引号的三段式 schema.table.column
+      // v2: use quoted three-part schema.table.column
       expect(ddl).toContain(`COMMENT ON COLUMN "public"."users"."name" IS 'User name'`)
     })
 
-    it('应该抛出错误当表名缺失', () => {
+    it('should throw error when table name is missing', () => {
       expect(() => exporter.export(null as any, {})).toThrow('Table name is required')
     })
 
-    it('应该抛出错误当Schema不是对象', () => {
+    it('should throw error when schema is not an object type', () => {
       expect(() => exporter.export('users', { type: 'string' } as any)).toThrow(
         'JSON Schema must be an object type'
       )

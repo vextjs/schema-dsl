@@ -1,5 +1,5 @@
 ﻿/**
- * I18nError 多语言错误类测试 (v2 TypeScript)
+ * I18nError Multilingual Error Class Tests (v2 TypeScript)
  *
  * v2 differences:
  * - dsl.error.create/throw/assert not implemented in v2 → tests skipped
@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { I18nError, dsl, Locale } from '../../src/index.js'
 
-describe('I18nError - 多语言错误类', () => {
+describe('I18nError - Multilingual Error Class', () => {
   beforeEach(() => {
     Locale.setLocale('zh-CN')
   })
@@ -18,8 +18,8 @@ describe('I18nError - 多语言错误类', () => {
     Locale.setLocale('zh-CN')
   })
 
-  describe('基础功能', () => {
-    it('应该创建包含翻译消息的错误', () => {
+  describe('Basic Features', () => {
+    it('should create an error with a translated message', () => {
       const error = new I18nError('account.notFound')
 
       expect(error).toBeInstanceOf(I18nError)
@@ -32,7 +32,7 @@ describe('I18nError - 多语言错误类', () => {
       expect(error.locale).toBe('zh-CN')
     })
 
-    it('应该支持参数插值', () => {
+    it('should support parameter interpolation', () => {
       const error = new I18nError('account.insufficientBalance', {
         balance: 50,
         required: 100
@@ -44,12 +44,12 @@ describe('I18nError - 多语言错误类', () => {
       expect(error.params).toEqual({ balance: 50, required: 100 })
     })
 
-    it('应该支持自定义状态码', () => {
+    it('should support custom status code', () => {
       const error = new I18nError('account.notFound', {}, 404)
       expect(error.statusCode).toBe(404)
     })
 
-    it('应该支持多语言切换', () => {
+    it('should support locale switching', () => {
       let error = new I18nError('account.notFound')
       expect(error.message).toBe('账户不存在')
       expect(error.locale).toBe('zh-CN')
@@ -60,7 +60,7 @@ describe('I18nError - 多语言错误类', () => {
       expect(error.locale).toBe('en-US')
     })
 
-    it('应该支持指定语言', () => {
+    it('should support specifying a locale explicitly', () => {
       const error = new I18nError('account.notFound', {}, 400, 'en-US')
 
       expect(error.message).toBe('Account not found')
@@ -69,8 +69,8 @@ describe('I18nError - 多语言错误类', () => {
     })
   })
 
-  describe('静态方法 - create', () => {
-    it('应该创建错误实例', () => {
+  describe('Static Method - create', () => {
+    it('should create an error instance', () => {
       const error = I18nError.create('account.notFound')
 
       expect(error).toBeInstanceOf(I18nError)
@@ -78,7 +78,7 @@ describe('I18nError - 多语言错误类', () => {
       expect(error.code).toBe('ACCOUNT_NOT_FOUND')
     })
 
-    it('应该支持参数和状态码', () => {
+    it('should support params and status code', () => {
       const error = I18nError.create(
         'account.insufficientBalance',
         { balance: 50, required: 100 },
@@ -90,17 +90,17 @@ describe('I18nError - 多语言错误类', () => {
     })
   })
 
-  describe('静态方法 - throw', () => {
-    it('应该直接抛出错误', () => {
+  describe('Static Method - throw', () => {
+    it('should throw an error directly', () => {
       expect(() => {
         I18nError.throw('account.notFound')
       }).toThrow(I18nError)
     })
 
-    it('抛出的错误应包含正确信息', () => {
+    it('thrown error should contain correct information', () => {
       try {
         I18nError.throw('account.insufficientBalance', { balance: 50, required: 100 })
-        expect.fail('应该抛出错误')
+        expect.fail('should have thrown an error')
       } catch (error: any) {
         expect(error).toBeInstanceOf(I18nError)
         expect(error.message).toContain('余额不足')
@@ -109,20 +109,20 @@ describe('I18nError - 多语言错误类', () => {
     })
   })
 
-  describe('静态方法 - assert', () => {
-    it('条件为真时不应抛错', () => {
+  describe('Static Method - assert', () => {
+    it('should not throw when condition is true', () => {
       expect(() => {
         I18nError.assert(true, 'account.notFound')
       }).not.toThrow()
     })
 
-    it('条件为假时应抛错', () => {
+    it('should throw when condition is false', () => {
       expect(() => {
         I18nError.assert(false, 'account.notFound')
       }).toThrow(I18nError)
     })
 
-    it('应该支持表达式和参数', () => {
+    it('should support expressions and params', () => {
       const account = { balance: 50 }
 
       try {
@@ -131,7 +131,7 @@ describe('I18nError - 多语言错误类', () => {
           'account.insufficientBalance',
           { balance: account.balance, required: 100 }
         )
-        expect.fail('应该抛出错误')
+        expect.fail('should have thrown an error')
       } catch (error: any) {
         expect(error).toBeInstanceOf(I18nError)
         expect(error.message).toContain('余额不足')
@@ -139,8 +139,8 @@ describe('I18nError - 多语言错误类', () => {
     })
   })
 
-  describe('实例方法 - is', () => {
-    it('应该正确判断错误代码', () => {
+  describe('Instance Method - is', () => {
+    it('should correctly check error code', () => {
       const error = new I18nError('account.notFound')
 
       expect(error.is('account.notFound')).toBe(true)
@@ -148,8 +148,8 @@ describe('I18nError - 多语言错误类', () => {
     })
   })
 
-  describe('实例方法 - toJSON', () => {
-    it('应该返回完整的JSON对象', () => {
+  describe('Instance Method - toJSON', () => {
+    it('should return a complete JSON object', () => {
       const error = new I18nError('account.insufficientBalance', {
         balance: 50,
         required: 100
@@ -169,33 +169,33 @@ describe('I18nError - 多语言错误类', () => {
     })
   })
 
-  describe('实例方法 - toString', () => {
-    it('应该返回格式化的字符串', () => {
+  describe('Instance Method - toString', () => {
+    it('should return a formatted string', () => {
       const error = new I18nError('account.notFound')
       const str = error.toString()
       expect(str).toBe('I18nError [ACCOUNT_NOT_FOUND]: 账户不存在')
     })
   })
 
-  describe('dsl.error 快捷方法', () => {
-    it('应该提供 create 方法', () => {
+  describe('dsl.error Shorthand Methods', () => {
+    it('should provide a create method', () => {
       const error = (dsl as any).error.create('account.notFound')
       expect(error).toBeInstanceOf(I18nError)
       expect(error.originalKey).toBe('account.notFound')
     })
 
-    it('应该提供 throw 方法', () => {
+    it('should provide a throw method', () => {
       expect(() => (dsl as any).error.throw('account.notFound')).toThrow(I18nError)
     })
 
-    it('应该提供 assert 方法', () => {
+    it('should provide an assert method', () => {
       expect(() => (dsl as any).error.assert(false, 'account.notFound')).toThrow(I18nError)
       expect(() => (dsl as any).error.assert(true, 'account.notFound')).not.toThrow()
     })
   })
 
-  describe('实际应用场景', () => {
-    it('场景1: 账户验证', () => {
+  describe('Real-world Scenarios', () => {
+    it('Scenario 1: Account Validation', () => {
       function getAccount(id: any) {
         const account: any = id === '123' ? { id: '123', balance: 50, status: 'active' } : null
 
@@ -225,7 +225,7 @@ describe('I18nError - 多语言错误类', () => {
       }
     })
 
-    it('场景2: 用户权限验证', () => {
+    it('Scenario 2: User Permission Validation', () => {
       function checkPermission(user: any) {
         I18nError.assert(user, 'user.notFound')
         I18nError.assert(user.role === 'admin', 'user.noPermission')
@@ -241,7 +241,7 @@ describe('I18nError - 多语言错误类', () => {
       }
     })
 
-    it('场景3: Express 中间件', () => {
+    it('Scenario 3: Express Middleware', () => {
       const error = new I18nError('account.notFound', {}, 404)
       const res: any = {
         status(code: number) { this.statusCode = code; return this },
@@ -261,7 +261,7 @@ describe('I18nError - 多语言错误类', () => {
       expect(res.jsonData).toHaveProperty('message', '账户不存在')
     })
 
-    it('场景4: 与 dsl.if 结合使用（函数条件）', () => {
+    it('Scenario 4: Combined with dsl.if (function condition)', () => {
       function validateUser(user: any) {
         // v2 dsl.if supports function conditions
         dsl.if((d: any) => !d)
@@ -284,20 +284,20 @@ describe('I18nError - 多语言错误类', () => {
     })
   })
 
-  describe('边界情况', () => {
-    it('应该处理不存在的错误代码', () => {
+  describe('Edge Cases', () => {
+    it('should handle non-existent error codes', () => {
       const error = new I18nError('non.existent.code')
       expect(error.message).toBe('non.existent.code')
     })
 
-    it('应该处理空参数', () => {
+    it('should handle empty params', () => {
       const error = new I18nError('account.notFound', null as any)
 
       expect(error.params).toEqual({})
       expect(error.message).toBe('账户不存在')
     })
 
-    it('应该保持堆栈跟踪', () => {
+    it('should preserve stack trace', () => {
       const error = new I18nError('account.notFound')
 
       expect(error.stack).toBeTypeOf('string')
@@ -305,19 +305,19 @@ describe('I18nError - 多语言错误类', () => {
     })
   })
 
-  describe('多语言参数插值', () => {
-    it('应该支持中文参数', () => {
+  describe('i18n Parameter Interpolation', () => {
+    it('should support Chinese parameters', () => {
       const error = new I18nError('error.notFound', { resource: '用户' })
       expect(error.message).toBe('找不到用户')
     })
 
-    it('应该支持英文参数', () => {
+    it('should support English parameters', () => {
       Locale.setLocale('en-US')
       const error = new I18nError('error.notFound', { resource: 'User' })
       expect(error.message).toBe('User not found')
     })
 
-    it('应该支持数字参数', () => {
+    it('should support numeric parameters', () => {
       const error = new I18nError('account.insufficientCredits', {
         credits: 10,
         required: 100
@@ -328,8 +328,8 @@ describe('I18nError - 多语言错误类', () => {
     })
   })
 
-  describe('v1.1.5 - 对象格式支持', () => {
-    it('应该支持对象格式配置（带 code 和 message）', () => {
+  describe('v1.1.5 - Object Format Support', () => {
+    it('should support object format config (with code and message)', () => {
       const error = new I18nError('account.notFound')
 
       expect(error.originalKey).toBe('account.notFound')
@@ -337,7 +337,7 @@ describe('I18nError - 多语言错误类', () => {
       expect(error.message).toBe('账户不存在')
     })
 
-    it('应该支持字符串格式（向后兼容）', () => {
+    it('should support string format (backward compatible)', () => {
       const error = new I18nError('user.notFound')
 
       expect(error.originalKey).toBe('user.notFound')
@@ -345,7 +345,7 @@ describe('I18nError - 多语言错误类', () => {
       expect(error.message).toBe('用户不存在')
     })
 
-    it('对象格式应该支持参数插值', () => {
+    it('object format should support parameter interpolation', () => {
       const error = new I18nError('account.insufficientBalance', {
         balance: 50,
         required: 100
@@ -357,7 +357,7 @@ describe('I18nError - 多语言错误类', () => {
       expect(error.message).toContain('100')
     })
 
-    it('toJSON 应该包含 originalKey 字段', () => {
+    it('toJSON should include originalKey field', () => {
       const error = new I18nError('account.notFound')
       const json = error.toJSON()
 
@@ -365,7 +365,7 @@ describe('I18nError - 多语言错误类', () => {
       expect(json).toHaveProperty('code', 'ACCOUNT_NOT_FOUND')
     })
 
-    it('多语言应该共享相同的 code', () => {
+    it('different locales should share the same code', () => {
       Locale.setLocale('zh-CN')
       const errorZh = new I18nError('account.notFound')
       expect(errorZh.code).toBe('ACCOUNT_NOT_FOUND')
@@ -377,7 +377,7 @@ describe('I18nError - 多语言错误类', () => {
       expect(errorEn.message).toBe('Account not found')
     })
 
-    it('应该支持混合使用对象格式和字符串格式', () => {
+    it('should support mixing object format and string format', () => {
       const error1 = new I18nError('account.notFound')
       expect(error1.code).toBe('ACCOUNT_NOT_FOUND')
 

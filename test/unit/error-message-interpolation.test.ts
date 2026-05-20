@@ -1,6 +1,6 @@
 ﻿/**
- * 错误消息插值测试 (v2 TypeScript)
- * 确保所有模板变量都能正确替换
+ * Error Message Interpolation Tests (v2 TypeScript)
+ * Ensure all template variables are correctly substituted
  */
 
 import { describe, it, expect } from 'vitest'
@@ -8,11 +8,11 @@ import Ajv from 'ajv'
 import { dsl, validate, Validator } from '../../src/index.js'
 import { ErrorFormatter } from '../../src/core/ErrorFormatter.js'
 
-describe('ErrorFormatter - 参数映射完整性测试', () => {
+describe('ErrorFormatter - Parameter Mapping Completeness Tests', () => {
 
-  describe('enum 错误消息', () => {
+  describe('enum error messages', () => {
 
-    it('应该正确显示枚举值（必填）', () => {
+    it('should correctly display enum values (required)', () => {
       const schema = dsl({ plan_type: 'enum:pro|basic|free!' })
 
       // v2: validate() 3rd arg is options (not Validator instance)
@@ -30,7 +30,7 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
       expect(error.message).not.toContain('{{#allowed}}')
     })
 
-    it('应该正确显示枚举值（可选）', () => {
+    it('should correctly display enum values (optional)', () => {
       const schema = dsl({ plan_type: 'enum:pro|basic?' })
 
       const result = validate(schema, { plan_type: 'premium' }) as any
@@ -43,7 +43,7 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
       expect(error.message).not.toContain('{{#allowed}}')
     })
 
-    it('应该支持数字枚举', () => {
+    it('should support number enum', () => {
       const schema = dsl({ priority: '1|2|3!' })
 
       // Pass an integer not in the enum (to get enum error, not type error)
@@ -56,7 +56,7 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
       expect(error.message).toContain('3')
     })
 
-    it('应该支持中文错误消息', () => {
+    it('should support Chinese error messages', () => {
       const schema = dsl({ status: 'active|inactive!' })
 
       // v2: locale goes in options (3rd arg)
@@ -73,9 +73,9 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
 
   })
 
-  describe('additionalProperties 错误消息', () => {
+  describe('additionalProperties error messages', () => {
 
-    it('应该正确显示未知属性名', () => {
+    it('should correctly display unknown property name', () => {
       const ajv = new Ajv({ allErrors: true })
 
       const schema = {
@@ -109,9 +109,9 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
 
   })
 
-  describe('required 错误消息', () => {
+  describe('required error messages', () => {
 
-    it('应该正确显示缺失的字段名', () => {
+    it('should correctly display missing field names', () => {
       const schema = dsl({ name: 'string!', email: 'email!' })
 
       const result = validate(schema, {}) as any
@@ -138,9 +138,9 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
 
   })
 
-  describe('minLength/maxLength 错误消息', () => {
+  describe('minLength/maxLength error messages', () => {
 
-    it('应该正确显示长度限制', () => {
+    it('should correctly display length limits', () => {
       const schema = dsl({ username: 'string:3-32!' })
 
       let result = validate(schema, { username: 'ab' }) as any
@@ -156,9 +156,9 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
 
   })
 
-  describe('minimum/maximum 错误消息', () => {
+  describe('minimum/maximum error messages', () => {
 
-    it('应该正确显示数值范围', () => {
+    it('should correctly display numeric range', () => {
       const schema = dsl({ age: 'number:18-120!' })
 
       let result = validate(schema, { age: 10 }) as any
@@ -174,9 +174,9 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
 
   })
 
-  describe('type 错误消息', () => {
+  describe('type error messages', () => {
 
-    it('应该正确显示期望类型和实际类型', () => {
+    it('should correctly display expected type and actual type', () => {
       const schema = dsl({ age: 'number!' })
 
       const result = validate(schema, { age: 'not a number' }, { locale: 'en-US' }) as any
@@ -192,9 +192,9 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
 
   })
 
-  describe('minItems/maxItems 错误消息', () => {
+  describe('minItems/maxItems error messages', () => {
 
-    it('应该正确显示数组长度限制', () => {
+    it('should correctly display array length limits', () => {
       const schema = dsl({ tags: 'array!1-10' })
 
       let result = validate(schema, { tags: [] }) as any
@@ -210,9 +210,9 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
 
   })
 
-  describe('format 错误消息', () => {
+  describe('format error messages', () => {
 
-    it('应该正确显示格式验证错误', () => {
+    it('should correctly display format validation error', () => {
       const schema = dsl({ email: 'email!' })
 
       const result = validate(schema, { email: 'invalid-email' }) as any
@@ -227,9 +227,9 @@ describe('ErrorFormatter - 参数映射完整性测试', () => {
 
   })
 
-  describe('多语言支持', () => {
+  describe('i18n Support', () => {
 
-    it('应该在不同语言中正确替换变量', () => {
+    it('should correctly substitute variables in different locales', () => {
       const schema = dsl({ status: 'active|inactive|pending!' })
 
       let result = validate(schema, { status: 'unknown' }, { locale: 'en-US' }) as any

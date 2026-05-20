@@ -1,15 +1,15 @@
 ﻿/**
- * 枚举功能测试 (v2 TypeScript)
+ * Enum Feature Tests (v2 TypeScript)
  */
 
 import { describe, it, expect } from 'vitest'
 import { dsl, validate } from '../../src/index.js'
 
-describe('Enum - 枚举功能', () => {
+describe('Enum - Features', () => {
 
-  describe('基础枚举语法', () => {
+  describe('Basic Enum Syntax', () => {
 
-    it('应该支持简写形式 value1|value2（字符串枚举）', () => {
+    it('should support shorthand form value1|value2 (string enum)', () => {
       const schema = dsl({ status: 'active|inactive|pending' })
 
       let result = validate(schema, { status: 'active' }) as any
@@ -22,7 +22,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.valid).toBe(false)
     })
 
-    it('应该支持 enum:value1|value2 格式（字符串枚举）', () => {
+    it('should support enum:value1|value2 format (string enum)', () => {
       const schema = dsl({ status: 'enum:active|inactive|pending' })
 
       let result = validate(schema, { status: 'active' }) as any
@@ -32,7 +32,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.valid).toBe(false)
     })
 
-    it('应该支持枚举必填标记', () => {
+    it('should support required enum marker', () => {
       const schema = dsl({ status: 'active|inactive!' })
 
       let result = validate(schema, {}) as any
@@ -49,9 +49,9 @@ describe('Enum - 枚举功能', () => {
 
   })
 
-  describe('布尔值枚举', () => {
+  describe('Boolean Enum', () => {
 
-    it('应该自动识别布尔值枚举', () => {
+    it('should automatically detect boolean enums', () => {
       const schema = dsl({ isActive: 'true|false' })
 
       let result = validate(schema, { isActive: true }) as any
@@ -64,7 +64,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.valid).toBe(false)
     })
 
-    it('应该支持 enum:boolean:true|false 格式', () => {
+    it('should support enum:boolean:true|false format', () => {
       const schema = dsl({ isActive: 'enum:boolean:true|false' })
 
       let result = validate(schema, { isActive: true }) as any
@@ -77,7 +77,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.valid).toBe(false)
     })
 
-    it('应该支持布尔值枚举必填', () => {
+    it('should support required boolean enum', () => {
       const schema = dsl({ isActive: 'true|false!' })
 
       let result = validate(schema, {}) as any
@@ -94,9 +94,9 @@ describe('Enum - 枚举功能', () => {
 
   })
 
-  describe('数字枚举', () => {
+  describe('Number Enum', () => {
 
-    it('应该自动识别数字枚举', () => {
+    it('should automatically detect number enums', () => {
       const schema = dsl({ priority: '1|2|3' })
 
       let result = validate(schema, { priority: 1 }) as any
@@ -112,7 +112,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.valid).toBe(false)
     })
 
-    it('应该支持 enum:number:1|2|3 格式', () => {
+    it('should support enum:number:1|2|3 format', () => {
       const schema = dsl({ priority: 'enum:number:1|2|3' })
 
       let result = validate(schema, { priority: 1 }) as any
@@ -122,7 +122,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.valid).toBe(false)
     })
 
-    it('应该支持 enum:integer:1|2|3 格式', () => {
+    it('should support enum:integer:1|2|3 format', () => {
       const schema = dsl({ level: 'enum:integer:1|2|3' })
 
       let result = validate(schema, { level: 1 }) as any
@@ -132,7 +132,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.valid).toBe(false)
     })
 
-    it('应该支持数字枚举必填', () => {
+    it('should support required number enum', () => {
       const schema = dsl({ priority: '1|2|3!' })
 
       let result = validate(schema, {}) as any
@@ -147,7 +147,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.valid).toBe(true)
     })
 
-    it('应该支持小数枚举', () => {
+    it('should support decimal enum', () => {
       const schema = dsl({ rating: '1.0|1.5|2.0|2.5' })
 
       let result = validate(schema, { rating: 1.5 }) as any
@@ -159,15 +159,15 @@ describe('Enum - 枚举功能', () => {
 
   })
 
-  describe('错误处理', () => {
+  describe('Error Handling', () => {
 
-    it('应该在布尔值枚举包含无效值时抛出错误', () => {
+    it('should throw error when boolean enum contains invalid value', () => {
       expect(() => {
         dsl({ flag: 'enum:boolean:true|false|maybe' })
       }).toThrow(/Invalid boolean enum value/)
     })
 
-    it('应该在数字枚举包含无效值时抛出错误', () => {
+    it('should throw error when number enum contains invalid value', () => {
       expect(() => {
         dsl({ value: 'enum:number:1|2|abc' })
       }).toThrow(/Invalid number enum value/)
@@ -175,9 +175,9 @@ describe('Enum - 枚举功能', () => {
 
   })
 
-  describe('与其他功能配合', () => {
+  describe('Integration with Other Features', () => {
 
-    it('应该支持链式方法', () => {
+    it('should support chained methods', () => {
       // v2: use dsl() builder instead of string method chaining
       const schema = dsl({
         status: dsl('active|inactive').label('状态')
@@ -191,7 +191,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.errors[0].message).toContain('状态')
     })
 
-    it('应该支持自定义错误消息', () => {
+    it('should support custom error messages', () => {
       const schema = dsl({
         status: dsl('active|inactive').messages({
           'string.enum': '状态必须是 active 或 inactive'
@@ -203,7 +203,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.errors[0].message).toContain('active 或 inactive')
     })
 
-    it('应该在对象中正确使用枚举', () => {
+    it('should correctly use enums in objects', () => {
       // v2: use dsl('active|inactive').default('active') instead of string method chaining
       const schema = dsl({
         user: {
@@ -224,7 +224,7 @@ describe('Enum - 枚举功能', () => {
       expect(result.valid).toBe(true)
     })
 
-    it('应该在数组中正确使用枚举', () => {
+    it('should correctly use enums in arrays', () => {
       const schema = dsl({
         tags: 'array<enum:public|private|draft>'
       })
@@ -242,9 +242,9 @@ describe('Enum - 枚举功能', () => {
 
   })
 
-  describe('兼容性测试', () => {
+  describe('Compatibility Tests', () => {
 
-    it('应该不影响带冒号的其他类型', () => {
+    it('should not affect other types with colons', () => {
       const schema = dsl({
         username: 'string:3-32',
         age: 'number:18-120',

@@ -1,28 +1,28 @@
 /**
- * schema-dsl 性能对比基准测试
+ * schema-dsl Performance Benchmark Comparison
  *
- * 运行方式: npm run bench  （或 node test/benchmarks/library-comparison.js）
- * 前置条件: npm run build（需要 dist/ 产物）
+ * Run: npm run bench  (or node test/benchmarks/library-comparison.js)
+ * Prerequisites: npm run build (requires dist/ output)
  *
- * ── 分层说明 ────────────────────────────────────────────────────────────────
+ * ── Tier Description ────────────────────────────────────────────────────────
  *
- * 【第一层：JSON Schema 验证器（同一维度）】
- *   schema-dsl  — 本项目，基于 AJV，提供 DSL 语法 + i18n + coerce + cache
- *   ajv (raw)   — AJV 直接使用（schema-dsl 的底层引擎），用于衡量 DSL 层开销
- *   Zod         — 流行的 TS-first schema 库，非 JSON Schema 但使用场景相同
- *   Joi         — 经典验证库，非 JSON Schema
+ * [Tier 1: JSON Schema validators (same dimension)]
+ *   schema-dsl  — this project, built on AJV, providing DSL syntax + i18n + coerce + cache
+ *   ajv (raw)   — AJV used directly (the underlying engine of schema-dsl), measures DSL layer overhead
+ *   Zod         — popular TS-first schema library, not JSON Schema but same use case
+ *   Joi         — classic validation library, not JSON Schema
  *
- * 【第二层：代码生成验证器（不同维度，仅供参考）】
- *   fastest-validator — 自研代码生成引擎，无 JSON Schema 合规性，极速但功能局限
- *     - 不支持 JSON Schema（$ref / anyOf / if-then-else 等）
- *     - 无 i18n 错误消息
- *     - email 验证为简单正则，非 RFC 标准
- *     - 对比意义：了解原生代码生成 vs JSON Schema 合规性的性能差距
+ * [Tier 2: code-generation validators (different dimension, for reference only)]
+ *   fastest-validator — custom code-generation engine, no JSON Schema compliance, fast but limited
+ *     - no JSON Schema support ($ref / anyOf / if-then-else etc.)
+ *     - no i18n error messages
+ *     - email validation is a simple regex, not RFC-compliant
+ *     - comparison purpose: understand the performance gap between native code-gen vs JSON Schema compliance
  *
- * 测试场景：
- *   S1 - 简单对象（有效数据）
- *   S2 - 简单对象（无效数据 / 错误收集，均不做 i18n 格式化）
- *   S3 - 嵌套对象（有效数据）
+ * Test scenarios:
+ *   S1 - simple object (valid data)
+ *   S2 - simple object (invalid data / error collection, no i18n formatting)
+ *   S3 - nested object (valid data)
  */
 
 import { createRequire } from 'node:module'
@@ -37,12 +37,12 @@ const require = createRequire(import.meta.url)
 const FastestValidator = require('fastest-validator')
 const fv = new FastestValidator()
 
-// ── Raw AJV（直接使用，不经过 schema-dsl 层）────────────────────────────────
+// ── Raw AJV (direct usage, bypassing the schema-dsl layer) ──────────────────
 const rawAjv = new Ajv({ allErrors: true })
 addFormats(rawAjv)
 
 // ─────────────────────────────────────────────────────────────────
-// 测试场景 S1 / S2：简单对象（用户登录表单）
+// Test Scenarios S1 / S2: Simple Object (user login form)
 // ─────────────────────────────────────────────────────────────────
 
 const SIMPLE_VALID = {
@@ -53,13 +53,13 @@ const SIMPLE_VALID = {
 }
 
 const SIMPLE_INVALID = {
-  username: 'jo',              // 太短（min:3）
+  username: 'jo',              // too short (min:3)
   email: 'not-an-email',
-  age: 15,                    // 小于 18
+  age: 15,                    // below 18
   tags: [],                   // min:1 items
 }
 
-// ─── schema-dsl（S1/S2）─────────────────────────────────────────────────────
+// ─── schema-dsl (S1/S2) ─────────────────────────────────────────────────────
 const sdSimple = dsl({
   username: 'string:3-32!',
   email: 'email!',
@@ -67,7 +67,7 @@ const sdSimple = dsl({
   tags: 'array:1-10<string>',
 })
 
-// ─── Raw AJV（等价 JSON Schema，无 DSL 层开销）──────────────────────────────
+// ─── Raw AJV (equivalent JSON Schema, no DSL layer overhead) ────────────────
 const ajvSimpleJsonSchema = {
   type: 'object',
   properties: {
@@ -97,7 +97,7 @@ const joiSimple = Joi.object({
   tags: Joi.array().items(Joi.string()).min(1).max(10).required(),
 })
 
-// ─── fastest-validator（代码生成，仅供参考）──────────────────────────────────
+// ─── fastest-validator (code generation, for reference only) ────────────────
 const fvSimpleCheck = fv.compile({
   username: { type: 'string', min: 3, max: 32 },
   email: { type: 'email' },
@@ -106,7 +106,7 @@ const fvSimpleCheck = fv.compile({
 })
 
 // ─────────────────────────────────────────────────────────────────
-// 测试场景 S3：嵌套对象（JSON Schema 标准嵌套语法）
+// Test Scenario S3: Nested Object (standard JSON Schema nesting syntax)
 // ─────────────────────────────────────────────────────────────────
 
 const NESTED_VALID = {
@@ -121,7 +121,7 @@ const NESTED_VALID = {
   tags: ['js', 'ts'],
 }
 
-// schema-dsl: 标准嵌套语法
+// schema-dsl: standard nesting syntax
 const sdNested = dsl({
   username: 'string:3-32!',
   email: 'email!',
@@ -138,7 +138,7 @@ const sdNested = dsl({
   tags: 'array:1-10<string>',
 })
 
-// Raw AJV nested（等价 JSON Schema）
+// Raw AJV nested (equivalent JSON Schema)
 const ajvNestedJsonSchema = {
   type: 'object',
   properties: {
@@ -187,7 +187,7 @@ const joiNested = Joi.object({
   tags: Joi.array().items(Joi.string()).min(1).max(10).required(),
 })
 
-// fastest-validator nested（代码生成，仅供参考）
+// fastest-validator nested (code generation, for reference only)
 const fvNestedCheck = fv.compile({
   username: { type: 'string', min: 3, max: 32 },
   email: { type: 'email' },
@@ -203,7 +203,7 @@ const fvNestedCheck = fv.compile({
 })
 
 // ─────────────────────────────────────────────────────────────────
-// 辅助工具
+// Utilities
 // ─────────────────────────────────────────────────────────────────
 
 function formatOps(hz) {
@@ -212,9 +212,9 @@ function formatOps(hz) {
   return `${hz.toFixed(2)} ops/s`
 }
 
-// 同层库：JSON Schema 合规级别（含 AJV 底层、schema-dsl、Zod、Joi）
+// Tier 1: JSON Schema compliance level (includes raw AJV, schema-dsl, Zod, Joi)
 const TIER1 = ['schema-dsl', 'ajv (raw)', 'zod', 'joi']
-// 参考库：代码生成级别（不同维度，仅供参考）
+// Reference: code-generation level (different dimension, for reference only)
 const TIER2 = ['fastest-validator']
 
 function printTable(title, bench, tier1Override) {
@@ -235,8 +235,8 @@ function printTable(title, bench, tier1Override) {
   console.log(header)
   console.log('─'.repeat(80))
 
-  // 第一层：同维度对比
-  console.log('  【同维度对比 — JSON Schema 合规验证器】')
+  // Tier 1: same-dimension comparison
+  console.log('  [Tier 1 — JSON Schema Compliant Validators]')
   const tier1Fastest = tier1Results[0]?.hz ?? 1
   tier1Results.forEach((r, i) => {
     const ratio = tier1Fastest / r.hz
@@ -250,7 +250,7 @@ function printTable(title, bench, tier1Override) {
   })
 
   if (tier2Results.length) {
-    console.log('\n  【参考对比 — 代码生成引擎（非 JSON Schema，不同维度）】')
+    console.log('\n  [Reference — Code-generation Engines (non-JSON Schema, different dimension)]')
     tier2Results.forEach(r => {
       const ratio = tier1Fastest / r.hz
       const ratioStr = r.hz > tier1Fastest
@@ -266,7 +266,7 @@ function printTable(title, bench, tier1Override) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 场景 S1：简单对象（有效数据）
+// Scenario S1: Simple Object (valid data)
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function runS1() {
@@ -279,14 +279,14 @@ async function runS1() {
     .add('fastest-validator', () => fvSimpleCheck(SIMPLE_VALID))
   await bench.warmup()
   await bench.run()
-  printTable('S1：简单对象验证（有效数据）', bench)
+  printTable('S1: Simple Object Validation (valid data)', bench)
   return bench
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 场景 S2：无效数据 — 公平对比（schema-dsl 关闭 i18n 格式化，与其他库同等条件）
-// 说明：默认 validate() 会做完整 i18n 模板渲染（这是附加价值），其他库仅返回原始错误。
-//       S2 用 { format: false } 关闭格式化，才是真正的苹果对苹果比较。
+// Scenario S2: Invalid Data — fair comparison (schema-dsl disables i18n formatting, same conditions as other libraries)
+// Note: the default validate() does full i18n template rendering (an added-value feature); other libraries return raw errors.
+//       S2 uses { format: false } to disable formatting for a true apples-to-apples comparison.
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function runS2() {
@@ -299,13 +299,13 @@ async function runS2() {
     .add('fastest-validator',    () => fvSimpleCheck(SIMPLE_INVALID))
   await bench.warmup()
   await bench.run()
-  printTable('S2：无效数据 — 公平对比（均不做 i18n 格式化）', bench,
+  printTable('S2: Invalid Data — fair comparison (no i18n formatting)', bench,
     ['schema-dsl (no-fmt)', 'ajv (raw)', 'zod', 'joi'])
   return bench
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 场景 S3：嵌套对象（有效数据）
+// Scenario S3: Nested Object (valid data)
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function runS3() {
@@ -318,32 +318,32 @@ async function runS3() {
     .add('fastest-validator', () => fvNestedCheck(NESTED_VALID))
   await bench.warmup()
   await bench.run()
-  printTable('S3：嵌套对象验证（有效数据）', bench)
+  printTable('S3: Nested Object Validation (valid data)', bench)
   return bench
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 综合汇总
+// Overall Summary
 // ─────────────────────────────────────────────────────────────────────────────
 
 function printSummary(benchmarks) {
   const libs = ['schema-dsl', 'ajv (raw)', 'zod', 'joi', 'fastest-validator']
   console.log(`\n${'═'.repeat(80)}`)
-  console.log('  📊 综合汇总（以 schema-dsl 为基准，横向对比各库）')
+  console.log('  📊 Overall Summary (schema-dsl as baseline, cross-library comparison)')
   console.log('═'.repeat(80))
 
-  const hdr = `  ${'场景'.padEnd(18)}` + libs.map(l => l.padStart(16)).join('')
+  const hdr = `  ${'Scenario'.padEnd(18)}` + libs.map(l => l.padStart(16)).join('')
   console.log(hdr)
   console.log('─'.repeat(80))
 
   benchmarks.forEach(({ name, bench, sdKey }) => {
     if (!bench) return
     const hz = Object.fromEntries(bench.tasks.map(t => [t.name, t.result?.hz ?? 0]))
-    // sdKey 用于 S2 等特殊命名的 schema-dsl 条目
+    // sdKey is used for specially named schema-dsl entries like S2
     const sdName = sdKey ?? 'schema-dsl'
     const sds = hz[sdName] || 1
     const row = `  ${name.padEnd(18)}` + libs.map(lib => {
-      // S2 中 schema-dsl 列映射到实际 task name
+      // For S2, map the schema-dsl column to the actual task name
       const actualLib = lib === 'schema-dsl' ? sdName : lib
       const v = hz[actualLib]
       if (!v) return '           N/A'.padStart(16)
@@ -360,40 +360,40 @@ function printSummary(benchmarks) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// 主入口
+// Main Entry
 // ─────────────────────────────────────────────────────────────────
 
 console.log('\n╔══════════════════════════════════════════════════════════════════════════════╗')
-console.log('║    schema-dsl 性能基准测试（分层对比：JSON Schema 引擎 vs 代码生成引擎）    ║')
+console.log('║    schema-dsl Performance Benchmark (Tiered: JSON Schema vs Code-gen)       ║')
 console.log('╚══════════════════════════════════════════════════════════════════════════════╝')
 console.log(`\n  Node.js  : ${process.version}`)
 console.log(`  Platform : ${process.platform} / ${process.arch}`)
 console.log(`  Date     : ${new Date().toISOString()}`)
-console.log('\n  ⏳ 运行中，每个场景预热 + 2 秒测量，请稍候...')
-console.log('  ℹ️  ajv (raw) 是 schema-dsl 底层引擎，差值 = schema-dsl 自身层的开销')
-console.log('  ⚠️  fastest-validator 使用代码生成（非 JSON Schema），仅供参考，不同维度')
-console.log('  ℹ️  S2 = 公平对比：均无 i18n 格式化（schema-dsl 使用 { format: false }）\n')
+console.log('\n  ⏳ Running, each scenario takes warmup + 2 s measurement, please wait...')
+console.log('  ℹ️  ajv (raw) is the underlying engine of schema-dsl; the gap = schema-dsl layer overhead')
+console.log('  ⚠️  fastest-validator uses code generation (not JSON Schema), for reference only, different dimension')
+console.log('  ℹ️  S2 = fair comparison: no i18n formatting in any library (schema-dsl uses { format: false })\n')
 
 const s1  = await runS1()
 const s2  = await runS2()
 const s3  = await runS3()
 
 printSummary([
-  { name: 'S1 简单(有效)',   bench: s1 },
-  { name: 'S2 无效(no-fmt)', bench: s2, sdKey: 'schema-dsl (no-fmt)' },
-  { name: 'S3 嵌套(有效)',   bench: s3 },
+  { name: 'S1 simple(valid)',   bench: s1 },
+  { name: 'S2 invalid(no-fmt)', bench: s2, sdKey: 'schema-dsl (no-fmt)' },
+  { name: 'S3 nested(valid)',   bench: s3 },
 ])
 
-console.log('  ── fastest-validator 架构差异说明 ────────────────────────────────────────')
-console.log('  fastest-validator 速度来源（代码生成引擎，与 JSON Schema 是不同技术路线）：')
-console.log('  • compile() 时将 schema 编译为原生 JS 函数（if/typeof 直接操作，无解释层）')
-console.log('  • 无 JSON Schema 标准合规（不支持 $ref / anyOf / if-then-else / format 规范）')
-console.log('  • email 验证 = 简单 /@/ 正则，非 RFC 5322；AJV + ajv-formats 是完整实现')
-console.log('  • 无 i18n 错误消息、无类型强制转换、无条件验证')
-console.log('  • 代价：功能局限，无法用于 JSON Schema 标准场景')
+console.log('  ── fastest-validator architecture difference ──────────────────────────────')
+console.log('  fastest-validator speed source (code-generation engine, a different technical approach from JSON Schema):')
+console.log('  • compile() compiles the schema into a native JS function (direct if/typeof operations, no interpretation layer)')
+console.log('  • no JSON Schema standard compliance (no $ref / anyOf / if-then-else / format spec support)')
+console.log('  • email validation = simple /@/ regex, not RFC 5322; AJV + ajv-formats is a full implementation')
+console.log('  • no i18n error messages, no type coercion, no conditional validation')
+console.log('  • trade-off: limited functionality, cannot be used in JSON Schema standard scenarios')
 console.log()
-console.log('  ── schema-dsl DSL 层开销（相对 ajv raw）────────────────────────────────')
-console.log('  schema-dsl 在 AJV 之上增加：DSL 解析 + i18n 错误格式化 + coerce + cache')
-console.log('  overhead = schema-dsl 与 ajv (raw) 的差值，详见上方各场景数据')
+console.log('  ── schema-dsl DSL layer overhead (relative to ajv raw) ──────────────────')
+console.log('  schema-dsl adds on top of AJV: DSL parsing + i18n error formatting + coerce + cache')
+console.log('  overhead = the difference between schema-dsl and ajv (raw); see per-scenario data above')
 console.log()
-console.log('  ✅ 基准测试完成\n')
+console.log('  ✅ Benchmark complete\n')

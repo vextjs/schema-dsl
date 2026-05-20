@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { dsl, validate } from '../../src/index.js'
 
-describe('可选标记 v1 兼容', () => {
-  it('应该正确解析 string? 且不输出未知类型警告', () => {
+describe('Optional Marker v1 Compatibility', () => {
+  it('should correctly parse string? without emitting unknown type warning', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     try {
@@ -21,7 +21,7 @@ describe('可选标记 v1 兼容', () => {
     }
   })
 
-  it('应该正确解析 enum:... ? 为可选枚举', () => {
+  it('should correctly parse enum:...? as optional enum', () => {
     const schema = dsl({ plan: 'enum:pro|basic?' })
 
     expect(schema).toEqual({
@@ -38,7 +38,7 @@ describe('可选标记 v1 兼容', () => {
     expect(validate(schema, { plan: 'enterprise' }).valid).toBe(false)
   })
 
-  it('应该正确解析 array<string>? 为可选数组字段', () => {
+  it('should correctly parse array<string>? as optional array field', () => {
     const schema = dsl({ tags: 'array<string>?' })
 
     expect(schema).toEqual({
@@ -55,7 +55,7 @@ describe('可选标记 v1 兼容', () => {
     expect(validate(schema, { tags: [1] }).valid).toBe(false)
   })
 
-  it('应该正确解析 phone:cn? 为可选模式字段', () => {
+  it('should correctly parse phone:cn? as optional pattern field', () => {
     const schema = dsl({ phone: 'phone:cn?' })
 
     expect(schema).toEqual({
@@ -75,7 +75,7 @@ describe('可选标记 v1 兼容', () => {
     expect(validate(schema, { phone: '123' }).valid).toBe(false)
   })
 
-  it('应该保留 array!1-10 v1 必填简写兼容', () => {
+  it('should preserve array!1-10 v1 required shorthand compatibility', () => {
     const schema = dsl({ items: 'array!1-10' })
 
     expect(schema).toEqual({

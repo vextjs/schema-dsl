@@ -1,5 +1,5 @@
 ﻿/**
- * i18n 配置功能测试 (v2 TypeScript)
+ * i18n Configuration Feature Tests (v2 TypeScript)
  *
  * v2 API differences:
  * - Locale.locales is private; use Locale.getMessageText() or Locale.getAvailableLocales()
@@ -15,15 +15,15 @@ import enUS from '../../src/locales/en-US.js'
 
 const missingLocaleDir = join(process.cwd(), 'test', 'unit', 'non-existent-path')
 
-describe('i18n 配置功能', () => {
+describe('i18n Configuration Features', () => {
 
   afterEach(() => {
     Locale.reset()
   })
 
-  describe('配置方式', () => {
+  describe('Configuration Methods', () => {
 
-    it('应该支持传入对象配置', () => {
+    it('should support passing an object as config', () => {
       expect(() => {
         dsl.config({
           i18n: {
@@ -36,7 +36,7 @@ describe('i18n 配置功能', () => {
       }).not.toThrow()
     })
 
-    it('应该支持传入目录路径配置', () => {
+    it('should support passing a directory path as config', () => {
       expect(() => {
         dsl.config({
           i18n: missingLocaleDir
@@ -44,7 +44,7 @@ describe('i18n 配置功能', () => {
       }).not.toThrow()
     })
 
-    it('应该覆盖默认错误消息', () => {
+    it('should override default error messages', () => {
       expect(() => {
         dsl.config({
           i18n: {
@@ -58,15 +58,15 @@ describe('i18n 配置功能', () => {
 
   })
 
-  describe('错误消息键存在性', () => {
+  describe('Error Message Key Existence', () => {
 
-    it('应该有 format.binary 错误消息（zh-CN）', () => {
+    it('should have format.binary error message (zh-CN)', () => {
       const msg = (zhCN as any)['format.binary']
       expect(msg).toBeTruthy()
       expect(String(msg)).toContain('Base64')
     })
 
-    it('应该有 format.binary 错误消息（en-US）', () => {
+    it('should have format.binary error message (en-US)', () => {
       const msg = (enUS as any)['format.binary']
       expect(msg).toBeTruthy()
       expect(String(msg).toLowerCase()).toContain('base64')
@@ -74,23 +74,23 @@ describe('i18n 配置功能', () => {
 
   })
 
-  describe('枚举错误消息', () => {
+  describe('Enum Error Messages', () => {
 
-    it('应该有 enum 错误消息（zh-CN）', () => {
+    it('should have enum error message (zh-CN)', () => {
       const msg = (zhCN as any)['enum']
       expect(msg).toBeTruthy()
     })
 
-    it('应该有 string.enum 错误消息（zh-CN）', () => {
+    it('should have string.enum error message (zh-CN)', () => {
       const msg = (zhCN as any)['string.enum']
       expect(msg).toBeTruthy()
     })
 
   })
 
-  describe('i18n API 完整性', () => {
+  describe('i18n API Completeness', () => {
 
-    it('应该支持 Locale.addLocale 方法', () => {
+    it('should support Locale.addLocale method', () => {
       Locale.addLocale('test-lang', {
         'test.key': 'test value'
       })
@@ -100,12 +100,12 @@ describe('i18n 配置功能', () => {
       expect(message).toBe('test value')
     })
 
-    it('应该支持 Locale.setLocale 方法', () => {
+    it('should support Locale.setLocale method', () => {
       Locale.setLocale('zh-CN')
       expect(Locale.getLocale()).toBe('zh-CN')
     })
 
-    it('应该支持 Locale.reset 方法', () => {
+    it('should support Locale.reset method', () => {
       Locale.addLocale('custom', { 'key': 'value' })
       Locale.setLocale('custom')
 
@@ -120,9 +120,9 @@ describe('i18n 配置功能', () => {
 
   })
 
-  describe('配置完整性', () => {
+  describe('Configuration Completeness', () => {
 
-    it('dsl.config 应该支持 i18n 键', () => {
+    it('dsl.config should support i18n key', () => {
       expect(() => {
         dsl.config({
           i18n: {
@@ -132,7 +132,7 @@ describe('i18n 配置功能', () => {
       }).not.toThrow()
     })
 
-    it('dsl.config 应该支持字符串路径', () => {
+    it('dsl.config should support string path', () => {
       expect(() => {
         dsl.config({
           i18n: '/non/existent/path'

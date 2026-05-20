@@ -1,10 +1,10 @@
 ﻿/**
- * DslBuilder New Features 测试 — v2 迁移
+ * DslBuilder New Features Tests — v2 Migration
  *
- * v2 变更：
- * - `phone:cn` 不是内置 DSL 类型，需使用链式方法 .phone('cn')
- * - `idCard`, `creditCard` 等仍以 dsl('idCard:cn!') 格式调用
- * - patterns 内部模块不对外导出，跳过直接 config 测试
+ * v2 changes:
+ * - `phone:cn` is not a built-in DSL type; use chained method .phone('cn') instead
+ * - `idCard`, `creditCard` etc. are still called as dsl('idCard:cn!') format
+ * - patterns internal module is not exported; skip direct config tests
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'

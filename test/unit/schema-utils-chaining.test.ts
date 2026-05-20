@@ -1,14 +1,14 @@
 ﻿/**
- * SchemaUtils 链式调用单元测试 (v2.1.0 简化版)
+ * SchemaUtils Chaining Unit Tests (v2.1.0 simplified)
  *
- * 测试核心4个方法：partial、omit、pick、extend 的链式调用功能
+ * Tests core 4 methods: partial, omit, pick, extend chaining
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { dsl, validate } from '../../src/index.js';
 import { SchemaUtils } from '../../src/utils/SchemaUtils.js';
 
-describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
+describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
   let baseSchema: any;
 
   beforeEach(() => {
@@ -24,20 +24,20 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
   });
 
 
-  describe('partial() - 部分验证', () => {
-    it('应该移除所有必填限制', () => {
+  describe('partial() - Partial Validation', () => {
+    it('should remove all required constraints', () => {
       const partialSchema = SchemaUtils.partial(baseSchema);
 
       const result = validate(partialSchema, {
         name: 'John'
-        // 其他必填字段缺失，但不应报错
+        // other required fields missing, but should not error
       });
 
       expect(result.valid).toBe(true);
       expect(partialSchema.required).toBeUndefined();
     });
 
-    it('应该只验证指定字段', () => {
+    it('should validate only the specified fields', () => {
       const partialSchema = SchemaUtils.partial(baseSchema, ['name', 'age']);
 
       expect(Object.keys(partialSchema.properties)).toHaveLength(2);
@@ -46,10 +46,10 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
       expect(partialSchema.required).toBeUndefined();
     });
 
-    it('应该验证提供的字段值', () => {
+    it('should validate the provided field values', () => {
       const partialSchema = SchemaUtils.partial(baseSchema, ['name', 'email']);
 
-      // email 格式错误应该被捕获
+      // invalid email format should be caught
       const result = validate(partialSchema, {
         name: 'John',
         email: 'invalid'
@@ -59,8 +59,8 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
     });
   });
 
-  describe('omit() - 排除字段', () => {
-    it('应该排除指定字段', () => {
+  describe('omit() - Exclude Fields', () => {
+    it('should exclude the specified fields', () => {
       const omittedSchema = SchemaUtils.omit(baseSchema, ['password', 'createdAt', 'updatedAt']);
 
       expect(omittedSchema.properties.password).toBeUndefined();
@@ -70,7 +70,7 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
       expect(omittedSchema.properties.email).toBeDefined();
     });
 
-    it('应该从 required 中移除排除的字段', () => {
+    it('should remove excluded fields from required', () => {
       const omittedSchema = SchemaUtils.omit(baseSchema, ['password']);
 
       expect(omittedSchema.required).not.toContain('password');
@@ -79,8 +79,8 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
     });
   });
 
-  describe('pick() - 保留字段', () => {
-    it('应该只保留指定字段', () => {
+  describe('pick() - Pick Fields', () => {
+    it('should keep only the specified fields', () => {
       const pickedSchema = SchemaUtils.pick(baseSchema, ['name', 'email']);
 
       expect(Object.keys(pickedSchema.properties)).toHaveLength(2);
@@ -89,7 +89,7 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
       expect(pickedSchema.properties.password).toBeUndefined();
     });
 
-    it('应该保留字段的必填限制', () => {
+    it('should preserve required constraints for picked fields', () => {
       const pickedSchema = SchemaUtils.pick(baseSchema, ['name', 'email']);
 
       expect(pickedSchema.required).toContain('name');
@@ -97,8 +97,8 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
     });
   });
 
-  describe('extend() - 扩展字段', () => {
-    it('应该添加新字段', () => {
+  describe('extend() - Extend Fields', () => {
+    it('should add new fields', () => {
       const extendedSchema = SchemaUtils.extend(baseSchema, {
         avatar: 'url',
         bio: 'string:0-500'
@@ -109,7 +109,7 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
       expect(extendedSchema.properties.name).toBeDefined();
     });
 
-    it('应该保留原字段', () => {
+    it('should preserve original fields', () => {
       const extendedSchema = SchemaUtils.extend(baseSchema, {
         avatar: 'url'
       });
@@ -121,8 +121,8 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
   });
 
 
-  describe('链式调用', () => {
-    it('应该支持 omit + extend', () => {
+  describe('Chaining', () => {
+    it('should support omit + extend', () => {
       const schema = SchemaUtils
         .omit(baseSchema, ['password'])
         .extend({ avatar: 'url' });
@@ -131,7 +131,7 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
       expect(schema.properties.avatar).toBeDefined();
     });
 
-    it('应该支持 pick + partial', () => {
+    it('should support pick + partial', () => {
       const schema = SchemaUtils
         .pick(baseSchema, ['name', 'age'])
         .partial();
@@ -140,7 +140,7 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
       expect(schema.required).toBeUndefined();
     });
 
-    it('应该支持 pick + extend', () => {
+    it('should support pick + extend', () => {
       const schema = SchemaUtils
         .pick(baseSchema, ['name', 'email'])
         .extend({ avatar: 'url', bio: 'string:0-500' });
@@ -152,7 +152,7 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
       expect(schema.properties.password).toBeUndefined();
     });
 
-    it('应该支持复杂链式调用', () => {
+    it('should support complex chaining', () => {
       const schema = SchemaUtils
         .omit(baseSchema, ['id', 'password', 'createdAt', 'updatedAt'])
         .extend({ avatar: 'url' })
@@ -167,8 +167,8 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
     });
   });
 
-  describe('CRUD 场景', () => {
-    it('POST - 创建用户（排除系统字段）', () => {
+  describe('CRUD Scenarios', () => {
+    it('POST - create user (exclude system fields)', () => {
       const createSchema = SchemaUtils.omit(baseSchema, ['id', 'createdAt', 'updatedAt']);
 
       const result = validate(createSchema, {
@@ -181,7 +181,7 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
       expect(result.valid).toBe(true);
     });
 
-    it('GET - 查询用户（排除敏感字段）', () => {
+    it('GET - query user (exclude sensitive fields)', () => {
       const publicSchema = SchemaUtils.omit(baseSchema, ['password']);
 
       const result = validate(publicSchema, {
@@ -197,35 +197,35 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
       expect(result.data.password).toBeUndefined();
     });
 
-    it('PATCH - 更新用户（部分验证）', () => {
+    it('PATCH - update user (partial validation)', () => {
       const updateSchema = SchemaUtils
         .pick(baseSchema, ['name', 'age'])
         .partial();
 
       const result = validate(updateSchema, {
         name: 'Jane'
-        // age 缺失也可以，因为是 partial
+        // age may be absent since this is partial
       });
 
       expect(result.valid).toBe(true);
     });
 
-    it('PUT - 替换用户（排除系统字段）', () => {
+    it('PUT - replace user (exclude system fields)', () => {
       const replaceSchema = SchemaUtils.omit(baseSchema, ['id', 'createdAt', 'updatedAt']);
 
       const result = validate(replaceSchema, {
         name: 'John',
         email: 'john@example.com',
         password: 'password123'
-        // age 可选，所以可以缺失
+        // age is optional, so it can be absent
       });
 
       expect(result.valid).toBe(true);
     });
   });
 
-  describe('不可变性', () => {
-    it('应该不修改原 schema', () => {
+  describe('Immutability', () => {
+    it('should not modify the original schema', () => {
       const originalProps = Object.keys(baseSchema.properties);
       const originalRequired = [...(baseSchema.required || [])];
 
@@ -237,7 +237,7 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
       expect(baseSchema.required).toEqual(originalRequired);
     });
 
-    it('每次调用应该返回新对象', () => {
+    it('each call should return a new object', () => {
       const schema1 = SchemaUtils.omit(baseSchema, ['password']);
       const schema2 = SchemaUtils.omit(baseSchema, ['password']);
 
@@ -246,18 +246,18 @@ describe('SchemaUtils Chaining (v2.1.0 - 核心方法)', () => {
     });
   });
 
-  describe('边界情况', () => {
-    it('应该处理空字段数组', () => {
+  describe('Edge Cases', () => {
+    it('should handle an empty field array', () => {
       const schema = SchemaUtils.omit(baseSchema, []);
       expect(Object.keys(schema.properties)).toHaveLength(Object.keys(baseSchema.properties).length);
     });
 
-    it('应该处理不存在的字段', () => {
+    it('should handle non-existent fields', () => {
       const schema = SchemaUtils.omit(baseSchema, ['nonExistentField']);
       expect(Object.keys(schema.properties)).toHaveLength(Object.keys(baseSchema.properties).length);
     });
 
-    it('应该处理嵌套对象的 partial', () => {
+    it('should handle partial on nested objects', () => {
       const nestedSchema = dsl({
         user: {
           name: 'string!',

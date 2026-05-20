@@ -1,11 +1,11 @@
 ﻿/**
- * Validator 核心测试 — v2 迁移（v1 Validator.test.js）
+ * Validator Core Tests — v2 Migration (v1 Validator.test.js)
  *
- * v2 变更：
- * - ajvOptions 不直接暴露（内部 _ajvOptions）
- * - 构造函数通过 ValidatorOptions 配置，不直接传 AJV 选项
- * - JSONSchemaCore 不再导出，直接用 JSON Schema 对象
- * - Validator.create() / Validator.quickValidate() 存在
+ * v2 changes:
+ * - ajvOptions not directly exposed (internal _ajvOptions)
+ * - constructor configured via ValidatorOptions, not AJV options directly
+ * - JSONSchemaCore no longer exported, use JSON Schema objects directly
+ * - Validator.create() / Validator.quickValidate() available
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -18,34 +18,34 @@ describe('Validator', () => {
     validator = new Validator()
   })
 
-  describe('构造函数', () => {
-    it('应该创建 Validator 实例', () => {
+  describe('Constructor', () => {
+    it('should create a Validator instance', () => {
       expect(validator).toBeInstanceOf(Validator)
     })
 
-    it('ajvOptions 通过 public getter 暴露（v1 compat）', () => {
+    it('ajvOptions exposed via public getter (v1 compat)', () => {
       expect('ajvOptions' in validator).toBe(true)
       expect((validator as any).ajvOptions).toBeDefined()
     })
 
-    it('应该接受配置选项', () => {
-      // v2 通过 ValidatorOptions 配置（smartCoerce, cache 等）
+    it('should accept configuration options', () => {
+      // v2 configured via ValidatorOptions (smartCoerce, cache, etc.)
       const customValidator = new Validator({ smartCoerce: true })
       expect(customValidator).toBeInstanceOf(Validator)
     })
 
-    it('应该支持 cache: false 关闭缓存（文档兼容简写）', () => {
+    it('should support cache: false to disable caching (docs-compatible shorthand)', () => {
       const customValidator = new Validator({ cache: false })
       expect(customValidator.cache.options.enabled).toBe(false)
     })
 
-    it('应该支持 cache: true 启用默认缓存配置（文档兼容简写）', () => {
+    it('should support cache: true to enable default cache config (docs-compatible shorthand)', () => {
       const customValidator = new Validator({ cache: true })
       expect(customValidator.cache.options.enabled).toBe(true)
       expect(customValidator.cache.options.maxSize).toBeGreaterThan(0)
     })
 
-    it('应该把 cache.statsEnabled 透传给 CacheManager', () => {
+    it('should pass cache.statsEnabled through to CacheManager', () => {
       const customValidator = new Validator({
         cache: {
           maxSize: 10,
@@ -59,7 +59,7 @@ describe('Validator', () => {
   })
 
   describe('validate()', () => {
-    it('应该验证有效数据', () => {
+    it('should validate valid data', () => {
       const schema = {
         type: 'object',
         properties: {
@@ -73,11 +73,11 @@ describe('Validator', () => {
       const result = validator.validate(schema, data)
 
       expect(result.valid).toBe(true)
-      // v1 compat: valid 时 errors 为空数组
+      // v1 compat: errors is empty array when valid
       expect(result.errors).toEqual([])
     })
 
-    it('应该检测无效数据', () => {
+    it('should detect invalid data', () => {
       const schema = {
         type: 'object',
         properties: {
@@ -94,7 +94,7 @@ describe('Validator', () => {
       expect(result.errors!.length).toBeGreaterThan(0)
     })
 
-    it('应该验证字符串长度约束', () => {
+    it('should validate string length constraints', () => {
       const schema = { type: 'string', minLength: 3, maxLength: 10 }
 
       expect(validator.validate(schema, 'abc').valid).toBe(true)
@@ -102,7 +102,7 @@ describe('Validator', () => {
       expect(validator.validate(schema, 'abcdefghijk').valid).toBe(false)
     })
 
-    it('应该验证数字范围约束', () => {
+    it('should validate numeric range constraints', () => {
       const schema = { type: 'number', minimum: 0, maximum: 100 }
 
       expect(validator.validate(schema, 50).valid).toBe(true)
@@ -110,14 +110,14 @@ describe('Validator', () => {
       expect(validator.validate(schema, 101).valid).toBe(false)
     })
 
-    it('应该验证邮箱格式', () => {
+    it('should validate email format', () => {
       const schema = { type: 'string', format: 'email' }
 
       expect(validator.validate(schema, 'test@example.com').valid).toBe(true)
       expect(validator.validate(schema, 'invalid-email').valid).toBe(false)
     })
 
-    it('应该验证枚举值', () => {
+    it('should validate enum values', () => {
       const schema = { type: 'string', enum: ['active', 'inactive', 'pending'] }
 
       expect(validator.validate(schema, 'active').valid).toBe(true)
@@ -126,13 +126,13 @@ describe('Validator', () => {
   })
 
   describe('compile()', () => {
-    it('应该编译 Schema 为验证函数', () => {
+    it('should compile Schema to a validation function', () => {
       const schema = { type: 'string', minLength: 3 }
       const validateFn = validator.compile(schema)
       expect(typeof validateFn).toBe('function')
     })
 
-    it('应该缓存编译结果', () => {
+    it('should cache compiled results', () => {
       const schema = { type: 'string' }
       const cacheKey = 'test-key'
 
@@ -144,7 +144,7 @@ describe('Validator', () => {
   })
 
   describe('validateBatch()', () => {
-    it('应该批量验证数据', () => {
+    it('should validate data in batches', () => {
       const schema = {
         type: 'object',
         properties: {
@@ -165,7 +165,7 @@ describe('Validator', () => {
   })
 
   describe('addKeyword()', () => {
-    it('应该添加自定义关键字', () => {
+    it('should add custom keyword', () => {
       validator.addKeyword('isEven', {
         keyword: 'isEven',
         type: 'number',
@@ -178,7 +178,7 @@ describe('Validator', () => {
       expect(validator.validate(schema, 5).valid).toBe(false)
     })
 
-    it('应该兼容 v1 两参数写法且不触发 AJV deprecated 警告', () => {
+    it('should be compatible with v1 two-argument syntax without triggering AJV deprecated warnings', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       try {
@@ -199,7 +199,7 @@ describe('Validator', () => {
   })
 
   describe('addFormat()', () => {
-    it('应该添加自定义格式', () => {
+    it('should add custom format', () => {
       validator.addFormat('uppercase', /^[A-Z]+$/)
 
       const schema = { type: 'string', format: 'uppercase' }
@@ -210,7 +210,7 @@ describe('Validator', () => {
   })
 
   describe('clearCache()', () => {
-    it('应该清空缓存后重新编译', () => {
+    it('should recompile after clearing cache', () => {
       const schema = { type: 'string' }
       validator.compile(schema, 'key1')
 
@@ -218,17 +218,17 @@ describe('Validator', () => {
 
       const fn1 = validator.compile(schema, 'key1')
       const fn2 = validator.compile(schema, 'key1')
-      expect(fn1).toBe(fn2) // 重新缓存后应该相等
+      expect(fn1).toBe(fn2) // should be equal after re-caching
     })
   })
 
-  describe('静态方法', () => {
-    it('Validator.create() 应该创建实例', () => {
+  describe('Static Methods', () => {
+    it('Validator.create() should create an instance', () => {
       const instance = Validator.create()
       expect(instance).toBeInstanceOf(Validator)
     })
 
-    it('Validator.quickValidate() 应该快速验证', () => {
+    it('Validator.quickValidate() should perform quick validation', () => {
       const schema = { type: 'string' }
       expect(Validator.quickValidate(schema, 'test')).toBe(true)
       expect(Validator.quickValidate(schema, 123)).toBe(false)

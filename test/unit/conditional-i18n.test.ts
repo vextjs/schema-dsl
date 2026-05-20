@@ -1,16 +1,16 @@
 ﻿/**
- * ConditionalBuilder 多语言支持测试 — v2 迁移（v1 conditional-i18n.test.js）
+ * ConditionalBuilder i18n Support Tests — v2 migration (v1 conditional-i18n.test.js)
  *
- * v2 变更：
+ * v2 changes:
  * - Locale.before/after → beforeAll/afterAll
- * - Locale.getMessageText() 用于字符串断言；Locale.getMessage() 保留 v1 对象返回
- * - conditional.underAge key 需要验证是否在 v2 locale 文件中
+ * - Locale.getMessageText() for string assertions; Locale.getMessage() retains v1 object return
+ * - conditional.underAge key needs to be verified in v2 locale files
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { dsl, validate, Locale } from '../../src/index.js'
 
-describe('ConditionalBuilder - 多语言支持', () => {
+describe('ConditionalBuilder - i18n Support', () => {
   let originalLocale: string
 
   beforeAll(() => {
@@ -21,9 +21,9 @@ describe('ConditionalBuilder - 多语言支持', () => {
     Locale.setLocale(originalLocale)
   })
 
-  it('应该支持使用多语言 key（中文）', () => {
-    // v2: conditional.underAge 可能未内置在 locale 文件中
-    // 如需支持，需通过 Locale.addLocale() 或 dsl.config({ i18n: ... }) 注册
+  it('should support using i18n keys (Chinese)', () => {
+    // v2: conditional.underAge may not be built into the locale file
+    // To support it, register via Locale.addLocale() or dsl.config({ i18n: ... })
     Locale.setLocale('zh-CN')
 
     const schema = dsl({
@@ -36,7 +36,7 @@ describe('ConditionalBuilder - 多语言支持', () => {
     expect(result.errors![0].message).toBe('未成年用户不能注册')
   })
 
-  it('应该支持直接使用字符串消息（不依赖 locale key）', () => {
+  it('should support using string messages directly (without locale key)', () => {
     const schema = dsl({
       age: 'number!',
       status: dsl.if((data: any) => data.age < 18).message('未成年用户不能注册'),
@@ -47,7 +47,7 @@ describe('ConditionalBuilder - 多语言支持', () => {
     expect(result.errors![0].message).toBe('未成年用户不能注册')
   })
 
-  it('应该支持不同条件使用不同语言消息', () => {
+  it('should support different conditions using different locale messages', () => {
     Locale.setLocale('zh-CN')
 
     const schema = dsl({
@@ -63,7 +63,7 @@ describe('ConditionalBuilder - 多语言支持', () => {
     expect(result.valid).toBe(false)
   })
 
-  it('条件不满足时不应受语言设置影响', () => {
+  it('should not be affected by locale setting when condition is not met', () => {
     Locale.setLocale('en-US')
 
     const schema = dsl({

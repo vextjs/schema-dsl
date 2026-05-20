@@ -1,44 +1,44 @@
 ﻿/**
- * DslBuilder 单元测试
- * 测试链式 API 的全部约束方法与 toSchema() / toJsonSchema() 输出
+ * DslBuilder Unit Tests
+ * Tests all constraint methods of the chained API and toSchema() / toJsonSchema() output
  */
 
 import { describe, it, expect } from 'vitest'
 import { DslBuilder } from '../../../src/core/DslBuilder.js'
 
 describe('DslBuilder', () => {
-  describe('构造函数', () => {
-    it('创建实例', () => {
+  describe('Constructor', () => {
+    it('creates instance', () => {
       const b = new DslBuilder('string')
       expect(b).toBeInstanceOf(DslBuilder)
       expect(b._isDslBuilder).toBe(true)
     })
 
-    it('解析基本类型', () => {
+    it('parses basic types', () => {
       expect(new DslBuilder('string').toSchema().type).toBe('string')
       expect(new DslBuilder('number').toSchema().type).toBe('number')
       expect(new DslBuilder('boolean').toSchema().type).toBe('boolean')
     })
 
-    it('必填标记 ! — toSchema()._required = true', () => {
+    it('required marker ! — toSchema()._required = true', () => {
       const s = new DslBuilder('string!').toSchema()
       expect(s._required).toBe(true)
     })
 
-    it('无 ! — toSchema()._required = false', () => {
+    it('no ! — toSchema()._required = false', () => {
       const s = new DslBuilder('string').toSchema()
       expect(s._required).toBe(false)
     })
 
-    it('email 格式', () => {
+    it('email format', () => {
       const s = new DslBuilder('email!').toSchema()
       expect(s.format).toBe('email')
       expect(s._required).toBe(true)
     })
   })
 
-  describe('约束方法 — string 类型链式', () => {
-    it('min() / max() — string 类型 → minLength/maxLength', () => {
+  describe('Constraint methods — string type chaining', () => {
+    it('min() / max() — string type → minLength/maxLength', () => {
       const s = new DslBuilder('string').min(3).max(32).toSchema()
       expect(s.minLength).toBe(3)
       expect(s.maxLength).toBe(32)
@@ -49,7 +49,7 @@ describe('DslBuilder', () => {
       expect(s.exactLength).toBe(6)
     })
 
-    it('min() 对 number 类型抛出错误', () => {
+    it('min() throws error for number type', () => {
       expect(() => new DslBuilder('number').min(1)).toThrow()
     })
 
@@ -78,23 +78,23 @@ describe('DslBuilder', () => {
       expect(s.default).toBe('hello')
     })
 
-    it('optional() 清除必填', () => {
+    it('optional() clears required', () => {
       const s = new DslBuilder('string!').optional().toSchema()
       expect(s._required).toBe(false)
     })
 
-    it('required() 设置必填', () => {
+    it('required() sets required', () => {
       const s = new DslBuilder('string').required().toSchema()
       expect(s._required).toBe(true)
     })
 
-    it('error() 设置自定义消息', () => {
+    it('error() sets custom message', () => {
       const s = new DslBuilder('string!').error({ required: '请输入姓名' }).toSchema()
       expect(s._customMessages?.['required']).toBe('请输入姓名')
     })
   })
 
-  describe('number 类型约束（通过 DSL 字符串）', () => {
+  describe('number type constraints (via DSL string)', () => {
     it('number:0-100 → minimum/maximum', () => {
       const s = new DslBuilder('number:0-100').toSchema()
       expect(s.minimum).toBe(0)
@@ -108,14 +108,14 @@ describe('DslBuilder', () => {
   })
 
   describe('toJsonSchema()', () => {
-    it('剥离内部键 _label/_required/_customMessages', () => {
+    it('strips internal keys _label/_required/_customMessages', () => {
       const json = new DslBuilder('string!').label('姓名').toJsonSchema()
       expect('_label' in json).toBe(false)
       expect('_required' in json).toBe(false)
       expect('_customMessages' in json).toBe(false)
     })
 
-    it('保留 minLength/maxLength', () => {
+    it('preserves minLength/maxLength', () => {
       const json = new DslBuilder('string').min(3).max(32).toJsonSchema()
       expect(json.minLength).toBe(3)
       expect(json.maxLength).toBe(32)
@@ -123,20 +123,20 @@ describe('DslBuilder', () => {
   })
 
   describe('toString()', () => {
-    it('返回 JSON 序列化的 JSON Schema（非 DSL 字符串）', () => {
+    it('returns JSON-serialized JSON Schema (not DSL string)', () => {
       const b = new DslBuilder('email!')
       const str = b.toString()
-      // toString() 返回 JSON.stringify(toJsonSchema())
+      // toString() returns JSON.stringify(toJsonSchema())
       const parsed = JSON.parse(str)
       expect(parsed.type).toBe('string')
       expect(parsed.format).toBe('email')
     })
   })
 
-  describe('DSL 字符串约束直接解析（DA-03 fix）', () => {
+  describe('DSL string constraint direct parsing (DA-03 fix)', () => {
     it('string:6! → exactLength:6 + required', () => {
       const s = new DslBuilder('string:6!').toSchema()
-      // string:N → exactLength:N（精确长度）
+      // string:N → exactLength:N (exact length)
       expect(s.exactLength).toBe(6)
       expect(s._required).toBe(true)
     })

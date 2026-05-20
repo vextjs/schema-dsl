@@ -1,22 +1,22 @@
 ﻿/**
- * dsl.config() 和多语言配置测试 — v2 迁移（v1 dsl-config.test.js）
+ * dsl.config() and i18n Configuration Tests — v2 migration (v1 dsl-config.test.js)
  *
- * v2 变更：
- * - Locale.getMessage() 保持 v1 的 { code, message } 形态；字符串断言使用 Locale.getMessageText()
- * - getDefaultValidator() 不导出，改为 new Validator()
- * - validate(schema, data, {locale}) 不自动应用 Locale 消息（跳过相关测试）
+ * v2 changes:
+ * - Locale.getMessage() keeps the v1 { code, message } shape; use Locale.getMessageText() for string assertions
+ * - getDefaultValidator() is not exported; use new Validator() instead
+ * - validate(schema, data, {locale}) does not auto-apply Locale messages (skip related tests)
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { dsl, Locale, validate } from '../../src/index.js'
 
-describe('dsl.config() - i18n 和 cache 配置', () => {
+describe('dsl.config() - i18n and Cache Configuration', () => {
   beforeEach(() => {
     Locale.reset()
   })
 
-  describe('i18n 配置', () => {
-    it('应该支持从对象直接加载语言包', () => {
+  describe('i18n Configuration', () => {
+    it('should support loading locale packs directly from an object', () => {
       dsl.config({
         i18n: {
           'zh-CN': {
@@ -30,7 +30,7 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
         },
       })
 
-      // 字符串断言使用 getMessageText()
+      // use getMessageText() for string assertions
       Locale.setLocale('zh-CN')
       expect(Locale.getMessageText('username')).toBe('用户名')
       expect(Locale.getMessageText('email')).toBe('邮箱地址')
@@ -40,7 +40,7 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
       expect(Locale.getMessageText('email')).toBe('Email Address')
     })
 
-    it('应该兼容 locales 包装层写法', () => {
+    it('should be compatible with the locales wrapper syntax', () => {
       dsl.config({
         i18n: {
           locales: {
@@ -61,7 +61,7 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
       expect(Locale.getMessageText('username')).toBe('Username')
     })
 
-    it('应该处理语言包路径不存在的情况（不应抛出错误）', () => {
+    it('should handle non-existent locale path without throwing', () => {
       expect(() => {
         dsl.config({
           i18n: {
@@ -72,8 +72,8 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
     })
   })
 
-  describe('cache 配置', () => {
-    it('应该支持自定义缓存大小', () => {
+  describe('Cache Configuration', () => {
+    it('should support custom cache size', () => {
       expect(() => {
         dsl.config({
           cache: {
@@ -83,7 +83,7 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
       }).not.toThrow()
     })
 
-    it('应该支持禁用缓存', () => {
+    it('should support disabling cache', () => {
       expect(() => {
         dsl.config({
           cache: {
@@ -94,8 +94,8 @@ describe('dsl.config() - i18n 和 cache 配置', () => {
     })
   })
 
-  describe('基础验证（不依赖 locale 消息注入）', () => {
-    it('应该正常验证（config 后验证仍可用）', () => {
+  describe('Basic Validation (independent of locale message injection)', () => {
+    it('should validate correctly (validation still works after config)', () => {
       dsl.config({
         i18n: {
           'zh-CN': { username: '用户名' },

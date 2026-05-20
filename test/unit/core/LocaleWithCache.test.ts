@@ -1,22 +1,22 @@
 ﻿/**
- * Locale 缓存测试 — v2 迁移（v1 LocaleWithCache.test.js）
+ * Locale Cache Tests — v2 Migration (v1 LocaleWithCache.test.js)
  *
- * v2 变更：LRUCache 不直接导出；改为通过 CacheManager 测试缓存行为。
- * 主要验证 LRU 驱逐策略和统计功能。
+ * v2 changes: LRUCache is not directly exported; test cache behavior via CacheManager instead.
+ * Primarily validates LRU eviction strategy and statistics.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { CacheManager } from '../../../src/core/CacheManager.js'
 
-describe('Locale 语言包缓存（CacheManager）', () => {
+describe('Locale Pack Cache (CacheManager)', () => {
   let cache: InstanceType<typeof CacheManager>
 
   beforeEach(() => {
     cache = new CacheManager({ maxSize: 5 })
   })
 
-  describe('基础缓存操作', () => {
-    it('应该缓存和获取对象', () => {
+  describe('Basic Cache Operations', () => {
+    it('should cache and retrieve objects', () => {
       const zhCN = {
         required: '必填字段',
         minLength: '长度不能少于{{min}}',
@@ -30,7 +30,7 @@ describe('Locale 语言包缓存（CacheManager）', () => {
       expect((cached as typeof zhCN).required).toBe('必填字段')
     })
 
-    it('多个语言包各自独立缓存', () => {
+    it('multiple locale packs are cached independently', () => {
       const locales: Record<string, Record<string, string>> = {
         'zh-CN': { required: '必填', email: '邮箱' },
         'en-US': { required: 'Required', email: 'Email' },
@@ -46,7 +46,7 @@ describe('Locale 语言包缓存（CacheManager）', () => {
       expect((cache.get('en-US') as typeof locales['en-US']).required).toBe('Required')
     })
 
-    it('应该正确统计 set 和 hits', () => {
+    it('should correctly track sets and hits', () => {
       cache.set('zh-CN', { required: '[zh-CN] Required' })
       cache.get('zh-CN') // hit
       cache.get('zh-CN') // hit
@@ -59,8 +59,8 @@ describe('Locale 语言包缓存（CacheManager）', () => {
     })
   })
 
-  describe('LRU 驱逐策略', () => {
-    it('应该自动驱逐最少使用的条目', () => {
+  describe('LRU Eviction Policy', () => {
+    it('should automatically evict least recently used entries', () => {
       for (let i = 1; i <= 5; i++) {
         cache.set(`lang-${i}`, { required: `Required ${i}` })
       }
@@ -74,7 +74,7 @@ describe('Locale 语言包缓存（CacheManager）', () => {
       expect(cache.has('lang-6')).toBe(true)
     })
 
-    it('应该保持热门语言在缓存中', () => {
+    it('should keep popular locales in cache', () => {
       const hotLocales = ['zh-CN', 'en-US']
       const coldLocales = ['ja-JP', 'es-ES', 'fr-FR', 'ko-KR']
 
@@ -98,8 +98,8 @@ describe('Locale 语言包缓存（CacheManager）', () => {
     })
   })
 
-  describe('并发场景（异步）', () => {
-    it('应该处理并发的语言包加载', async () => {
+  describe('Concurrent Scenarios (async)', () => {
+    it('should handle concurrent locale pack loading', async () => {
       const mockLoadLanguagePack = (locale: string) =>
         new Promise<Record<string, string>>(resolve =>
           setTimeout(() => resolve({ required: `[${locale}] Required` }), 5)
@@ -125,8 +125,8 @@ describe('Locale 语言包缓存（CacheManager）', () => {
     })
   })
 
-  describe('内存效率', () => {
-    it('语言包级缓存条目数远少于消息级缓存', () => {
+  describe('Memory Efficiency', () => {
+    it('locale-pack-level cache has far fewer entries than message-level cache', () => {
       const languagePackCache = new CacheManager({ maxSize: 5 })
       const locales = ['zh-CN', 'en-US', 'ja-JP', 'es-ES', 'fr-FR']
 
@@ -138,7 +138,7 @@ describe('Locale 语言包缓存（CacheManager）', () => {
         languagePackCache.set(locale, pack)
       })
 
-      expect(languagePackCache.size()).toBe(5) // 5 个条目
+      expect(languagePackCache.size()).toBe(5) // 5 entries
 
       const messageCache = new CacheManager({ maxSize: 250 })
       locales.forEach(locale => {
@@ -147,11 +147,11 @@ describe('Locale 语言包缓存（CacheManager）', () => {
         }
       })
 
-      expect(messageCache.size()).toBe(250) // 250 个条目
+      expect(messageCache.size()).toBe(250) // 250 entries
       expect(languagePackCache.size()).toBeLessThan(messageCache.size())
     })
 
-    it('应该支持大量 key 但只缓存最近使用的', () => {
+    it('should support large numbers of keys but only cache recently used ones', () => {
       const bigCache = new CacheManager({ maxSize: 10 })
 
       for (let i = 1; i <= 100; i++) {
@@ -164,7 +164,7 @@ describe('Locale 语言包缓存（CacheManager）', () => {
       expect(bigCache.has('lang-1')).toBe(false)
 
       const stats = bigCache.getStats()
-      // v2 getStats() 未暴露 evictions 字段（内部 cache-hub 统计）
+      // v2 getStats() does not expose evictions field (internal cache-hub stats)
       expect(stats.sets).toBeGreaterThan(0)
     })
   })

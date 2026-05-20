@@ -1,13 +1,13 @@
 ﻿/**
- * ConditionalBuilder 快捷验证方法测试 — v2 迁移（v1 conditional-validate.test.js）
+ * ConditionalBuilder Shorthand Validation Method Tests — v2 migration (v1 conditional-validate.test.js)
  */
 
 import { describe, it, expect } from 'vitest'
 import { dsl, validate } from '../../src/index.js'
 
-describe('ConditionalBuilder - 快捷验证方法', () => {
-  describe('.validate() 方法', () => {
-    it('应该返回完整验证结果', () => {
+describe('ConditionalBuilder - Shorthand Validation Methods', () => {
+  describe('.validate() Method', () => {
+    it('should return complete validation result', () => {
       const result = dsl
         .if((d: any) => d.age < 18)
         .message('未成年用户不能注册')
@@ -19,12 +19,12 @@ describe('ConditionalBuilder - 快捷验证方法', () => {
       expect(result.errors![0].message).toBe('未成年用户不能注册')
     })
 
-    it('应该支持一行代码验证', () => {
+    it('should support single-line validation', () => {
       const result = dsl.if((d: any) => d.age < 18).message('未成年用户不能注册').validate({ age: 16 })
       expect(result.valid).toBe(false)
     })
 
-    it('应该支持复用验证器', () => {
+    it('should support reusing validator', () => {
       const ageValidator = dsl.if((d: any) => d.age < 18).message('未成年')
 
       const r1 = ageValidator.validate({ age: 16 })
@@ -34,7 +34,7 @@ describe('ConditionalBuilder - 快捷验证方法', () => {
       expect(r2.valid).toBe(true)
     })
 
-    it('应该支持 then/else', () => {
+    it('should support then/else', () => {
       const schema = dsl({
         userType: 'string!',
         email: dsl.if((d: any) => d.userType === 'admin').then('email!').else('email'),
@@ -44,7 +44,7 @@ describe('ConditionalBuilder - 快捷验证方法', () => {
       expect(result.valid).toBe(true)
     })
 
-    it('应该支持非对象类型（字符串）', () => {
+    it('should support non-object types (string)', () => {
       const result = dsl
         .if((d: any) => typeof d === 'string' && d.includes('@'))
         .then('email')
@@ -54,8 +54,8 @@ describe('ConditionalBuilder - 快捷验证方法', () => {
     })
   })
 
-  describe('.check() 方法', () => {
-    it('应该返回布尔值', () => {
+  describe('.check() Method', () => {
+    it('should return boolean value', () => {
       const validator = dsl.if((d: any) => d.age < 18).message('未成年')
 
       expect(validator.check({ age: 16 })).toBe(false)
@@ -63,13 +63,13 @@ describe('ConditionalBuilder - 快捷验证方法', () => {
     })
   })
 
-  describe('.assert() 方法', () => {
-    it('条件成立时应该抛出错误', () => {
+  describe('.assert() Method', () => {
+    it('should throw error when condition is met', () => {
       const validator = dsl.if((d: any) => d.age < 18).message('未成年')
       expect(() => validator.assert({ age: 16 })).toThrow('未成年')
     })
 
-    it('条件不成立时不应抛出错误', () => {
+    it('should not throw error when condition is not met', () => {
       const validator = dsl.if((d: any) => d.age < 18).message('未成年')
       expect(() => validator.assert({ age: 20 })).not.toThrow()
     })

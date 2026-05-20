@@ -1,9 +1,9 @@
 ﻿/**
- * DslBuilder 基础测试 — v2 迁移（对应 v1: DslBuilder.test.js）
+ * DslBuilder Basic Tests — v2 Migration (corresponds to v1: DslBuilder.test.js)
  *
- * v2 变更：
- * - DslBuilder 从 src/core/DslBuilder.js 导入（带 .js 扩展名）
- * - installStringExtensions 手动调用
+ * v2 Changes:
+ * - DslBuilder imported from src/core/DslBuilder.js (with .js extension)
+ * - installStringExtensions called manually
  * - .exist → .toBeTruthy()
  */
 
@@ -15,50 +15,50 @@ beforeAll(() => {
 })
 
 describe('DslBuilder', () => {
-  describe('构造函数', () => {
-    it('应该能创建 DslBuilder 实例', () => {
+  describe('Constructor', () => {
+    it('should be able to create a DslBuilder instance', () => {
       const builder = new DslBuilder('string')
       expect(builder).toBeInstanceOf(DslBuilder)
     })
 
-    it('应该解析基本类型', () => {
+    it('should parse basic types', () => {
       const builder = new DslBuilder('string')
       expect((builder as any)._baseSchema.type).toBe('string')
     })
 
-    it('应该解析必填标记', () => {
+    it('should parse required marker', () => {
       const builder = new DslBuilder('string!')
       expect((builder as any)._required).toBe(true)
     })
   })
 
-  describe('默认验证器', () => {
+  describe('Default Validators', () => {
     describe('username()', () => {
-      it('无参数时应自动设置 3-32 长度', () => {
+      it('should automatically set 3-32 length when no arguments', () => {
         const schema = dsl({ username: ('string!' as any).username() })
         expect((schema as any).properties.username.minLength).toBe(3)
         expect((schema as any).properties.username.maxLength).toBe(32)
       })
 
-      it('应支持字符串范围参数', () => {
+      it('should support string range parameters', () => {
         const schema = dsl({ username: ('string!' as any).username('5-20') })
         expect((schema as any).properties.username.minLength).toBe(5)
         expect((schema as any).properties.username.maxLength).toBe(20)
       })
 
-      it('应支持 short 预设', () => {
+      it('should support short preset', () => {
         const schema = dsl({ username: ('string!' as any).username('short') })
         expect((schema as any).properties.username.minLength).toBe(3)
         expect((schema as any).properties.username.maxLength).toBe(16)
       })
 
-      it('应支持 medium 预设', () => {
+      it('should support medium preset', () => {
         const schema = dsl({ username: ('string!' as any).username('medium') })
         expect((schema as any).properties.username.minLength).toBe(3)
         expect((schema as any).properties.username.maxLength).toBe(32)
       })
 
-      it('应支持 long 预设', () => {
+      it('should support long preset', () => {
         const schema = dsl({ username: ('string!' as any).username('long') })
         expect((schema as any).properties.username.minLength).toBe(3)
         expect((schema as any).properties.username.maxLength).toBe(64)
@@ -66,26 +66,26 @@ describe('DslBuilder', () => {
     })
 
     describe('phone()', () => {
-      it('应自动设置 cn 手机号长度为 11', () => {
+      it('should automatically set cn phone number length to 11', () => {
         const schema = dsl({ phone: ('string!' as any).phone('cn') })
         expect((schema as any).properties.phone.minLength).toBe(11)
         expect((schema as any).properties.phone.maxLength).toBe(11)
       })
 
-      it('应自动纠正 number 类型为 string', () => {
+      it('should automatically correct number type to string', () => {
         const schema = dsl({ phone: ('number!' as any).phone('cn') })
         expect((schema as any).properties.phone.type).toBe('string')
       })
     })
 
     describe('password()', () => {
-      it('strong 应设置 8-64 长度', () => {
+      it('strong should set 8-64 length', () => {
         const schema = dsl({ password: ('string!' as any).password('strong') })
         expect((schema as any).properties.password.minLength).toBe(8)
         expect((schema as any).properties.password.maxLength).toBe(64)
       })
 
-      it('weak 应设置 6-64 长度', () => {
+      it('weak should set 6-64 length', () => {
         const schema = dsl({ password: ('string!' as any).password('weak') })
         expect((schema as any).properties.password.minLength).toBe(6)
         expect((schema as any).properties.password.maxLength).toBe(64)
@@ -93,37 +93,37 @@ describe('DslBuilder', () => {
     })
   })
 
-  describe('String 扩展方法', () => {
-    it('应支持 .pattern()', () => {
+  describe('String Extension Methods', () => {
+    it('should support .pattern()', () => {
       const schema = dsl({ test: ('string!' as any).pattern(/^test$/) })
       expect((schema as any).properties.test.pattern).toBeTruthy()
     })
 
-    it('应支持 .label()', () => {
+    it('should support .label()', () => {
       expect(() => {
         ;('string!' as any).label('测试')
       }).not.toThrow()
     })
 
-    it('应支持 .messages()', () => {
+    it('should support .messages()', () => {
       expect(() => {
         ;('string!' as any).messages({ min: 'test' })
       }).not.toThrow()
     })
 
-    it('应支持 .description()', () => {
+    it('should support .description()', () => {
       expect(() => {
         ;('string!' as any).description('测试描述')
       }).not.toThrow()
     })
 
-    it('应支持 .custom()', () => {
+    it('should support .custom()', () => {
       expect(() => {
         ;('string!' as any).custom(() => {})
       }).not.toThrow()
     })
 
-    it('应支持 .default()', () => {
+    it('should support .default()', () => {
       const schema = dsl({ name: ('string' as any).default('guest') })
       expect((schema as any).properties.name.default).toBe('guest')
     })

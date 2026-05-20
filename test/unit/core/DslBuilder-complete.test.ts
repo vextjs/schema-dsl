@@ -1,10 +1,10 @@
 ﻿/**
- * DslBuilder 完整测试 — v2 迁移
+ * DslBuilder Complete Tests — v2 Migration
  *
- * v2 变更：
- * - installStringExtensions 需手动调用
- * - string:N 单值 → exactLength:N（DA-03 fix）
- * - errors 字段在成功时为 undefined（not empty array）
+ * v2 Changes:
+ * - installStringExtensions must be called manually
+ * - string:N single value → exactLength:N (DA-03 fix)
+ * - errors field is undefined on success (not empty array)
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'
@@ -14,9 +14,9 @@ beforeAll(() => {
   installStringExtensions(dsl as any)
 })
 
-describe('DslBuilder - 完整测试', () => {
-  describe('基本类型解析', () => {
-    it('应该正确解析所有基本类型', () => {
+describe('DslBuilder - Complete Tests', () => {
+  describe('Basic Type Parsing', () => {
+    it('should correctly parse all basic types', () => {
       const schema = dsl({
         str: 'string',
         num: 'number',
@@ -40,60 +40,60 @@ describe('DslBuilder - 完整测试', () => {
     })
   })
 
-  describe('约束条件完整测试', () => {
-    it('应该支持 string:N 精确长度语法', () => {
+  describe('Complete Constraint Tests', () => {
+    it('should support string:N exact length syntax', () => {
       const schema = dsl({ code: 'string:6' })
       expect((schema as any).properties.code.exactLength).toBe(6)
     })
 
-    it('应该支持 string:-max 明确语法', () => {
+    it('should support string:-max explicit syntax', () => {
       const schema = dsl({ bio: 'string:-500' })
       expect((schema as any).properties.bio.maxLength).toBe(500)
     })
 
-    it('应该支持组合：精确长度+必填', () => {
+    it('should support combination: exact length + required', () => {
       const schema = dsl({ code: 'string:6!' })
       expect((schema as any).properties.code.exactLength).toBe(6)
       expect((schema as any).required).toContain('code')
     })
 
-    it('应该支持 string:min-max 范围语法', () => {
+    it('should support string:min-max range syntax', () => {
       const schema = dsl({ username: 'string:3-32' })
       expect((schema as any).properties.username.minLength).toBe(3)
       expect((schema as any).properties.username.maxLength).toBe(32)
     })
 
-    it('应该支持 string:min- 只限最小语法', () => {
+    it('should support string:min- min-only syntax', () => {
       const schema = dsl({ content: 'string:10-' })
       expect((schema as any).properties.content.minLength).toBe(10)
       expect((schema as any).properties.content.maxLength).toBeUndefined()
     })
 
-    it('应该支持 number:min-max 数字范围', () => {
+    it('should support number:min-max numeric range', () => {
       const schema = dsl({ age: 'number:18-120' })
       expect((schema as any).properties.age.minimum).toBe(18)
       expect((schema as any).properties.age.maximum).toBe(120)
     })
 
-    it('应该支持 number:max 数字最大值', () => {
+    it('should support number:max numeric maximum', () => {
       const schema = dsl({ score: 'number:100' })
       expect((schema as any).properties.score.maximum).toBe(100)
     })
 
-    it('应该支持 number:min- 数字最小值', () => {
+    it('should support number:min- numeric minimum', () => {
       const schema = dsl({ price: 'number:0-' })
       expect((schema as any).properties.price.minimum).toBe(0)
       expect((schema as any).properties.price.maximum).toBeUndefined()
     })
   })
 
-  describe('必填标记测试', () => {
-    it('应该识别 ! 必填标记', () => {
+  describe('Required Marker Tests', () => {
+    it("should recognize ! required marker", () => {
       const schema = dsl({ username: 'string!' })
       expect((schema as any).required).toContain('username')
     })
 
-    it('应该支持多个必填字段', () => {
+    it('should support multiple required fields', () => {
       const schema = dsl({
         username: 'string!',
         email: 'email!',
@@ -104,7 +104,7 @@ describe('DslBuilder - 完整测试', () => {
       expect((schema as any).required).not.toContain('age')
     })
 
-    it('应该支持约束+必填组合', () => {
+    it('should support constraint + required combination', () => {
       const schema = dsl({ username: 'string:3-32!' })
       expect((schema as any).required).toContain('username')
       expect((schema as any).properties.username.minLength).toBe(3)
@@ -112,38 +112,38 @@ describe('DslBuilder - 完整测试', () => {
     })
   })
 
-  describe('枚举值测试', () => {
-    it('应该解析简单枚举', () => {
+  describe('Enum Value Tests', () => {
+    it('should parse simple enum', () => {
       const schema = dsl({ status: 'active|inactive|pending' })
       expect((schema as any).properties.status.enum).toEqual(['active', 'inactive', 'pending'])
     })
 
-    it('应该支持带空格的枚举', () => {
+    it('should support enum with spaces', () => {
       const schema = dsl({ role: ' admin | user | guest ' })
       expect((schema as any).properties.role.enum).toEqual(['admin', 'user', 'guest'])
     })
 
-    it('应该支持数字枚举（v2 自动识别数字枚举）', () => {
+    it('should support numeric enum (v2 auto-detects numeric enum)', () => {
       const schema = dsl({ priority: '1|2|3|4|5' })
       expect((schema as any).properties.priority.type).toBe('number')
       expect((schema as any).properties.priority.enum).toEqual([1, 2, 3, 4, 5])
     })
 
-    it('应该支持必填枚举', () => {
+    it('should support required enum', () => {
       const schema = dsl({ status: 'active|inactive!' })
       expect((schema as any).required).toContain('status')
       expect((schema as any).properties.status.enum).toEqual(['active', 'inactive'])
     })
   })
 
-  describe('username() 完整测试', () => {
-    it('默认应为 medium (3-32)', () => {
+  describe('username() Complete Tests', () => {
+    it('default should be medium (3-32)', () => {
       const schema = dsl({ u: ('string!' as any).username() })
       expect((schema as any).properties.u.minLength).toBe(3)
       expect((schema as any).properties.u.maxLength).toBe(32)
     })
 
-    it('应支持自定义范围字符串', () => {
+    it('should support custom range string', () => {
       const tests = [
         { input: '5-20', min: 5, max: 20 },
         { input: '1-10', min: 1, max: 10 },
@@ -156,7 +156,7 @@ describe('DslBuilder - 完整测试', () => {
       })
     })
 
-    it('应支持所有预设选项', () => {
+    it('should support all preset options', () => {
       const presets: Record<string, { min: number; max: number }> = {
         short: { min: 3, max: 16 },
         medium: { min: 3, max: 32 },
@@ -169,14 +169,14 @@ describe('DslBuilder - 完整测试', () => {
       })
     })
 
-    it('应该添加正则验证', () => {
+    it('should add regex validation', () => {
       const schema = dsl({ u: ('string!' as any).username() })
       expect((schema as any).properties.u.pattern).toBeTruthy()
     })
   })
 
-  describe('phone() 完整测试', () => {
-    it('应支持常见国家代码', () => {
+  describe('phone() Complete Tests', () => {
+    it('should support common country codes', () => {
       const countries: Record<string, { min: number; max: number }> = {
         cn: { min: 11, max: 11 },
         us: { min: 10, max: 10 },
@@ -190,21 +190,21 @@ describe('DslBuilder - 完整测试', () => {
       })
     })
 
-    it('应自动纠正 number 为 string', () => {
+    it('should automatically correct number to string', () => {
       const schema = dsl({ p: ('number!' as any).phone('cn') })
       expect((schema as any).properties.p.type).toBe('string')
       expect((schema as any).properties.p.minimum).toBeUndefined()
       expect((schema as any).properties.p.maximum).toBeUndefined()
     })
 
-    it('应该添加正则验证', () => {
+    it('should add regex validation', () => {
       const schema = dsl({ p: ('string!' as any).phone('cn') })
       expect((schema as any).properties.p.pattern).toBeTruthy()
     })
   })
 
-  describe('password() 完整测试', () => {
-    it('应支持 weak/medium/strong 级别', () => {
+  describe('password() Complete Tests', () => {
+    it('should support weak/medium/strong levels', () => {
       const strengths: Record<string, { min: number; max: number }> = {
         weak: { min: 6, max: 64 },
         medium: { min: 8, max: 64 },
@@ -217,14 +217,14 @@ describe('DslBuilder - 完整测试', () => {
       })
     })
 
-    it('默认应为 medium', () => {
+    it('default should be medium', () => {
       const schema = dsl({ p: ('string!' as any).password() })
       expect((schema as any).properties.p.minLength).toBe(8)
     })
   })
 
-  describe('嵌套对象测试', () => {
-    it('应支持单层嵌套', () => {
+  describe('Nested Object Tests', () => {
+    it('should support single-level nesting', () => {
       const schema = dsl({
         user: {
           name: 'string!',
@@ -237,7 +237,7 @@ describe('DslBuilder - 完整测试', () => {
       expect(user.properties.email).toBeTruthy()
     })
 
-    it('嵌套对象应继承必填标记', () => {
+    it('nested object should inherit required markers', () => {
       const schema = dsl({
         user: {
           name: 'string!',
@@ -250,15 +250,15 @@ describe('DslBuilder - 完整测试', () => {
     })
   })
 
-  describe('数组类型测试', () => {
-    it('应该支持 array<type> DSL 字符串语法', () => {
+  describe('Array Type Tests', () => {
+    it('should support array<type> DSL string syntax', () => {
       const schema = dsl({ tags: 'array<string>' })
       const p = (schema as any).properties
       expect(p.tags.type).toBe('array')
       expect(p.tags.items).toMatchObject({ type: 'string' })
     })
 
-    it('应该支持 array:N-M<type:constraint> 完整语法', () => {
+    it('should support array:N-M<type:constraint> full syntax', () => {
       const schema = dsl({ tags: 'array:1-5<string:1-20>!' })
       const p = (schema as any).properties
       expect(p.tags.type).toBe('array')
@@ -268,7 +268,7 @@ describe('DslBuilder - 完整测试', () => {
       expect((schema as any).required).toContain('tags')
     })
 
-    it('应该支持枚举数组 array<enum:x|y|z>', () => {
+    it('should support enum array array<enum:x|y|z>', () => {
       const schema = dsl({ roles: 'array<enum:admin|user|guest>' })
       const p = (schema as any).properties
       expect(p.roles.type).toBe('array')
@@ -276,8 +276,8 @@ describe('DslBuilder - 完整测试', () => {
     })
   })
 
-  describe('验证功能测试', () => {
-    it('应正确验证有效数据', () => {
+  describe('Validation Tests', () => {
+    it('should correctly validate valid data', () => {
       const schema = dsl({
         username: 'string:3-32!',
         email: 'email!',
@@ -291,14 +291,14 @@ describe('DslBuilder - 完整测试', () => {
       expect(result.valid).toBe(true)
     })
 
-    it('应检测缺失的必填字段', () => {
+    it('should detect missing required fields', () => {
       const schema = dsl({ username: 'string!', email: 'email!' })
       const result = validate(schema, { username: 'john' })
       expect(result.valid).toBe(false)
       expect(result.errors!.length).toBeGreaterThan(0)
     })
 
-    it('应检测长度约束违规', () => {
+    it('should detect length constraint violations', () => {
       const schema = dsl({ username: 'string:5-20!' })
       const result = validate(schema, { username: 'ab' })
       expect(result.valid).toBe(false)

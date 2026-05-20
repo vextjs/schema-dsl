@@ -1,14 +1,14 @@
 ﻿/**
- * 性能测试
- * 确保验证性能在合理范围内
+ * Performance Tests
+ * Ensure validation performance is within acceptable range
  */
 
 import { describe, it, expect } from 'vitest';
 import { dsl, validate } from '../../src/index.js';
 
-describe('性能测试', () => {
+describe('Performance Tests', () => {
 
-  it('应该快速验证大量数据', () => {
+  it('should quickly validate large amounts of data', () => {
     const schema = dsl({
       name: 'string!',
       age: 'number!',
@@ -31,17 +31,17 @@ describe('性能测试', () => {
     const elapsed = Date.now() - start;
     const avgTime = elapsed / iterations;
 
-    console.log(`      ${iterations} 次验证耗时: ${elapsed}ms`);
-    console.log(`      平均每次: ${avgTime.toFixed(3)}ms`);
+    console.log(`      ${iterations} validations elapsed: ${elapsed}ms`);
+    console.log(`      average per validation: ${avgTime.toFixed(3)}ms`);
 
-    // 断言：1000次验证应在5秒内完成（平均5ms/次）
+    // assert: 1000 validations should complete within 5 seconds (avg 5ms each)
     expect(elapsed).toBeLessThan(5000);
 
-    // 断言：平均每次验证应在10ms内
+    // assert: average per validation should be under 10ms
     expect(avgTime).toBeLessThan(10);
   });
 
-  it('应该快速验证复杂Schema', () => {
+  it('should quickly validate complex Schema', () => {
     const schema = dsl({
       username: 'string:3-32!',
       email: 'email!',
@@ -79,17 +79,17 @@ describe('性能测试', () => {
     const elapsed = Date.now() - start;
     const avgTime = elapsed / iterations;
 
-    console.log(`      ${iterations} 次复杂验证耗时: ${elapsed}ms`);
-    console.log(`      平均每次: ${avgTime.toFixed(3)}ms`);
+    console.log(`      ${iterations} complex validations elapsed: ${elapsed}ms`);
+    console.log(`      average per validation: ${avgTime.toFixed(3)}ms`);
 
-    // 断言：500次复杂验证应在5秒内完成（平均10ms/次）
+    // assert: 500 complex validations should complete within 5 seconds (avg 10ms each)
     expect(elapsed).toBeLessThan(5000);
 
-    // 断言：平均每次验证应在15ms内
+    // assert: average per validation should be under 15ms
     expect(avgTime).toBeLessThan(15);
   });
 
-  it('应该快速验证精确长度（v1.0.3新特性）', () => {
+  it('should quickly validate exact length (v1.0.3 new feature)', () => {
     const schema = dsl({
       code: 'string:6!',
       country: 'string:2!'
@@ -109,9 +109,9 @@ describe('性能测试', () => {
 
     const elapsed = Date.now() - start;
 
-    console.log(`      ${iterations} 次精确长度验证耗时: ${elapsed}ms`);
+    console.log(`      ${iterations} exact length validations elapsed: ${elapsed}ms`);
 
-    // 断言：应与普通验证性能一致
+    // assert: should be consistent with regular validation performance
     expect(elapsed).toBeLessThan(5000);
   });
 });

@@ -93,7 +93,7 @@ const parsedConstraints = ConstraintParser.parse('3-32', 'string')
 const compiledSchema = SchemaCompiler.compile(
   TypeRegistry.resolve('string'),
   parsedConstraints,
-  { label: '用户名', required: true },
+  { label: 'Username', required: true },
 )
 const compiledJsonSchema = SchemaCompiler.toJsonSchema(compiledSchema, TypeRegistry.getInternalKeys())
 

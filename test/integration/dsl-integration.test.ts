@@ -1,7 +1,7 @@
 ﻿/**
- * 集成测试 — v2 模块端到端
- * 注意：不从 src/index.ts 导入，避免 installStringExtensions 在测试环境崩溃
- * 用独立模块直接测试等效功能
+ * Integration Tests — v2 module end-to-end
+ * Note: does not import from src/index.ts to avoid installStringExtensions crashing in test env
+ * Tests equivalent functionality via individual modules
  */
 
 import { describe, it, expect } from 'vitest'
@@ -17,29 +17,29 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf-8')) as { version: string }
 
 describe('VERSION', () => {
-  it('是合法的 semver 字符串', () => {
+  it('should be a valid semver string', () => {
     expect(pkg.version).toMatch(/^\d+\.\d+\.\d+/)
   })
 
-  it('版本为 2.x', () => {
+  it('version should start with 2.x', () => {
     expect(pkg.version.startsWith('2.')).toBe(true)
   })
 })
 
-describe('DslBuilder（等同 dsl(string)）', () => {
-  it('返回 DslBuilder 实例', () => {
+describe('DslBuilder (equivalent to dsl(string))', () => {
+  it('should return a DslBuilder instance', () => {
     const b = new DslBuilder('string!')
     expect(b).toHaveProperty('toSchema')
     expect(b).toHaveProperty('toJsonSchema')
     expect(b._isDslBuilder).toBe(true)
   })
 
-  it('链式调用 label()', () => {
+  it('should support chaining label()', () => {
     const b = new DslBuilder('string!').label('姓名')
     expect(b.toSchema()._label).toBe('姓名')
   })
 
-  it('链式 min().max()', () => {
+  it('should support chaining min().max()', () => {
     const s = new DslBuilder('string!').min(3).max(32).toSchema()
     expect(s.minLength).toBe(3)
     expect(s.maxLength).toBe(32)
@@ -52,51 +52,51 @@ describe('DslBuilder（等同 dsl(string)）', () => {
   })
 })
 
-describe('DslParser.parseObject（等同 dsl(object)）', () => {
-  it('扁平映射', () => {
+describe('DslParser.parseObject (equivalent to dsl(object))', () => {
+  it('should map flat fields', () => {
     const schema = DslParser.parseObject({ name: 'string!', age: 'number' })
     expect(schema.type).toBe('object')
     expect(schema.properties?.['name']?.type).toBe('string')
   })
 
-  it('required 数组正确', () => {
+  it('should build the required array correctly', () => {
     const schema = DslParser.parseObject({ name: 'string!', age: 'number' })
     expect(schema.required).toContain('name')
     expect(schema.required).not.toContain('age')
   })
 
-  it('嵌套对象 DSL', () => {
+  it('should handle nested object DSL', () => {
     const schema = DslParser.parseObject({ user: { name: 'string!', age: 'number' } })
     expect(schema.properties?.['user']?.type).toBe('object')
   })
 })
 
-describe('ConditionalBuilder.start（等同 dsl.if()）', () => {
-  it('返回 ConditionalBuilder', () => {
+describe('ConditionalBuilder.start (equivalent to dsl.if())', () => {
+  it('should return a ConditionalBuilder', () => {
     const cb = ConditionalBuilder.start(() => true)
     expect(cb).toHaveProperty('toSchema')
     expect(cb).toHaveProperty('message')
   })
 })
 
-describe('Validator + DslParser 端到端', () => {
+describe('Validator + DslParser end-to-end', () => {
   let v: Validator
 
   v = new Validator()
 
-  it('有效数据通过', () => {
+  it('valid data should pass', () => {
     const schema = DslParser.parseObject({ name: 'string!', age: 'number' })
     const result = v.validate(schema, { name: 'Alice', age: 25 })
     expect(result.valid).toBe(true)
   })
 
-  it('无效数据报错', () => {
+  it('invalid data should fail', () => {
     const schema = DslParser.parseObject({ name: 'string!' })
     const result = v.validate(schema, {})
     expect(result.valid).toBe(false)
   })
 
-  it('email 格式验证', () => {
+  it('email format validation', () => {
     const schema = DslParser.parseObject({ email: 'email!' })
     const ok = v.validate(schema, { email: 'user@example.com' })
     expect(ok.valid).toBe(true)
@@ -104,7 +104,7 @@ describe('Validator + DslParser 端到端', () => {
     expect(fail.valid).toBe(false)
   })
 
-  it('number range 验证', () => {
+  it('number range validation', () => {
     const schema = DslParser.parseObject({ score: 'number:0-100!' })
     const ok = v.validate(schema, { score: 85 })
     expect(ok.valid).toBe(true)

@@ -1,5 +1,5 @@
 ﻿/**
- * i18n 子目录合并测试 (v2 TypeScript)
+ * i18n Subdirectory Merge Tests (v2 TypeScript)
  *
  * v2 differences:
  * - Locale.locales is private → use Locale.getMessageText() to verify loaded messages
@@ -26,15 +26,15 @@ function createTmpLocales(tree: Record<string, Record<string, unknown> | string>
   return root
 }
 
-describe('i18n 子目录合并', () => {
+describe('i18n Subdirectory Merge', () => {
 
   afterEach(() => {
     Locale.reset()
   })
 
-  describe('F1 递归子目录扫描', () => {
+  describe('F1 Recursive Subdirectory Scan', () => {
 
-    it('应该正确加载单层目录（向后兼容）', () => {
+    it('should correctly load flat directory (backward compatible)', () => {
       const root = createTmpLocales({
         'zh-CN.js': { 'hello': '你好' },
         'en-US.js': { 'hello': 'Hello' }
@@ -44,7 +44,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('hello', {}, 'en-US')).toBe('Hello')
     })
 
-    it('应该递归加载一级子目录下的语言文件', () => {
+    it('should recursively load locale files from first-level subdirectories', () => {
       const root = createTmpLocales({
         'core/zh-CN.js':    { 'test.core.key': '核心' },
         'account/zh-CN.js': { 'test.account.notFound': '账户不存在' },
@@ -56,7 +56,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('test.order.notPaid', {}, 'zh-CN')).toBe('订单未支付')
     })
 
-    it('应该递归加载二级子目录（深层嵌套）', () => {
+    it('should recursively load second-level subdirectories (deep nesting)', () => {
       const root = createTmpLocales({
         'modules/user/zh-CN.js':    { 'test.user.notFound': '用户不存在' },
         'modules/payment/zh-CN.js': { 'test.payment.failed': '支付失败' }
@@ -66,7 +66,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('test.payment.failed', {}, 'zh-CN')).toBe('支付失败')
     })
 
-    it('应该合并同语言的多个子目录文件', () => {
+    it('should merge multiple subdirectory files for the same locale', () => {
       const root = createTmpLocales({
         'account/zh-CN.js': { 'test.account.k1': '账户已锁定', 'test.account.k2': '账户冻结' },
         'order/zh-CN.js':   { 'test.order.k1': '订单不存在', 'test.order.k2': '订单未支付' }
@@ -78,7 +78,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('test.order.k2', {}, 'zh-CN')).toBeTruthy()
     })
 
-    it('合并后的语言包可正常用于 validate', () => {
+    it('merged locale pack should work normally with validate', () => {
       const root = createTmpLocales({
         'account/zh-CN.js': { 'min': '{{#label}}长度不能少于{{#limit}}个字符' }
       })
@@ -89,7 +89,7 @@ describe('i18n 子目录合并', () => {
       expect(result.errors[0].message).toContain('长度不能少于')
     })
 
-    it('子目录中有多个语言时，各语言均正确加载', () => {
+    it('when subdirectory has multiple locales, all locales should load correctly', () => {
       const root = createTmpLocales({
         'account/zh-CN.js': { 'test.multi.key': '账户不存在' },
         'account/en-US.js': { 'test.multi.key': 'Account not found' },
@@ -103,7 +103,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('test.order.multi', {}, 'en-US')).toBe('Order not paid')
     })
 
-    it('应该支持 .cjs 语言文件', () => {
+    it('should support .cjs locale files', () => {
       const root = createTmpLocales({
         'zh-CN.cjs': 'module.exports = { "test.cjs.key": "CJS语言包" };'
       })
@@ -111,7 +111,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('test.cjs.key', {}, 'zh-CN')).toBe('CJS语言包')
     })
 
-    it('应该支持 .json 语言文件', () => {
+    it('should support .json locale files', () => {
       const root = createTmpLocales({
         'zh-CN.json': '{"test.json.key":"JSON语言包"}'
       })
@@ -119,7 +119,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('test.json.key', {}, 'zh-CN')).toBe('JSON语言包')
     })
 
-    it('应该支持 .jsonc 语言文件（注释 + 末尾逗号）', () => {
+    it('should support .jsonc locale files (comments + trailing comma)', () => {
       const root = createTmpLocales({
         'zh-CN.jsonc': '{\n  // comment\n  "test.jsonc.key": "JSONC语言包",\n}'
       })
@@ -127,7 +127,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('test.jsonc.key', {}, 'zh-CN')).toBe('JSONC语言包')
     })
 
-    it('应该支持 .json5 语言文件', () => {
+    it('should support .json5 locale files', () => {
       const root = createTmpLocales({
         'zh-CN.json5': "{\n  'test.json5.key': 'JSON5语言包',\n}"
       })
@@ -137,9 +137,9 @@ describe('i18n 子目录合并', () => {
 
   })
 
-  describe('F2 同名 key 冲突检测', () => {
+  describe('F2 Duplicate Key Conflict Detection', () => {
 
-    it('默认模式：同名 key 冲突时打 WARN，不抛错', () => {
+    it('default mode: warns on duplicate key conflict, no throw', () => {
       const root = createTmpLocales({
         'a/zh-CN.js': { 'test.conflict.key': '来自A' },
         'b/zh-CN.js': { 'test.conflict.key': '来自B' }
@@ -155,7 +155,7 @@ describe('i18n 子目录合并', () => {
       }
     })
 
-    it('默认模式：冲突后续文件的 key 覆盖前面的值', () => {
+    it('default mode: later file key overrides earlier value on conflict', () => {
       const root = createTmpLocales({
         'a/zh-CN.js': { 'test.dup.key': '旧值' },
         'b/zh-CN.js': { 'test.dup.key': '新值' }
@@ -170,7 +170,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('test.dup.key', {}, 'zh-CN')).toBe('新值')
     })
 
-    it('strict 模式：同名 key 冲突时抛出 Error', () => {
+    it('strict mode: throws Error on duplicate key conflict', () => {
       const root = createTmpLocales({
         'a/zh-CN.js': { 'test.strict.key': '来自A' },
         'b/zh-CN.js': { 'test.strict.key': '来自B' }
@@ -184,7 +184,7 @@ describe('i18n 子目录合并', () => {
       }
     })
 
-    it('strict 模式：无冲突时不抛错', () => {
+    it('strict mode: does not throw when no conflict', () => {
       const root = createTmpLocales({
         'account/zh-CN.js': { 'test.strict.account': '账户' },
         'order/zh-CN.js':   { 'test.strict.order': '订单' }
@@ -192,7 +192,7 @@ describe('i18n 子目录合并', () => {
       expect(() => dsl.config({ i18n: root, strict: true } as any)).not.toThrow()
     })
 
-    it('strict 模式：错误信息包含冲突来源文件路径', () => {
+    it('strict mode: error message contains conflicting source file path', () => {
       const root = createTmpLocales({
         'a/zh-CN.js': { 'test.path.dup': 'A' },
         'b/zh-CN.js': { 'test.path.dup': 'B' }
@@ -209,9 +209,9 @@ describe('i18n 子目录合并', () => {
 
   })
 
-  describe('F3 语言文件名格式校验', () => {
+  describe('F3 Locale Filename Format Validation', () => {
 
-    it('应该跳过 index.js', () => {
+    it('should skip index.js', () => {
       const root = createTmpLocales({
         'index.js':  { 'index.key': '不应被加载' },
         'zh-CN.js':  { 'real.key': '应被加载' }
@@ -222,7 +222,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('real.key', {}, 'zh-CN')).toBe('应被加载')
     })
 
-    it('应该跳过 utils.js、CODE-SEGMENTS.js 等非语言文件', () => {
+    it('should skip non-locale files like utils.js, CODE-SEGMENTS.js', () => {
       const root = createTmpLocales({
         'utils.js':          { 'utils.key': '工具' },
         'CODE-SEGMENTS.js':  { 'code.key': '码段' },
@@ -233,7 +233,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('valid.key', {}, 'zh-CN')).toBe('有效')
     })
 
-    it('应该正确加载标准语言代码格式的文件', () => {
+    it('should correctly load files with standard locale code format', () => {
       const root = createTmpLocales({
         'zh-CN.js':  { 'test.k1': 'v1' },
         'en-US.js':  { 'test.k2': 'v2' },
@@ -251,7 +251,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('test.k6', {}, 'en')).toBe('v6')
     })
 
-    it('默认扫描不包含 .ts / .mjs', () => {
+    it('default scan does not include .ts / .mjs', () => {
       const root = createTmpLocales({
         'zh-CN.ts': 'export default { "test.ts.key": "TS语言包" };',
         'zh-CN.mjs': 'export default { "test.mjs.key": "MJS语言包" };',
@@ -265,9 +265,9 @@ describe('i18n 子目录合并', () => {
 
   })
 
-  describe('向后兼容性回归', () => {
+  describe('Backward Compatibility Regression', () => {
 
-    it('用法1 字符串路径（平铺，无子目录）—— 行为不变', () => {
+    it('usage 1: string path (flat, no subdirectory) — behavior unchanged', () => {
       const root = createTmpLocales({
         'zh-CN.js': { 'compat.key': '兼容' },
         'en-US.js': { 'compat.key': 'Compat' }
@@ -277,7 +277,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('compat.key', {}, 'en-US')).toBe('Compat')
     })
 
-    it('用法2 对象直接传语言包 —— 行为不变', () => {
+    it('usage 2: object with locale data directly — behavior unchanged', () => {
       dsl.config({
         i18n: {
           'zh-CN': { 'obj.key': '对象' } as any,
@@ -288,7 +288,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('obj.key', {}, 'en-US')).toBe('Object')
     })
 
-    it('用法3 对象含 localesPath —— 真正生效', () => {
+    it('usage 3: object with localesPath — properly takes effect', () => {
       const root = createTmpLocales({
         'zh-CN.js': { 'lp.key': '路径对象' }
       })
@@ -296,13 +296,13 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('lp.key', {}, 'zh-CN')).toBe('路径对象')
     })
 
-    it('用法4 路径不存在 —— 只打 WARN，不抛错', () => {
+    it('usage 4: path does not exist — only warns, no throw', () => {
       expect(() => {
         dsl.config({ i18n: '/absolutely/non/existent/path/for/test' })
       }).not.toThrow()
     })
 
-    it('strict 未传时默认 false，现有行为零变化', () => {
+    it('strict defaults to false when not provided, zero behavior change', () => {
       const root = createTmpLocales({
         'zh-CN.js': { 'default.strict': '默认' }
       })
@@ -310,7 +310,7 @@ describe('i18n 子目录合并', () => {
       expect(Locale.getMessageText('default.strict', {}, 'zh-CN')).toBe('默认')
     })
 
-    it('同时配置 i18n + cache + patterns —— 综合用法不回归', () => {
+    it('configuring i18n + cache + patterns simultaneously — combined usage does not regress', () => {
       const root = createTmpLocales({
         'zh-CN.js': { 'combo.key': '综合' }
       })
