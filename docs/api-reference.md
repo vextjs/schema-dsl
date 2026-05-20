@@ -153,7 +153,7 @@ dsl('url').description('个人主页链接')
   - 签名：`(value) => boolean | string | { error, message } | void`
   - 返回 `true` 表示通过
   - 返回 `false`、错误消息字符串或错误对象表示失败
-  - ⚠️ 当前运行时仅支持**同步**自定义验证；异步校验请在 `validate()` / `validateAsync()` 通过后于业务层单独执行
+  - 同步验证器由 `validate()` 和 `validateAsync()` 均执行；异步验证器（返回 `Promise`）仅由 `validateAsync()` 执行，`validate()` 调用时会跳过异步 validator
 
 **返回**: **DslBuilder**
 
