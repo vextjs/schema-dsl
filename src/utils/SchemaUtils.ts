@@ -1,14 +1,14 @@
 /**
- * SchemaUtils — Schema 高级操作工具（复用、合并、扩展、性能监控）
+ * SchemaUtils — Advanced schema operations (reuse, merge, extend, performance monitoring)
  *
- * v2 注意：v1 的 extend/validateBatch 中使用了 require('../adapters/DslAdapter')，
- *          v2 使用动态 import 或直接接受已编译 schema（避免循环依赖）
+ * v2 note: v1's extend/validateBatch used require('../adapters/DslAdapter'),
+ *          v2 uses dynamic import or accepts pre-compiled schema directly (avoids circular deps)
  */
 
 import type { JSONSchema } from '../types/schema.js'
 import { DslAdapter } from '../adapters/DslAdapter.js'
 
-// SchemaUtils 内部：支持链式调用的 Schema 包装类型
+// Internal: chainable schema wrapper type
 interface ChainableSchema extends JSONSchema {
   _isChainable: true
   partial(fields?: string[]): ChainableSchema
@@ -20,28 +20,28 @@ interface ChainableSchema extends JSONSchema {
 // ==================== SchemaUtils ====================
 
 export class SchemaUtils {
-  // ========== Schema 复用 ==========
+  // ========== Schema Reuse ==========
 
   /**
-   * 创建可复用的 Schema 工厂
-   * @example const emailField = SchemaUtils.reusable(() => dsl('email!').label('邮箱'))
+   * Create a reusable schema factory.
+   * @example const emailField = SchemaUtils.reusable(() => dsl('email!').label('email'))
    */
   static reusable<T>(factory: () => T): () => T {
     return factory
   }
 
   /**
-   * 创建 Schema 片段库
+   * Create a schema fragment library.
    * @example const fields = SchemaUtils.createLibrary({ email: () => dsl('email!') })
    */
   static createLibrary<T extends Record<string, () => unknown>>(fragments: T): T {
     return fragments
   }
 
-  // ========== Schema 复用和扩展 ==========
+  // ========== Schema Reuse & Extension ==========
 
   /**
-   * 扩展 Schema（类似继承）—— 将 extensions 中的字段合并进 baseSchema
+   * Extend a schema (like inheritance) — merges extension fields into the base schema.
    */
   static extend(baseSchema: JSONSchema, extensions: JSONSchema | Record<string, unknown>): ChainableSchema {
     const result: Record<string, unknown> = {
@@ -50,7 +50,7 @@ export class SchemaUtils {
       required: [] as string[],
     }
 
-    // 复制 base schema
+    // Copy base schema
     if (baseSchema.properties) {
       Object.assign(result['properties'] as Record<string, unknown>, baseSchema.properties)
     }
@@ -66,7 +66,7 @@ export class SchemaUtils {
       extSchema = extensions as JSONSchema
     }
 
-    // 合并扩展 schema
+    // Merge extension schema
     if (extSchema.properties) {
       Object.assign(result['properties'] as Record<string, unknown>, extSchema.properties)
     }
@@ -81,7 +81,7 @@ export class SchemaUtils {
   }
 
   /**
-   * 挑选 Schema 中的部分字段
+   * Pick a subset of fields from a schema.
    */
   static pick(schema: JSONSchema, fields: string[]): ChainableSchema {
     const result: Record<string, unknown> = {
@@ -103,7 +103,7 @@ export class SchemaUtils {
   }
 
   /**
-   * 排除 Schema 中的部分字段
+   * Omit fields from a schema.
    */
   static omit(schema: JSONSchema, fields: string[]): ChainableSchema {
     const result = this._clone(schema)
@@ -117,7 +117,7 @@ export class SchemaUtils {
       }
     }
 
-    // 清理空 required
+    // Remove empty required array
     if (Array.isArray(result['required']) && (result['required'] as string[]).length === 0) {
       delete result['required']
     }
@@ -126,8 +126,8 @@ export class SchemaUtils {
   }
 
   /**
-   * 使所有字段可选（移除 required）
-   * @param fields - 可选，只处理这些字段（其余字段保留）
+   * Make all fields optional (removes required).
+   * @param fields - optional; only process these fields (others remain unchanged)
    */
   static partial(schema: JSONSchema, fields?: string[] | null): ChainableSchema {
     let raw: Record<string, unknown>
@@ -141,7 +141,7 @@ export class SchemaUtils {
 
     delete raw['required']
 
-    // 递归移除嵌套 required
+    // Recursively remove nested required
     if (raw['properties']) {
       for (const prop of Object.values(raw['properties'] as Record<string, Record<string, unknown>>)) {
         if (prop && prop['type'] === 'object' && prop['required']) {
@@ -153,10 +153,10 @@ export class SchemaUtils {
     return this._makeChainable(raw as JSONSchema)
   }
 
-  // ========== 性能监控 ==========
+  // ========== Performance Monitoring ==========
 
   /**
-   * 为 Validator 实例添加性能监控包装
+   * Wrap a Validator instance with performance monitoring.
    */
   static withPerformance<V extends { validate: (...args: unknown[]) => unknown }>(validator: V): V {
     const originalValidate = validator.validate.bind(validator)
@@ -170,7 +170,7 @@ export class SchemaUtils {
   }
 
   /**
-   * 批量验证（复用已编译的 Ajv validate 函数）
+   * Batch validate using a pre-compiled Ajv validate function.
    */
   static validateBatch(
     schema: JSONSchema,
@@ -206,16 +206,16 @@ export class SchemaUtils {
     }
   }
 
-  // ========== Schema 导出 ==========
+  // ========== Schema Export ==========
 
   static toMarkdown(schema: JSONSchema, options: { title?: string } = {}): string {
-    const { title = 'Schema文档' } = options
+    const { title = 'Schema Documentation' } = options
     let md = `# ${title}\n\n`
 
     if (schema.properties) {
-      md += '## 字段列表\n\n'
-      md += '| 字段 | 类型 | 必填 | 说明 |\n'
-      md += '|------|------|------|------|\n'
+      md += '## Fields\n\n'
+      md += '| Field | Type | Required | Description |\n'
+      md += '|-------|------|----------|-------------|\n'
 
       for (const [key, prop] of Object.entries(schema.properties)) {
         const required = schema.required?.includes(key) ? '✅' : '❌'
@@ -226,12 +226,12 @@ export class SchemaUtils {
         md += `| ${key} | ${type} | ${required} | ${label} |\n`
 
         const constraints: string[] = []
-        if (prop.minLength) constraints.push(`最小长度: ${prop.minLength}`)
-        if (prop.maxLength) constraints.push(`最大长度: ${prop.maxLength}`)
-        if (prop.minimum !== undefined) constraints.push(`最小值: ${prop.minimum}`)
-        if (prop.maximum !== undefined) constraints.push(`最大值: ${prop.maximum}`)
-        if (prop.pattern) constraints.push(`格式: \`${prop.pattern}\``)
-        if (prop.enum) constraints.push(`可选值: ${(prop.enum as unknown[]).join(', ')}`)
+        if (prop.minLength) constraints.push(`minLength: ${prop.minLength}`)
+        if (prop.maxLength) constraints.push(`maxLength: ${prop.maxLength}`)
+        if (prop.minimum !== undefined) constraints.push(`minimum: ${prop.minimum}`)
+        if (prop.maximum !== undefined) constraints.push(`maximum: ${prop.maximum}`)
+        if (prop.pattern) constraints.push(`pattern: \`${prop.pattern}\``)
+        if (prop.enum) constraints.push(`enum: ${(prop.enum as unknown[]).join(', ')}`)
 
         if (constraints.length > 0) {
           md += `| | | | ${constraints.join('; ')} |\n`
@@ -250,12 +250,12 @@ export class SchemaUtils {
    * toHTML — v1 compat: export schema as HTML document
    */
   static toHTML(schema: JSONSchema, options: { title?: string } = {}): string {
-    const { title = 'Schema文档' } = options
+    const { title = 'Schema Documentation' } = options
     let html = `<!DOCTYPE html>\n<html>\n<head><meta charset="utf-8"><title>${title}</title></head>\n<body>\n<h1>${title}</h1>\n`
 
     if (schema.properties) {
       html += '<table border="1" cellpadding="4">\n'
-      html += '<tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>\n'
+      html += '<tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>\n'
 
       for (const [key, prop] of Object.entries(schema.properties)) {
         const required = schema.required?.includes(key) ? '✅' : '❌'
@@ -273,7 +273,7 @@ export class SchemaUtils {
     return html
   }
 
-  // ==================== 私有工具方法 ====================
+  // ==================== Private Utilities ====================
 
   private static _clone(schema: JSONSchema | ChainableSchema): Record<string, unknown> {
     const raw = '_isChainable' in schema ? this._extractSchema(schema as ChainableSchema) : schema

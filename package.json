@@ -1,7 +1,7 @@
 {
   "name": "schema-dsl",
   "version": "2.0.0",
-  "description": "简洁强大的JSON Schema验证库 - DSL语法 + String扩展 + 便捷validate",
+  "description": "A concise and powerful JSON Schema validation library - DSL syntax + String extensions + convenient validate API",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

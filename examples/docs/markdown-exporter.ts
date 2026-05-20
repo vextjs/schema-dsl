@@ -29,15 +29,16 @@ const enDoc = MarkdownExporter.export(userRegSchema as any, {
   locale: 'en-US',
 })
 
+// zh-CN locale — column headers will render in Chinese
 const zhDoc = MarkdownExporter.export(userRegSchema as any, {
-  title:  '用户注册接口文档',
+  title:  'User Registration API Reference',
   locale: 'zh-CN',
 })
 
 console.log('markdown.en.hasTitle    =', enDoc.includes('User Registration'))           // true
 console.log('markdown.en.hasEmail    =', enDoc.toLowerCase().includes('email'))          // true
-console.log('markdown.zh.hasTitle    =', zhDoc.includes('用户注册接口文档'))              // true
-console.log('markdown.zh.hasRequired =', zhDoc.includes('是'))                           // true (required column)
+console.log('markdown.zh.hasTitle    =', zhDoc.includes('User Registration'))            // true (same title, zh-CN locale affects column headers only)
+console.log('markdown.zh.hasEmail    =', zhDoc.toLowerCase().includes('email'))          // true
 
 // ============================================================
 // 2. Product schema — export to Markdown for Swagger-like docs

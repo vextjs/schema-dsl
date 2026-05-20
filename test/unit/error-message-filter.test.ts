@@ -34,7 +34,7 @@ describe('Error Message Filter Optimization (v1.0.7)', () => {
       expect(result.errors).toHaveLength(1)
       expect(result.errors![0].message).toContain('Credit price')
       const msg = result.errors![0].message
-      expect(msg.includes('required') || msg.includes('不能为空')).toBe(true)
+      expect(msg.includes('required') || msg.includes('\u4e0d\u80fd\u4e3a\u7a7a')).toBe(true)
       expect(result.errors![0].message).not.toContain('must match')
     })
 

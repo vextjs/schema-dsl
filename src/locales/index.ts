@@ -7,7 +7,7 @@ import frFR from './fr-FR.js'
 
 export type { LocaleKey, LocaleMessage, LocaleMessages }
 
-// ─── 支持的语言包注册表 ─────────────────────────────────────────────────────────
+// ─── Supported locale registry ─────────────────────────────────────────────────────────
 const LOCALES: Readonly<Record<string, LocaleMessages>> = {
   'zh-CN': zhCN,
   'en-US': enUS,
@@ -16,16 +16,16 @@ const LOCALES: Readonly<Record<string, LocaleMessages>> = {
   'fr-FR': frFR,
 }
 
-/** 默认语言（全局 fallback 基准）*/
+/** Default locale (global fallback base) */
 const DEFAULT_LOCALE = 'zh-CN'
 
-/** en-US 作为二级 fallback（所有语言包缺 key 时兜底）*/
+/** en-US acts as secondary fallback (used when any locale is missing a key) */
 const FALLBACK_LOCALE = 'en-US'
 
 /**
- * 获取指定语言的消息条目（含 fallback 链）
+ * Look up a locale message entry (with fallback chain).
  *
- * fallback 链：locale → zh-CN（若 locale 非 zh-CN）→ en-US → key 本身
+ * Fallback chain: locale → zh-CN (if locale ≠ zh-CN) → en-US → key itself
  */
 export function getMessage(
   key: LocaleKey,
@@ -36,7 +36,7 @@ export function getMessage(
     return messages[key]
   }
 
-  // 一级 fallback：zh-CN
+  // Primary fallback: zh-CN
   if (locale !== DEFAULT_LOCALE) {
     const defaultMessages = LOCALES[DEFAULT_LOCALE]
     if (defaultMessages && key in defaultMessages) {
@@ -44,18 +44,18 @@ export function getMessage(
     }
   }
 
-  // 二级 fallback：en-US
+  // Secondary fallback: en-US
   const fallbackMessages = LOCALES[FALLBACK_LOCALE]
   if (fallbackMessages && key in fallbackMessages) {
     return fallbackMessages[key]
   }
 
-  // 最终 fallback：返回 key 本身（永不 undefined）
+  // Final fallback: return the key itself (never returns undefined)
   return key
 }
 
 /**
- * 获取消息的最终字符串（展开 {code, message} 对象格式）
+ * Get the resolved string for a message (unwraps {code, message} object format).
  */
 export function getMessageString(
   key: LocaleKey,
@@ -67,7 +67,7 @@ export function getMessageString(
 }
 
 /**
- * 获取消息的错误 code（若存在 {code, message} 格式）
+ * Get the error code of a message (if the value is a {code, message} object).
  */
 export function getMessageCode(
   key: LocaleKey,
@@ -79,21 +79,21 @@ export function getMessageCode(
 }
 
 /**
- * 获取指定语言的完整消息表
+ * Get the complete message map for the given locale.
  */
 export function getMessages(locale: string = DEFAULT_LOCALE): LocaleMessages {
   return LOCALES[locale] ?? LOCALES[DEFAULT_LOCALE]!
 }
 
 /**
- * 检查语言是否受支持
+ * Check whether a locale is supported.
  */
 export function isSupportedLocale(locale: string): boolean {
   return locale in LOCALES
 }
 
 /**
- * 获取所有支持的语言代码
+ * Get all supported locale codes.
  */
 export function getSupportedLocales(): string[] {
   return Object.keys(LOCALES)

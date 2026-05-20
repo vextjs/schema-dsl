@@ -27,7 +27,7 @@ describe('I18nError - Multilingual Error Class', () => {
       expect(error.name).toBe('I18nError')
       expect(error.originalKey).toBe('account.notFound')
       expect(error.code).toBe('ACCOUNT_NOT_FOUND')
-      expect(error.message).toBe('账户不存在')
+      expect(error.message).toBe('\u8d26\u6237\u4e0d\u5b58\u5728')
       expect(error.statusCode).toBe(400)
       expect(error.locale).toBe('zh-CN')
     })
@@ -38,7 +38,7 @@ describe('I18nError - Multilingual Error Class', () => {
         required: 100
       })
 
-      expect(error.message).toContain('余额不足')
+      expect(error.message).toContain('\u4f59\u989d\u4e0d\u8db3')
       expect(error.message).toContain('50')
       expect(error.message).toContain('100')
       expect(error.params).toEqual({ balance: 50, required: 100 })
@@ -51,7 +51,7 @@ describe('I18nError - Multilingual Error Class', () => {
 
     it('should support locale switching', () => {
       let error = new I18nError('account.notFound')
-      expect(error.message).toBe('账户不存在')
+      expect(error.message).toBe('\u8d26\u6237\u4e0d\u5b58\u5728')
       expect(error.locale).toBe('zh-CN')
 
       Locale.setLocale('en-US')
@@ -85,7 +85,7 @@ describe('I18nError - Multilingual Error Class', () => {
         402
       )
 
-      expect(error.message).toContain('余额不足')
+      expect(error.message).toContain('\u4f59\u989d\u4e0d\u8db3')
       expect(error.statusCode).toBe(402)
     })
   })
@@ -103,7 +103,7 @@ describe('I18nError - Multilingual Error Class', () => {
         expect.fail('should have thrown an error')
       } catch (error: any) {
         expect(error).toBeInstanceOf(I18nError)
-        expect(error.message).toContain('余额不足')
+        expect(error.message).toContain('\u4f59\u989d\u4e0d\u8db3')
         expect(error.params).toEqual({ balance: 50, required: 100 })
       }
     })
@@ -134,7 +134,7 @@ describe('I18nError - Multilingual Error Class', () => {
         expect.fail('should have thrown an error')
       } catch (error: any) {
         expect(error).toBeInstanceOf(I18nError)
-        expect(error.message).toContain('余额不足')
+        expect(error.message).toContain('\u4f59\u989d\u4e0d\u8db3')
       }
     })
   })
@@ -173,7 +173,7 @@ describe('I18nError - Multilingual Error Class', () => {
     it('should return a formatted string', () => {
       const error = new I18nError('account.notFound')
       const str = error.toString()
-      expect(str).toBe('I18nError [ACCOUNT_NOT_FOUND]: 账户不存在')
+      expect(str).toBe('I18nError [ACCOUNT_NOT_FOUND]: \u8d26\u6237\u4e0d\u5b58\u5728')
     })
   })
 
@@ -237,7 +237,7 @@ describe('I18nError - Multilingual Error Class', () => {
       try {
         checkPermission(user)
       } catch (e: any) {
-        expect(e.message).toBe('没有管理员权限')
+        expect(e.message).toBe('\u6ca1\u6709\u7ba1\u7406\u5458\u6743\u9650')
       }
     })
 
@@ -258,7 +258,7 @@ describe('I18nError - Multilingual Error Class', () => {
 
       expect(res.statusCode).toBe(404)
       expect(res.jsonData).toHaveProperty('code', 'ACCOUNT_NOT_FOUND')
-      expect(res.jsonData).toHaveProperty('message', '账户不存在')
+      expect(res.jsonData).toHaveProperty('message', '\u8d26\u6237\u4e0d\u5b58\u5728')
     })
 
     it('Scenario 4: Combined with dsl.if (function condition)', () => {
@@ -279,7 +279,7 @@ describe('I18nError - Multilingual Error Class', () => {
       try {
         validateUser(user)
       } catch (e: any) {
-        expect(e.message).toBe('没有管理员权限')
+        expect(e.message).toBe('\u6ca1\u6709\u7ba1\u7406\u5458\u6743\u9650')
       }
     })
   })
@@ -294,7 +294,7 @@ describe('I18nError - Multilingual Error Class', () => {
       const error = new I18nError('account.notFound', null as any)
 
       expect(error.params).toEqual({})
-      expect(error.message).toBe('账户不存在')
+      expect(error.message).toBe('\u8d26\u6237\u4e0d\u5b58\u5728')
     })
 
     it('should preserve stack trace', () => {
@@ -307,8 +307,8 @@ describe('I18nError - Multilingual Error Class', () => {
 
   describe('i18n Parameter Interpolation', () => {
     it('should support Chinese parameters', () => {
-      const error = new I18nError('error.notFound', { resource: '用户' })
-      expect(error.message).toBe('找不到用户')
+      const error = new I18nError('error.notFound', { resource: '\u7528\u6237' })
+      expect(error.message).toBe('\u627e\u4e0d\u5230\u7528\u6237')
     })
 
     it('should support English parameters', () => {
@@ -334,7 +334,7 @@ describe('I18nError - Multilingual Error Class', () => {
 
       expect(error.originalKey).toBe('account.notFound')
       expect(error.code).toBe('ACCOUNT_NOT_FOUND')
-      expect(error.message).toBe('账户不存在')
+      expect(error.message).toBe('\u8d26\u6237\u4e0d\u5b58\u5728')
     })
 
     it('should support string format (backward compatible)', () => {
@@ -342,7 +342,7 @@ describe('I18nError - Multilingual Error Class', () => {
 
       expect(error.originalKey).toBe('user.notFound')
       expect(error.code).toBe('user.notFound')
-      expect(error.message).toBe('用户不存在')
+      expect(error.message).toBe('\u7528\u6237\u4e0d\u5b58\u5728')
     })
 
     it('object format should support parameter interpolation', () => {
@@ -369,7 +369,7 @@ describe('I18nError - Multilingual Error Class', () => {
       Locale.setLocale('zh-CN')
       const errorZh = new I18nError('account.notFound')
       expect(errorZh.code).toBe('ACCOUNT_NOT_FOUND')
-      expect(errorZh.message).toBe('账户不存在')
+      expect(errorZh.message).toBe('\u8d26\u6237\u4e0d\u5b58\u5728')
 
       Locale.setLocale('en-US')
       const errorEn = new I18nError('account.notFound')

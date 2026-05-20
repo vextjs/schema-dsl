@@ -1,57 +1,57 @@
 ---
-name: 🐛 Bug 报告
-about: 报告一个问题帮助我们改进
-title: '[BUG] '
-labels: 'bug'
-assignees: ''
+name: Bug Report
+about: Report a problem to help us improve
+title: "[BUG] "
+labels: "bug"
+assignees: ""
 ---
 
-## 🐛 Bug 描述
+## Bug Description
 
-请清晰简洁地描述遇到的问题。
+Describe the problem clearly and concisely.
 
-## 🔄 重现步骤
+## Steps to Reproduce
 
-1. 执行 '...'
-2. 调用 '....'
-3. 看到错误 '....'
+1. Run ...
+2. Call ...
+3. See error ...
 
-## ✅ 期望行为
+## Expected Behavior
 
-描述你期望发生什么。
+Describe what you expected to happen.
 
-## ❌ 实际行为
+## Actual Behavior
 
-描述实际发生了什么。
+Describe what actually happened.
 
-## 📝 代码示例
+## Code Example
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+const { dsl, validate } = require("schema-dsl");
 
 const schema = dsl({
-  // 你的 schema 定义
+  // your schema definition
 });
 
 const result = validate(schema, {
-  // 你的测试数据
+  // your test data
 });
 ```
 
-## 🌍 环境信息
+## Environment
 
-- **schema-dsl 版本**: [例如 v2.3.0]
-- **Node.js 版本**: [例如 v18.0.0]
-- **操作系统**: [例如 Windows 11 / macOS 14 / Ubuntu 22.04]
-- **包管理器**: [npm / yarn / pnpm]
+- **schema-dsl version**: e.g. v2.0.0
+- **Node.js version**: e.g. v18.0.0
+- **OS**: e.g. Windows 11 / macOS 14 / Ubuntu 22.04
+- **Package manager**: npm / yarn / pnpm
 
-## 📎 附加信息
+## Additional Information
 
-添加任何其他有助于解释问题的信息（截图、错误日志等）。
+Add any other information that may help explain the problem (screenshots, error logs, etc.).
 
-## ✔️ 检查清单
+## Checklist
 
-- [ ] 我已搜索现有 Issues，未发现重复问题
-- [ ] 我已阅读 [文档](https://github.com/vextjs/schema-dsl#readme)
-- [ ] 我已提供完整的重现步骤
-- [ ] 我已提供环境信息
+- [ ] I have searched existing Issues and found no duplicate
+- [ ] I have read the [documentation](https://github.com/vextjs/schema-dsl#readme)
+- [ ] I have provided complete steps to reproduce
+- [ ] I have provided environment information

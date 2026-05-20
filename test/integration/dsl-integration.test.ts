@@ -35,8 +35,8 @@ describe('DslBuilder (equivalent to dsl(string))', () => {
   })
 
   it('should support chaining label()', () => {
-    const b = new DslBuilder('string!').label('姓名')
-    expect(b.toSchema()._label).toBe('姓名')
+    const b = new DslBuilder('string!').label('full-name')
+    expect(b.toSchema()._label).toBe('full-name')
   })
 
   it('should support chaining min().max()', () => {

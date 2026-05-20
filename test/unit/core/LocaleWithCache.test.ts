@@ -18,23 +18,23 @@ describe('Locale Pack Cache (CacheManager)', () => {
   describe('Basic Cache Operations', () => {
     it('should cache and retrieve objects', () => {
       const zhCN = {
-        required: '必填字段',
-        minLength: '长度不能少于{{min}}',
-        email: '邮箱格式不正确',
+        required: 'Required field',
+        minLength: 'Minimum length is {{min}}',
+        email: 'Invalid email format',
       }
 
       cache.set('zh-CN', zhCN)
       const cached = cache.get('zh-CN')
 
       expect(cached).toEqual(zhCN)
-      expect((cached as typeof zhCN).required).toBe('必填字段')
+      expect((cached as typeof zhCN).required).toBe('Required field')
     })
 
     it('multiple locale packs are cached independently', () => {
       const locales: Record<string, Record<string, string>> = {
-        'zh-CN': { required: '必填', email: '邮箱' },
+        'zh-CN': { required: 'Required', email: 'Email' },
         'en-US': { required: 'Required', email: 'Email' },
-        'ja-JP': { required: '必須', email: 'メール' },
+        'ja-JP': { required: '\u5fc5\u9808', email: '\u30e1\u30fc\u30eb' },
       }
 
       Object.entries(locales).forEach(([locale, pack]) => {
@@ -42,7 +42,7 @@ describe('Locale Pack Cache (CacheManager)', () => {
       })
 
       expect(cache.size()).toBe(3)
-      expect((cache.get('zh-CN') as typeof locales['zh-CN']).required).toBe('必填')
+      expect((cache.get('zh-CN') as typeof locales['zh-CN']).required).toBe('Required')
       expect((cache.get('en-US') as typeof locales['en-US']).required).toBe('Required')
     })
 

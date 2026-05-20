@@ -32,14 +32,14 @@ describe('DSL Match Syntax (v2.1.0)', () => {
       const schema = dsl({
         level: 'string',
         discount: dsl.match('level', {
-          普通用户: 'number:0-5',
+          standard: 'number:0-5',
           'VIP-1': 'number:0-20',
           100: 'number:0-50',
         }),
       })
 
-      expect(validate(schema, { level: '普通用户', discount: 3 }).valid).toBe(true)
-      expect(validate(schema, { level: '普通用户', discount: 10 }).valid).toBe(false)
+      expect(validate(schema, { level: 'standard', discount: 3 }).valid).toBe(true)
+      expect(validate(schema, { level: 'standard', discount: 10 }).valid).toBe(false)
 
       expect(validate(schema, { level: 'VIP-1', discount: 15 }).valid).toBe(true)
       expect(validate(schema, { level: '100', discount: 40 }).valid).toBe(true)
@@ -77,8 +77,8 @@ describe('DSL Match Syntax (v2.1.0)', () => {
       const schema = dsl({
         payment_type: 'string',
         price: dsl.match('payment_type', {
-          cash: dsl('number:0.99-1000!').label('现金价格').messages({ required: '价格必填' }),
-          card: dsl('number:0.99-2000!').label('刷卡价格'),
+          cash: dsl('number:0.99-1000!').label('Cash Price').messages({ required: 'Price is required' }),
+          card: dsl('number:0.99-2000!').label('Card Price'),
           _default: 'number:0.99-1000',
         }),
       })
@@ -87,7 +87,7 @@ describe('DSL Match Syntax (v2.1.0)', () => {
 
       const result = validate(schema, { payment_type: 'cash' })
       expect(result.valid).toBe(false)
-      expect(result.errors![0].message).toContain('价格必填')
+      expect(result.errors![0].message).toContain('Price is required')
 
       expect(validate(schema, { payment_type: 'card', price: 1500 }).valid).toBe(true)
     })
@@ -99,10 +99,10 @@ describe('DSL Match Syntax (v2.1.0)', () => {
         price: dsl.if(
           'enabled',
           dsl.match('payment_type', {
-            cash: dsl('number:0.99-1000!').label('现金价格'),
-            _default: dsl('number:0.99-1000').label('默认价格'),
+            cash: dsl('number:0.99-1000!').label('Cash Price'),
+            _default: dsl('number:0.99-1000').label('Default Price'),
           }),
-          dsl('number:0.99-500').label('禁用时价格')
+          dsl('number:0.99-500').label('Disabled Price')
         ),
       })
 

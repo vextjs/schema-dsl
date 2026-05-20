@@ -23,25 +23,25 @@ describe('MarkdownExporter', () => {
 
     it('should support custom title', () => {
       const schema = { type: 'object', properties: {} }
-      const result = MarkdownExporter.export(schema, { title: '用户 Schema' })
-      expect(result).toContain('用户 Schema')
+      const result = MarkdownExporter.export(schema, { title: 'User Schema' })
+      expect(result).toContain('User Schema')
     })
 
     it('should support description', () => {
       const schema = {
         type: 'object',
-        description: '用户对象',
+        description: 'User object',
         properties: {},
       }
       const result = MarkdownExporter.export(schema)
-      expect(result).toContain('用户对象')
+      expect(result).toContain('User object')
     })
 
     it('should include field info', () => {
       const schema = {
         type: 'object',
         properties: {
-          name: { type: 'string', description: '用户姓名' },
+          name: { type: 'string', description: 'User name' },
           age: { type: 'number' },
         },
         required: ['name'],

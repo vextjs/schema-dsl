@@ -81,8 +81,8 @@ console.log('type-reference.special.valid =',
     d: '00:1A:2B:3C:4D:5E',
     e: '0 9 * * 1',
     f: 'my-post-title',
-    g: '张伟',
-    h: '你好世界',
+    g: '\u5f20\u4f1f',
+    h: '\u4f60\u597d\u4e16\u754c',
     i: 'example.com',
   }).valid)
 
@@ -156,7 +156,7 @@ const miscSchema = dsl({
 })
 console.log('type-reference.misc.valid =',
   validate(miscSchema, {
-    plate:    '粤A12345',
+    plate:    '\u7ca4A12345',
     postal:   '100000',
     passport: 'E12345678',
   }).valid)

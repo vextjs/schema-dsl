@@ -1,16 +1,16 @@
 # schema-dsl Status
 
-当前仓库为 TypeScript 重构版，目标是保持 v1 公共 API 兼容并提供 ESM/CJS 双格式构建。
+This repository is the TypeScript-rewritten version, aiming to maintain v1 public API compatibility and provide ESM/CJS dual-format builds.
 
-当前插件兼容状态：已恢复 v1 官方插件子路径 `schema-dsl/plugins/*`（`custom-format` / `custom-validator` / `custom-type-example`），并确认 `custom-validator` 安装阶段不再输出 AJV `addKeyword` deprecated 警告。
+Current plugin compatibility status: v1 official plugin sub-paths `schema-dsl/plugins/*` (`custom-format` / `custom-validator` / `custom-type-example`) have been restored. Confirmed that `custom-validator` no longer emits AJV `addKeyword` deprecated warnings during installation.
 
-## 当前验证
+## Current Verification
 
 - `npm run typecheck`
 - `npm run lint`
 - `npm test`
 - `npm run build`
 - `npm run test:version`
-- CJS 子路径 smoke（`require('schema-dsl/plugins/*')`）
-- ESM 子路径 smoke（`import 'schema-dsl/plugins/*'`）
+- CJS subpath smoke (`require('schema-dsl/plugins/*')`)
+- ESM subpath smoke (`import 'schema-dsl/plugins/*'`)
 

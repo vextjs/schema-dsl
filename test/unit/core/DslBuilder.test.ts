@@ -54,13 +54,13 @@ describe('DslBuilder', () => {
     })
 
     it('label()', () => {
-      const s = new DslBuilder('string').label('姓名').toSchema()
-      expect(s._label).toBe('姓名')
+      const s = new DslBuilder('string').label('Name').toSchema()
+      expect(s._label).toBe('Name')
     })
 
     it('description()', () => {
-      const s = new DslBuilder('string').description('用户名称').toSchema()
-      expect(s.description).toBe('用户名称')
+      const s = new DslBuilder('string').description('Username').toSchema()
+      expect(s.description).toBe('Username')
     })
 
     it('pattern()', () => {
@@ -89,8 +89,8 @@ describe('DslBuilder', () => {
     })
 
     it('error() sets custom message', () => {
-      const s = new DslBuilder('string!').error({ required: '请输入姓名' }).toSchema()
-      expect(s._customMessages?.['required']).toBe('请输入姓名')
+      const s = new DslBuilder('string!').error({ required: 'Name is required' }).toSchema()
+      expect(s._customMessages?.['required']).toBe('Name is required')
     })
   })
 
@@ -109,7 +109,7 @@ describe('DslBuilder', () => {
 
   describe('toJsonSchema()', () => {
     it('strips internal keys _label/_required/_customMessages', () => {
-      const json = new DslBuilder('string!').label('姓名').toJsonSchema()
+      const json = new DslBuilder('string!').label('Name').toJsonSchema()
       expect('_label' in json).toBe(false)
       expect('_required' in json).toBe(false)
       expect('_customMessages' in json).toBe(false)

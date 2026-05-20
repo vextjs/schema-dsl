@@ -85,12 +85,12 @@ console.log('export-guide.markdown.hasTitle   =', mdDoc.includes('User API Refer
 console.log('export-guide.markdown.hasEmail   =', mdDoc.toLowerCase().includes('email'))  // true
 console.log('export-guide.markdown.isString   =', typeof mdDoc)  // 'string'
 
-// Chinese docs
+// Chinese docs (column headers will be in Chinese due to zh-CN locale)
 const zhDoc = MarkdownExporter.export(userSchema as any, {
-  title:  '用户接口文档',
+  title:  'User API Docs',
   locale: 'zh-CN',
 })
-console.log('export-guide.markdown.zh.title   =', zhDoc.includes('用户接口文档'))  // true
+console.log('export-guide.markdown.zh.title   =', zhDoc.includes('User API Docs'))  // true
 
 // ============================================================
 // 6. Still validates correctly — exporters are non-destructive

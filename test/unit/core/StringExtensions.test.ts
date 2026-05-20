@@ -86,12 +86,12 @@ describe('StringExtensions - Complete Tests', () => {
 
   describe('.label() method', () => {
     it('should set field label', () => {
-      const result = ('string!' as any).label('用户名')
+      const result = ('string!' as any).label('Username')
       expect(result).toBeDefined()
     })
 
     it('should support chaining', () => {
-      const result = ('string:3-32!' as any).label('用户名').pattern(/^[a-z]+$/)
+      const result = ('string:3-32!' as any).label('Username').pattern(/^[a-z]+$/)
       expect(result).toBeDefined()
     })
   })
@@ -99,16 +99,16 @@ describe('StringExtensions - Complete Tests', () => {
   describe('.messages() method', () => {
     it('should set custom error messages', () => {
       const result = ('string:3-32!' as any).messages({
-        min: '最少3个字符',
-        max: '最多32个字符',
-        required: '不能为空',
+        min: 'At least 3 characters',
+        max: 'At most 32 characters',
+        required: 'Cannot be empty',
       })
       expect(result).toBeDefined()
     })
 
     it('should support template variables', () => {
       const result = ('string:3-32!' as any).messages({
-        min: '最少{{#limit}}个字符',
+        min: 'At least {{#limit}} characters',
       })
       expect(result).toBeDefined()
     })
@@ -116,12 +116,12 @@ describe('StringExtensions - Complete Tests', () => {
 
   describe('.description() method', () => {
     it('should set field description', () => {
-      const result = ('string!' as any).description('用于登录的用户名')
+      const result = ('string!' as any).description('Username for login')
       expect(result).toBeDefined()
     })
 
     it('should support multi-line description', () => {
-      const result = ('string!' as any).description('用户名规则：\n1. 3-32个字符\n2. 只能包含字母和数字')
+      const result = ('string!' as any).description('Username rules:\n1. 3-32 characters\n2. Letters and digits only')
       expect(result).toBeDefined()
     })
   })
@@ -129,7 +129,7 @@ describe('StringExtensions - Complete Tests', () => {
   describe('.custom() method', () => {
     it('should support synchronous validator', () => {
       const result = ('string!' as any).custom((value: string) => {
-        if (value === 'admin') return '不能使用admin'
+        if (value === 'admin') return 'Cannot use admin'
         return true
       })
       expect(result).toBeDefined()
@@ -144,7 +144,7 @@ describe('StringExtensions - Complete Tests', () => {
 
     it('should support returning error object', () => {
       const result = ('string!' as any).custom((value: string) => {
-        if (value === 'test') return { error: 'custom.test', message: '不能使用test' }
+        if (value === 'test') return { error: 'custom.test', message: 'Cannot use test' }
       })
       expect(result).toBeDefined()
     })
@@ -181,7 +181,7 @@ describe('StringExtensions - Complete Tests', () => {
   describe('Multi-method chaining', () => {
     it('should support pattern + label chaining', () => {
       const schema = dsl({
-        username: ('string:3-32!' as any).pattern(/^[a-z]+$/).label('用户名'),
+        username: ('string:3-32!' as any).pattern(/^[a-z]+$/).label('Username'),
       })
       expect((schema as any).properties.username.pattern).toBeDefined()
     })
@@ -189,9 +189,9 @@ describe('StringExtensions - Complete Tests', () => {
     it('should support label + description + messages chaining', () => {
       const schema = dsl({
         email: ('email!' as any)
-          .label('邮箱')
-          .description('用于登录')
-          .messages({ required: '邮箱不能为空' }),
+          .label('Email')
+          .description('Used for login')
+          .messages({ required: 'Email cannot be empty' }),
       })
       expect((schema as any).properties.email.format).toBe('email')
     })
@@ -200,9 +200,9 @@ describe('StringExtensions - Complete Tests', () => {
       const schema = dsl({
         username: ('string:3-32!' as any)
           .pattern(/^[a-z]+$/)
-          .label('用户名')
-          .description('登录用户名')
-          .messages({ required: '不能为空' })
+          .label('Username')
+          .description('Login username')
+          .messages({ required: 'Cannot be empty' })
           .custom((v: string) => v !== 'admin'),
       })
       expect((schema as any).properties.username).toBeDefined()
@@ -212,7 +212,7 @@ describe('StringExtensions - Complete Tests', () => {
   describe('Combined with DslBuilder built-in methods', () => {
     it('username() + chained call', () => {
       const schema = dsl({
-        username: ('string!' as any).username('5-20').label('用户名'),
+        username: ('string!' as any).username('5-20').label('Username'),
       })
       expect((schema as any).properties.username.minLength).toBe(5)
       expect((schema as any).properties.username.maxLength).toBe(20)
@@ -220,14 +220,14 @@ describe('StringExtensions - Complete Tests', () => {
 
     it('phone() + chained call', () => {
       const schema = dsl({
-        phone: ('string!' as any).phone('cn').label('手机号'),
+        phone: ('string!' as any).phone('cn').label('Phone Number'),
       })
       expect((schema as any).properties.phone.minLength).toBe(11)
     })
 
     it('password() + chained call', () => {
       const schema = dsl({
-        password: ('string!' as any).password('strong').label('密码'),
+        password: ('string!' as any).password('strong').label('Password'),
       })
       expect((schema as any).properties.password.minLength).toBe(8)
     })
@@ -237,11 +237,11 @@ describe('StringExtensions - Complete Tests', () => {
     it('should work correctly in nested objects', () => {
       const schema = dsl({
         user: {
-          username: ('string:3-32!' as any).pattern(/^[a-z]+$/).label('用户名'),
-          email: ('email!' as any).label('邮箱'),
+          username: ('string:3-32!' as any).pattern(/^[a-z]+$/).label('Username'),
+          email: ('email!' as any).label('Email'),
           profile: {
-            bio: ('string:500' as any).description('个人简介'),
-            website: ('url' as any).label('个人网站'),
+            bio: ('string:500' as any).description('Personal bio'),
+            website: ('url' as any).label('Personal Website'),
           },
         },
       })
@@ -255,18 +255,18 @@ describe('StringExtensions - Complete Tests', () => {
       const schema = dsl({
         username: ('string:3-32!' as any)
           .pattern(/^[a-zA-Z0-9_]+$/)
-          .label('用户名')
+          .label('Username')
           .messages({
-            pattern: '只能包含字母、数字和下划线',
-            min: '至少3个字符',
-            max: '最多32个字符',
+            pattern: 'Only letters, digits and underscores allowed',
+            min: 'At least 3 characters',
+            max: 'At most 32 characters',
           }),
-        email: ('email!' as any).label('邮箱地址').description('用于登录和接收通知'),
+        email: ('email!' as any).label('Email Address').description('Used for login and notifications'),
         password: ('string:8-64!' as any)
           .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
-          .label('密码')
-          .messages({ pattern: '必须包含大小写字母和数字' }),
-        agree: ('boolean!' as any).label('同意条款'),
+          .label('Password')
+          .messages({ pattern: 'Must contain uppercase, lowercase and digits' }),
+        agree: ('boolean!' as any).label('Agree to Terms'),
       })
 
       const validData = {
@@ -283,14 +283,14 @@ describe('StringExtensions - Complete Tests', () => {
     it('complex nested example', () => {
       const schema = dsl({
         user: {
-          username: ('string!' as any).username('5-20').label('用户名'),
+          username: ('string!' as any).username('5-20').label('Username'),
           contact: {
-            email: ('email!' as any).label('邮箱'),
-            phone: ('string!' as any).phone('cn').label('手机号'),
+            email: ('email!' as any).label('Email'),
+            phone: ('string!' as any).phone('cn').label('Phone Number'),
           },
           profile: {
-            bio: ('string:500' as any).description('个人简介'),
-            website: ('url' as any).label('个人网站').default('https://example.com'),
+            bio: ('string:500' as any).description('Personal bio'),
+            website: ('url' as any).label('Personal Website').default('https://example.com'),
           },
         },
       })

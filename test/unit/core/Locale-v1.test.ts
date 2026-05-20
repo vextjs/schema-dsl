@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Locale Tests — v2 Migration (v1 Locale.test.js)
  *
  * v2 changes:
@@ -32,81 +32,81 @@ describe('Locale', () => {
   describe('addLocale()', () => {
     it('should add custom locale pack messages', () => {
       Locale.addLocale('zh-CN', {
-        'string.min': '{{#label}}太短了',
+        'string.min': '{{#label}} is too short',
       })
 
       Locale.setLocale('zh-CN')
       const result = Locale.getMessage('string.min')
-      expect(result).toEqual({ code: 'string.min', message: '{{#label}}太短了' })
-      expect(Locale.getMessageText('string.min')).toBe('{{#label}}太短了')
+      expect(result).toEqual({ code: 'string.min', message: '{{#label}} is too short' })
+      expect(Locale.getMessageText('string.min')).toBe('{{#label}} is too short')
     })
 
     it('should support multiple locale packs', () => {
-      Locale.addLocale('zh-CN', { 'string.min': '中文消息' })
-      Locale.addLocale('ja-JP', { 'string.min': '日本語メッセージ' })
+      Locale.addLocale('zh-CN', { 'string.min': 'zh-CN-test' })
+      Locale.addLocale('ja-JP', { 'string.min': '\u65e5\u672c\u8a9e\u30e1\u30c3\u30bb\u30fc\u30b8' })
 
       Locale.setLocale('zh-CN')
-      expect(Locale.getMessageText('string.min')).toBe('中文消息')
+      expect(Locale.getMessageText('string.min')).toBe('zh-CN-test')
 
       Locale.setLocale('ja-JP')
-      expect(Locale.getMessageText('string.min')).toBe('日本語メッセージ')
+      expect(Locale.getMessageText('string.min')).toBe('\u65e5\u672c\u8a9e\u30e1\u30c3\u30bb\u30fc\u30b8')
     })
   })
 
   describe('setMessages()', () => {
     it('should set global custom messages', () => {
       Locale.setMessages({
-        'string.min': '全局消息: {{#label}}',
+        'string.min': 'Global: {{#label}}',
       })
 
       const result = Locale.getMessage('string.min')
-      expect(result).toEqual({ code: 'string.min', message: '全局消息: {{#label}}' })
-      expect(Locale.getMessageText('string.min')).toBe('全局消息: {{#label}}')
+      expect(result).toEqual({ code: 'string.min', message: 'Global: {{#label}}' })
+      expect(Locale.getMessageText('string.min')).toBe('Global: {{#label}}')
     })
 
     it('should merge multiple settings', () => {
-      Locale.setMessages({ 'string.min': '消息1' })
-      Locale.setMessages({ 'string.max': '消息2' })
+      Locale.setMessages({ 'string.min': 'msg-1' })
+      Locale.setMessages({ 'string.max': 'msg-2' })
 
-      expect(Locale.getMessageText('string.min')).toBe('消息1')
-      expect(Locale.getMessageText('string.max')).toBe('消息2')
+      expect(Locale.getMessageText('string.min')).toBe('msg-1')
+      expect(Locale.getMessageText('string.max')).toBe('msg-2')
     })
   })
 
   describe('getMessage() Priority', () => {
     it('Priority 1: caller-provided custom messages', () => {
-      Locale.setMessages({ 'string.min': '全局消息' })
-      Locale.addLocale('zh-CN', { 'string.min': '语言包消息' })
+      Locale.setMessages({ 'string.min': 'global-msg' })
+      Locale.addLocale('zh-CN', { 'string.min': 'locale-pack-msg' })
       Locale.setLocale('zh-CN')
 
-      const customMessages = { 'string.min': '自定义消息' }
+      const customMessages = { 'string.min': 'custom-msg' }
       const result = Locale.getMessage('string.min', customMessages)
-      expect(result).toEqual({ code: 'string.min', message: '自定义消息' })
+      expect(result).toEqual({ code: 'string.min', message: 'custom-msg' })
     })
 
     it('Priority 2: addLocale pack messages (higher than setMessages)', () => {
-      Locale.addLocale('zh-CN', { 'string.min': '语言包消息' })
+      Locale.addLocale('zh-CN', { 'string.min': 'locale-pack-msg' })
       Locale.setLocale('zh-CN')
 
       const result = Locale.getMessage('string.min')
-      expect(result).toEqual({ code: 'string.min', message: '语言包消息' })
+      expect(result).toEqual({ code: 'string.min', message: 'locale-pack-msg' })
     })
 
     it('Priority 3: global custom messages (setMessages)', () => {
-      Locale.setMessages({ 'string.min': '全局消息' })
+      Locale.setMessages({ 'string.min': 'global-msg' })
       // no locale pack added, using built-in zh-CN
       Locale.setLocale('en-US')  // switch to en-US, does not override zh-CN locale pack messages
 
       const result = Locale.getMessage('string.min')
       // setMessages stores as locale-agnostic key, takes priority over built-in
-      expect(result).toEqual({ code: 'string.min', message: '全局消息' })
+      expect(result).toEqual({ code: 'string.min', message: 'global-msg' })
     })
 
     it('Priority 4: built-in locale messages (zh-CN)', () => {
       Locale.setLocale('zh-CN')
       const result = Locale.getMessage('min')
       expect(result).toEqual(expect.objectContaining({ code: 'min' }))
-      expect(Locale.getMessageText('min')).toContain('长度不能少于')
+      expect(Locale.getMessageText('min')).toContain('\u957f\u5ea6\u4e0d\u80fd\u5c11\u4e8e')
     })
 
     it('Priority 4: built-in locale messages (en-US)', () => {

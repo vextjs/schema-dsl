@@ -132,7 +132,7 @@ describe('[Regression] Validator — v1 behaviour compatibility', () => {
 
 describe('[Regression] DslBuilder — v1 behaviour compatibility', () => {
   it('string! chaining, toJsonSchema() strips internal keys', () => {
-    const json = new DslBuilder('string!').label('姓名').toJsonSchema()
+    const json = new DslBuilder('string!').label('full-name').toJsonSchema()
     expect('_required' in json).toBe(false)
     expect('_label' in json).toBe(false)
     expect(json.type).toBe('string')

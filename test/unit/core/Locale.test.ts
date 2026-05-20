@@ -34,8 +34,8 @@ describe('Locale', () => {
 
   describe('getMessage()', () => {
     it('caller custom messages have highest priority', () => {
-      const msg = Locale.getMessage('required', { required: '这是自定义' })
-      expect(msg).toEqual({ code: 'required', message: '这是自定义' })
+      const msg = Locale.getMessage('required', { required: 'This is custom' })
+      expect(msg).toEqual({ code: 'required', message: 'This is custom' })
     })
 
     it('unregistered key fallback returns key itself', () => {
@@ -45,14 +45,14 @@ describe('Locale', () => {
 
     it('v1 compatibility: object messages preserve code and message', () => {
       Locale.addLocale('compat-locale', {
-        'account.notFound': { code: 40001, message: '账户不存在' },
+        'account.notFound': { code: 40001, message: 'Account not found' },
       })
 
       expect(Locale.getMessage('account.notFound', {}, 'compat-locale')).toEqual({
         code: 40001,
-        message: '账户不存在',
+        message: 'Account not found',
       })
-      expect(Locale.getMessageText('account.notFound', {}, 'compat-locale')).toBe('账户不存在')
+      expect(Locale.getMessageText('account.notFound', {}, 'compat-locale')).toBe('Account not found')
     })
   })
 

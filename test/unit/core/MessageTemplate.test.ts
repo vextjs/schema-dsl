@@ -17,11 +17,11 @@ describe('MessageTemplate (via renderTemplate)', () => {
     })
 
     it('should replace multiple variables', () => {
-      const result = renderTemplate('{{#label}}长度不能少于{{#limit}}个字符', {
-        label: '用户名',
+      const result = renderTemplate('{{#label}} min length is {{#limit}} characters', {
+        label: 'Username',
         limit: 3,
       })
-      expect(result).toBe('用户名长度不能少于3个字符')
+      expect(result).toBe('Username min length is 3 characters')
     })
 
     it('should preserve placeholder for unfound variable', () => {
@@ -32,8 +32,8 @@ describe('MessageTemplate (via renderTemplate)', () => {
 
   describe('Special Value Handling', () => {
     it('should handle numeric values', () => {
-      const result = renderTemplate('不能少于{{#limit}}个字符', { limit: 5 })
-      expect(result).toBe('不能少于5个字符')
+      const result = renderTemplate('Length must be at least {{#limit}} characters', { limit: 5 })
+      expect(result).toBe('Length must be at least 5 characters')
     })
 
     it('should handle array values (joined as string)', () => {
@@ -61,25 +61,25 @@ describe('MessageTemplate (via renderTemplate)', () => {
 
   describe('Template Reuse', () => {
     it('should render quickly (static function)', () => {
-      const result = renderTemplate('{{#label}}不能少于{{#limit}}', {
-        label: '密码',
+      const result = renderTemplate('{{#label}} min {{#limit}}', {
+        label: 'Password',
         limit: 8,
       })
-      expect(result).toBe('密码不能少于8')
+      expect(result).toBe('Password min 8')
     })
 
     it('should support successive calls', () => {
       const templates = {
-        'string.min': '{{#label}}太短',
-        'string.max': '{{#label}}太长',
+        'string.min': '{{#label}} is too short',
+        'string.max': '{{#label}} is too long',
       }
-      const context = { label: '用户名' }
+      const context = { label: 'Username' }
       const results = Object.fromEntries(
         Object.entries(templates).map(([k, v]) => [k, renderTemplate(v, context)])
       )
 
-      expect(results['string.min']).toBe('用户名太短')
-      expect(results['string.max']).toBe('用户名太长')
+      expect(results['string.min']).toBe('Username is too short')
+      expect(results['string.max']).toBe('Username is too long')
     })
   })
 
@@ -90,8 +90,8 @@ describe('MessageTemplate (via renderTemplate)', () => {
     })
 
     it('should handle template with no variables', () => {
-      const result = renderTemplate('固定消息', {})
-      expect(result).toBe('固定消息')
+      const result = renderTemplate('Fixed message', {})
+      expect(result).toBe('Fixed message')
     })
   })
 })

@@ -14,12 +14,12 @@ const esES: LocaleMessages = {
   'max-depth': 'Profundidad máxima de recursión ({{#depth}}) excedida en {{#label}}',
   exception: 'Excepción de validación en {{#label}}: {{#message}}',
 
-  // Conditional (v2 补完)
+  // Conditional (v2 additions)
   'conditional.underAge': 'Los menores de edad no pueden registrarse',
   'conditional.blocked': 'La cuenta ha sido bloqueada',
   'conditional.notAllowed': 'El registro no está permitido',
 
-  // I18nError — generic (v2 补完)
+  // I18nError — generic (v2 additions)
   'error.notFound': '{{#resource}} no encontrado',
   'error.forbidden': 'Acceso a {{#resource}} está prohibido',
   'error.unauthorized': 'No autorizado, por favor inicie sesión',
@@ -27,7 +27,7 @@ const esES: LocaleMessages = {
   'error.duplicate': '{{#resource}} ya existe',
   'error.conflict': 'Conflicto de operación: {{#reason}}',
 
-  // Account (v2 补完)
+  // Account (v2 additions)
   'account.notFound': { code: 'ACCOUNT_NOT_FOUND', message: 'Cuenta no encontrada' },
   'account.inactive': 'La cuenta está inactiva',
   'account.banned': 'La cuenta ha sido suspendida',
@@ -37,12 +37,12 @@ const esES: LocaleMessages = {
   },
   'account.insufficientCredits': 'Créditos insuficientes, actual: {{#credits}}, requerido: {{#required}}',
 
-  // User (v2 补完)
+  // User (v2 additions)
   'user.notFound': 'Usuario no encontrado',
   'user.notVerified': 'El usuario no está verificado',
   'user.noPermission': 'Sin permisos de administrador',
 
-  // Order (v2 补完)
+  // Order (v2 additions)
   'order.notPaid': { code: 'ORDER_NOT_PAID', message: 'Pedido no pagado' },
   'order.paymentMissing': 'Falta información de pago',
   'order.addressMissing': 'Falta la dirección de envío',

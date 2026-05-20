@@ -19,7 +19,7 @@ const jaJP: LocaleMessages = {
   'conditional.blocked': 'アカウントがブロックされています',
   'conditional.notAllowed': '登録は許可されていません',
 
-  // I18nError — generic (v2 補完)
+  // I18nError — generic (v2 additions)
   'error.notFound': '{{#resource}}が見つかりません',
   'error.forbidden': '{{#resource}}へのアクセスが禁止されています',
   'error.unauthorized': '認証が必要です。ログインしてください',
@@ -27,7 +27,7 @@ const jaJP: LocaleMessages = {
   'error.duplicate': '{{#resource}}はすでに存在します',
   'error.conflict': '操作の競合: {{#reason}}',
 
-  // Account (v2 補完)
+  // Account (v2 additions)
   'account.notFound': { code: 'ACCOUNT_NOT_FOUND', message: 'アカウントが見つかりません' },
   'account.inactive': 'アカウントが無効化されています',
   'account.banned': 'アカウントが禁止されています',
@@ -37,12 +37,12 @@ const jaJP: LocaleMessages = {
   },
   'account.insufficientCredits': 'クレジット不足。現在: {{#credits}}、必要: {{#required}}',
 
-  // User (v2 補完)
+  // User (v2 additions)
   'user.notFound': 'ユーザーが見つかりません',
   'user.notVerified': 'ユーザーが確認されていません',
   'user.noPermission': '管理者権限がありません',
 
-  // Order (v2 補完)
+  // Order (v2 additions)
   'order.notPaid': { code: 'ORDER_NOT_PAID', message: '注文が支払われていません' },
   'order.paymentMissing': '支払い情報がありません',
   'order.addressMissing': '配送先住所がありません',

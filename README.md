@@ -2,7 +2,7 @@
 
 # 🎯 schema-dsl
 
-**用最简洁的 DSL 声明字段规则，让同一份 schema 驱动验证、派生、导出和文档。**
+**Declare field rules with the simplest DSL — let one schema drive validation, derivation, export, and documentation.**
 
 [![npm version](https://img.shields.io/npm/v/schema-dsl.svg?style=flat-square)](https://www.npmjs.com/package/schema-dsl)
 [![npm downloads](https://img.shields.io/npm/dm/schema-dsl.svg?style=flat-square)](https://www.npmjs.com/package/schema-dsl)
@@ -10,7 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Native-3178C6.svg?style=flat-square)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-[快速开始](#-快速开始) · [文档站](https://vextjs.github.io/schema-dsl) · [功能总览](#-功能总览) · [示例代码](./examples)
+[Quick Start](#-quick-start) · [Documentation](https://vextjs.github.io/schema-dsl) · [Feature Overview](#-feature-overview) · [Examples](./examples)
 
 ```bash
 npm install schema-dsl
@@ -20,11 +20,11 @@ npm install schema-dsl
 
 ---
 
-## ⚡ TL;DR（30 秒快速理解）
+## ⚡ TL;DR (30-second intro)
 
-**schema-dsl 是什么？**
+**What is schema-dsl?**
 
-把字段规则写成这样：
+Write field rules like this:
 
 ```typescript
 import { dsl, validate } from 'schema-dsl';
@@ -39,54 +39,54 @@ const userSchema = dsl({
 const result = validate(userSchema, req.body);
 ```
 
-然后这**同一份规则**继续驱动：
+Then that **same set of rules** continues to power:
 
-- ✅ **同步 / 异步校验** — `validate()` / `validateAsync()`
-- ✅ **场景派生** — `pick / omit / partial` 按接口需求裁剪 schema
-- ✅ **数据库 Schema** — MongoDB / MySQL / PostgreSQL 直接导出
-- ✅ **字段文档** — Markdown 自动生成
-- ✅ **统一错误模型** — `ValidationError` + `I18nError`
-- ✅ **多语言** — 内置 5 种语言（zh-CN / en-US / ja-JP / es-ES / fr-FR），支持运行时切换
+- ✅ **Sync / async validation** — `validate()` / `validateAsync()`
+- ✅ **Schema derivation** — `pick / omit / partial` to tailor schemas per endpoint
+- ✅ **Database schemas** — export directly to MongoDB / MySQL / PostgreSQL
+- ✅ **Field documentation** — auto-generate Markdown
+- ✅ **Unified error model** — `ValidationError` + `I18nError`
+- ✅ **Internationalization** — 5 built-in locales (zh-CN / en-US / ja-JP / es-ES / fr-FR), switchable at runtime
 
-**5 分钟教程**: [快速开始](https://vextjs.github.io/schema-dsl/quick-start) | **完整文档**: [在线文档站](https://vextjs.github.io/schema-dsl)
-
----
-
-## 🗺️ 文档导航
-
-**新手入门**:
-- [快速开始](https://vextjs.github.io/schema-dsl/quick-start) — 5 分钟上手
-- [DSL 语法速查](#-dsl-语法速查) — 语法参考
-- [常见问题](https://vextjs.github.io/schema-dsl/faq) — FAQ 合集
-
-**核心功能**:
-- [验证完整指南](https://vextjs.github.io/schema-dsl/validation-guide) — 校验所有场景
-- [SchemaUtils 工具](https://vextjs.github.io/schema-dsl/schema-utils) — schema 复用
-- [条件验证 API](https://vextjs.github.io/schema-dsl/conditional-api) — dsl.if / dsl.match
-- [异步校验与框架集成](https://vextjs.github.io/schema-dsl/validate-async) — Express / Koa / Fastify
-- [错误处理与多语言](https://vextjs.github.io/schema-dsl/error-handling) — 错误模型
-
-**导出与集成**:
-- [数据库导出指南](https://vextjs.github.io/schema-dsl/export-guide) — MongoDB / MySQL / PostgreSQL
-- [TypeScript 指南](https://vextjs.github.io/schema-dsl/typescript-guide) — 类型推断与用法
-- [插件系统](https://vextjs.github.io/schema-dsl/plugin-system) — 自定义扩展
-
-**完整文档**: [在线文档站](https://vextjs.github.io/schema-dsl) · [功能索引](https://vextjs.github.io/schema-dsl/FEATURE-INDEX)
+**5-minute tutorial**: [Quick Start](https://vextjs.github.io/schema-dsl/quick-start) | **Full docs**: [Online Documentation](https://vextjs.github.io/schema-dsl)
 
 ---
 
-## ✨ 为什么选择 schema-dsl？
+## 🗺️ Documentation
 
-### 🎯 极简 DSL，代码量减少 65%
+**Getting started**:
+- [Quick Start](https://vextjs.github.io/schema-dsl/quick-start) — up and running in 5 minutes
+- [DSL Syntax Reference](#-dsl-syntax-reference) — syntax cheatsheet
+- [FAQ](https://vextjs.github.io/schema-dsl/faq) — common questions
+
+**Core features**:
+- [Validation Guide](https://vextjs.github.io/schema-dsl/validation-guide) — all validation scenarios
+- [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) — schema reuse
+- [Conditional Validation API](https://vextjs.github.io/schema-dsl/conditional-api) — dsl.if / dsl.match
+- [Async Validation & Framework Integration](https://vextjs.github.io/schema-dsl/validate-async) — Express / Koa / Fastify
+- [Error Handling & i18n](https://vextjs.github.io/schema-dsl/error-handling) — error model
+
+**Export & integration**:
+- [Export Guide](https://vextjs.github.io/schema-dsl/export-guide) — MongoDB / MySQL / PostgreSQL
+- [TypeScript Guide](https://vextjs.github.io/schema-dsl/typescript-guide) — type inference and usage
+- [Plugin System](https://vextjs.github.io/schema-dsl/plugin-system) — custom extensions
+
+**Full docs**: [Online Documentation](https://vextjs.github.io/schema-dsl) · [Feature Index](https://vextjs.github.io/schema-dsl/FEATURE-INDEX)
+
+---
+
+## ✨ Why schema-dsl?
+
+### 🎯 Minimal DSL — 65% less code
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-**❌ 传统写法** — 繁琐冗长
+**❌ Traditional approach** — verbose
 
 ```javascript
-// Joi — 需要 8 行
+// Joi — requires 8 lines
 const schema = Joi.object({
   username: Joi.string()
     .min(3).max(32).required(),
@@ -100,10 +100,10 @@ const schema = Joi.object({
 </td>
 <td width="50%" valign="top">
 
-**✅ schema-dsl** — 简洁优雅
+**✅ schema-dsl** — concise and clean
 
 ```typescript
-// 只需 3 行
+// just 3 lines
 const schema = dsl({
   username: 'string:3-32!',
   email:    'email!',
@@ -115,22 +115,22 @@ const schema = dsl({
 </tr>
 </table>
 
-### 💪 功能完整
+### 💪 Full-featured
 
-| 功能 | schema-dsl | 说明 |
-|------|:----------:|------|
-| **基本验证** | ✅ | string、number、boolean、date、email、url、phone... |
-| **高级验证** | ✅ | 正则、自定义函数、条件分支、嵌套对象、数组... |
-| **跨类型联合** | ✅ | `types:email\|phone` 一个字段支持多种类型 |
-| **错误消息** | ✅ | 多语言自动翻译 + 自定义消息 + 字段标签 |
-| **多语言业务错误** | ✅ | `I18nError` 统一抛出 + 数字错误码 |
-| **数据库导出** | ✅ | MongoDB / MySQL / PostgreSQL Schema 自动生成 |
-| **文档生成** | ✅ | Markdown 字段说明自动生成 |
-| **TypeScript** | ✅ | 原生 TypeScript 编写，完整类型推断 |
-| **插件系统** | ✅ | 自定义类型 / 格式 / 验证器 |
-| **Schema 复用** | ✅ | pick / omit / partial / extend |
+| Feature | schema-dsl | Notes |
+|---------|:----------:|-------|
+| **Basic validation** | ✅ | string, number, boolean, date, email, url, phone… |
+| **Advanced validation** | ✅ | regex, custom functions, conditional branches, nested objects, arrays… |
+| **Cross-type union** | ✅ | `types:email\|phone` — one field accepts multiple types |
+| **Error messages** | ✅ | auto-translated + custom messages + field labels |
+| **i18n business errors** | ✅ | `I18nError` with numeric error codes |
+| **Database export** | ✅ | MongoDB / MySQL / PostgreSQL schema generation |
+| **Documentation generation** | ✅ | Markdown field docs auto-generated |
+| **TypeScript** | ✅ | Written in native TypeScript with full type inference |
+| **Plugin system** | ✅ | Custom types / formats / validators |
+| **Schema reuse** | ✅ | pick / omit / partial / extend |
 
-### 🎨 一份规则，多处复用（独家特性）
+### 🎨 One schema, many uses (unique capability)
 
 ```typescript
 import { dsl, exporters, SchemaUtils } from 'schema-dsl';
@@ -144,35 +144,35 @@ const userSchema = dsl({
   createdAt: 'string!'
 });
 
-// 📋 派生各接口场景的 schema
+// 📋 derive scenario-specific schemas
 const createSchema = SchemaUtils.omit(userSchema, ['id', 'createdAt']);
 const updateSchema = SchemaUtils.partial(SchemaUtils.pick(userSchema, ['username', 'email']));
 const publicSchema = SchemaUtils.omit(userSchema, ['password']);
 
-// 🗄️ 同一份规则导出到数据库
+// 🗄️ export the same schema to any database
 const mongoSchema = new exporters.MongoDBExporter().export(userSchema);
 const mysqlDDL    = new exporters.MySQLExporter().export('users', userSchema);
 const pgDDL       = new exporters.PostgreSQLExporter().export('users', userSchema);
 
-// 📝 同一份规则生成字段说明文档
-const markdown = exporters.MarkdownExporter.export(userSchema, { title: '用户字段说明' });
+// 📝 generate field documentation from the same schema
+const markdown = exporters.MarkdownExporter.export(userSchema, { title: 'User Field Reference' });
 ```
 
 ---
 
-## 📦 安装
+## 📦 Installation
 
 ```bash
 npm install schema-dsl
 ```
 
-**运行时要求**: Node.js >= 18.0.0
+**Runtime requirement**: Node.js >= 18.0.0
 
 ---
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 基础验证
+### 1. Basic validation
 
 ```typescript
 import { dsl, validate } from 'schema-dsl';
@@ -185,7 +185,7 @@ const userSchema = dsl({
   tags:     'array<string>'
 });
 
-// ✅ 验证成功
+// ✅ validation passed
 const result = validate(userSchema, {
   username: 'john_doe',
   email:    'john@example.com',
@@ -195,18 +195,18 @@ const result = validate(userSchema, {
 });
 
 console.log(result.valid);   // true
-console.log(result.data);    // 验证后的数据
+console.log(result.data);    // validated data
 
-// ❌ 验证失败
+// ❌ validation failed
 const bad = validate(userSchema, { username: 'ab', email: 'not-email' });
 console.log(bad.errors);
 // [
-//   { path: 'username', message: 'username 长度不能少于 3 个字符' },
-//   { path: 'email',    message: 'email 格式不正确' }
+//   { path: 'username', message: 'username must be at least 3 characters' },
+//   { path: 'email',    message: 'email must be a valid email address' }
 // ]
 ```
 
-### 2. 异步验证 + Express 集成
+### 2. Async validation + Express integration
 
 ```typescript
 import { dsl, validateAsync, ValidationError } from 'schema-dsl';
@@ -219,7 +219,7 @@ const createUserSchema = dsl({
 
 app.post('/api/users', async (req, res, next) => {
   try {
-    // 验证失败时自动抛出 ValidationError
+    // throws ValidationError automatically on failure
     const validData = await validateAsync(createUserSchema, req.body);
     const user = await db.users.create(validData);
     res.json({ success: true, data: user });
@@ -228,7 +228,7 @@ app.post('/api/users', async (req, res, next) => {
   }
 });
 
-// 全局错误处理
+// global error handler
 app.use((error, req, res, next) => {
   if (error instanceof ValidationError) {
     return res.status(400).json({ success: false, errors: error.errors });
@@ -237,7 +237,7 @@ app.use((error, req, res, next) => {
 });
 ```
 
-### 3. Schema 复用（create / update / public）
+### 3. Schema reuse (create / update / public)
 
 ```typescript
 import { dsl, SchemaUtils } from 'schema-dsl';
@@ -250,19 +250,19 @@ const userSchema = dsl({
   createdAt: 'string!'
 });
 
-// 创建接口：去掉服务端自动生成的字段
+// create endpoint: remove server-generated fields
 const createSchema = SchemaUtils.omit(userSchema, ['id', 'createdAt']);
 
-// 更新接口：只允许修改部分字段，且全部可选
+// update endpoint: pick editable fields, all optional
 const updateSchema = SchemaUtils.partial(
   SchemaUtils.pick(userSchema, ['username', 'email'])
 );
 
-// 公开响应：隐藏敏感字段
+// public response: hide sensitive fields
 const publicSchema = SchemaUtils.omit(userSchema, ['password']);
 ```
 
-### 4. 数据库 Schema 导出
+### 4. Database schema export
 
 ```typescript
 import { dsl, exporters } from 'schema-dsl';
@@ -275,7 +275,7 @@ const productSchema = dsl({
   createdAt: 'datetime!'
 });
 
-// MongoDB $jsonSchema（用于 db.createCollection() 字段验证，非 Mongoose model schema）
+// MongoDB $jsonSchema (for db.createCollection() document validation; not a Mongoose model schema)
 const mongoSchema = new exporters.MongoDBExporter().export(productSchema);
 /*
 {
@@ -305,81 +305,81 @@ CREATE TABLE `products` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 */
 
-// Markdown 字段文档
-const markdown = exporters.MarkdownExporter.export(productSchema, { title: '商品字段说明' });
+// Markdown field documentation
+const markdown = exporters.MarkdownExporter.export(productSchema, { title: 'Product Field Reference' });
 ```
 
 ---
 
-## 🗒️ 功能总览
+## 🗒️ Feature Overview
 
-### 常见使用场景
+### Common use cases
 
-| 场景 | 用法 | 文档 |
-|------|------|------|
-| API 参数验证 | `validateAsync` + `ValidationError` | [异步校验](https://vextjs.github.io/schema-dsl/validate-async) |
-| 表单 / 脚本校验 | `validate()` | [验证指南](https://vextjs.github.io/schema-dsl/validation-guide) |
-| 批量数据校验 | `SchemaUtils.validateBatch()` | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
-| create / update 派生 | `pick / omit / partial` | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
-| 数据库建表 | `MongoDBExporter / MySQLExporter` | [导出指南](https://vextjs.github.io/schema-dsl/export-guide) |
-| 字段文档生成 | `MarkdownExporter` | [导出指南](https://vextjs.github.io/schema-dsl/export-guide) |
-| 多语言 API 错误 | `I18nError` | [错误处理](https://vextjs.github.io/schema-dsl/error-handling) |
-| 条件 / 动态规则 | `dsl.if()` / `dsl.match()` | [条件验证](https://vextjs.github.io/schema-dsl/conditional-api) |
-| 自定义类型扩展 | `PluginManager` | [插件系统](https://vextjs.github.io/schema-dsl/plugin-system) |
+| Use case | API | Docs |
+|----------|-----|------|
+| API parameter validation | `validateAsync` + `ValidationError` | [Async Validation](https://vextjs.github.io/schema-dsl/validate-async) |
+| Form / script validation | `validate()` | [Validation Guide](https://vextjs.github.io/schema-dsl/validation-guide) |
+| Batch data validation | `SchemaUtils.validateBatch()` | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
+| create / update derivation | `pick / omit / partial` | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
+| Database table creation | `MongoDBExporter / MySQLExporter` | [Export Guide](https://vextjs.github.io/schema-dsl/export-guide) |
+| Field documentation | `MarkdownExporter` | [Export Guide](https://vextjs.github.io/schema-dsl/export-guide) |
+| Multilingual API errors | `I18nError` | [Error Handling](https://vextjs.github.io/schema-dsl/error-handling) |
+| Conditional / dynamic rules | `dsl.if()` / `dsl.match()` | [Conditional API](https://vextjs.github.io/schema-dsl/conditional-api) |
+| Custom type extensions | `PluginManager` | [Plugin System](https://vextjs.github.io/schema-dsl/plugin-system) |
 
 ---
 
-## 📖 DSL 语法速查
+## 📖 DSL Syntax Reference
 
-### 基础类型
+### Basic types
 
 ```typescript
 dsl({
-  // 字符串
-  name:     'string!',         // 必填
-  code:     'string:6',        // 精确长度 6
-  bio:      'string:-500',     // 最大长度 500
-  username: 'string:3-32',     // 长度范围 3–32
+  // string
+  name:     'string!',         // required
+  code:     'string:6',        // exact length 6
+  bio:      'string:-500',     // max length 500
+  username: 'string:3-32',     // length range 3–32
 
-  // 数字
-  age:   'number:18-120',      // 范围 18–120
-  score: 'integer:0-100',      // 整数 0–100
-  price: 'number:>0',          // 大于 0（严格）
-  level: 'number:>=1',         // 大于等于 1
+  // number
+  age:   'number:18-120',      // range 18–120
+  score: 'integer:0-100',      // integer 0–100
+  price: 'number:>0',          // strictly greater than 0
+  level: 'number:>=1',         // greater than or equal to 1
 
-  // 枚举
-  status: 'active|inactive|pending',  // 字符串枚举
-  level:  'enum:number:1|2|3',        // 数字枚举
+  // enum
+  status: 'active|inactive|pending',  // string enum
+  tier:   'enum:number:1|2|3',        // numeric enum
 
-  // 数组
-  tags:  'array<string>',             // 字符串数组
-  items: 'array:1-10<number>',        // 1–10 个数字元素
+  // array
+  tags:  'array<string>',             // string array
+  items: 'array:1-10<number>',        // 1–10 numeric elements
 
-  // 布尔
+  // boolean
   active: 'boolean!',
 
-  // 联合类型
-  contact: 'types:email|phone!',      // 邮箱或手机号二选一
-  price2:  'types:number:0-|string',  // 数字或字符串
+  // union type
+  contact: 'types:email|phone!',      // email or phone, required
+  price2:  'types:number:0-|string',  // number or string
 })
 ```
 
-### 内置格式
+### Built-in formats
 
 ```typescript
 dsl({
-  email:     'email!',          // 邮箱
+  email:     'email!',          // email address
   website:   'url!',            // URL
   birthday:  'date!',           // YYYY-MM-DD
   createdAt: 'datetime!',       // ISO 8601
   userId:    'uuid!',           // UUID
-  phone:     'phone:cn!',       // 中国手机号
-  idCard:    'idCard:cn!',      // 身份证号
-  slug:      'slug:3-100!',     // URL 友好字符串
+  phone:     'phone:cn!',       // Chinese mobile number
+  idCard:    'idCard:cn!',      // Chinese national ID
+  slug:      'slug:3-100!',     // URL-friendly string
 })
 ```
 
-### 链式调用（TypeScript 推荐写法）
+### Fluent chain API (recommended for TypeScript)
 
 ```typescript
 import { dsl } from 'schema-dsl';
@@ -387,21 +387,21 @@ import { dsl } from 'schema-dsl';
 const schema = dsl({
   username: dsl('string:3-32!')
     .username()
-    .label('用户名')
-    .messages({ required: '用户名不能为空' }),
+    .label('username')
+    .messages({ required: 'Username is required' }),
 
-  email: dsl('email!').label('邮箱地址'),
+  email: dsl('email!').label('email address'),
 
   phone: dsl('string:11!')
     .pattern(/^1[3-9]\d{9}$/)
-    .label('手机号'),
+    .label('phone number'),
 });
 ```
 
-### 条件验证
+### Conditional validation
 
 ```typescript
-// dsl.match — 根据字段值路由不同规则
+// dsl.match — route to different rules based on a field value
 const contactSchema = dsl({
   type:    'email|phone|wechat',
   contact: dsl.match('type', {
@@ -411,43 +411,43 @@ const contactSchema = dsl({
   })
 });
 
-// dsl.if — 简单条件分支
+// dsl.if — simple conditional branch
 const orderSchema = dsl({
   isVip:    'boolean!',
   discount: dsl.if('isVip', 'number:10-50!', 'number:0-10')
 });
 
-// dsl.if 链式条件断言
+// dsl.if chain assertion
 dsl.if(d => !d.account)
-  .message('账户不存在')
+  .message('Account not found')
   .and(d => d.account.balance < amount)
-  .message('余额不足')
+  .message('Insufficient balance')
   .assert(data);
 ```
 
 ---
 
-## 🌍 多语言支持
+## 🌍 Internationalization
 
 ```typescript
 import { dsl, validate, Locale, I18nError } from 'schema-dsl';
 
-// 内置语言：zh-CN / en-US / ja-JP / es-ES / fr-FR（自动加载，无需配置）
-const result = validate(schema, data, { locale: 'zh-CN' });
-// 错误消息自动使用中文
+// built-in locales: zh-CN / en-US / ja-JP / es-ES / fr-FR (auto-loaded, no configuration needed)
+const result = validate(schema, data, { locale: 'en-US' });
+// error messages automatically use the specified locale
 
-// 添加自定义语言包
+// register a custom locale
 Locale.addLocale('zh-CN', {
-  'user.notFound':    '用户不存在',
-  'user.forbidden':   { code: 40003, message: '无权访问' },
+  'user.notFound':    'User not found',
+  'user.forbidden':   { code: 40003, message: 'Access forbidden' },
 });
 
-// 抛出多语言业务错误
-I18nError.assert(user, 'user.notFound');           // 不存在时自动抛出
-I18nError.throw('user.forbidden', {}, 403);        // 直接抛出
-I18nError.assert(ok, 'user.notFound', {}, 404, locale); // 运行时指定语言
+// throw i18n business errors
+I18nError.assert(user, 'user.notFound');                    // auto-throw when user is falsy
+I18nError.throw('user.forbidden', {}, 403);                 // throw directly
+I18nError.assert(ok, 'user.notFound', {}, 404, locale);     // specify locale at runtime
 
-// 错误包含统一数字码，前端按 code 分支处理
+// errors carry a numeric code; frontend can branch on it
 try {
   await api.getUser(id);
 } catch (error) {
@@ -459,19 +459,19 @@ try {
 
 ---
 
-## 🔌 插件系统
+## 🔌 Plugin System
 
 ```typescript
 import { PluginManager, Validator, dsl } from 'schema-dsl';
 
 const pluginManager = new PluginManager();
 
-// 注册自定义格式插件（必须提供 install 函数）
+// register a custom format plugin (must provide an install function)
 pluginManager.register({
   name: 'extra-formats',
   install(core) {
     const validator = core as Validator;
-    // 通过 addFormat 向 Validator 实例注册自定义格式
+    // register custom formats on the Validator instance via addFormat
     validator.addFormat('hex-color', {
       validate: (v: string) => /^#[0-9A-F]{6}$/i.test(v)
     });
@@ -481,49 +481,49 @@ pluginManager.register({
   }
 });
 
-// 创建 Validator 并安装插件
+// create a Validator and install plugins
 const validator = new Validator();
 pluginManager.install(validator);
 
-// 现在可以在 schema 中使用自定义格式
+// use the custom formats in a schema
 const schema = dsl({ color: 'hex-color!', mac: 'mac-address' });
 const result = validator.validate(schema, { color: '#FF5733', mac: '00:1A:2B:3C:4D:5E' });
 ```
 
 ---
 
-## 🔧 核心 API 速查
+## 🔧 Core API Reference
 
-| API | 用途 | 返回值 | 文档 |
-|-----|------|--------|------|
-| `dsl(schema)` | 创建 Schema | Schema 对象 | [DSL 语法](https://vextjs.github.io/schema-dsl/dsl-syntax) |
-| `validate(schema, data)` | 同步验证 | `{ valid, errors, data }` | [验证指南](https://vextjs.github.io/schema-dsl/validation-guide) |
-| `validateAsync(schema, data)` | 异步验证 | Promise（失败抛错） | [异步校验](https://vextjs.github.io/schema-dsl/validate-async) |
-| `SchemaUtils.pick()` | 选择字段 | 新 Schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
-| `SchemaUtils.omit()` | 排除字段 | 新 Schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
-| `SchemaUtils.partial()` | 全部可选 | 新 Schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
-| `dsl.if(condition)` | 条件验证 | ConditionalBuilder | [条件 API](https://vextjs.github.io/schema-dsl/conditional-api) |
-| `dsl.match(field, map)` | 分支验证 | ConditionalBuilder | [条件 API](https://vextjs.github.io/schema-dsl/conditional-api) |
-| `I18nError.throw()` | 抛出多语言错误 | never | [错误处理](https://vextjs.github.io/schema-dsl/error-handling) |
-| `I18nError.assert()` | 断言 + 抛出 | void | [错误处理](https://vextjs.github.io/schema-dsl/error-handling) |
+| API | Purpose | Returns | Docs |
+|-----|---------|---------|------|
+| `dsl(schema)` | Create a schema | Schema object | [DSL Syntax](https://vextjs.github.io/schema-dsl/dsl-syntax) |
+| `validate(schema, data)` | Synchronous validation | `{ valid, errors, data }` | [Validation Guide](https://vextjs.github.io/schema-dsl/validation-guide) |
+| `validateAsync(schema, data)` | Asynchronous validation | Promise (throws on failure) | [Async Validation](https://vextjs.github.io/schema-dsl/validate-async) |
+| `SchemaUtils.pick()` | Select fields | New schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
+| `SchemaUtils.omit()` | Exclude fields | New schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
+| `SchemaUtils.partial()` | Make all fields optional | New schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
+| `dsl.if(condition)` | Conditional validation | ConditionalBuilder | [Conditional API](https://vextjs.github.io/schema-dsl/conditional-api) |
+| `dsl.match(field, map)` | Branch validation | ConditionalBuilder | [Conditional API](https://vextjs.github.io/schema-dsl/conditional-api) |
+| `I18nError.throw()` | Throw an i18n error | never | [Error Handling](https://vextjs.github.io/schema-dsl/error-handling) |
+| `I18nError.assert()` | Assert then throw | void | [Error Handling](https://vextjs.github.io/schema-dsl/error-handling) |
 
 ---
 
-## 📝 TypeScript 用法
+## 📝 TypeScript Usage
 
 ```typescript
 import { dsl, validateAsync, ValidationError } from 'schema-dsl';
 
-// ✅ TypeScript 中用 dsl() 包裹字符串获得完整类型推断
+// ✅ wrap strings with dsl() in TypeScript for full type inference
 const userSchema = dsl({
-  username: dsl('string:3-32!').label('用户名'),
-  email:    dsl('email!').label('邮箱'),
-  age:      dsl('number:18-100').label('年龄')
+  username: dsl('string:3-32!').label('username'),
+  email:    dsl('email!').label('email'),
+  age:      dsl('number:18-100').label('age')
 });
 
 try {
   const validData = await validateAsync(userSchema, payload);
-  // validData 有完整类型推断
+  // validData has full type inference
 } catch (error) {
   if (error instanceof ValidationError) {
     error.errors.forEach(e => console.log(`${e.path}: ${e.message}`));
@@ -531,20 +531,20 @@ try {
 }
 ```
 
-> **注意**：TypeScript 项目中需用 `dsl('...')` 包裹字符串以获得类型推断，JavaScript 项目可直接写字符串。
-> 详见 [TypeScript 使用指南](https://vextjs.github.io/schema-dsl/typescript-guide)
+> **Note**: In TypeScript projects, wrap strings with `dsl('...')` to get type inference. In JavaScript projects you can pass strings directly.
+> See the [TypeScript Guide](https://vextjs.github.io/schema-dsl/typescript-guide) for details.
 
 ---
 
-## 🛠️ 开发与验证
+## 🛠️ Development
 
 ```bash
-npm run build      # 编译 TypeScript
-npm run test       # 运行测试
-npm run typecheck  # 类型检查
+npm run build      # compile TypeScript
+npm run test       # run tests
+npm run typecheck  # type check
 ```
 
-文档站本地预览：
+Local documentation preview:
 
 ```bash
 cd website
@@ -553,7 +553,7 @@ npm run dev
 
 ---
 
-## 🤝 贡献
+## 🤝 Contributing
 
 ```bash
 git clone https://github.com/vextjs/schema-dsl.git
@@ -562,48 +562,48 @@ npm install
 npm test
 ```
 
-详见 [贡献指南](./CONTRIBUTING.md)
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 ---
 
-## 🔗 相关链接
+## 🔗 Links
 
-### 📖 核心文档
-- [快速开始](https://vextjs.github.io/schema-dsl/quick-start) — 5 分钟入门
-- [DSL 语法完整指南](https://vextjs.github.io/schema-dsl/dsl-syntax) — 完整语法参考
-- [验证指南](https://vextjs.github.io/schema-dsl/validation-guide) — 高级验证技巧
-- [API 参考](https://vextjs.github.io/schema-dsl/api-reference) — 完整 API 文档
-- [TypeScript 指南](https://vextjs.github.io/schema-dsl/typescript-guide) — TS 用户必读
-- [最佳实践](https://vextjs.github.io/schema-dsl/best-practices) — 避免常见坑
-- [故障排查](https://vextjs.github.io/schema-dsl/troubleshooting) — 问题诊断
+### 📖 Core documentation
+- [Quick Start](https://vextjs.github.io/schema-dsl/quick-start) — up and running in 5 minutes
+- [DSL Syntax Guide](https://vextjs.github.io/schema-dsl/dsl-syntax) — complete syntax reference
+- [Validation Guide](https://vextjs.github.io/schema-dsl/validation-guide) — advanced validation techniques
+- [API Reference](https://vextjs.github.io/schema-dsl/api-reference) — complete API docs
+- [TypeScript Guide](https://vextjs.github.io/schema-dsl/typescript-guide) — required reading for TS users
+- [Best Practices](https://vextjs.github.io/schema-dsl/best-practices) — avoid common pitfalls
+- [Troubleshooting](https://vextjs.github.io/schema-dsl/troubleshooting) — diagnosing issues
 
-### 🎯 功能文档
-- [SchemaUtils 工具](https://vextjs.github.io/schema-dsl/schema-utils)
-- [条件验证 API](https://vextjs.github.io/schema-dsl/conditional-api)
-- [异步校验](https://vextjs.github.io/schema-dsl/validate-async)
-- [错误处理与多语言](https://vextjs.github.io/schema-dsl/error-handling)
-- [联合类型](https://vextjs.github.io/schema-dsl/union-types)
-- [枚举类型](https://vextjs.github.io/schema-dsl/enum)
+### 🎯 Feature documentation
+- [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils)
+- [Conditional Validation API](https://vextjs.github.io/schema-dsl/conditional-api)
+- [Async Validation](https://vextjs.github.io/schema-dsl/validate-async)
+- [Error Handling & i18n](https://vextjs.github.io/schema-dsl/error-handling)
+- [Union Types](https://vextjs.github.io/schema-dsl/union-types)
+- [Enum Types](https://vextjs.github.io/schema-dsl/enum)
 
-### 🗄️ 导出与集成
-- [导出指南](https://vextjs.github.io/schema-dsl/export-guide)
-- [MongoDB 导出器](https://vextjs.github.io/schema-dsl/mongodb-exporter)
-- [MySQL 导出器](https://vextjs.github.io/schema-dsl/mysql-exporter)
-- [PostgreSQL 导出器](https://vextjs.github.io/schema-dsl/postgresql-exporter)
-- [Markdown 导出器](https://vextjs.github.io/schema-dsl/markdown-exporter)
-- [⚠️ 导出限制说明](https://vextjs.github.io/schema-dsl/export-limitations)
+### 🗄️ Export & integration
+- [Export Guide](https://vextjs.github.io/schema-dsl/export-guide)
+- [MongoDB Exporter](https://vextjs.github.io/schema-dsl/mongodb-exporter)
+- [MySQL Exporter](https://vextjs.github.io/schema-dsl/mysql-exporter)
+- [PostgreSQL Exporter](https://vextjs.github.io/schema-dsl/postgresql-exporter)
+- [Markdown Exporter](https://vextjs.github.io/schema-dsl/markdown-exporter)
+- [⚠️ Export Limitations](https://vextjs.github.io/schema-dsl/export-limitations)
 
-### 💻 示例代码
-- [quick-start.ts](./examples/docs/quick-start.ts) — 基础上手与注册表单示例
-- [validate-async.ts](./examples/docs/validate-async.ts) — 异步验证与 `ValidationError` 捕获
-- [export-guide.ts](./examples/docs/export-guide.ts) — 数据库导出总览
-- [error-handling.ts](./examples/docs/error-handling.ts) — 字段错误与业务错误处理
-- [plugin-system.ts](./examples/docs/plugin-system.ts) — 插件系统与 hook 示例
+### 💻 Examples
+- [quick-start.ts](./examples/docs/quick-start.ts) — basic usage and registration form
+- [validate-async.ts](./examples/docs/validate-async.ts) — async validation and `ValidationError` handling
+- [export-guide.ts](./examples/docs/export-guide.ts) — database export overview
+- [error-handling.ts](./examples/docs/error-handling.ts) — field errors and business error handling
+- [plugin-system.ts](./examples/docs/plugin-system.ts) — plugin system and hooks
 
-### 📝 版本与贡献
-- [更新日志](./CHANGELOG.md)
-- [贡献指南](./CONTRIBUTING.md)
-- [安全策略](./SECURITY.md)
+### 📝 Changelog & contributing
+- [Changelog](./CHANGELOG.md)
+- [Contributing Guide](./CONTRIBUTING.md)
+- [Security Policy](./SECURITY.md)
 
 ---
 
@@ -615,7 +615,7 @@ npm test
 
 <div align="center">
 
-如果这个项目对你有帮助，欢迎给仓库一个 Star ⭐
+If this project is useful to you, please consider giving it a Star ⭐
 
 Made with ❤️ by the schema-dsl team
 

@@ -1,184 +1,134 @@
-# 安全政策
+# Security Policy
 
-## 支持的版本
+## Supported Versions
 
-我们目前支持以下版本的安全更新：
+We currently provide security updates for the following versions:
 
-| 版本 | 支持状态 |
-| ------- | ------------------ |
-| 2.3.x   | :white_check_mark: |
-| 2.2.x   | :white_check_mark: |
-| 2.1.x   | :white_check_mark: |
-| < 2.0   | :x:                |
+| Version | Supported |
+| ------- | --------- |
+| 2.0.x   | ✅        |
+| < 2.0   | ❌        |
 
-## 报告安全漏洞
+## Reporting a Vulnerability
 
-我们非常重视 SchemaIO 的安全性。如果你发现了安全漏洞，请**不要**公开披露，而是通过以下方式报告：
+We take the security of schema-dsl seriously. If you discover a security vulnerability,
+please **do not** disclose it publicly. Instead, report it through the following channel:
 
-### 报告渠道
+### Preferred Channel
 
-**优先方式**：发送邮件至 **rockyshi1993@gmail.com**
+Send an email to **rockyshi1993@gmail.com**
 
-邮件标题格式：`[SECURITY] SchemaIO - 简短描述`
+Email subject: `[SECURITY] schema-dsl - <brief description>`
 
-### 应包含的信息
+### Information to Include
 
-请在报告中包含以下信息：
+1. **Vulnerability description**: Clear description of the security issue
+2. **Affected versions**: Which versions are impacted
+3. **Steps to reproduce**: Detailed reproduction steps
+4. **PoC code**: Proof-of-concept if available
+5. **Potential impact**: Possible consequences
+6. **Suggested fix**: If you have a proposed fix
 
-1. **漏洞描述**：清晰描述安全问题
-2. **影响范围**：受影响的版本
-3. **重现步骤**：详细的重现步骤
-4. **PoC 代码**：如果可能，提供概念验证代码
-5. **潜在影响**：漏洞可能造成的影响
-6. **建议修复**：如果有修复建议
+### Response Timeline
 
-### 报告模板
+| Stage | Timeframe |
+| ----- | --------- |
+| Initial acknowledgement | 1-2 business days |
+| Vulnerability assessment | 3-5 business days |
+| Fix release | 7-30 days (depends on severity) |
 
-```markdown
-## 漏洞类型
-[例如：注入攻击、拒绝服务、信息泄露]
+### Severity Classification
 
-## 影响版本
-[例如：v2.0.0 - v2.3.0]
+We follow CVSS 3.1 scoring:
 
-## 漏洞描述
-[详细描述]
+- **Critical** (9.0-10.0): Immediate fix, target < 7 days
+- **High** (7.0-8.9): Priority fix, target < 14 days
+- **Medium** (4.0-6.9): Planned fix, target < 30 days
+- **Low** (0.1-3.9): Routine fix, target < 90 days
 
-## 重现步骤
-1. ...
-2. ...
+## Security Best Practices
 
-## PoC 代码
-```javascript
-// 你的 PoC 代码
-```
+### 1. Validate All External Input
 
-## 潜在影响
-[描述可能的影响]
-
-## 建议修复
-[如果有]
-```
-
-### 响应时间
-
-- **初步确认**：1-2 个工作日
-- **漏洞评估**：3-5 个工作日
-- **修复发布**：根据严重程度，7-30 天
-
-### 严重程度分级
-
-我们使用 CVSS 3.1 评分系统：
-
-- **严重**（9.0-10.0）：立即修复，< 7 天
-- **高危**（7.0-8.9）：优先修复，< 14 天
-- **中危**（4.0-6.9）：计划修复，< 30 天
-- **低危**（0.1-3.9）：常规修复，< 90 天
-
-## 安全最佳实践
-
-使用 SchemaIO 时，请遵循以下最佳实践：
-
-### 1. 输入验证
+Always validate untrusted input before processing:
 
 ```javascript
-// ✅ 推荐：使用 SchemaIO 验证所有外部输入
 const schema = dsl({
-  username: 'string:3-32!'.pattern(/^[a-zA-Z0-9_]+$/),
-  email: 'email!',
-  age: 'number:0-150'
+  username: "string:3-32!",
+  email: "email!",
+  age: "number:0-150"
 });
 
 const result = validate(schema, userInput);
 if (!result.valid) {
-  throw new Error('Invalid input');
+  throw new Error("Validation failed: " + result.errors[0].message);
 }
 ```
 
-### 2. 避免动态执行
+### 2. Avoid Dynamic Schema Construction
+
+Do not build schemas from untrusted user input:
 
 ```javascript
-// ❌ 危险：不要从不可信源动态执行代码
-const schemaStr = req.body.schema; // 来自用户输入
-eval(schemaStr); // 危险！
+// Bad: schema type from user input
+// const schema = dsl({ field: userInput.type });
 
-// ✅ 安全：使用预定义的 Schema
-const allowedSchemas = {
-  user: userSchema,
-  post: postSchema
-};
+// Good: use a predefined map
+const allowedSchemas = { user: userSchema, post: postSchema };
 const schema = allowedSchemas[req.body.schemaType];
 ```
 
-### 3. 限制资源使用
+### 3. Limit Array and String Sizes
+
+Use bounded types to prevent resource exhaustion:
 
 ```javascript
-// ✅ 推荐：限制数组大小，防止 DoS
 const schema = dsl({
-  tags: 'array:1-100<string:1-50>' // 限制数组和元素大小
+  tags: "array:1-100<string:1-50>",
+  description: "string:0-2000"
 });
 ```
 
-### 4. 保持更新
-
-定期更新到最新版本以获得安全补丁：
+### 4. Keep Dependencies Updated
 
 ```bash
 npm update schema-dsl
-```
-
-### 5. 依赖审计
-
-定期运行安全审计：
-
-```bash
 npm audit
-npm audit fix
 ```
 
-## 已知的安全问题
+### 5. Custom Validator Security
 
-### 已修复的漏洞
-
-目前没有已知的安全漏洞。
-
-查看历史安全公告：[Security Advisories](https://github.com/vextjs/schema-dsl/security/advisories)
-
-## 安全相关配置
-
-### ReDoS 防护
-
-SchemaIO 内置了对正则表达式拒绝服务（ReDoS）的防护：
+When writing async custom validators, always apply timeouts:
 
 ```javascript
-// 内部会检测和缓存安全的正则表达式
 const schema = dsl({
-  username: 'string'.pattern(/^[a-zA-Z0-9_]+$/)
+  email: "email!",
+}).custom("email", async (value) => {
+  const exists = await checkEmail(value, { timeout: 5000 });
+  if (exists) return "Email already taken";
 });
 ```
 
-### 自定义验证器安全
+### 6. ReDoS Protection
 
-使用自定义验证器时注意：
+Use anchored, non-backtracking regex patterns:
 
 ```javascript
-// ⚠️ 注意：自定义验证器中的异步操作
-const schema = dsl({
-  email: 'email!'.custom(async (value) => {
-    // 确保设置超时，防止挂起
-    const exists = await checkEmailExists(value, { timeout: 5000 });
-    if (exists) return '邮箱已被占用';
-  })
-});
+const schema = dsl({ username: "string" }).pattern(/^[a-zA-Z0-9_]{3,32}$/);
 ```
 
-## 致谢
+## Known Vulnerabilities
 
-我们感谢所有负责任地披露安全问题的研究人员。
+No known security vulnerabilities at this time.
 
-如果你报告了有效的安全漏洞，我们会在修复后的发布说明中致谢（除非你要求匿名）。
+Historical advisories: <https://github.com/vextjs/schema-dsl/security/advisories>
+
+## Acknowledgements
+
+We thank all researchers who responsibly disclose security issues.
+Valid vulnerability reports will be credited in release notes (unless anonymity is requested).
 
 ---
 
-**最后更新**：2025-12-29  
-**联系方式**：rockyshi1993@gmail.com
+**Last updated**: 2025-12-29
+**Contact**: rockyshi1993@gmail.com

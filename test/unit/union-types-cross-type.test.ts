@@ -341,7 +341,7 @@ describe('Cross-type Union Validation — types: Syntax', () => {
 
       const result = validate(schema, { value: true }, { locale: 'zh-CN' })
       expect(result.valid).toBe(false)
-      expect(result.errors[0].message).toContain('类型')
+      expect(result.errors[0].message).toContain('\u7c7b\u578b')
     })
 
     it('should support English error messages', () => {
@@ -587,7 +587,7 @@ describe('Cross-type Union Validation — types: Syntax', () => {
       })
 
       expect(validate(schema, { price: 99.99 }).valid).toBe(true)
-      expect(validate(schema, { price: '面议' }).valid).toBe(true)
+      expect(validate(schema, { price: '\u9762\u8bae' }).valid).toBe(true)
       expect(validate(schema, { price: -1 }).valid).toBe(false)
     })
 

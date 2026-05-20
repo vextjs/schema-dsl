@@ -42,23 +42,23 @@ describe('v1 entry compatibility', () => {
     installStringExtensions()
 
     expect(typeof ('email!' as any).label).toBe('function')
-    expect(('email!' as any).label('邮箱').toSchema()).toMatchObject({
+    expect(('email!' as any).label('Email').toSchema()).toMatchObject({
       type: 'string',
       format: 'email',
-      _label: '邮箱',
+      _label: 'Email',
     })
   })
 
   it('Locale.getMessage() should retain the v1 { code, message } return shape', () => {
     Locale.addLocale('compat-locale', {
-      'compat.key': { code: 40001, message: '兼容消息' },
+      'compat.key': { code: 40001, message: 'Compat message' },
     })
 
     expect(Locale.getMessage('compat.key', {}, 'compat-locale')).toEqual({
       code: 40001,
-      message: '兼容消息',
+      message: 'Compat message',
     })
-    expect(Locale.getMessageText('compat.key', {}, 'compat-locale')).toBe('兼容消息')
+    expect(Locale.getMessageText('compat.key', {}, 'compat-locale')).toBe('Compat message')
   })
 
   it('dsl.if(field, then, else) should generate a v1 allOf conditional structure', () => {

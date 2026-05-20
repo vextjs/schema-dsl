@@ -33,18 +33,18 @@ describe('ConditionalBuilder - i18n Support', () => {
 
     const result = validate(schema, { age: 16, status: 'active' })
     expect(result.valid).toBe(false)
-    expect(result.errors![0].message).toBe('未成年用户不能注册')
+    expect(result.errors![0].message).toBe('\u672a\u6210\u5e74\u7528\u6237\u4e0d\u80fd\u6ce8\u518c')
   })
 
   it('should support using string messages directly (without locale key)', () => {
     const schema = dsl({
       age: 'number!',
-      status: dsl.if((data: any) => data.age < 18).message('未成年用户不能注册'),
+      status: dsl.if((data: any) => data.age < 18).message('Underage users cannot register'),
     })
 
     const result = validate(schema, { age: 16, status: 'active' })
     expect(result.valid).toBe(false)
-    expect(result.errors![0].message).toBe('未成年用户不能注册')
+    expect(result.errors![0].message).toBe('Underage users cannot register')
   })
 
   it('should support different conditions using different locale messages', () => {
@@ -54,9 +54,9 @@ describe('ConditionalBuilder - i18n Support', () => {
       type: 'string!',
       value: dsl
         .if((data: any) => data.type === 'age' && data.value < 0)
-        .message('年龄不能为负数')
+        .message('Age cannot be negative')
         .and((data: any) => data.type === 'age' && data.value > 150)
-        .message('年龄不能超过150'),
+        .message('Age cannot exceed 150'),
     })
 
     const result = validate(schema, { type: 'age', value: -1 })

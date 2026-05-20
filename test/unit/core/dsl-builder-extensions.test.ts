@@ -70,8 +70,8 @@ describe('DslBuilder Extensions & Fixes', () => {
   describe('Schema Reuse', () => {
     it('should support createLibrary and reusable', () => {
       const fields = SchemaUtils.createLibrary({
-        email: () => dsl('email!').label('邮箱'),
-        phone: () => (dsl('string:11!') as any).phoneNumber('cn').label('手机号'),
+        email: () => dsl('email!').label('Email'),
+        phone: () => (dsl('string:11!') as any).phoneNumber('cn').label('Phone Number'),
       })
 
       const schema = dsl({

@@ -14,12 +14,12 @@ const frFR: LocaleMessages = {
   'max-depth': 'Profondeur maximale de récursion ({{#depth}}) dépassée dans {{#label}}',
   exception: 'Exception de validation dans {{#label}} : {{#message}}',
 
-  // Conditional (v2 补完)
+  // Conditional (v2 additions)
   'conditional.underAge': 'Les mineurs ne peuvent pas s\'inscrire',
   'conditional.blocked': 'Le compte a été bloqué',
   'conditional.notAllowed': 'L\'inscription n\'est pas autorisée',
 
-  // I18nError — generic (v2 补完)
+  // I18nError — generic (v2 additions)
   'error.notFound': '{{#resource}} introuvable',
   'error.forbidden': 'Accès à {{#resource}} interdit',
   'error.unauthorized': 'Non autorisé, veuillez vous connecter',
@@ -27,7 +27,7 @@ const frFR: LocaleMessages = {
   'error.duplicate': '{{#resource}} existe déjà',
   'error.conflict': 'Conflit d\'opération : {{#reason}}',
 
-  // Account (v2 补完)
+  // Account (v2 additions)
   'account.notFound': { code: 'ACCOUNT_NOT_FOUND', message: 'Compte introuvable' },
   'account.inactive': 'Le compte est inactif',
   'account.banned': 'Le compte a été banni',
@@ -37,12 +37,12 @@ const frFR: LocaleMessages = {
   },
   'account.insufficientCredits': 'Crédits insuffisants, actuels : {{#credits}}, requis : {{#required}}',
 
-  // User (v2 补完)
+  // User (v2 additions)
   'user.notFound': 'Utilisateur introuvable',
   'user.notVerified': "L'utilisateur n'est pas vérifié",
   'user.noPermission': 'Pas de permission d\'administrateur',
 
-  // Order (v2 补完)
+  // Order (v2 additions)
   'order.notPaid': { code: 'ORDER_NOT_PAID', message: 'Commande non payée' },
   'order.paymentMissing': 'Informations de paiement manquantes',
   'order.addressMissing': 'Adresse de livraison manquante',

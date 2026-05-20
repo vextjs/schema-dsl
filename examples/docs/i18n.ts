@@ -56,14 +56,14 @@ console.log('i18n.de.msgs           =', deResult.errors?.map(e => e.message))
 
 const formSchema = dsl({
   username: dsl('string:3-20!')
-    .label('用户名')
+    .label('username')
     .error({
-      minLength: '用户名不能少于3个字符',
-      maxLength: '用户名不超过20个字符',
+      minLength: 'username must be at least 3 characters',
+      maxLength: 'username must be at most 20 characters',
     }),
   password: dsl('string:8-64!')
-    .label('密码')
-    .error({ minLength: '密码至少需要8位' }),
+    .label('password')
+    .error({ minLength: 'password must be at least 8 characters' }),
 })
 
 const formResult = validate(formSchema, { username: 'x', password: 'abc' }, {

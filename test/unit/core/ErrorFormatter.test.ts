@@ -57,12 +57,12 @@ describe('ErrorFormatter', () => {
           parentSchema: {
             type: 'string',
             minLength: 5,
-            _label: '用户名',
+            _label: 'Username',
           },
         },
       ]
       const result = formatter.formatDetailed(errors as any)
-      expect(result[0].message).toContain('用户名')
+      expect(result[0].message).toContain('Username')
     })
 
     it('should support custom message templates (_customMessages)', () => {
@@ -72,12 +72,12 @@ describe('ErrorFormatter', () => {
           instancePath: '/phone',
           params: {},
           parentSchema: {
-            _customMessages: { pattern: '手机号格式不正确' },
+            _customMessages: { pattern: 'Invalid phone number format' },
           },
         },
       ]
       const result = formatter.formatDetailed(errors as any)
-      expect(result[0].message).toBe('手机号格式不正确')
+      expect(result[0].message).toBe('Invalid phone number format')
     })
 
     it('empty error array should return empty array', () => {

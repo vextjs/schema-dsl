@@ -48,9 +48,9 @@ function parseAcceptLanguage(header: string | undefined): string {
 // ============================================================
 
 const registerSchema = dsl({
-  username: dsl('string:3-32!').label('用户名'),
-  email:    dsl('email!').label('邮箱地址'),
-  age:      dsl('integer:18-120').label('年龄'),
+  username: dsl('string:3-32!').label('username'),
+  email:    dsl('email!').label('email address'),
+  age:      dsl('integer:18-120').label('age'),
 })
 
 const badPayload = { username: 'ab', email: 'bad-email', age: 15 }

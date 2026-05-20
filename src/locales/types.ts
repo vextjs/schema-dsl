@@ -1,15 +1,15 @@
 /**
- * LocaleKey — 所有语言包 key 的联合类型（118 个 key）
+ * LocaleKey — union type of all locale message keys (118 keys)
  *
- * TS 编译期强制完整性：每个语言包必须实现 LocaleMessages 接口，
- * 新增 key 时编译器会在所有语言包中报错。
+ * TypeScript compile-time completeness enforcement: every locale file must implement
+ * the LocaleMessages interface; adding a new key causes a compiler error in all locales.
  */
 
-// ─── 基础消息值类型 ───────────────────────────────────────────────────────────
-/** 消息可以是纯字符串，或带 code 的对象（v1.1.5+ 格式）*/
+// ─── Base message value type ──────────────────────────────────────────────────
+/** A message is either a plain string or an object with code (v1.1.5+ format) */
 export type LocaleMessage = string | { code: string | number; message: string }
 
-// ─── Key 联合（供 getMessage 精确 key 推断）──────────────────────────────────
+// ─── Key union (for precise key inference in getMessage) ─────────────────────
 export type LocaleKey =
   // Generic
   | 'required'
@@ -150,7 +150,7 @@ export type LocaleKey =
   | 'VALIDATE_MUST_BE_FUNCTION'
 
 /**
- * 完整语言包接口 — 每个语言包文件必须实现此接口（Record<LocaleKey, LocaleMessage>）
- * TS 编译期保证无遗漏 key
+ * Complete locale interface — every locale file must implement this (Record<LocaleKey, LocaleMessage>).
+ * TypeScript compile-time guarantee: no key can be missing.
  */
 export type LocaleMessages = Record<LocaleKey, LocaleMessage>

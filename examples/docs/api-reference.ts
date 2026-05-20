@@ -107,7 +107,7 @@ const ajvValidator = new Validator()
 const rawValidate = ajvValidator.getAjv().compile({
   type: 'object',
   properties: {
-    username: { type: 'string', minLength: 3, _label: '用户名' },
+    username: { type: 'string', minLength: 3, _label: 'username' },
   },
   required: ['username'],
 })

@@ -38,7 +38,6 @@ describe('Enum - Features', () => {
       let result = validate(schema, {}) as any
       expect(result.valid).toBe(false)
       expect(result.errors.some((e: any) =>
-        e.message.includes('必填') ||
         e.message.includes('required') ||
         e.keyword === 'required'
       )).toBe(true)
@@ -83,7 +82,6 @@ describe('Enum - Features', () => {
       let result = validate(schema, {}) as any
       expect(result.valid).toBe(false)
       expect(result.errors.some((e: any) =>
-        e.message.includes('必填') ||
         e.message.includes('required') ||
         e.keyword === 'required'
       )).toBe(true)
@@ -138,7 +136,6 @@ describe('Enum - Features', () => {
       let result = validate(schema, {}) as any
       expect(result.valid).toBe(false)
       expect(result.errors.some((e: any) =>
-        e.message.includes('必填') ||
         e.message.includes('required') ||
         e.keyword === 'required'
       )).toBe(true)
@@ -180,7 +177,7 @@ describe('Enum - Features', () => {
     it('should support chained methods', () => {
       // v2: use dsl() builder instead of string method chaining
       const schema = dsl({
-        status: dsl('active|inactive').label('状态')
+        status: dsl('active|inactive').label('Status')
       })
 
       let result = validate(schema, { status: 'active' }) as any
@@ -188,19 +185,19 @@ describe('Enum - Features', () => {
 
       result = validate(schema, { status: 'unknown' }) as any
       expect(result.valid).toBe(false)
-      expect(result.errors[0].message).toContain('状态')
+      expect(result.errors[0].message).toContain('Status')
     })
 
     it('should support custom error messages', () => {
       const schema = dsl({
         status: dsl('active|inactive').messages({
-          'string.enum': '状态必须是 active 或 inactive'
+          'string.enum': 'Status must be active or inactive'
         })
       })
 
       const result = validate(schema, { status: 'unknown' }) as any
       expect(result.valid).toBe(false)
-      expect(result.errors[0].message).toContain('active 或 inactive')
+      expect(result.errors[0].message).toContain('active or inactive')
     })
 
     it('should correctly use enums in objects', () => {

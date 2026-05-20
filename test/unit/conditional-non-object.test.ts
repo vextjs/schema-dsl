@@ -26,38 +26,38 @@ describe('ConditionalBuilder - Non-Object Type Support', () => {
     it('should support directly validating arrays', () => {
       const schema = dsl
         .if((data: any) => Array.isArray(data) && data.length > 5)
-        .message('数组最多5个元素')
+        .message('Array cannot exceed 5 elements')
 
       const result1 = validate(schema, [1, 2, 3])
       expect(result1.valid).toBe(true)
 
       const result2 = validate(schema, [1, 2, 3, 4, 5, 6])
       expect(result2.valid).toBe(false)
-      expect(result2.errors![0].message).toBe('数组最多5个元素')
+      expect(result2.errors![0].message).toBe('Array cannot exceed 5 elements')
     })
 
     it('should support directly validating numbers', () => {
       const schema = dsl
         .if((data: any) => typeof data === 'number' && data < 0)
-        .message('不允许负数')
+        .message('Negative numbers are not allowed')
 
       const result1 = validate(schema, 10)
       expect(result1.valid).toBe(true)
 
       const result2 = validate(schema, -5)
       expect(result2.valid).toBe(false)
-      expect(result2.errors![0].message).toBe('不允许负数')
+      expect(result2.errors![0].message).toBe('Negative numbers are not allowed')
     })
 
     it('should support directly validating booleans', () => {
-      const schema = dsl.if((data: any) => data === false).message('必须为 true')
+      const schema = dsl.if((data: any) => data === false).message('Must be true')
 
       const result1 = validate(schema, true)
       expect(result1.valid).toBe(true)
 
       const result2 = validate(schema, false)
       expect(result2.valid).toBe(false)
-      expect(result2.errors![0].message).toBe('必须为 true')
+      expect(result2.errors![0].message).toBe('Must be true')
     })
   })
 

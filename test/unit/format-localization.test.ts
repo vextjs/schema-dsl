@@ -17,7 +17,7 @@ describe('Format Localization', () => {
 
     const resCN = validator.validate(schema, 'invalid-email', { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toBe('value必须是有效的邮箱地址')
+    expect(resCN.errors[0].message).toBe('value\u5fc5\u987b\u662f\u6709\u6548\u7684\u90ae\u7bb1\u5730\u5740')
 
     const resEN = validator.validate(schema, 'invalid-email', { locale: 'en-US' }) as any
     expect(resEN.valid).toBe(false)
@@ -29,7 +29,7 @@ describe('Format Localization', () => {
 
     const resCN = validator.validate(schema, 'invalid-url', { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toBe('value必须是有效的URL地址')
+    expect(resCN.errors[0].message).toBe('value\u5fc5\u987b\u662f\u6709\u6548\u7684URL\u5730\u5740')
   })
 
   it('should return localized error for ipv4', () => {
@@ -37,6 +37,6 @@ describe('Format Localization', () => {
 
     const resCN = validator.validate(schema, '999.999.999.999', { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toBe('value必须是有效的IPv4地址')
+    expect(resCN.errors[0].message).toBe('value\u5fc5\u987b\u662f\u6709\u6548\u7684IPv4\u5730\u5740')
   })
 })

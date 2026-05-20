@@ -74,7 +74,7 @@ describe('TypeRegistry', () => {
 
   describe('toJsonSchema()', () => {
     it('strips internal keys (_label / _required etc.)', () => {
-      const raw = { type: 'string', _label: '姓名', _required: true }
+      const raw = { type: 'string', _label: 'Name', _required: true }
       const json = TypeRegistry.toJsonSchema(raw)
       expect('_label' in json).toBe(false)
       expect('_required' in json).toBe(false)

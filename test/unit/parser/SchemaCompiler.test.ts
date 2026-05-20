@@ -25,8 +25,8 @@ describe('SchemaCompiler', () => {
 
     it('meta.label injects _label', () => {
       const typeDef = TypeRegistry.resolve('string')
-      const out = SchemaCompiler.compile(typeDef, {}, { label: '姓名' })
-      expect(out._label).toBe('姓名')
+      const out = SchemaCompiler.compile(typeDef, {}, { label: 'Name' })
+      expect(out._label).toBe('Name')
     })
 
     it('constraints override same-name fields in baseSchema', () => {
@@ -38,7 +38,7 @@ describe('SchemaCompiler', () => {
 
   describe('toJsonSchema(schema, internalKeys)', () => {
     it('strips internal keys _label/_required', () => {
-      const raw = { type: 'string', minLength: 3, _label: '姓名', _required: true }
+      const raw = { type: 'string', minLength: 3, _label: 'Name', _required: true }
       const internalKeys = TypeRegistry.getInternalKeys()
       const out = SchemaCompiler.toJsonSchema(raw, internalKeys)
       expect('_label' in out).toBe(false)

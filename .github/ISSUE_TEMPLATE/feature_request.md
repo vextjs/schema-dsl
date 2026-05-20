@@ -1,45 +1,39 @@
 ---
-name: ✨ 功能请求
-about: 建议新功能或改进
-title: '[FEATURE] '
-labels: 'enhancement'
-assignees: ''
+name: Feature Request
+about: Suggest a new feature or improvement
+title: "[FEATURE] "
+labels: "enhancement"
+assignees: ""
 ---
 
-## ✨ 功能描述
+## Feature Description
 
-清晰简洁地描述你希望添加的功能。
+Describe the feature you would like to add, clearly and concisely.
 
-## 🎯 使用场景
+## Use Case
 
-**遇到的问题**:  
-描述你遇到的问题或限制（例如："我总是需要..."或"无法实现..."）
+**Problem you are facing:**
+Describe the problem or limitation (e.g., I always need to... or I cannot...)
 
-**期望的解决方案**:  
-描述你希望如何解决这个问题。
+**Desired solution:**
+Describe how you would like this problem to be solved.
 
-## 💡 API 设计建议（可选）
+## API Design (optional)
 
-如果可以，提供你期望的 API 设计：
+If possible, provide the expected API design:
 
 ```javascript
 const schema = dsl({
-  // 期望的用法示例
+  // expected usage example
 });
 ```
 
-## 🔄 替代方案（可选）
+## Alternatives (optional)
 
-描述你考虑过的其他替代方案或功能。
+Describe other alternatives or workarounds you have considered.
 
-## 📚 参考资料（可选）
+## Checklist
 
-- 其他库的类似功能
-- 相关文档或讨论链接
-- 截图或示意图
-
-## ✔️ 检查清单
-
-- [ ] 我已搜索现有 Issues，未发现相同的功能请求
-- [ ] 这个功能符合 SchemaIO 的设计理念（简洁、灵活、易用）
-- [ ] 我愿意提交 PR 来实现这个功能（可选）
+- [ ] I have searched existing Issues and found no duplicate
+- [ ] This feature aligns with the design philosophy of schema-dsl (concise, flexible, easy to use)
+- [ ] I am willing to submit a PR to implement this feature (optional)

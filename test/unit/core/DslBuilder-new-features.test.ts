@@ -47,7 +47,7 @@ describe('DslBuilder New Features', () => {
   describe('Additional Code Types', () => {
     it('should validate licensePlate:cn', () => {
       const schema = dsl('licensePlate:cn!')
-      expect(validate(schema, '京A88888').valid).toBe(true)
+      expect(validate(schema, '\u4eacA88888').valid).toBe(true)
       expect(validate(schema, 'ABC').valid).toBe(false)
     })
 

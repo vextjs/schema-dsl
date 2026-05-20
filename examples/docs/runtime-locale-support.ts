@@ -16,15 +16,15 @@ Locale.reset()
 Locale.addLocale('zh-CN', {
   'account.notFound': {
     code: 40001,
-    message: '账户不存在',
+    message: 'account not found',
   },
   'account.insufficientBalance': {
     code: 40002,
-    message: '余额不足，当前{{#balance}}元，需要{{#required}}元',
+    message: 'insufficient balance, current {{#balance}}, required {{#required}}',
   },
   'account.locked': {
     code: 40003,
-    message: '账户已被锁定',
+    message: 'account is locked',
   },
 } as any)
 
@@ -53,7 +53,7 @@ const zhNotFound = I18nError.create('account.notFound', 'zh-CN')
 const enNotFound = I18nError.create('account.notFound', 'en-US')
 
 console.log('runtime-locale.globalLocale        =', Locale.getLocale())          // 'zh-CN'
-console.log('runtime-locale.zh.message          =', zhNotFound.message)          // '账户不存在'
+console.log('runtime-locale.zh.message          =', zhNotFound.message)          // 'account not found'
 console.log('runtime-locale.en.message          =', enNotFound.message)          // 'Account not found'
 console.log('runtime-locale.code.same           =', zhNotFound.code === enNotFound.code)  // true — same error code
 

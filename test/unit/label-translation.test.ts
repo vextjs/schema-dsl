@@ -10,7 +10,7 @@ describe('Label Translation', () => {
 
   beforeAll(() => {
     Locale.addLocale('zh-CN', {
-      'label.test_field': '测试字段'
+      'label.test_field': 'Test Field ZH'
     })
     Locale.addLocale('en-US', {
       'label.test_field': 'Test Field'
@@ -23,7 +23,7 @@ describe('Label Translation', () => {
     // zh-CN
     const resCN = validator.validate(schema, null, { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toContain('测试字段')
+    expect(resCN.errors[0].message).toContain('Test Field ZH')
 
     // en-US
     const resEN = validator.validate(schema, null, { locale: 'en-US' }) as any

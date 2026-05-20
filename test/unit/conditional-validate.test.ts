@@ -10,22 +10,22 @@ describe('ConditionalBuilder - Shorthand Validation Methods', () => {
     it('should return complete validation result', () => {
       const result = dsl
         .if((d: any) => d.age < 18)
-        .message('未成年用户不能注册')
+        .message('Underage users cannot register')
         .validate({ age: 16 })
 
       expect(result).toHaveProperty('valid')
       expect(result).toHaveProperty('errors')
       expect(result.valid).toBe(false)
-      expect(result.errors![0].message).toBe('未成年用户不能注册')
+      expect(result.errors![0].message).toBe('Underage users cannot register')
     })
 
     it('should support single-line validation', () => {
-      const result = dsl.if((d: any) => d.age < 18).message('未成年用户不能注册').validate({ age: 16 })
+      const result = dsl.if((d: any) => d.age < 18).message('Underage users cannot register').validate({ age: 16 })
       expect(result.valid).toBe(false)
     })
 
     it('should support reusing validator', () => {
-      const ageValidator = dsl.if((d: any) => d.age < 18).message('未成年')
+      const ageValidator = dsl.if((d: any) => d.age < 18).message('Underage')
 
       const r1 = ageValidator.validate({ age: 16 })
       expect(r1.valid).toBe(false)
@@ -56,7 +56,7 @@ describe('ConditionalBuilder - Shorthand Validation Methods', () => {
 
   describe('.check() Method', () => {
     it('should return boolean value', () => {
-      const validator = dsl.if((d: any) => d.age < 18).message('未成年')
+      const validator = dsl.if((d: any) => d.age < 18).message('Underage')
 
       expect(validator.check({ age: 16 })).toBe(false)
       expect(validator.check({ age: 20 })).toBe(true)
@@ -65,12 +65,12 @@ describe('ConditionalBuilder - Shorthand Validation Methods', () => {
 
   describe('.assert() Method', () => {
     it('should throw error when condition is met', () => {
-      const validator = dsl.if((d: any) => d.age < 18).message('未成年')
-      expect(() => validator.assert({ age: 16 })).toThrow('未成年')
+      const validator = dsl.if((d: any) => d.age < 18).message('Underage')
+      expect(() => validator.assert({ age: 16 })).toThrow('Underage')
     })
 
     it('should not throw error when condition is not met', () => {
-      const validator = dsl.if((d: any) => d.age < 18).message('未成年')
+      const validator = dsl.if((d: any) => d.age < 18).message('Underage')
       expect(() => validator.assert({ age: 20 })).not.toThrow()
     })
   })

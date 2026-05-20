@@ -67,7 +67,7 @@ describe('ErrorFormatter - Parameter Mapping Completeness Tests', () => {
       expect(error.message).toContain('active')
       expect(error.message).toContain('inactive')
       expect(
-        error.message.includes('以下值之一') || error.message.includes('必须是')
+        error.message.includes('\u4ee5\u4e0b\u503c\u4e4b\u4e00') || error.message.includes('\u5fc5\u987b\u662f')
       ).toBe(true)
     })
 
@@ -123,7 +123,7 @@ describe('ErrorFormatter - Parameter Mapping Completeness Tests', () => {
       expect(nameError).toBeTruthy()
       expect(
         nameError.message.includes('name') ||
-        nameError.message.includes('必填') ||
+        nameError.message.includes('\u5fc5\u586b') ||
         nameError.message.includes('required')
       ).toBe(true)
 
@@ -131,7 +131,7 @@ describe('ErrorFormatter - Parameter Mapping Completeness Tests', () => {
       expect(emailError).toBeTruthy()
       expect(
         emailError.message.includes('email') ||
-        emailError.message.includes('必填') ||
+        emailError.message.includes('\u5fc5\u586b') ||
         emailError.message.includes('required')
       ).toBe(true)
     })
@@ -220,7 +220,7 @@ describe('ErrorFormatter - Parameter Mapping Completeness Tests', () => {
       expect(result.valid).toBe(false)
       const error = result.errors[0]
       expect(
-        error.message.toLowerCase().includes('email') || error.message.includes('格式')
+        error.message.toLowerCase().includes('email') || error.message.includes('\u683c\u5f0f')
       ).toBe(true)
       expect(error.message).not.toContain('{{#format}}')
     })

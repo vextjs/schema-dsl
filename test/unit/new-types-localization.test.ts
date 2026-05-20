@@ -13,7 +13,7 @@ describe('New Types Localization', () => {
 
     const resCN = validator.validate(schema, 'invalid-id', { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toBe('无效的 ObjectId')
+    expect(resCN.errors[0].message).toBe('\u65e0\u6548\u7684 ObjectId')
 
     const resEN = validator.validate(schema, 'invalid-id', { locale: 'en-US' }) as any
     expect(resEN.valid).toBe(false)
@@ -25,7 +25,7 @@ describe('New Types Localization', () => {
 
     const resCN = validator.validate(schema, 'invalid-color', { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toBe('无效的十六进制颜色值')
+    expect(resCN.errors[0].message).toBe('\u65e0\u6548\u7684\u5341\u516d\u8fdb\u5236\u989c\u8272\u503c')
 
     const resEN = validator.validate(schema, 'invalid-color', { locale: 'en-US' }) as any
     expect(resEN.valid).toBe(false)
@@ -37,7 +37,7 @@ describe('New Types Localization', () => {
 
     const resCN = validator.validate(schema, 'invalid-mac', { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toBe('无效的 MAC 地址')
+    expect(resCN.errors[0].message).toBe('\u65e0\u6548\u7684 MAC \u5730\u5740')
 
     const resEN = validator.validate(schema, 'invalid-mac', { locale: 'en-US' }) as any
     expect(resEN.valid).toBe(false)
@@ -49,7 +49,7 @@ describe('New Types Localization', () => {
 
     const resCN = validator.validate(schema, 'invalid-cron', { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toBe('无效的 Cron 表达式')
+    expect(resCN.errors[0].message).toBe('\u65e0\u6548\u7684 Cron \u8868\u8fbe\u5f0f')
 
     const resEN = validator.validate(schema, 'invalid-cron', { locale: 'en-US' }) as any
     expect(resEN.valid).toBe(false)
@@ -61,7 +61,7 @@ describe('New Types Localization', () => {
 
     const resCN = validator.validate(schema, 'Invalid Slug', { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toBe('URL别名只能包含小写字母、数字和连字符')
+    expect(resCN.errors[0].message).toBe('URL\u522b\u540d\u53ea\u80fd\u5305\u542b\u5c0f\u5199\u5b57\u6bcd、\u6570\u5b57\u548c\u8fde\u5b57\u7b26')
 
     const resEN = validator.validate(schema, 'Invalid Slug', { locale: 'en-US' }) as any
     expect(resEN.valid).toBe(false)
@@ -73,7 +73,7 @@ describe('New Types Localization', () => {
 
     const resCN = validator.validate(schema, 'Invalid Username!', { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toBe('用户名必须以字母开头，只能包含字母、数字和下划线')
+    expect(resCN.errors[0].message).toBe('\u7528\u6237\u540d\u5fc5\u987b\u4ee5\u5b57\u6bcd\u5f00\u5934，\u53ea\u80fd\u5305\u542b\u5b57\u6bcd、\u6570\u5b57\u548c\u4e0b\u5212\u7ebf')
 
     const resEN = validator.validate(schema, 'Invalid Username!', { locale: 'en-US' }) as any
     expect(resEN.valid).toBe(false)
@@ -85,7 +85,7 @@ describe('New Types Localization', () => {
 
     const resCN = validator.validate(schema, 'abcdefgh', { locale: 'zh-CN' }) as any
     expect(resCN.valid).toBe(false)
-    expect(resCN.errors[0].message).toBe('密码至少8位，需包含字母和数字')
+    expect(resCN.errors[0].message).toBe('\u5bc6\u7801\u81f3\u5c118\u4f4d，\u9700\u5305\u542b\u5b57\u6bcd\u548c\u6570\u5b57')
 
     const resEN = validator.validate(schema, 'abcdefgh', { locale: 'en-US' }) as any
     expect(resEN.valid).toBe(false)

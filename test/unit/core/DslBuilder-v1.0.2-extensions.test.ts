@@ -65,7 +65,7 @@ describe('DslBuilder - v1.0.2 Extension Validators', () => {
 
     it('should support .label() + .alphanum() combination', () => {
       const schema = dsl({
-        username: (dsl('string:3-20!') as any).alphanum().label('用户名'),
+        username: (dsl('string:3-20!') as any).alphanum().label('Username'),
       })
       const p = (schema as any).properties.username
       expect(p.alphanum).toBe(true)
@@ -113,7 +113,7 @@ describe('DslBuilder - v1.0.2 Extension Validators', () => {
 
     it('should support .alphanum() + .label()', () => {
       const schema = dsl({
-        username: (dsl('string:3-20!') as any).alphanum().label('用户名'),
+        username: (dsl('string:3-20!') as any).alphanum().label('Username'),
       })
       expect(validate(schema, { username: 'user123' }).valid).toBe(true)
       expect(validate(schema, { username: 'user_123' }).valid).toBe(false)

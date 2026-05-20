@@ -10,7 +10,7 @@ describe('ConditionalBuilder - Chain Condition Builder', () => {
     it('should support simple condition + message (throw on failure)', () => {
       const schema = dsl({
         age: 'number!',
-        status: dsl.if((data: any) => data.age < 18).message('未成年用户不能注册'),
+        status: dsl.if((data: any) => data.age < 18).message('underage user cannot register'),
       })
 
       const result1 = validate(schema, { age: 20, status: 'active' })
@@ -18,7 +18,7 @@ describe('ConditionalBuilder - Chain Condition Builder', () => {
 
       const result2 = validate(schema, { age: 16, status: 'active' })
       expect(result2.valid).toBe(false)
-      expect(result2.errors![0].message).toBe('未成年用户不能注册')
+      expect(result2.errors![0].message).toBe('underage user cannot register')
     })
 
     it('should support condition + then (dynamic Schema)', () => {
@@ -56,9 +56,9 @@ describe('ConditionalBuilder - Chain Condition Builder', () => {
         income: 'number!',
         loanAmount: dsl
           .if((data: any) => data.age < 18)
-          .message('未成年不能申请贷款')
+          .message('underage loan application not allowed')
           .and((data: any) => data.income < 3000)
-          .message('收入不足不能申请贷款'),
+          .message('insufficient income for loan'),
       })
 
       const result1 = validate(schema, { age: 25, income: 5000, loanAmount: null })
@@ -66,19 +66,19 @@ describe('ConditionalBuilder - Chain Condition Builder', () => {
 
       const result2 = validate(schema, { age: 16, income: 5000, loanAmount: null })
       expect(result2.valid).toBe(false)
-      expect(result2.errors![0].message).toBe('未成年不能申请贷款')
+      expect(result2.errors![0].message).toBe('underage loan application not allowed')
     })
   })
 
   describe('.assert() Method', () => {
     it('should throw error when condition is met', () => {
-      const validator = dsl.if((d: any) => d.age < 18).message('未成年')
+      const validator = dsl.if((d: any) => d.age < 18).message('underage')
 
-      expect(() => validator.assert({ age: 16 })).toThrow('未成年')
+      expect(() => validator.assert({ age: 16 })).toThrow('underage')
     })
 
     it('should not throw error when condition is not met', () => {
-      const validator = dsl.if((d: any) => d.age < 18).message('未成年')
+      const validator = dsl.if((d: any) => d.age < 18).message('underage')
 
       expect(() => validator.assert({ age: 20 })).not.toThrow()
     })
@@ -88,17 +88,17 @@ describe('ConditionalBuilder - Chain Condition Builder', () => {
     it('should return validation result object', () => {
       const result = dsl
         .if((d: any) => d.age < 18)
-        .message('未成年')
+        .message('underage')
         .validate({ age: 16 })
 
       expect(result.valid).toBe(false)
-      expect(result.errors![0].message).toBe('未成年')
+      expect(result.errors![0].message).toBe('underage')
     })
 
     it('should return valid: true when passing', () => {
       const result = dsl
         .if((d: any) => d.age < 18)
-        .message('未成年')
+        .message('underage')
         .validate({ age: 20 })
 
       expect(result.valid).toBe(true)
@@ -110,7 +110,7 @@ describe('ConditionalBuilder - Chain Condition Builder', () => {
       const schema = dsl({
         user: {
           age: 'number!',
-          role: dsl.if((data: any) => data.user?.age < 18).message('未成年不能成为管理员'),
+          role: dsl.if((data: any) => data.user?.age < 18).message('underage user cannot be an admin'),
         },
       })
 

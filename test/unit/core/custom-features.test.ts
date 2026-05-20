@@ -84,56 +84,56 @@ describe('Custom Features & Error Messages', () => {
     it('should use custom label in required error', () => {
       const schemaWithMsg = dsl({
         username: ('string!' as any)
-          .label('用户名')
-          .messages({ required: '{{#label}}不能为空' }),
+          .label('Username')
+          .messages({ required: '{{#label}} is required' }),
       })
 
       const result = validator.validate(schemaWithMsg, {})
       expect(result.valid).toBe(false)
-      expect(result.errors![0].message).toBe('用户名不能为空')
+      expect(result.errors![0].message).toBe('Username is required')
     })
 
     it('should use custom label in min length error', () => {
       const schema = dsl({
         username: ('string:5-!' as any)
-          .label('用户名')
-          .messages({ min: '{{#label}}长度不能少于{{#limit}}位' }),
+          .label('Username')
+          .messages({ min: '{{#label}} length must be at least {{#limit}} characters' }),
       })
 
       const result = validator.validate(schema, { username: 'abc' })
       expect(result.valid).toBe(false)
-      expect(result.errors![0].message).toBe('用户名长度不能少于5位')
+      expect(result.errors![0].message).toBe('Username length must be at least 5 characters')
     })
 
     it('should support {{#key}} interpolation', () => {
       const schema = dsl({
         age: ('number:18-!' as any)
-          .label('年龄')
-          .messages({ min: '{{#label}}必须大于{{#limit}}' }),
+          .label('Age')
+          .messages({ min: '{{#label}} must be greater than {{#limit}}' }),
       })
 
       const result = validator.validate(schema, { age: 10 })
       expect(result.valid).toBe(false)
-      expect(result.errors![0].message).toBe('年龄必须大于18')
+      expect(result.errors![0].message).toBe('Age must be greater than 18')
     })
   })
 
   describe('Dynamic Locale', () => {
     beforeAll(() => {
       Locale.addLocale('zh-CN', {
-        required: '{{#label}}是必填项',
-        min: '{{#label}}太短',
+        required: '{{#label}} is required',
+        min: '{{#label}} is too short',
       })
     })
 
     it('should support locale option in validate', () => {
       const schema = dsl({
-        username: ('string:5-!' as any).label('用户名'),
+        username: ('string:5-!' as any).label('Username'),
       })
 
       const result = validator.validate(schema, { username: 'abc' }, { locale: 'zh-CN' })
       expect(result.valid).toBe(false)
-      expect(result.errors![0].message).toBe('用户名太短')
+      expect(result.errors![0].message).toBe('Username is too short')
     })
 
     it('should fallback to default locale', () => {

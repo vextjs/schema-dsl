@@ -1,5 +1,5 @@
 /**
- * 内置正则验证模式（从 v1 lib/config/patterns/ 迁移至 TypeScript 单文件）
+ * Built-in regex validation patterns (migrated from v1 lib/config/patterns/ to a single TypeScript file)
  */
 
 export interface PatternConfig {

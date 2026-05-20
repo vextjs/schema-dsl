@@ -28,8 +28,8 @@ describe('i18n Configuration Features', () => {
         dsl.config({
           i18n: {
             'zh-CN': {
-              'field.username': '用户名',
-              'required': '必填项'
+              'field.username': 'Username',
+              'required': 'Required field'
             } as any
           }
         })
@@ -49,7 +49,7 @@ describe('i18n Configuration Features', () => {
         dsl.config({
           i18n: {
             'zh-CN': {
-              'required': '自定义必填消息'
+              'required': 'Custom required message'
             } as any
           }
         })

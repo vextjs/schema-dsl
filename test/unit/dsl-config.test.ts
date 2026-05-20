@@ -20,8 +20,8 @@ describe('dsl.config() - i18n and Cache Configuration', () => {
       dsl.config({
         i18n: {
           'zh-CN': {
-            username: '用户名',
-            email: '邮箱地址',
+            username: 'Username',
+            email: 'Email Address',
           },
           'en-US': {
             username: 'Username',
@@ -32,8 +32,8 @@ describe('dsl.config() - i18n and Cache Configuration', () => {
 
       // use getMessageText() for string assertions
       Locale.setLocale('zh-CN')
-      expect(Locale.getMessageText('username')).toBe('用户名')
-      expect(Locale.getMessageText('email')).toBe('邮箱地址')
+      expect(Locale.getMessageText('username')).toBe('Username')
+      expect(Locale.getMessageText('email')).toBe('Email Address')
 
       Locale.setLocale('en-US')
       expect(Locale.getMessageText('username')).toBe('Username')
@@ -45,7 +45,7 @@ describe('dsl.config() - i18n and Cache Configuration', () => {
         i18n: {
           locales: {
             'zh-CN': {
-              username: '用户名'
+              username: 'Username'
             },
             'en-US': {
               username: 'Username'
@@ -55,7 +55,7 @@ describe('dsl.config() - i18n and Cache Configuration', () => {
       })
 
       Locale.setLocale('zh-CN')
-      expect(Locale.getMessageText('username')).toBe('用户名')
+      expect(Locale.getMessageText('username')).toBe('Username')
 
       Locale.setLocale('en-US')
       expect(Locale.getMessageText('username')).toBe('Username')
@@ -98,7 +98,7 @@ describe('dsl.config() - i18n and Cache Configuration', () => {
     it('should validate correctly (validation still works after config)', () => {
       dsl.config({
         i18n: {
-          'zh-CN': { username: '用户名' },
+          'zh-CN': { username: 'Username' },
         },
       })
 

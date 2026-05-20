@@ -101,7 +101,7 @@ describe('DslBuilder', () => {
 
     it('should support .label()', () => {
       expect(() => {
-        ;('string!' as any).label('测试')
+        ;('string!' as any).label('Test')
       }).not.toThrow()
     })
 
@@ -113,7 +113,7 @@ describe('DslBuilder', () => {
 
     it('should support .description()', () => {
       expect(() => {
-        ;('string!' as any).description('测试描述')
+        ;('string!' as any).description('Test description')
       }).not.toThrow()
     })
 
