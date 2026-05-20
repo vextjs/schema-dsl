@@ -355,7 +355,8 @@ export class Validator {
         const validate = this._removeAdditionalAjv.compile(cleanSchema)
         const valid = validate(data) as boolean
         if (valid) return { valid: true, data, errors: EMPTY_ERRORS }
-        return { valid: false, data, errors: this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat) }
+        const fmtErrors = this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat)
+        return { valid: false, data, errors: fmtErrors, errorMessage: fmtErrors[0]?.message }
       } catch (error) {
         return this._internalError(error, data)
       }
@@ -388,7 +389,8 @@ export class Validator {
 
       const valid = validate(data) as boolean
       if (valid) return { valid: true, data, errors: EMPTY_ERRORS }
-      return { valid: false, data, errors: this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat) }
+      const fmtErrors2 = this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat)
+      return { valid: false, data, errors: fmtErrors2, errorMessage: fmtErrors2[0]?.message }
     } catch (error) {
       return this._internalError(error, data)
     }
@@ -493,7 +495,7 @@ export class Validator {
     }
 
     if (errors.length === 0) return { valid: true, data, errors: EMPTY_ERRORS }
-    return { valid: false, data, errors }
+    return { valid: false, data, errors, errorMessage: errors[0]?.message }
   }
 
   private _validateConditional<T>(
@@ -518,6 +520,7 @@ export class Validator {
               valid: false,
               data: fieldValue,
               errors: [{ message, path: '', keyword: 'conditional', params: { condition: (cond as Record<string, unknown>)['type'] } }],
+              errorMessage: message,
             }
           }
           continue
@@ -539,6 +542,7 @@ export class Validator {
             valid: false,
             data: fieldValue,
             errors: [{ message, path: '', keyword: 'conditional', params: {} }],
+            errorMessage: message,
           }
         }
       }
@@ -621,6 +625,7 @@ export class Validator {
         valid: false,
         data: fieldValue,
         errors: [{ message, path: '', keyword: 'required', params: {} }],
+        errorMessage: message,
       }
     }
 
@@ -673,15 +678,12 @@ export class Validator {
   }
 
   private _internalError<T>(error: unknown, data: T): ValidationResult<T> {
+    const message = `Validation error: ${error instanceof Error ? error.message : String(error)}`
     return {
       valid: false,
       data,
-      errors: [{
-        message: `Validation error: ${error instanceof Error ? error.message : String(error)}`,
-        path: '',
-        keyword: 'error',
-        params: {},
-      }],
+      errors: [{ message, path: '', keyword: 'error', params: {} }],
+      errorMessage: message,
     }
   }
 }
