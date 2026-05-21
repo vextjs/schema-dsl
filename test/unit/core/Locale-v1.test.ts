@@ -3,8 +3,8 @@
  *
  * v2 changes:
  * - getMessage() restores v1's { code, message } object form; use getMessageText() for string assertions
- * - default locale is 'zh-CN' (not 'en-US')
- * - reset() resets to 'zh-CN'
+ * - default locale is 'en-US'
+ * - reset() resets to 'en-US'
  * - addLocale() stores as `${locale}:${key}` format, does not affect getAvailableLocales() result
  * - setMessages() global message priority is lower than addLocale() locale pack messages
  */
@@ -23,9 +23,9 @@ describe('Locale', () => {
       expect(Locale.getLocale()).toBe('en-US')
     })
 
-    it('default locale should be zh-CN (v2 default)', () => {
+    it('default locale should be en-US', () => {
       Locale.reset()
-      expect(Locale.getLocale()).toBe('zh-CN')
+      expect(Locale.getLocale()).toBe('en-US')
     })
   })
 
@@ -139,8 +139,8 @@ describe('Locale', () => {
 
       Locale.reset()
 
-      // v2 reset: back to zh-CN
-      expect(Locale.getLocale()).toBe('zh-CN')
+      // reset: back to default locale
+      expect(Locale.getLocale()).toBe('en-US')
       // customMessages cleared
       expect(Locale.getMessage('test')).toBe('test')
     })

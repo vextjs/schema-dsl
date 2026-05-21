@@ -16,6 +16,12 @@ import type { JSONSchema } from '../types/schema.js'
 
 export type JSType = string | string[]
 
+const MYSQL_INTEGER_RANGES = [
+  { type: 'TINYINT', min: -128, max: 127 },
+  { type: 'SMALLINT', min: -32768, max: 32767 },
+  { type: 'INT', min: -2147483648, max: 2147483647 },
+] as const
+
 // ==================== TypeConverter ====================
 
 export class TypeConverter {
@@ -83,9 +89,13 @@ export class TypeConverter {
       case 'integer': {
         const max = schema?.maximum
         const min = schema?.minimum
-        if (max !== undefined && max <= 127 && min !== undefined && min >= -128) return 'TINYINT'
-        if (max !== undefined && max <= 32767) return 'SMALLINT'
-        if (max !== undefined && max <= 2147483647) return 'INT'
+
+        for (const range of MYSQL_INTEGER_RANGES) {
+          if (min !== undefined && max !== undefined && min >= range.min && max <= range.max) {
+            return range.type
+          }
+        }
+
         return 'BIGINT'
       }
       case 'boolean':

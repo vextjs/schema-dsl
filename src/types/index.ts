@@ -14,3 +14,4 @@ export type { DslConfigOptions, I18nConfig, CacheOptions, ValidatorOptions } fro
 export type { ErrorMessages, ErrorCodeMap } from './error.js'
 export type { Plugin, HookFn, HookName, HookContext, PluginManagerOptions } from './plugin.js'
 export type { IConditionalBuilder } from './conditional.js'
+export type { InferSchema, InferJsonSchema, InferDslDefinition, InferDslString } from './infer.js'

@@ -35,7 +35,8 @@ describe('Complete Type System Tests', () => {
       const schema = dsl({ field: 'boolean' })
       expect((schema as any).properties.field.type).toBe('boolean')
       expect(validate(schema, { field: true }).valid).toBe(true)
-      expect(validate(schema, { field: 'true' }).valid).toBe(false)
+      expect(validate(schema, { field: 'true' }).valid).toBe(true)
+      expect(validate(schema, { field: 'true' }, { coerce: false }).valid).toBe(false)
     })
 
     it('should support object type', () => {

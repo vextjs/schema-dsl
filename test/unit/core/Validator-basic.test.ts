@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { Validator } from '../../../src/index.js'
+import { Validator, dsl } from '../../../src/index.js'
 
 describe('Validator', () => {
   let validator: InstanceType<typeof Validator>
@@ -122,6 +122,32 @@ describe('Validator', () => {
 
       expect(validator.validate(schema, 'active').valid).toBe(true)
       expect(validator.validate(schema, 'invalid').valid).toBe(false)
+    })
+
+    it('should re-read mutable DslBuilder schemas on every call', () => {
+      const builder = dsl('string')
+
+      expect(validator.validate(builder as unknown as Parameters<Validator['validate']>[0], 'hi').valid).toBe(true)
+
+      builder.min(3)
+
+      const updatedResult = validator.validate(builder as unknown as Parameters<Validator['validate']>[0], 'hi')
+      expect(updatedResult.valid).toBe(false)
+      expect(updatedResult.errors?.[0].keyword).toBe('minLength')
+    })
+
+    it('should re-read mutable DslBuilder schemas in validateAsync()', async () => {
+      const builder = dsl('string')
+
+      await expect(validator.validateAsync(builder as unknown as Parameters<Validator['validateAsync']>[0], 'hello')).resolves.toBe('hello')
+
+      builder.min(6)
+
+      await expect(validator.validateAsync(builder as unknown as Parameters<Validator['validateAsync']>[0], 'hello')).rejects.toMatchObject({
+        errors: [
+          expect.objectContaining({ keyword: 'minLength' }),
+        ],
+      })
     })
   })
 

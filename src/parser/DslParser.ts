@@ -43,6 +43,13 @@ function _cleanRequiredMarks(schema: unknown): void {
   if (obj.items) _cleanRequiredMarks(obj.items)
 }
 
+function _copyHiddenSchemaProperties(source: object, target: object): void {
+  for (const symbol of Object.getOwnPropertySymbols(source)) {
+    const descriptor = Object.getOwnPropertyDescriptor(source, symbol)
+    if (descriptor) Object.defineProperty(target, symbol, descriptor)
+  }
+}
+
 function _resolveDsl(value: unknown): JSONSchema {
   if (value === null || value === undefined) return {}
   if (typeof value === 'string') return DslParser.parseString(value)
@@ -351,6 +358,7 @@ export const DslParser = {
       // Strip the internal _required marker
       const { _required: _r, ...cleanSchema } = fieldSchema as JSONSchema & { _required?: boolean }
       void _r
+      _copyHiddenSchemaProperties(fieldSchema as object, cleanSchema as object)
       _cleanRequiredMarks(cleanSchema)
 
         ; (schema.properties as Record<string, JSONSchema>)[fieldKey] = cleanSchema

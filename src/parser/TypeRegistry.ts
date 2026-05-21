@@ -18,6 +18,10 @@ const INTERNAL_KEYS: ReadonlySet<string> = new Set([
   '_customMessages',
   '_description',
   '_required',
+  '_isConditional',
+  '_runtimeOnlyConditional',
+  'conditions',
+  '_evaluateCondition',
   // Custom AJV keywords (non-standard JSON Schema fields, stripped on output)
   'exactLength',
   'alphanum',

@@ -104,6 +104,59 @@ describe('PostgreSQLExporter', () => {
       expect(ddl).toContain(`COMMENT ON COLUMN "public"."users"."name" IS 'User name'`)
     })
 
+    it('should allow anyOf when all variants resolve to the same PostgreSQL type', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          ip: {
+            anyOf: [
+              { type: 'string', format: 'ipv4' },
+              { type: 'string', format: 'ipv6' },
+            ],
+          },
+        },
+      } as any
+      const ddl = exporter.export('hosts', schema)
+
+      expect(ddl).toContain('"ip" VARCHAR(255)')
+    })
+
+    it('should throw for anyOf when variants resolve to different PostgreSQL types', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          value: {
+            anyOf: [
+              { type: 'string' },
+              { type: 'number' },
+            ],
+          },
+        },
+      } as any
+
+      expect(() => exporter.export('mixed_values', schema)).toThrow(
+        'PostgreSQL exporter cannot safely map anyOf for column "value" to a single SQL type'
+      )
+    })
+
+    it('should throw for oneOf when variants resolve to different PostgreSQL types', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          value: {
+            oneOf: [
+              { type: 'string' },
+              { type: 'boolean' },
+            ],
+          },
+        },
+      } as any
+
+      expect(() => exporter.export('mixed_values', schema)).toThrow(
+        'PostgreSQL exporter cannot safely map oneOf for column "value" to a single SQL type'
+      )
+    })
+
     it('should throw error when table name is missing', () => {
       expect(() => exporter.export(null as any, {})).toThrow('Table name is required')
     })

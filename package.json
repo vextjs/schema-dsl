@@ -98,7 +98,8 @@
     "ajv": "^8.18.0",
     "ajv-formats": "^2.1.1",
     "cache-hub": "^1.0.0",
-    "json5": "^2.2.3"
+    "json5": "^2.2.3",
+    "safe-regex": "^2.1.1"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

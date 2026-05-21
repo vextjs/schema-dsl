@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest'
 import { ConditionalBuilder } from '../../../src/core/ConditionalBuilder.js'
 import { ValidationError } from '../../../src/errors/ValidationError.js'
+import { Validator } from '../../../src/core/Validator.js'
 
 describe('ConditionalBuilder', () => {
   describe('start()', () => {
@@ -57,6 +58,35 @@ describe('ConditionalBuilder', () => {
       // both are _isConditional schemas
       expect((s1 as Record<string, unknown>)['_isConditional']).toBe(true)
       expect((s2 as Record<string, unknown>)['_isConditional']).toBe(true)
+    })
+  })
+
+  describe('toSchema() runtime metadata', () => {
+    it('should keep function conditions out of enumerable JSON schema fields', () => {
+      const schema = ConditionalBuilder.start((data: unknown) => Boolean((data as { enabled?: boolean }).enabled))
+        .then('string!')
+        .toSchema()
+
+      const serialized = JSON.stringify(schema)
+
+      expect(serialized).toContain('_runtimeOnlyConditional')
+      expect(serialized).not.toContain('_evaluateCondition')
+      expect(serialized).not.toContain('conditions')
+      expect(serialized).not.toContain('function')
+    })
+
+    it('should fail explicitly when a runtime-only conditional schema is restored from JSON', () => {
+      const schema = ConditionalBuilder.start((data: unknown) => Boolean((data as { enabled?: boolean }).enabled))
+        .then('string!')
+        .toSchema()
+      const restored = JSON.parse(JSON.stringify(schema))
+      const validator = new Validator()
+
+      const result = validator.validate(restored, 'value')
+
+      expect(result.valid).toBe(false)
+      expect(result.errors?.[0].keyword).toBe('conditional')
+      expect(result.errors?.[0].message).toContain('runtime-only')
     })
   })
 

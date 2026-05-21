@@ -105,21 +105,28 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
 
     if (schema.properties) {
       for (const [key, prop] of Object.entries(schema.properties)) {
-        const type = this._formatType(prop, locale)
+        const type = this._escapeTableCell(this._formatType(prop, locale))
         // EX-01 fix: prefer _required flag, then fall back to schema.required
         const isRequired = !!(
           (prop as Record<string, unknown>)['_required'] === true ||
           schema.required?.includes(key)
         )
         const required = isRequired ? '✅' : '❌'
-        const constraints = this._formatConstraints(prop, locale)
-        const description = this._getDescription(prop, locale)
+        const constraints = this._escapeTableCell(this._formatConstraints(prop, locale))
+        const description = this._escapeTableCell(this._getDescription(prop, locale))
+        const fieldName = this._escapeTableCell(key)
 
-        table += `| ${key} | ${type} | ${required} | ${constraints} | ${description} |\n`
+        table += `| ${fieldName} | ${type} | ${required} | ${constraints} | ${description} |\n`
       }
     }
 
     return table
+  }
+
+  private static _escapeTableCell(value: string): string {
+    return value
+      .replace(/\|/g, '\\|')
+      .replace(/\r\n|\r|\n/g, '<br>')
   }
 
   private static _formatType(prop: JSONSchema, locale: Locale): string {

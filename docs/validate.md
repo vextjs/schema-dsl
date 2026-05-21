@@ -93,7 +93,7 @@ JSON Schema 对象，支持 JSON Schema Draft 7 标准。
 |------|----------|------|
 | `allErrors` / `useDefaults` / `coerceTypes` / `removeAdditional` / `cache` | `new Validator(options)` | 这些配置在创建 `Validator` 实例时注入到底层 AJV / 缓存层 |
 | `strict` | Schema 本身 | 如果需要禁止额外字段，请在 schema 层使用 `DslBuilder.strict()` 或等价的 schema 级约束 |
-| `coerce` | 顶层 `validate()` / `validateAsync()` 便捷函数 | 顶层 helper 默认会做字符串 → 数字的便捷转换，传 `{ coerce: false }` 可关闭 |
+| `coerce` | 顶层 `validate()` / `validateAsync()` 便捷函数 | 顶层 helper 默认会做字符串 → 数字 / 布尔值的便捷转换，传 `{ coerce: false }` 可关闭 |
 
 如果你需要在**单次调用**中覆盖错误输出，请使用上表中的 `format`、`locale`、`messages`；如果你需要调整验证器行为，请优先在 `Validator` 构造阶段配置。
 

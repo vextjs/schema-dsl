@@ -86,7 +86,7 @@ console.log(markdown);
 - `schema` (Object) - JSON Schema 对象
 - `options` (Object) - 导出选项
   - `title` (String) - 文档标题，默认: `'Schema 文档'`
-  - `locale` (String) - 语言代码，默认: `'zh-CN'`
+  - `locale` (String) - 语言代码，默认: `'en-US'`
     - 支持: `'zh-CN'` (中文), `'en-US'` (英文), `'ja-JP'` (日文)
   - `includeExample` (Boolean) - 是否包含示例数据，默认: `true`
   - `includeDescription` (Boolean) - 是否包含描述，默认: `true`

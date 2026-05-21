@@ -839,20 +839,13 @@ const schema = new JSONSchemaCore()
 
 ---
 
-### 底层解析与编译工具
+### 类型注册与内部解析边界
 
-以下导出主要面向进阶集成、调试 DSL 解析流程或自定义类型系统的场景；大多数业务代码仍然优先使用 `dsl()`、`DslBuilder` 和 `Validator`。
-
-#### DslParser
-
-统一的 DSL 解析入口。
-
-- `DslParser.parseString(dslString)` - 解析字符串 DSL
-- `DslParser.parseObject(dslObject)` - 解析对象 DSL 定义
+`schema-dsl` 的 root API 只保留业务可依赖的稳定入口。DSL 解析器、约束解析器、Schema 编译器和 Adapter 属于内部实现细节，不再作为 root API 文档化导出；业务代码应优先使用 `dsl()`、`DslBuilder`、`Validator` 和 `validate()`。
 
 #### TypeRegistry
 
-统一类型注册表。
+统一类型注册表。它是自定义类型扩展的公开入口；如果只需要注册 DSL 类型，也可以优先使用更高层的 `DslBuilder.registerType()`。
 
 - `TypeRegistry.resolve(typeName)`
 - `TypeRegistry.register(name, def)`
@@ -861,15 +854,6 @@ const schema = new JSONSchemaCore()
 - `TypeRegistry.has(typeName)`
 - `TypeRegistry.getInternalKeys()`
 - `TypeRegistry.toJsonSchema(schema)`
-
-#### ConstraintParser
-
-- `ConstraintParser.parse(constraintStr, baseType)` - 将 DSL 约束字符串解析为 `Partial<JSONSchema>`
-
-#### SchemaCompiler
-
-- `SchemaCompiler.compile(typeDef, constraints, meta?)` - 合并类型定义、约束与元信息
-- `SchemaCompiler.toJsonSchema(schema, internalKeys)` - 清除内部 key，输出纯净 JSON Schema
 
 ---
 

@@ -409,7 +409,7 @@ const locale =
   req.query.lang ||              // 1. URL 参数（最高优先级）
   req.cookies.lang ||            // 2. Cookie
   req.headers['accept-language']?.split(',')[0]?.trim() || // 3. Accept-Language 头（取首个语言标签）
-  'zh-CN';                       // 4. 默认语言
+  'en-US';                       // 4. 默认语言
 ```
 
 ### 4. 语言持久化

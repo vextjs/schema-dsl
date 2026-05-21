@@ -158,6 +158,8 @@ const pgDDL       = new exporters.PostgreSQLExporter().export('users', userSchem
 const markdown = exporters.MarkdownExporter.export(userSchema, { title: 'User Field Reference' });
 ```
 
+> ⚠️ SQL exporters only accept `anyOf` / `oneOf` when every branch resolves to the **same** SQL column type (for example `ipv4 | ipv6`). Ambiguous unions such as `string | number` now throw an explicit error instead of silently choosing the first branch.
+
 ---
 
 ## 📦 Installation

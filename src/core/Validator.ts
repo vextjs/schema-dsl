@@ -9,8 +9,7 @@ import type { CacheStats } from './CacheManager.js'
 import { ErrorFormatter } from './ErrorFormatter.js'
 import { CustomKeywords } from '../validators/CustomKeywords.js'
 import { Locale } from './Locale.js'
-import { DslParser } from '../parser/DslParser.js'
-import type { DslDefinition } from '../types/dsl.js'
+import { ConditionalValidator, type ConditionalInternalSchema } from './ConditionalValidator.js'
 
 // Non-AJV custom option keys (V-Y01 fix: filter before passing to new Ajv())
 const NON_AJV_KEYS = new Set([
@@ -26,10 +25,8 @@ type KeywordDefinitionInput = KeywordDefinition | ({ keyword?: string;[key: stri
 type InternalSchema = JSONSchema & {
   _removeAdditional?: boolean
   _isConditional?: boolean
-  conditions?: Array<{ action?: string; message?: string; then?: unknown }>
-  _evaluateCondition?: (cond: unknown, data: unknown) => { result: boolean; failedMessage?: string; requirementFailed?: boolean }
-  else?: unknown
-}
+  _runtimeOnlyConditional?: boolean
+} & ConditionalInternalSchema
 
 // Performance: share empty array on valid path to avoid `{ errors: [] }` allocation every time
 const EMPTY_ERRORS: ValidationErrorItem[] = []
@@ -71,11 +68,12 @@ export class Validator {
   private readonly _schemaMap = new WeakMap<object, string>()
   private _schemaKeyCounter = 0
 
-  // WeakMap: DslBuilder toSchema() result cache
-  private readonly _dslSchemaCache = new WeakMap<object, JSONSchema>()
-
   // Performance: cache whether a schema has any conditional fields (avoids traversing properties on every validation)
   private readonly _conditionalFlagCache = new WeakMap<object, boolean>()
+  private readonly _conditionalValidator = new ConditionalValidator({
+    validateSchema: <T>(schema: JSONSchema, data: T, options: ValidateOptions): ValidationResult<T> => this._validateInternal(schema, data, options),
+    internalError: <T>(error: unknown, data: T): ValidationResult<T> => this._internalError(error, data),
+  })
 
   // V-Y03 fix: cached removeAdditional Ajv instance (no longer new Validator each time)
   private _removeAdditionalAjv: InstanceType<typeof Ajv> | null = null
@@ -310,21 +308,18 @@ export class Validator {
     const locale = options.locale ?? Locale.getLocale()
     const messages = (options.messages ?? {}) as ErrorMessages
 
-    // DslBuilder instance conversion cache (duck-type: has a toSchema method).
-    // Note: typeof schema === 'function' is already filtered by callers; only objects handled here.
+    // DslBuilder/ObjectDslBuilder/ConditionalBuilder duck type.
+    // Builders are mutable, so their toSchema() result must be re-materialized on every call.
     if (typeof (schema as Record<string, unknown>)['toSchema'] === 'function') {
       const obj = schema as Record<string, unknown>
-      if (!this._dslSchemaCache.has(obj as object)) {
-        this._dslSchemaCache.set(obj as object, (obj['toSchema'] as () => JSONSchema)())
-      }
-      schema = this._dslSchemaCache.get(obj as object) as JSONSchema
+      schema = (obj['toSchema'] as () => JSONSchema)()
     }
 
     const internalSchema = schema as InternalSchema
 
     // ConditionalBuilder (top-level)
     if (internalSchema._isConditional) {
-      return this._validateConditional(internalSchema, data as Record<string, unknown>, null, data, options)
+      return this._conditionalValidator.validateConditional(internalSchema, data as Record<string, unknown>, null, data, options)
     }
 
     // Object schema containing ConditionalBuilder properties (including arbitrary nesting depth)
@@ -332,11 +327,11 @@ export class Validator {
       // Performance: cache conditional detection result to avoid traversing properties on every validation
       let hasConditionals = this._conditionalFlagCache.get(internalSchema as object)
       if (hasConditionals === undefined) {
-        hasConditionals = this._hasAnyConditional(internalSchema)
+        hasConditionals = this._conditionalValidator.hasAnyConditional(internalSchema)
         this._conditionalFlagCache.set(internalSchema as object, hasConditionals)
       }
       if (hasConditionals) {
-        return this._validateWithConditionals(internalSchema, data, options)
+        return this._conditionalValidator.validateWithConditionals(internalSchema, data, options)
       }
     }
 
@@ -394,242 +389,6 @@ export class Validator {
     } catch (error) {
       return this._internalError(error, data)
     }
-  }
-
-  /**
-   * Recursively check whether a schema or any of its nested properties carries an _isConditional marker.
-   */
-  private _hasAnyConditional(schema: InternalSchema): boolean {
-    if (!schema.properties) return false
-    return Object.values(schema.properties).some((fs) => {
-      const fieldSchema = fs as InternalSchema
-      if (fieldSchema._isConditional) return true
-      // Recursively check nested objects
-      if (fieldSchema.properties) return this._hasAnyConditional(fieldSchema)
-      return false
-    })
-  }
-
-  private _validateWithConditionals<T>(
-    schema: InternalSchema,
-    data: T,
-    options: ValidateOptions,
-    rootData?: Record<string, unknown>
-  ): ValidationResult<T> {
-    const errors: ValidationErrorItem[] = []
-
-    // rootData: top-level full data object for condition callbacks (maintains root reference during nesting)
-    const effectiveRoot = rootData ?? (data as Record<string, unknown>)
-
-    // Deep-clone schema to avoid mutating the original
-    const cleanSchema = JSON.parse(JSON.stringify(schema)) as InternalSchema
-    const conditionalFields: Record<string, InternalSchema> = {}
-    const nestedObjectFields: Record<string, InternalSchema> = {}
-
-    for (const [fieldName, fieldSchema] of Object.entries(schema.properties ?? {})) {
-      const fs = fieldSchema as InternalSchema
-      if (fs._isConditional) {
-        conditionalFields[fieldName] = fs
-
-        // Remove conditional field from cleanSchema
-        delete cleanSchema.properties?.[fieldName]
-
-        // V-02 fix: also remove field from required[] (v1 missed this step)
-        if (cleanSchema.required) {
-          cleanSchema.required = cleanSchema.required.filter(r => r !== fieldName)
-        }
-      } else if (fs.properties && this._hasAnyConditional(fs)) {
-        // Nested object contains conditional fields → extract and handle with custom logic
-        nestedObjectFields[fieldName] = fs
-        delete cleanSchema.properties?.[fieldName]
-      }
-    }
-
-    // Validate non-conditional fields first (nested objects handled normally by AJV)
-    const baseResult = this._validateInternal(cleanSchema, data, options)
-    if (!baseResult.valid) {
-      errors.push(...(baseResult.errors ?? []))
-    }
-
-    // Validate conditional fields (use effectiveRoot as data context for condition callbacks)
-    for (const [fieldName, conditionalSchema] of Object.entries(conditionalFields)) {
-      const dataRecord = data as Record<string, unknown>
-      const fieldResult = this._validateConditional(conditionalSchema, effectiveRoot, fieldName, dataRecord[fieldName], options)
-
-      if (!fieldResult.valid) {
-        for (const err of (fieldResult.errors ?? [])) {
-          // Replace generic paths like "value" or empty with the actual field name
-          const errPath = (!err.path || err.path === 'value') ? fieldName : err.path
-          errors.push({ ...err, path: errPath, field: errPath })
-        }
-      }
-    }
-
-    // Recursively process nested objects that contain conditional properties
-    for (const [fieldName, nestedSchema] of Object.entries(nestedObjectFields)) {
-      const dataRecord = data as Record<string, unknown>
-      const nestedData = dataRecord[fieldName]
-
-      // Nested object data is absent — let AJV handle required/type errors
-      if (nestedData === undefined || nestedData === null) {
-        const partialSchema = JSON.parse(JSON.stringify(schema)) as InternalSchema
-        // Keep only this field
-        partialSchema.properties = { [fieldName]: nestedSchema }
-        partialSchema.required = (schema.required ?? []).filter(r => r === fieldName)
-        const partialResult = this._validateInternal(partialSchema, data, options)
-        if (!partialResult.valid) {
-          errors.push(...(partialResult.errors ?? []))
-        }
-        continue
-      }
-
-      // Pass effectiveRoot when recursing to ensure condition callbacks always receive root data
-      const nestedResult = this._validateWithConditionals(nestedSchema, nestedData, options, effectiveRoot)
-      if (!nestedResult.valid) {
-        for (const err of (nestedResult.errors ?? [])) {
-          const prefix = fieldName
-          const errPath = err.path ? `${prefix}/${err.path}` : prefix
-          errors.push({ ...err, path: errPath, field: errPath })
-        }
-      }
-    }
-
-    if (errors.length === 0) return { valid: true, data, errors: EMPTY_ERRORS }
-    return { valid: false, data, errors, errorMessage: errors[0]?.message }
-  }
-
-  private _validateConditional<T>(
-    conditionalSchema: InternalSchema,
-    data: Record<string, unknown>,
-    fieldName: string | null,
-    fieldValue: T,
-    options: ValidateOptions
-  ): ValidationResult<T> {
-    const locale = options.locale ?? Locale.getLocale()
-
-    try {
-      for (const cond of (conditionalSchema.conditions ?? [])) {
-        const evaluation = conditionalSchema._evaluateCondition?.(cond, data) ?? { result: false }
-        const matched = evaluation.result
-
-        if (cond.action === 'throw') {
-          if (matched) {
-            const errorMsg = evaluation.failedMessage ?? cond.message ?? 'Conditional validation failed'
-            const message = Locale.getMessageText(errorMsg, (options.messages ?? {}) as Record<string, string>, locale)
-            return {
-              valid: false,
-              data: fieldValue,
-              errors: [{ message, path: '', keyword: 'conditional', params: { condition: (cond as Record<string, unknown>)['type'] } }],
-              errorMessage: message,
-            }
-          }
-          continue
-        }
-
-        if (matched) {
-          const thenSchema = (cond as Record<string, unknown>)['then']
-          if (thenSchema !== undefined && thenSchema !== null) {
-            return this._executeThenBranch(thenSchema, data, fieldValue, fieldName, options)
-          }
-          return { valid: true, data: fieldValue, errors: EMPTY_ERRORS }
-        }
-
-        // OR requirement mode: no condition matched → treat as validation failure
-        if (evaluation.requirementFailed) {
-          const errorMsg = cond.message ?? 'Condition not met'
-          const message = Locale.getMessageText(errorMsg, (options.messages ?? {}) as Record<string, string>, locale)
-          return {
-            valid: false,
-            data: fieldValue,
-            errors: [{ message, path: '', keyword: 'conditional', params: {} }],
-            errorMessage: message,
-          }
-        }
-      }
-
-      // else branch
-      const elseSchema = conditionalSchema.else
-      if (elseSchema !== undefined) {
-        if (elseSchema === null) return { valid: true, data: fieldValue, errors: EMPTY_ERRORS }
-        return this._executeThenBranch(elseSchema, data, fieldValue, fieldName, options)
-      }
-
-      return { valid: true, data: fieldValue, errors: EMPTY_ERRORS }
-    } catch (error) {
-      return this._internalError(error, fieldValue)
-    }
-  }
-
-  private _executeThenBranch<T>(
-    thenSchema: unknown,
-    data: Record<string, unknown>,
-    fieldValue: T,
-    fieldName: string | null,
-    options: ValidateOptions
-  ): ValidationResult<T> {
-    let resolved = thenSchema
-
-    // If thenSchema is a DSL string, parse it to JSONSchema first
-    if (typeof resolved === 'string') {
-      resolved = DslParser.parseString(resolved)
-    }
-
-    // If resolved is a ConditionalBuilder instance, call toSchema()
-    if (resolved !== null && typeof resolved === 'object') {
-      const obj = resolved as Record<string, unknown>
-      if (typeof obj['toSchema'] === 'function') {
-        resolved = (obj['toSchema'] as () => JSONSchema)()
-      }
-    }
-
-    const resInternal = resolved as InternalSchema
-    if (resInternal?._isConditional) {
-      return this._validateConditional(resInternal, data, fieldName, fieldValue, options)
-    }
-
-    // If resolved is a plain DSL definition object, convert to JSONSchema
-    if (resolved !== null && typeof resolved === 'object' && !Array.isArray(resolved)) {
-      const obj = resolved as Record<string, unknown>
-      if (obj['type'] === undefined && obj['oneOf'] === undefined && obj['anyOf'] === undefined && obj['allOf'] === undefined) {
-        // Looks like a DslDefinition (e.g. { host: 'string!', port: 'number!' })
-        resolved = DslParser.parseObject(resolved as DslDefinition)
-      }
-    }
-
-    return this._validateFieldValue(resolved as JSONSchema, fieldValue, options)
-  }
-
-  private _validateFieldValue<T>(schema: JSONSchema, fieldValue: T, options: ValidateOptions): ValidationResult<T> {
-    const internalSchema = schema as InternalSchema
-    const isRequired = internalSchema._required === true
-
-    if (!isRequired && (fieldValue === undefined || fieldValue === '')) {
-      return { valid: true, data: fieldValue, errors: EMPTY_ERRORS }
-    }
-
-    // Required field with undefined value → return required error with label/custom messages
-    if (isRequired && fieldValue === undefined) {
-      const locale = options.locale ?? Locale.getLocale()
-      const label = (internalSchema._label as string) ?? ''
-      const customMsgs = (internalSchema._customMessages as Record<string, string>) ?? {}
-      const allMsgs = { ...(options.messages ?? {}), ...customMsgs } as Record<string, string>
-      // Check for custom 'required' message
-      let message: string
-      if (allMsgs['required']) {
-        message = Locale.getMessageText(allMsgs['required'], allMsgs, locale)
-      } else {
-        message = Locale.getMessageText('required', allMsgs, locale)
-        if (label) message = `${label} ${message}`
-      }
-      return {
-        valid: false,
-        data: fieldValue,
-        errors: [{ message, path: '', keyword: 'required', params: {} }],
-        errorMessage: message,
-      }
-    }
-
-    return this._validateInternal(schema, fieldValue, options)
   }
 
   // ─── Helper methods ─────────────────────────────────────────────────────

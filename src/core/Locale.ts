@@ -14,7 +14,7 @@ export interface LocaleResolvedMessage {
  *   - getMessageText() → always returns final message text (used internally by v2)
  *   - getMessageConfig() → returns raw LocaleMessage (may contain code object; used by I18nError)
  */
-export const DEFAULT_LOCALE = 'zh-CN'
+export const DEFAULT_LOCALE = 'en-US'
 
 export class Locale {
   private static _currentLocale: string = DEFAULT_LOCALE

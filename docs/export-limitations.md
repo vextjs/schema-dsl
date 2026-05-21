@@ -74,8 +74,8 @@ const schema = dsl({
 | 关键字 | 说明 | 导出行为 |
 |--------|------|----------|
 | `allOf` | 所有 Schema 都满足 | ❌ 忽略 |
-| `anyOf` | 满足任一 Schema | ❌ 忽略 |
-| `oneOf` | 仅满足一个 Schema | ❌ 忽略 |
+| `anyOf` | 满足任一 Schema | ⚠️ 仅当所有分支映射到同一 SQL 类型时可导出；否则抛错 |
+| `oneOf` | 仅满足一个 Schema | ⚠️ 仅当所有分支映射到同一 SQL 类型时可导出；否则抛错 |
 | `not` | 不满足某 Schema | ❌ 忽略 |
 | `if/then/else` | 条件 Schema | ❌ 忽略 |
 | `dependencies` | 字段依赖关系 | ❌ 忽略 |
@@ -83,15 +83,24 @@ const schema = dsl({
 **示例**:
 
 ```javascript
-// ❌ 这些结构无法导出
+// ⚠️ 这些结构无法直接稳定导出到单一 SQL 列类型
 const schema = {
   type: 'object',
-  allOf: [
-    { properties: { name: { type: 'string' } } },
-    { properties: { age: { type: 'number' } } }
-  ]
+  properties: {
+    value: {
+      anyOf: [
+        { type: 'string' },
+        { type: 'number' }
+      ]
+    }
+  }
 };
 ```
+
+**当前行为**:
+
+- `ipv4 | ipv6` 这类所有分支最终都映射为同一 SQL 列类型的联合，仍可导出
+- `string | number` 这类会落到不同 SQL 列类型的联合，MySQL / PostgreSQL 导出器会**显式抛错**，而不是静默取第一项
 
 ---
 

@@ -1,5 +1,7 @@
 import type { Ajv, ErrorObject } from 'ajv'
+import safeRegex from 'safe-regex'
 import { Locale } from '../core/Locale.js'
+
 
 // AJV DataValidateFunction compatible type
 type ValidateFnWithErrors = ((schema: unknown, data: unknown, parentSchema?: unknown) => boolean) & {
@@ -42,6 +44,7 @@ export class CustomKeywords {
     ajv.addKeyword({ keyword: '_required', metaSchema: { type: 'boolean' } })
     // Conditional schema marker: prevents AJV strict mode from throwing an unknown-keyword error
     ajv.addKeyword({ keyword: '_isConditional', metaSchema: { type: 'boolean' } })
+    ajv.addKeyword({ keyword: '_runtimeOnlyConditional', metaSchema: { type: 'boolean' } })
     ajv.addKeyword({ keyword: 'conditions' })
     ajv.addKeyword({ keyword: '_evaluateCondition' })
   }
@@ -96,25 +99,24 @@ export class CustomKeywords {
 
   // ─── regex ──────────────────────────────────────────────────────────────
 
-  // Detect patterns with nested quantifiers that can cause ReDoS (e.g., (a+)+)
-  private static _isUnsafePattern(pattern: string): boolean {
-    // Nested quantifier: group containing +/*/{n,} followed by +/*/{n,}
-    return /(\([^)]*[+*][^)]*\)[+*{]|\([^)]*\|[^)]*\)[+*{])/.test(pattern)
+  // Detect potentially catastrophic patterns via a dedicated regex safety analyzer
+  private static _isUnsafePattern(pattern: string | RegExp): boolean {
+    return !safeRegex(pattern)
   }
 
   static registerRegexKeyword(ajv: Ajv): void {
     const validate: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const patternStr = String(schema)
-      if (CustomKeywords._isUnsafePattern(patternStr)) {
-        validate.errors = [{
-          keyword: 'regex',
-          message: Locale.getMessageText('string.pattern'),
-          params: { pattern: patternStr, reason: 'unsafe nested quantifier' },
-        }]
-        return false
-      }
       try {
         const regex = new RegExp(patternStr)
+        if (CustomKeywords._isUnsafePattern(regex)) {
+          validate.errors = [{
+            keyword: 'regex',
+            message: Locale.getMessageText('string.pattern'),
+            params: { pattern: patternStr, reason: 'unsafe regex pattern' },
+          }]
+          return false
+        }
         if (regex.test(String(data))) return true
         // CK-02 fix: use locale key instead of concatenating raw error message
         validate.errors = [{

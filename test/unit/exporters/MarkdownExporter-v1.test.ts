@@ -115,5 +115,38 @@ describe('MarkdownExporter', () => {
       expect(typeof result).toBe('string')
       expect(result.length).toBeGreaterThan(0)
     })
+
+    it('should escape pipes in field names and constraint cells', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          'user|name': {
+            type: 'string',
+            pattern: '^[a|b]+$',
+          },
+        },
+      }
+
+      const result = MarkdownExporter.export(schema)
+
+      expect(result).toContain('user\\|name')
+      expect(result).toContain('a\\|b')
+    })
+
+    it('should normalize multiline descriptions inside table cells', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          notes: {
+            type: 'string',
+            description: '第一行 | first\r\n第二行',
+          },
+        },
+      }
+
+      const result = MarkdownExporter.export(schema)
+
+      expect(result).toContain('第一行 \\| first<br>第二行')
+    })
   })
 })

@@ -3,7 +3,7 @@
  *
  * v2 API differences:
  * - Locale.locales is private; use Locale.getMessageText() or Locale.getAvailableLocales()
- * - Locale.reset() resets to 'zh-CN' (v1 reset to 'en-US')
+ * - Locale.reset() resets to 'en-US'
  * - locale files imported as ES modules from src/locales/
  */
 
@@ -111,8 +111,7 @@ describe('i18n Configuration Features', () => {
 
       Locale.reset()
 
-      // v2 resets to 'zh-CN' (default locale)
-      expect(Locale.getLocale()).toBe('zh-CN')
+      expect(Locale.getLocale()).toBe('en-US')
       // custom locale should be cleared
       const available = Locale.getAvailableLocales()
       expect(available).not.toContain('custom')

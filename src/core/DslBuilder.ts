@@ -13,6 +13,7 @@ import type { IDslBuilder } from '../types/dsl.js'
 import { DslParser } from '../parser/DslParser.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
+import type { Validator as ValidatorInstance } from './Validator.js'
 
 // ==================== Internal Utilities ====================
 
@@ -84,91 +85,9 @@ export class DslBuilder implements IDslBuilder {
 
   /**
    * Parse DSL body (without ! or ?).
-   * Handles special types not supported by DslParser: types:/phone:/idCard: etc.
+   * Delegates to the unified parser so string and builder DSL parsing stay in lockstep.
    */
   private static _parseBody(dsl: string): JSONSchema {
-    // 1. types:type1|type2 → oneOf
-    if (dsl.startsWith('types:')) {
-      const parts = dsl.slice(6).split('|').map(t => t.trim()).filter(Boolean)
-      if (parts.length === 0) throw new Error('[schema-dsl] types: requires at least one type')
-      if (parts.length === 1) return DslBuilder._parseBody(parts[0])
-      return { oneOf: parts.map(t => DslBuilder._parseBody(t)) }
-    }
-
-    // 2. Extract typeName and arg (used only for special-type branches)
-    const colonIdx = dsl.indexOf(':')
-    const typeName = colonIdx === -1 ? dsl : dsl.slice(0, colonIdx)
-    const arg = colonIdx === -1 ? '' : dsl.slice(colonIdx + 1)
-
-    // 3. Special pattern types (TypeRegistry does not contain these dynamic-argument types)
-    switch (typeName) {
-      case 'phone': {
-        const country = arg || 'cn'
-        const cfg = PATTERNS.phone[country]
-        if (!cfg) throw new Error(`[schema-dsl] Unsupported country: ${country}`)
-        return {
-          type: 'string',
-          pattern: cfg.pattern.source,
-          ...(cfg.min !== undefined ? { minLength: cfg.min } : {}),
-          ...(cfg.max !== undefined ? { maxLength: cfg.max } : {}),
-          _customMessages: { pattern: cfg.key },
-        }
-      }
-      case 'idCard': {
-        const country = (arg || 'cn').toLowerCase()
-        const cfg = PATTERNS.idCard[country]
-        if (!cfg) throw new Error(`[schema-dsl] Unsupported country for idCard: ${country}`)
-        return {
-          type: 'string',
-          pattern: cfg.pattern.source,
-          ...(cfg.min !== undefined ? { minLength: cfg.min } : {}),
-          ...(cfg.max !== undefined ? { maxLength: cfg.max } : {}),
-          _customMessages: { pattern: cfg.key },
-        }
-      }
-      case 'creditCard': {
-        const cardType = (arg || 'visa').toLowerCase()
-        const cfg = PATTERNS.creditCard[cardType]
-        if (!cfg) throw new Error(`[schema-dsl] Unsupported credit card type: ${cardType}`)
-        return {
-          type: 'string',
-          pattern: cfg.pattern.source,
-          _customMessages: { pattern: cfg.key },
-        }
-      }
-      case 'licensePlate': {
-        const country = (arg || 'cn').toLowerCase()
-        const cfg = PATTERNS.licensePlate[country]
-        if (!cfg) throw new Error(`[schema-dsl] Unsupported country for licensePlate: ${country}`)
-        return {
-          type: 'string',
-          pattern: cfg.pattern.source,
-          _customMessages: { pattern: cfg.key },
-        }
-      }
-      case 'postalCode': {
-        const country = (arg || 'cn').toLowerCase()
-        const cfg = PATTERNS.postalCode[country]
-        if (!cfg) throw new Error(`[schema-dsl] Unsupported country for postalCode: ${country}`)
-        return {
-          type: 'string',
-          pattern: cfg.pattern.source,
-          _customMessages: { pattern: cfg.key },
-        }
-      }
-      case 'passport': {
-        const country = (arg || 'cn').toLowerCase()
-        const cfg = PATTERNS.passport[country]
-        if (!cfg) throw new Error(`[schema-dsl] Unsupported country for passport: ${country}`)
-        return {
-          type: 'string',
-          pattern: cfg.pattern.source,
-          _customMessages: { pattern: cfg.key },
-        }
-      }
-    }
-
-    // 4. Delegate to standard DslParser (without !, so _required will not be set)
     return DslParser.parseString(dsl)
   }
 
@@ -746,7 +665,7 @@ export class DslBuilder implements IDslBuilder {
    * Validate data (BC with v1).
    * @param data - data to validate
    */
-  private _validator: unknown = null
+  private _validator: ValidatorInstance | null = null
 
   async validate(data: unknown): Promise<unknown> {
     if (!this._validator) {
@@ -754,6 +673,6 @@ export class DslBuilder implements IDslBuilder {
       this._validator = new Validator()
     }
     const schema = this.toSchema()
-    return (this._validator as InstanceType<typeof import('./Validator.js').Validator>).validate(schema, data)
+    return this._validator.validate(schema, data)
   }
 }

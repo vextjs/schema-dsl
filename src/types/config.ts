@@ -39,7 +39,7 @@ export interface DslConfigOptions {
     creditCard?: Record<string, RegExp>
     [key: string]: Record<string, RegExp> | undefined
   }
-  /** Default locale (default 'zh-CN'). */
+  /** Default locale (default 'en-US'). */
   defaultLocale?: string
 }
 

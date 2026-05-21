@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { DslBuilder } from '../../../src/core/DslBuilder.js'
+import { DslParser } from '../../../src/parser/DslParser.js'
 
 describe('DslBuilder', () => {
   describe('Constructor', () => {
@@ -146,6 +147,24 @@ describe('DslBuilder', () => {
       expect(s.minimum).toBe(0)
       expect(s.maximum).toBe(100)
       expect(s._required).toBe(true)
+    })
+  })
+
+  describe('Parser delegation', () => {
+    it('should match DslParser output for dynamic pattern DSL strings', () => {
+      const builderSchema = new DslBuilder('passport:cn!').toSchema()
+      const parserSchema = DslParser.parseString('passport:cn')
+
+      expect(builderSchema.pattern).toBe(parserSchema.pattern)
+      expect(builderSchema._customMessages).toEqual(parserSchema._customMessages)
+      expect(builderSchema._required).toBe(true)
+    })
+
+    it('should match DslParser output for cross-type union DSL strings', () => {
+      const builderSchema = new DslBuilder('types:email|phone').toSchema()
+      const parserSchema = DslParser.parseString('types:email|phone')
+
+      expect(builderSchema.oneOf).toEqual(parserSchema.oneOf)
     })
   })
 })

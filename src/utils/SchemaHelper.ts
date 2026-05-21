@@ -24,13 +24,13 @@ export class SchemaHelper {
    */
   static generateSchemaId(schema: JSONSchema): string {
     const str = JSON.stringify(schema)
-    let hash = 0
+    let hash = 0xcbf29ce484222325n
+    const prime = 0x100000001b3n
     for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
-      hash = hash & hash // 32-bit integer
+      hash ^= BigInt(str.charCodeAt(i))
+      hash = BigInt.asUintN(64, hash * prime)
     }
-    return `schema_${Math.abs(hash).toString(36)}`
+    return `schema_${hash.toString(36)}`
   }
 
   /**

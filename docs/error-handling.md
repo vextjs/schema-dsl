@@ -323,13 +323,13 @@ module.exports = {
 
 #### 默认语言设置
 
-**默认值**: `'zh-CN'`（简体中文）
+**默认值**: `'en-US'`（英文）
 
 **全局设置**:
 ```javascript
 const { Locale } = require('schema-dsl');
 
-// 设置默认语言为中文
+// 按应用需要切换默认语言
 Locale.setLocale('zh-CN');
 
 // 获取当前语言
@@ -341,7 +341,7 @@ console.log(Locale.getLocale());  // 'zh-CN'
 #### 语言优先级规则
 
 ```javascript
-运行时 locale 参数 > 全局 Locale.currentLocale > 默认 'zh-CN'
+运行时 locale 参数 > 全局 Locale.currentLocale > 默认 'en-US'
 ```
 
 **示例**:
@@ -956,13 +956,13 @@ async function apiCall() {
 
 **A**: 
 
-- **默认语言**: `'zh-CN'`（简体中文）
+- **默认语言**: `'en-US'`（英文）
 - **修改方式**: 
 
 ```javascript
 const { Locale } = require('schema-dsl');
 
-// 启动时设置默认语言
+// 启动时按应用需要设置默认语言
 Locale.setLocale('zh-CN');
 
 // 获取当前默认语言

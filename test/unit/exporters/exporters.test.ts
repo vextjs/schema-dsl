@@ -79,6 +79,22 @@ describe('MySQLExporter', () => {
       const sql = MySQLExporter.export('users', USER_SCHEMA)
       expect(sql.toUpperCase()).toContain('INT')
     })
+
+    it('throws for ambiguous anyOf unions', () => {
+      const schema: JSONSchema = {
+        type: 'object',
+        properties: {
+          value: {
+            anyOf: [
+              { type: 'string' },
+              { type: 'number' },
+            ],
+          },
+        },
+      }
+
+      expect(() => MySQLExporter.export('users', schema)).toThrow('MySQL exporter cannot safely map anyOf')
+    })
   })
 })
 
@@ -107,6 +123,22 @@ describe('PostgreSQLExporter', () => {
     it('VARCHAR/TEXT type is correct', () => {
       const sql = PostgreSQLExporter.export('users', USER_SCHEMA)
       expect(sql.toUpperCase()).toMatch(/VARCHAR|TEXT/)
+    })
+
+    it('throws for ambiguous oneOf unions', () => {
+      const schema: JSONSchema = {
+        type: 'object',
+        properties: {
+          value: {
+            oneOf: [
+              { type: 'string' },
+              { type: 'boolean' },
+            ],
+          },
+        },
+      }
+
+      expect(() => PostgreSQLExporter.export('users', schema)).toThrow('PostgreSQL exporter cannot safely map oneOf')
     })
   })
 })

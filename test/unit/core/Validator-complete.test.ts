@@ -64,7 +64,8 @@ describe('Validator - Complete Validation Tests', () => {
 
     it('should detect boolean type errors', () => {
       const schema = dsl({ active: 'boolean!' })
-      expect(validate(schema, { active: 'true' }).valid).toBe(false)
+      expect(validate(schema, { active: 'true' }).valid).toBe(true)
+      expect(validate(schema, { active: 'true' }, { coerce: false }).valid).toBe(false)
       expect(validate(schema, { active: 1 }).valid).toBe(false)
       expect(validate(schema, { active: [] }).valid).toBe(false)
     })

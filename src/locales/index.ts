@@ -17,7 +17,7 @@ const LOCALES: Readonly<Record<string, LocaleMessages>> = {
 }
 
 /** Default locale (global fallback base) */
-const DEFAULT_LOCALE = 'zh-CN'
+const DEFAULT_LOCALE = 'en-US'
 
 /** en-US acts as secondary fallback (used when any locale is missing a key) */
 const FALLBACK_LOCALE = 'en-US'
@@ -25,7 +25,7 @@ const FALLBACK_LOCALE = 'en-US'
 /**
  * Look up a locale message entry (with fallback chain).
  *
- * Fallback chain: locale → zh-CN (if locale ≠ zh-CN) → en-US → key itself
+ * Fallback chain: locale → en-US (if locale ≠ en-US) → key itself
  */
 export function getMessage(
   key: LocaleKey,
@@ -36,7 +36,7 @@ export function getMessage(
     return messages[key]
   }
 
-  // Primary fallback: zh-CN
+  // Primary fallback: en-US
   if (locale !== DEFAULT_LOCALE) {
     const defaultMessages = LOCALES[DEFAULT_LOCALE]
     if (defaultMessages && key in defaultMessages) {

@@ -69,6 +69,19 @@ describe('MySQLExporter', () => {
       expect(ddl).toContain('`score` DOUBLE')
     })
 
+    it('should promote integer columns to INT when minimum exceeds SMALLINT range', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          count: { type: 'integer', minimum: -40000, maximum: 100 },
+        },
+      } as any
+      const ddl = exporter.export('stats', schema)
+
+      expect(ddl).toContain('`count` INT')
+      expect(ddl).not.toContain('`count` SMALLINT')
+    })
+
     it('should convert booleans', () => {
       const schema = dsl({ active: 'boolean!' })
       const ddl = exporter.export('flags', schema)
@@ -106,6 +119,59 @@ describe('MySQLExporter', () => {
       const ddl = exporter.export('users', schema)
       // v2: TypeConverter.toMySQLType detects enum array → ENUM(...)
       expect(ddl).toContain("`status` ENUM('active', 'inactive')")
+    })
+
+    it('should allow anyOf when all variants resolve to the same MySQL type', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          ip: {
+            anyOf: [
+              { type: 'string', format: 'ipv4' },
+              { type: 'string', format: 'ipv6' },
+            ],
+          },
+        },
+      } as any
+      const ddl = exporter.export('hosts', schema)
+
+      expect(ddl).toContain('`ip` VARCHAR(255) NULL')
+    })
+
+    it('should throw for anyOf when variants resolve to different MySQL types', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          value: {
+            anyOf: [
+              { type: 'string' },
+              { type: 'number' },
+            ],
+          },
+        },
+      } as any
+
+      expect(() => exporter.export('mixed_values', schema)).toThrow(
+        'MySQL exporter cannot safely map anyOf for column "value" to a single SQL type'
+      )
+    })
+
+    it('should throw for oneOf when variants resolve to different MySQL types', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          value: {
+            oneOf: [
+              { type: 'string' },
+              { type: 'integer' },
+            ],
+          },
+        },
+      } as any
+
+      expect(() => exporter.export('mixed_values', schema)).toThrow(
+        'MySQL exporter cannot safely map oneOf for column "value" to a single SQL type'
+      )
     })
 
     it('should throw error when table name is missing', () => {

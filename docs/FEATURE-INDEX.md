@@ -390,23 +390,19 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 
 ---
 
-### 底层解析与模板工具
+### 类型注册与模板工具
 
-**功能**: 面向进阶集成的模板渲染、DSL 解析与 Schema 编译能力
+**功能**: 面向进阶集成的模板渲染、JSON Schema 外观与自定义类型注册能力
 
 **可用导出**:
 - ✅ `renderTemplate(template, params)`
 - ✅ `JSONSchemaCore`
-- ✅ `DslParser.parseString(dsl)`
-- ✅ `DslParser.parseObject(dslObject)`
 - ✅ `TypeRegistry`
-- ✅ `ConstraintParser.parse(constraintStr, baseType)`
-- ✅ `SchemaCompiler.compile(typeDef, constraints, meta?)`
 
 **文档位置**:
-- 📖 [API参考 - renderTemplate / JSONSchemaCore / 底层解析与编译工具](./api-reference.md)
+- 📖 [API参考 - renderTemplate / JSONSchemaCore / 类型注册与内部解析边界](./api-reference.md)
 
-**代码位置**: `src/core/TemplateEngine.ts` / `src/core/JSONSchemaCore.ts` / `src/parser/*`
+**代码位置**: `src/core/TemplateEngine.ts` / `src/core/JSONSchemaCore.ts` / `src/parser/TypeRegistry.ts`
 
 ---
 

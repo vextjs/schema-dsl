@@ -9,10 +9,13 @@
 
 import type { JSONSchema } from '../types/schema.js'
 import type { IConditionalBuilder } from '../types/conditional.js'
-import type { ValidationResult } from '../types/validate.js'
+import type { ValidateOptions, ValidationResult } from '../types/validate.js'
 import { ValidationError } from '../errors/ValidationError.js'
 import { Validator } from './Validator.js'
 import { Locale } from './Locale.js'
+import { attachConditionalRuntime } from './ConditionalRuntime.js'
+
+const RUNTIME_ONLY_VALIDATE_OPTION_KEYS = new Set(['locale', 'messages', 'format'])
 
 // ==================== Internal Data Structures ====================
 
@@ -144,16 +147,19 @@ export class ConditionalBuilder implements IConditionalBuilder {
   // ==================== Output Methods ====================
 
   /**
-   * Produce a schema object carrying conditional data (for internal use by Validator).
+   * Produce a schema object carrying serialisable conditional metadata plus non-enumerable runtime state.
    */
   toSchema(): JSONSchema {
-    return {
+    return attachConditionalRuntime({
       _isConditional: true,
-      conditions: this._conditions,
+      _runtimeOnlyConditional: true,
       else: this._elseSchema,
-      _evaluateCondition: (conditionObj: ConditionEntry, data: unknown) =>
-        this._evaluateCondition(conditionObj, data),
-    } as unknown as JSONSchema
+    } as unknown as JSONSchema, {
+      conditions: this._conditions,
+      elseSchema: this._elseSchema,
+      evaluateCondition: (conditionObj: unknown, data: unknown) =>
+        this._evaluateCondition(conditionObj as ConditionEntry, data),
+    }) as unknown as JSONSchema
   }
 
   /**
@@ -165,11 +171,11 @@ export class ConditionalBuilder implements IConditionalBuilder {
 
   // ==================== Validation Methods ====================
 
-  private _validator: Validator | null = null
+  private readonly _validatorCache = new Map<string, Validator>()
 
   validate(data: unknown, options: Record<string, unknown> = {}): ValidationResult<unknown> {
-    if (!this._validator) this._validator = new Validator(options)
-    return this._validator.validate(this.toSchema(), data, options)
+    const validator = this._getValidator(options)
+    return validator.validate(this.toSchema(), data, options)
   }
 
   async validateAsync(data: unknown, options: Record<string, unknown> = {}): Promise<ValidationResult<unknown>> {
@@ -304,5 +310,58 @@ export class ConditionalBuilder implements IConditionalBuilder {
     } catch {
       return { result: false, failedMessage: null }
     }
+  }
+
+  private _getValidator(options: Record<string, unknown>): Validator {
+    const constructorOptions = this._getConstructorOptions(options)
+    const cacheKey = this._getValidatorCacheKey(constructorOptions)
+
+    let validator = this._validatorCache.get(cacheKey)
+    if (!validator) {
+      validator = new Validator(constructorOptions)
+      this._validatorCache.set(cacheKey, validator)
+    }
+
+    return validator
+  }
+
+  private _getConstructorOptions(options: Record<string, unknown>): ValidateOptions {
+    const constructorOptions: Record<string, unknown> = {}
+
+    for (const [key, value] of Object.entries(options)) {
+      if (!RUNTIME_ONLY_VALIDATE_OPTION_KEYS.has(key)) {
+        constructorOptions[key] = value
+      }
+    }
+
+    return constructorOptions as ValidateOptions
+  }
+
+  private _getValidatorCacheKey(options: ValidateOptions): string {
+    return JSON.stringify(this._normalizeOptionValue(options))
+  }
+
+  private _normalizeOptionValue(value: unknown): unknown {
+    if (Array.isArray(value)) {
+      return value.map(item => this._normalizeOptionValue(item))
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value as Record<string, unknown>)
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(([key, nestedValue]) => [key, this._normalizeOptionValue(nestedValue)])
+      )
+    }
+
+    if (typeof value === 'function') {
+      return `__fn__:${value.name || 'anonymous'}`
+    }
+
+    if (typeof value === 'bigint') {
+      return `__bigint__:${value.toString()}`
+    }
+
+    return value
   }
 }

@@ -25,13 +25,7 @@ export { renderTemplate } from './core/TemplateEngine.js'
 export { PluginManager } from './core/PluginManager.js'
 
 // ==================== Parser layer ====================
-export { DslParser } from './parser/DslParser.js'
 export { TypeRegistry } from './parser/TypeRegistry.js'
-export { ConstraintParser } from './parser/ConstraintParser.js'
-export { SchemaCompiler } from './parser/SchemaCompiler.js'
-
-// ==================== Adapter layer ====================
-export { DslAdapter } from './adapters/DslAdapter.js'
 
 // ==================== Error classes ====================
 export { ValidationError } from './errors/ValidationError.js'
@@ -87,6 +81,13 @@ export type { CacheOptions as CacheConfig } from './types/config.js'
 export type { IConditionalBuilder } from './types/conditional.js'
 
 export type {
+  InferSchema,
+  InferJsonSchema,
+  InferDslDefinition,
+  InferDslString,
+} from './types/infer.js'
+
+export type {
   ExporterOptions,
   MongoDBExporterOptions,
   MySQLExporterOptions,
@@ -137,7 +138,8 @@ import * as _locales from './locales/index.js'
 // Only iterates fields that may need coercion (numbers/arrays/objects).
 type _CoerceCandidates = {
   numbers: string[]   // fields with type: 'number' | 'integer'
-  arrays: string[]    // array fields whose items.type is 'number'
+  booleans: string[]  // fields with type: 'boolean'
+  arrays: Array<{ key: string; itemType: 'number' | 'integer' | 'boolean' }>
   objects: Array<{ key: string; schema: _JSONSchema }>   // nested objects with properties
 } | null   // null = no coercible fields
 
@@ -155,7 +157,8 @@ function _getCoerceCandidates(schema: _JSONSchema): _CoerceCandidates {
   }
 
   const numbers: string[] = []
-  const arrays: string[] = []
+  const booleans: string[] = []
+  const arrays: Array<{ key: string; itemType: 'number' | 'integer' | 'boolean' }> = []
   const objects: Array<{ key: string; schema: _JSONSchema }> = []
 
   for (const [key, f] of Object.entries(props)) {
@@ -163,18 +166,40 @@ function _getCoerceCandidates(schema: _JSONSchema): _CoerceCandidates {
     const ft = f.type
     if (ft === 'number' || ft === 'integer') {
       numbers.push(key)
+    } else if (ft === 'boolean') {
+      booleans.push(key)
     } else if (ft === 'array' && (f.items as _JSONSchema | undefined)?.type === 'number') {
-      arrays.push(key)
+      arrays.push({ key, itemType: 'number' })
+    } else if (ft === 'array' && (f.items as _JSONSchema | undefined)?.type === 'integer') {
+      arrays.push({ key, itemType: 'integer' })
+    } else if (ft === 'array' && (f.items as _JSONSchema | undefined)?.type === 'boolean') {
+      arrays.push({ key, itemType: 'boolean' })
     } else if (ft === 'object' && f.properties) {
       objects.push({ key, schema: f })
     }
   }
 
-  const result: _CoerceCandidates = (numbers.length || arrays.length || objects.length)
-    ? { numbers, arrays, objects }
+  const result: _CoerceCandidates = (numbers.length || booleans.length || arrays.length || objects.length)
+    ? { numbers, booleans, arrays, objects }
     : null
   _coerceCandidatesCache.set(schemaObj, result)
   return result
+}
+
+function _coerceNumber(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  const trimmed = value.trim()
+  if (trimmed === '') return value
+  const num = Number(trimmed)
+  return !isNaN(num) ? num : value
+}
+
+function _coerceBoolean(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  const trimmed = value.trim().toLowerCase()
+  if (trimmed === 'true') return true
+  if (trimmed === 'false') return false
+  return value
 }
 
 function smartCoerceTypes(data: unknown, schema: _JSONSchema): unknown {
@@ -194,30 +219,28 @@ function smartCoerceTypes(data: unknown, schema: _JSONSchema): unknown {
 
   for (const key of candidates.numbers) {
     const value = src[key]
-    if (typeof value === 'string') {
-      const trimmed = value.trim()
-      if (trimmed !== '') {
-        const num = Number(trimmed)
-        if (!isNaN(num)) {
-          if (!result) result = { ...src }
-          result[key] = num
-        }
-      }
+    const converted = _coerceNumber(value)
+    if (converted !== value) {
+      if (!result) result = { ...src }
+      result[key] = converted
     }
   }
 
-  for (const key of candidates.arrays) {
+  for (const key of candidates.booleans) {
+    const value = src[key]
+    const converted = _coerceBoolean(value)
+    if (converted !== value) {
+      if (!result) result = { ...src }
+      result[key] = converted
+    }
+  }
+
+  for (const { key, itemType } of candidates.arrays) {
     const value = src[key]
     if (Array.isArray(value)) {
       const converted = value.map(item => {
-        if (typeof item === 'string') {
-          const trimmed = item.trim()
-          if (trimmed !== '') {
-            const num = Number(trimmed)
-            return !isNaN(num) ? num : item
-          }
-        }
-        return item
+        if (itemType === 'boolean') return _coerceBoolean(item)
+        return _coerceNumber(item)
       })
       if (!result) result = { ...src }
       result[key] = converted
@@ -472,6 +495,15 @@ export { _getDefaultValidator as getDefaultValidator }
  */
 export function resetDefaultValidator(): void {
   _defaultValidator = null
+}
+
+/**
+ * Reset global runtime state that may leak across tests, workers, or tenants.
+ */
+export function resetRuntimeState(): void {
+  resetDefaultValidator()
+  _DslBuilder.clearCustomTypes()
+  _Locale.reset()
 }
 
 // ==================== Convenience validation functions ====================

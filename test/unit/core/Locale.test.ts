@@ -4,12 +4,11 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { Locale } from '../../../src/core/Locale.js'
+import { DEFAULT_LOCALE, Locale } from '../../../src/core/Locale.js'
 
 describe('Locale', () => {
   afterEach(() => {
-    // restore default locale
-    Locale.setLocale('zh-CN')
+    Locale.reset()
   })
 
   describe('setLocale() / getLocale()', () => {
@@ -18,8 +17,8 @@ describe('Locale', () => {
       expect(Locale.getLocale()).toBe('en-US')
     })
 
-    it('default locale is zh-CN', () => {
-      expect(Locale.getLocale()).toBe('zh-CN')
+    it('default locale is en-US', () => {
+      expect(Locale.getLocale()).toBe(DEFAULT_LOCALE)
     })
   })
 

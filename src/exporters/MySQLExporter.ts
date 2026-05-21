@@ -98,18 +98,14 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
   }
 
   private _convertColumn(name: string, schema: JSONSchema, isRequired: boolean): string {
-    // For anyOf/oneOf without top-level type, resolve the effective type from the first variant
-    const effectiveType: string | string[] = schema.type
-      ? (schema.type as string | string[])
-      : ((schema.anyOf ?? schema.oneOf) as JSONSchema[] | undefined)?.[0]?.type as string ?? 'string'
-    const mysqlType = TypeConverter.toMySQLType(effectiveType, schema)
+    const { jsonType, sqlType } = this._resolveColumnType(name, schema)
 
-    let def = `${this._quoteIdent(name)} ${mysqlType}`
+    let def = `${this._quoteIdent(name)} ${sqlType}`
 
     def += isRequired ? ' NOT NULL' : ' NULL'
 
     if (schema.default !== undefined) {
-      def += ` DEFAULT ${this._formatDefaultValue(schema.default, schema.type as string)}`
+      def += ` DEFAULT ${this._formatDefaultValue(schema.default, jsonType)}`
     }
 
     if (schema.description) {
@@ -117,6 +113,37 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
     }
 
     return def
+  }
+
+  private _resolveColumnType(name: string, schema: JSONSchema): { jsonType: string; sqlType: string } {
+    if (schema.type) {
+      return {
+        jsonType: String(schema.type),
+        sqlType: TypeConverter.toMySQLType(schema.type as string | string[], schema),
+      }
+    }
+
+    const variants = (schema.anyOf ?? schema.oneOf) as JSONSchema[] | undefined
+    if (!variants?.length) {
+      return {
+        jsonType: 'string',
+        sqlType: TypeConverter.toMySQLType('string', schema),
+      }
+    }
+
+    const sqlTypes = new Set(
+      variants.map(variant => TypeConverter.toMySQLType((variant.type as string | string[] | undefined) ?? 'string', variant))
+    )
+
+    if (sqlTypes.size !== 1) {
+      const unionKind = schema.anyOf ? 'anyOf' : 'oneOf'
+      throw new Error(`[schema-dsl] MySQL exporter cannot safely map ${unionKind} for column "${name}" to a single SQL type`)
+    }
+
+    return {
+      jsonType: String(variants[0]?.type ?? 'string'),
+      sqlType: [...sqlTypes][0],
+    }
   }
 
   private _formatDefaultValue(value: unknown, type: string): string {

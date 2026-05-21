@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## Unreleased
+
+### Fixes
+
+- Security: replace the custom regex ReDoS heuristic in `CustomKeywords` with `safe-regex`, so catastrophic patterns such as `((a)+)+$` are rejected before execution.
+- Validation: stop caching `DslBuilder.toSchema()` results inside `Validator`, so chain mutations made after the first validation call are honored by both `validate()` and `validateAsync()`.
+- Validation: make `ConditionalBuilder` cache `Validator` instances by constructor-level option set, so repeated calls with different `allErrors` / `useDefaults` configurations no longer reuse a stale validator.
+- Exporters: fix MySQL integer sizing so `TypeConverter.toMySQLType()` checks both `minimum` and `maximum` before choosing `TINYINT` / `SMALLINT` / `INT`, avoiding undersized column types.
+- Exporters: escape Markdown table cell content in `MarkdownExporter`, so field names, constraint text, and multiline descriptions containing `|` or newlines no longer break rendered tables.
+- Tests: add focused regression coverage for unsafe regex rejection while preserving the existing invalid-regex error path.
+
 ## Version History
 
 | Version | Date | Type | Key Theme |

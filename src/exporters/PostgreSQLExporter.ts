@@ -112,17 +112,14 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
   }
 
   private _convertColumn(name: string, schema: JSONSchema, isRequired: boolean): string {
-    const effectiveType: string | string[] = schema.type
-      ? (schema.type as string | string[])
-      : ((schema.anyOf ?? schema.oneOf) as JSONSchema[] | undefined)?.[0]?.type as string ?? 'string'
-    const pgType = TypeConverter.toPostgreSQLType(effectiveType, schema)
+    const { jsonType, sqlType } = this._resolveColumnType(name, schema)
 
-    let def = `${this._quoteIdent(name)} ${pgType}`
+    let def = `${this._quoteIdent(name)} ${sqlType}`
 
     if (isRequired) def += ' NOT NULL'
 
     if (schema.default !== undefined) {
-      def += ` DEFAULT ${this._formatDefaultValue(schema.default, schema.type as string)}`
+      def += ` DEFAULT ${this._formatDefaultValue(schema.default, jsonType)}`
     }
 
     const checkConstraints = this._generateCheckConstraints(name, schema)
@@ -131,6 +128,37 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
     }
 
     return def
+  }
+
+  private _resolveColumnType(name: string, schema: JSONSchema): { jsonType: string; sqlType: string } {
+    if (schema.type) {
+      return {
+        jsonType: String(schema.type),
+        sqlType: TypeConverter.toPostgreSQLType(schema.type as string | string[], schema),
+      }
+    }
+
+    const variants = (schema.anyOf ?? schema.oneOf) as JSONSchema[] | undefined
+    if (!variants?.length) {
+      return {
+        jsonType: 'string',
+        sqlType: TypeConverter.toPostgreSQLType('string', schema),
+      }
+    }
+
+    const sqlTypes = new Set(
+      variants.map(variant => TypeConverter.toPostgreSQLType((variant.type as string | string[] | undefined) ?? 'string', variant))
+    )
+
+    if (sqlTypes.size !== 1) {
+      const unionKind = schema.anyOf ? 'anyOf' : 'oneOf'
+      throw new Error(`[schema-dsl] PostgreSQL exporter cannot safely map ${unionKind} for column "${name}" to a single SQL type`)
+    }
+
+    return {
+      jsonType: String(variants[0]?.type ?? 'string'),
+      sqlType: [...sqlTypes][0],
+    }
   }
 
   private _generateCheckConstraints(columnName: string, schema: JSONSchema): string[] {
