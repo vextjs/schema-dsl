@@ -22,14 +22,14 @@ export class ValidationError extends Error {
       errors.length === 0
         ? 'Validation failed'
         : errors
-            .map(e => {
-              if (e.path) {
-                const field = e.path.replace(/^\//, '')
-                return field ? `${field}: ${e.message}` : e.message
-              }
-              return e.message
-            })
-            .join('; ')
+          .map(e => {
+            if (e.path) {
+              const field = e.path.replace(/^\//, '')
+              return field ? `${field}: ${e.message}` : e.message
+            }
+            return e.message
+          })
+          .join('; ')
 
     // v1 compat: use " - " separator when no path, ": " otherwise
     // v1 compat: single conditional error uses message string directly (no prefix)

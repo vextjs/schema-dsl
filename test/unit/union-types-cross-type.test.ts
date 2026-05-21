@@ -57,7 +57,7 @@ describe('Cross-type Union Validation — types: Syntax', () => {
       const r1 = validate(schema, {})
       expect(r1.valid).toBe(false)
       // oneOf failures may return different error codes; validation failure is sufficient
-      expect(r1.errors.length).toBeGreaterThan(0)
+      expect(r1.errors!.length).toBeGreaterThan(0)
     })
 
     it('should support single type (automatically optimised to non-oneOf)', () => {
@@ -341,7 +341,7 @@ describe('Cross-type Union Validation — types: Syntax', () => {
 
       const result = validate(schema, { value: true }, { locale: 'zh-CN' })
       expect(result.valid).toBe(false)
-      expect(result.errors[0].message).toContain('\u7c7b\u578b')
+      expect(result.errors![0].message).toContain('\u7c7b\u578b')
     })
 
     it('should support English error messages', () => {
@@ -352,8 +352,8 @@ describe('Cross-type Union Validation — types: Syntax', () => {
       const result = validate(schema, { value: true }, { locale: 'en-US' })
       expect(result.valid).toBe(false)
       // just verify that an error message is present
-      expect(typeof result.errors[0].message).toBe('string')
-      expect(result.errors[0].message.length).toBeGreaterThan(0)
+      expect(typeof result.errors![0].message).toBe('string')
+      expect(result.errors![0].message.length).toBeGreaterThan(0)
     })
   })
 
@@ -393,14 +393,17 @@ describe('Cross-type Union Validation — types: Syntax', () => {
 
     it('registerType() should validate parameters', () => {
       expect(() => {
+        // @ts-expect-error intentionally testing runtime validation with no args
         DslBuilder.registerType()
       }).toThrow('Type name must be a non-empty string')
 
       expect(() => {
+        // @ts-expect-error intentionally testing runtime validation with missing schema
         DslBuilder.registerType('test')
       }).toThrow('Schema must be an object or function')
 
       expect(() => {
+        // @ts-expect-error intentionally testing runtime validation with invalid schema type
         DslBuilder.registerType('test', 'invalid')
       }).toThrow('Schema must be an object or function')
     })
@@ -431,16 +434,19 @@ describe('Cross-type Union Validation — types: Syntax', () => {
       }).toThrow('Type name must be a non-empty string')
 
       expect(() => {
+        // @ts-expect-error intentionally testing runtime validation with null name
         DslBuilder.registerType(null, { type: 'string' })
       }).toThrow('Type name must be a non-empty string')
     })
 
     it('should correctly handle invalid schema definitions', () => {
       expect(() => {
+        // @ts-expect-error intentionally testing runtime validation with null schema
         DslBuilder.registerType('test', null)
       }).toThrow('Schema must be an object or function')
 
       expect(() => {
+        // @ts-expect-error intentionally testing runtime validation with string schema
         DslBuilder.registerType('test', 'invalid')
       }).toThrow('Schema must be an object or function')
     })

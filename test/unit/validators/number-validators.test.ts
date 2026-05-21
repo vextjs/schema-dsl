@@ -35,7 +35,7 @@ describe('Number Validators - v1.0.2', () => {
       const result = validate(schema, { price: 10.999 })
 
       expect(result.valid).toBe(false)
-      expect(result.errors[0]).toHaveProperty('keyword', 'precision')
+      expect(result.errors![0]).toHaveProperty('keyword', 'precision')
     })
   })
 
@@ -98,7 +98,7 @@ describe('Number Validators - v1.0.2', () => {
       const result = validate(schema, { port: 70000 })
 
       expect(result.valid).toBe(false)
-      expect(result.errors[0]).toHaveProperty('keyword', 'port')
+      expect(result.errors![0]).toHaveProperty('keyword', 'port')
     })
   })
 

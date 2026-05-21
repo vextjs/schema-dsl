@@ -9,11 +9,12 @@
 
 import type { JSONSchema } from '../types/schema.js'
 import type { IConditionalBuilder } from '../types/conditional.js'
+import type { ValidationResult } from '../types/validate.js'
 import { ValidationError } from '../errors/ValidationError.js'
 import { Validator } from './Validator.js'
 import { Locale } from './Locale.js'
 
-  // ==================== Internal Data Structures ====================
+// ==================== Internal Data Structures ====================
 
 type ConditionFn = (data: unknown) => boolean
 
@@ -164,14 +165,14 @@ export class ConditionalBuilder implements IConditionalBuilder {
 
   // ==================== Validation Methods ====================
 
-  validate(data: unknown, options: Record<string, unknown> = {}): unknown {
+  validate(data: unknown, options: Record<string, unknown> = {}): ValidationResult<unknown> {
     const validator = new Validator(options)
     return validator.validate(this.toSchema(), data, options)
   }
 
-  async validateAsync(data: unknown, options: Record<string, unknown> = {}): Promise<unknown> {
-    const validator = new Validator(options)
-    return validator.validateAsync(this.toSchema(), data, options)
+  async validateAsync(data: unknown, options: Record<string, unknown> = {}): Promise<ValidationResult<unknown>> {
+    // ConditionalBuilder evaluation is synchronous; wrap sync result in a Promise
+    return Promise.resolve(this.validate(data, options))
   }
 
   /**

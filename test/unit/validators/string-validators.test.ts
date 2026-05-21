@@ -52,7 +52,7 @@ describe('String Validators - v1.0.2', () => {
       const result = validate(schema, { code: '12345' })
 
       expect(result.valid).toBe(false)
-      expect(result.errors[0]).toHaveProperty('keyword', 'exactLength')
+      expect(result.errors![0]).toHaveProperty('keyword', 'exactLength')
     })
   })
 

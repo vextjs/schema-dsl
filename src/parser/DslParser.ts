@@ -342,9 +342,9 @@ export const DslParser = {
 
       // Apply required flag: key! takes priority over the field's internal _required marker
       if (isKeyRequired) {
-        ;(schema.required as string[]).push(fieldKey)
+        ; (schema.required as string[]).push(fieldKey)
       } else if (fieldSchema._required) {
-        ;(schema.required as string[]).push(fieldKey)
+        ; (schema.required as string[]).push(fieldKey)
       }
 
       // Strip the internal _required marker
@@ -352,7 +352,7 @@ export const DslParser = {
       void _r
       _cleanRequiredMarks(cleanSchema)
 
-      ;(schema.properties as Record<string, JSONSchema>)[fieldKey] = cleanSchema
+        ; (schema.properties as Record<string, JSONSchema>)[fieldKey] = cleanSchema
     }
 
     if ((schema.required as string[]).length === 0) {

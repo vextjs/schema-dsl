@@ -16,13 +16,13 @@ import { PATTERNS } from '../config/patterns.js'
 
 // ==================== Internal Utilities ====================
 
-type CustomValidatorFn= (value: unknown) => unknown
+type CustomValidatorFn = (value: unknown) => unknown
 
 /** Password strength presets. */
 const PASSWORD_PATTERNS: Record<string, RegExp> = {
-  weak:       /.{6,}/,
-  medium:     /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/,
-  strong:     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
+  weak: /.{6,}/,
+  medium: /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/,
+  strong: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
   veryStrong: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{10,}$/,
 }
 const PASSWORD_MIN_LENGTHS: Record<string, number> = {
@@ -589,9 +589,9 @@ export class DslBuilder implements IDslBuilder {
         maxLength = parseInt(rangeMatch[2], 10)
       } else {
         const presets: Record<string, { min: number; max: number }> = {
-          short:  { min: 3, max: 16 },
+          short: { min: 3, max: 16 },
           medium: { min: 3, max: 32 },
-          long:   { min: 3, max: 64 },
+          long: { min: 3, max: 64 },
         }
         const p = presets[preset] ?? presets['medium']
         minLength = p.min

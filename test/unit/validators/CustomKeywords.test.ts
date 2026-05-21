@@ -43,7 +43,7 @@ describe('CustomKeywords - v1.0.2 new validators', () => {
         const result = validate(schema, { code: 'ABC12' });
         expect(result.valid).toBe(false);
         expect(Array.isArray(result.errors)).toBe(true);
-        expect(result.errors.length).toBeGreaterThanOrEqual(1);
+        expect(result.errors!.length).toBeGreaterThanOrEqual(1);
       });
 
       it('should reject length exceeded', () => {

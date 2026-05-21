@@ -4,11 +4,13 @@ test/
 coverage/
 .nyc_output/
 
+# Sourcemaps — not needed at runtime, saves ~2 MB
+dist/**/*.map
+
 # 开发文件
 reports/
 plans/
 releases/
-plugins/
 .temp/
 *.log
 

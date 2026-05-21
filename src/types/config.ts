@@ -2,6 +2,7 @@ import type { ErrorMessages } from './error.js'
 
 /**
  * Cache configuration options.
+ * @alias CacheConfig — v1 BC alias exported from index
  */
 export interface CacheOptions {
   /** Maximum number of cache entries (default 5000). */

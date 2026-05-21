@@ -16,10 +16,10 @@ describe('Combined Validators Test - v1.0.2', () => {
   describe('Object.requireAll() - require all properties', () => {
     it('should require object to contain all defined properties', () => {
       const builder = new DslBuilder('object');
-      builder._baseSchema.properties = { name: { type: 'string' }, age: { type: 'number' } };
+      (builder as any)._baseSchema.properties = { name: { type: 'string' }, age: { type: 'number' } };
       builder.requireAll();
 
-      const schema = { type: 'object', properties: builder._baseSchema.properties, requiredAll: true };
+      const schema = { type: 'object', properties: (builder as any)._baseSchema.properties, requiredAll: true };
       const result = validate(schema, { name: 'John' });
 
       expect(result.valid).toBe(false);
@@ -29,10 +29,10 @@ describe('Combined Validators Test - v1.0.2', () => {
   describe('Object.strict() - strict mode', () => {
     it('should reject additional properties', () => {
       const builder = new DslBuilder('object');
-      builder._baseSchema.properties = { name: { type: 'string' } };
+      (builder as any)._baseSchema.properties = { name: { type: 'string' } };
       builder.strict();
 
-      const schema = { type: 'object', properties: builder._baseSchema.properties, strictSchema: true };
+      const schema = { type: 'object', properties: (builder as any)._baseSchema.properties, strictSchema: true };
       const result = validate(schema, { name: 'John', extra: 'value' });
 
       expect(result.valid).toBe(false);

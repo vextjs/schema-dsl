@@ -45,9 +45,9 @@ describe('Required Error Message Fix', () => {
     const result = validate(schema, {});
 
     expect(result.valid).toBe(false);
-    expect(result.errors.length).toBe(1);
-    expect(result.errors[0].path).toBe('name');
-    expect(result.errors[0].message).toBe('name is required');
+    expect(result.errors!.length).toBe(1);
+    expect(result.errors![0].path).toBe('name');
+    expect(result.errors![0].message).toBe('name is required');
   });
 
   it('nested object required field: path should be full path, message shows only field name', () => {
@@ -66,10 +66,10 @@ describe('Required Error Message Fix', () => {
     });
 
     expect(result.valid).toBe(false);
-    expect(result.errors.length).toBe(1);
-    expect(result.errors[0].path).toBe('project/project_id');
-    expect(result.errors[0].message).toBe('project_id is required');
-    expect(result.errors[0].params.missingProperty).toBe('project_id');
+    expect(result.errors!.length).toBe(1);
+    expect(result.errors![0].path).toBe('project/project_id');
+    expect(result.errors![0].message).toBe('project_id is required');
+    expect(result.errors![0].params!.missingProperty).toBe('project_id');
   });
 
   it('deeply nested required field: should display correct path and message', () => {
@@ -92,9 +92,9 @@ describe('Required Error Message Fix', () => {
     });
 
     expect(result.valid).toBe(false);
-    expect(result.errors.length).toBe(1);
-    expect(result.errors[0].path).toBe('user/profile/phone');
-    expect(result.errors[0].message).toBe('phone is required');
+    expect(result.errors!.length).toBe(1);
+    expect(result.errors![0].path).toBe('user/profile/phone');
+    expect(result.errors![0].message).toBe('phone is required');
   });
 
   it('object itself is required: should display correct message', () => {
@@ -108,9 +108,9 @@ describe('Required Error Message Fix', () => {
     const result = validate(schema, {});
 
     expect(result.valid).toBe(false);
-    expect(result.errors.length).toBe(1);
-    expect(result.errors[0].path).toBe('project');
-    expect(result.errors[0].message).toBe('project is required');
+    expect(result.errors!.length).toBe(1);
+    expect(result.errors![0].path).toBe('project');
+    expect(result.errors![0].message).toBe('project is required');
   });
 
   it('multiple fields missing simultaneously: each error should display correctly', () => {
@@ -130,9 +130,9 @@ describe('Required Error Message Fix', () => {
     });
 
     expect(result.valid).toBe(false);
-    expect(result.errors.length).toBe(2);
+    expect(result.errors!.length).toBe(2);
 
-    const errors = result.errors.sort((a: any, b: any) => a.path.localeCompare(b.path));
+    const errors = result.errors!.sort((a: any, b: any) => a.path.localeCompare(b.path));
 
     expect(errors[0].path).toBe('user/email');
     expect(errors[0].message).toBe('email is required');
@@ -190,8 +190,8 @@ describe('Required Error Message Fix', () => {
     });
 
     expect(result2.valid).toBe(false);
-    expect(result2.errors.length).toBe(1);
-    expect(result2.errors[0].path).toBe('project/project_id');
-    expect(result2.errors[0].message).toBe('project_id is required');
+    expect(result2.errors!.length).toBe(1);
+    expect(result2.errors![0].path).toBe('project/project_id');
+    expect(result2.errors![0].message).toBe('project_id is required');
   });
 });

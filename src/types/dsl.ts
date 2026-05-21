@@ -7,21 +7,67 @@ import type { IConditionalBuilder } from './conditional.js'
  * Implementation class is in src/core/DslBuilder.ts (Phase 7).
  */
 export interface IDslBuilder {
-  // Constraint methods
+  // ── Core constraint methods ──────────────────────────────────
   min(n: number): this
   max(n: number): this
   label(text: string): this
   description(text: string): this
-  pattern(regex: RegExp | string): this
+  pattern(regex: RegExp | string, message?: string): this
   enum(...values: unknown[]): this
   optional(): this
   required(): this
   default(value: unknown): this
   error(messages: Record<string, string>): this
-  // Output
+  messages(msgs: Record<string, string>): this
+  format(fmt: string): this
+  custom(validatorFn: (value: unknown) => unknown): this
+
+  // ── String validators ────────────────────────────────────────
+  length(n: number): this
+  alphanum(): this
+  trim(): this
+  lowercase(): this
+  uppercase(): this
+  ip(): this
+  base64(): this
+  jwt(): this
+  json(): this
+  domain(): this
+  slug(): this
+  after(date: string): this
+  before(date: string): this
+  dateGreater(date: string): this
+  dateLess(date: string): this
+  dateFormat(fmt: string): this
+  username(preset?: string | { minLength?: number; maxLength?: number; allowUnderscore?: boolean; allowNumber?: boolean }): this
+  password(preset?: string): this
+  phone(country?: string): this
+  phoneNumber(country?: string): this
+  idCard(country?: string): this
+  creditCard(type?: string): this
+  licensePlate(country?: string): this
+  postalCode(country?: string): this
+  passport(country?: string): this
+
+  // ── Number validators ────────────────────────────────────────
+  precision(n: number): this
+  multiple(n: number): this
+  port(): this
+
+  // ── Object validators ────────────────────────────────────────
+  requireAll(): this
+  strict(): this
+
+  // ── Array validators ─────────────────────────────────────────
+  noSparse(): this
+  includesRequired(items: unknown[]): this
+
+  // ── Output ───────────────────────────────────────────────────
   toJsonSchema(): JSONSchema
+  toSchema(): JSONSchema
   toString(): string
-  // Internal marker
+
+  // ── Internal marker ──────────────────────────────────────────
   readonly _isDslBuilder: true
 }
 
@@ -77,7 +123,7 @@ export interface DslErrorNamespace {
 export interface DslFn {
   (def: string): IDslBuilder
   (def: DslDefinition): JSONSchema
-  config: (options: DslConfigOptions) => void
+  config: (options?: Partial<DslConfigOptions>) => void
   if: DslIfFn & DslFieldIfFn
   _if: DslIfFn & DslFieldIfFn
   match: (value: unknown, cases: Record<string, unknown>) => DslConditionMarker

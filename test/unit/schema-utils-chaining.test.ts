@@ -40,9 +40,9 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
     it('should validate only the specified fields', () => {
       const partialSchema = SchemaUtils.partial(baseSchema, ['name', 'age']);
 
-      expect(Object.keys(partialSchema.properties)).toHaveLength(2);
-      expect(partialSchema.properties).toHaveProperty('name');
-      expect(partialSchema.properties).toHaveProperty('age');
+      expect(Object.keys(partialSchema.properties!)).toHaveLength(2);
+      expect(partialSchema.properties!).toHaveProperty('name');
+      expect(partialSchema.properties!).toHaveProperty('age');
       expect(partialSchema.required).toBeUndefined();
     });
 
@@ -63,11 +63,11 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
     it('should exclude the specified fields', () => {
       const omittedSchema = SchemaUtils.omit(baseSchema, ['password', 'createdAt', 'updatedAt']);
 
-      expect(omittedSchema.properties.password).toBeUndefined();
-      expect(omittedSchema.properties.createdAt).toBeUndefined();
-      expect(omittedSchema.properties.updatedAt).toBeUndefined();
-      expect(omittedSchema.properties.name).toBeDefined();
-      expect(omittedSchema.properties.email).toBeDefined();
+      expect(omittedSchema.properties!.password).toBeUndefined();
+      expect(omittedSchema.properties!.createdAt).toBeUndefined();
+      expect(omittedSchema.properties!.updatedAt).toBeUndefined();
+      expect(omittedSchema.properties!.name).toBeDefined();
+      expect(omittedSchema.properties!.email).toBeDefined();
     });
 
     it('should remove excluded fields from required', () => {
@@ -83,10 +83,10 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
     it('should keep only the specified fields', () => {
       const pickedSchema = SchemaUtils.pick(baseSchema, ['name', 'email']);
 
-      expect(Object.keys(pickedSchema.properties)).toHaveLength(2);
-      expect(pickedSchema.properties).toHaveProperty('name');
-      expect(pickedSchema.properties).toHaveProperty('email');
-      expect(pickedSchema.properties.password).toBeUndefined();
+      expect(Object.keys(pickedSchema.properties!)).toHaveLength(2);
+      expect(pickedSchema.properties!).toHaveProperty('name');
+      expect(pickedSchema.properties!).toHaveProperty('email');
+      expect(pickedSchema.properties!.password).toBeUndefined();
     });
 
     it('should preserve required constraints for picked fields', () => {
@@ -104,9 +104,9 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
         bio: 'string:0-500'
       });
 
-      expect(extendedSchema.properties.avatar).toBeDefined();
-      expect(extendedSchema.properties.bio).toBeDefined();
-      expect(extendedSchema.properties.name).toBeDefined();
+      expect(extendedSchema.properties!.avatar).toBeDefined();
+      expect(extendedSchema.properties!.bio).toBeDefined();
+      expect(extendedSchema.properties!.name).toBeDefined();
     });
 
     it('should preserve original fields', () => {
@@ -114,9 +114,9 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
         avatar: 'url'
       });
 
-      expect(extendedSchema.properties.name).toBeDefined();
-      expect(extendedSchema.properties.email).toBeDefined();
-      expect(extendedSchema.properties.password).toBeDefined();
+      expect(extendedSchema.properties!.name).toBeDefined();
+      expect(extendedSchema.properties!.email).toBeDefined();
+      expect(extendedSchema.properties!.password).toBeDefined();
     });
   });
 
@@ -127,8 +127,8 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
         .omit(baseSchema, ['password'])
         .extend({ avatar: 'url' });
 
-      expect(schema.properties.password).toBeUndefined();
-      expect(schema.properties.avatar).toBeDefined();
+      expect(schema.properties!.password).toBeUndefined();
+      expect(schema.properties!.avatar).toBeDefined();
     });
 
     it('should support pick + partial', () => {
@@ -136,7 +136,7 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
         .pick(baseSchema, ['name', 'age'])
         .partial();
 
-      expect(Object.keys(schema.properties)).toHaveLength(2);
+      expect(Object.keys(schema.properties!)).toHaveLength(2);
       expect(schema.required).toBeUndefined();
     });
 
@@ -145,11 +145,11 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
         .pick(baseSchema, ['name', 'email'])
         .extend({ avatar: 'url', bio: 'string:0-500' });
 
-      expect(schema.properties.name).toBeDefined();
-      expect(schema.properties.email).toBeDefined();
-      expect(schema.properties.avatar).toBeDefined();
-      expect(schema.properties.bio).toBeDefined();
-      expect(schema.properties.password).toBeUndefined();
+      expect(schema.properties!.name).toBeDefined();
+      expect(schema.properties!.email).toBeDefined();
+      expect(schema.properties!.avatar).toBeDefined();
+      expect(schema.properties!.bio).toBeDefined();
+      expect(schema.properties!.password).toBeUndefined();
     });
 
     it('should support complex chaining', () => {
@@ -159,10 +159,10 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
         .pick(['name', 'email', 'avatar'])
         .partial();
 
-      expect(Object.keys(schema.properties)).toHaveLength(3);
-      expect(schema.properties.name).toBeDefined();
-      expect(schema.properties.email).toBeDefined();
-      expect(schema.properties.avatar).toBeDefined();
+      expect(Object.keys(schema.properties!)).toHaveLength(3);
+      expect(schema.properties!.name).toBeDefined();
+      expect(schema.properties!.email).toBeDefined();
+      expect(schema.properties!.avatar).toBeDefined();
       expect(schema.required).toBeUndefined();
     });
   });
@@ -194,7 +194,7 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
       });
 
       expect(result.valid).toBe(true);
-      expect(result.data.password).toBeUndefined();
+      expect((result.data as Record<string, unknown>)!.password).toBeUndefined();
     });
 
     it('PATCH - update user (partial validation)', () => {
@@ -249,12 +249,12 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
   describe('Edge Cases', () => {
     it('should handle an empty field array', () => {
       const schema = SchemaUtils.omit(baseSchema, []);
-      expect(Object.keys(schema.properties)).toHaveLength(Object.keys(baseSchema.properties).length);
+      expect(Object.keys(schema.properties!)).toHaveLength(Object.keys(baseSchema.properties!).length);
     });
 
     it('should handle non-existent fields', () => {
       const schema = SchemaUtils.omit(baseSchema, ['nonExistentField']);
-      expect(Object.keys(schema.properties)).toHaveLength(Object.keys(baseSchema.properties).length);
+      expect(Object.keys(schema.properties!)).toHaveLength(Object.keys(baseSchema.properties!).length);
     });
 
     it('should handle partial on nested objects', () => {

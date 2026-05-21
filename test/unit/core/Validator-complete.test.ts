@@ -14,7 +14,7 @@ beforeAll(() => {
 })
 
 afterAll(() => {
-  uninstallStringExtensions(dsl as any)
+  uninstallStringExtensions()
 })
 
 describe('Validator - Complete Validation Tests', () => {

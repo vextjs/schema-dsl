@@ -34,13 +34,13 @@ describe('Union Type Pattern', () => {
     it('should support Chinese error messages', () => {
       const result = validate(schema, { contact: 'invalid' }, { locale: 'zh-CN' })
       expect(result.valid).toBe(false)
-      expect(result.errors[0].message).toBe('\u5fc5\u987b\u662f\u90ae\u7bb1\u6216\u624b\u673a\u53f7')
+      expect(result.errors![0].message).toBe('\u5fc5\u987b\u662f\u90ae\u7bb1\u6216\u624b\u673a\u53f7')
     })
 
     it('should support English error messages', () => {
       const result = validate(schema, { contact: 'invalid' }, { locale: 'en-US' })
       expect(result.valid).toBe(false)
-      expect(result.errors[0].message).toBe('Must be an email or phone number')
+      expect(result.errors![0].message).toBe('Must be an email or phone number')
     })
   })
 
@@ -74,10 +74,10 @@ describe('Union Type Pattern', () => {
 
     it('should support multiple languages', () => {
       const r1 = validate(schema, { username: 'invalid!@#' }, { locale: 'zh-CN' })
-      expect(r1.errors[0].message).toBe('\u5fc5\u987b\u662f\u7528\u6237\u540d\u6216\u90ae\u7bb1')
+      expect(r1.errors![0].message).toBe('\u5fc5\u987b\u662f\u7528\u6237\u540d\u6216\u90ae\u7bb1')
 
       const r2 = validate(schema, { username: 'invalid!@#' }, { locale: 'en-US' })
-      expect(r2.errors[0].message).toBe('Must be a username or email')
+      expect(r2.errors![0].message).toBe('Must be a username or email')
     })
   })
 
@@ -106,10 +106,10 @@ describe('Union Type Pattern', () => {
 
     it('should support multiple languages', () => {
       const r1 = validate(schema, { website: 'ftp://example.com' }, { locale: 'zh-CN' })
-      expect(r1.errors[0].message).toBe('\u5fc5\u987b\u662f http \u6216 https \u5f00\u5934\u7684 URL')
+      expect(r1.errors![0].message).toBe('\u5fc5\u987b\u662f http \u6216 https \u5f00\u5934\u7684 URL')
 
       const r2 = validate(schema, { website: 'ftp://example.com' }, { locale: 'en-US' })
-      expect(r2.errors[0].message).toBe('Must be a URL starting with http or https')
+      expect(r2.errors![0].message).toBe('Must be a URL starting with http or https')
     })
   })
 
@@ -123,15 +123,15 @@ describe('Union Type Pattern', () => {
     it('should display custom error messages', () => {
       const result = validate(schema, { contact: 'invalid' })
       expect(result.valid).toBe(false)
-      expect(result.errors[0].message).toBe('Must be an email or phone number')
+      expect(result.errors![0].message).toBe('Must be an email or phone number')
     })
 
     it('custom messages should be unaffected by locale', () => {
       const r1 = validate(schema, { contact: 'invalid' }, { locale: 'zh-CN' })
-      expect(r1.errors[0].message).toBe('Must be an email or phone number')
+      expect(r1.errors![0].message).toBe('Must be an email or phone number')
 
       const r2 = validate(schema, { contact: 'invalid' }, { locale: 'en-US' })
-      expect(r2.errors[0].message).toBe('Must be an email or phone number')
+      expect(r2.errors![0].message).toBe('Must be an email or phone number')
     })
   })
 })

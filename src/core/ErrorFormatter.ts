@@ -25,7 +25,7 @@ export class ErrorFormatter {
   private messages: ErrorMessages
   private _locale: string
 
-  constructor(locale = 'zh-CN', messages: ErrorMessages = {}) {
+  constructor(locale = 'zh-CN', messages: ErrorMessages | Record<string, LocaleMessage | string | undefined> = {}) {
     this._locale = locale
     // Load locale messages as defaults; constructor-level custom messages override them
     const rawLocaleMessages = getMessages(locale)
@@ -35,7 +35,14 @@ export class ErrorFormatter {
         typeof v === 'string' ? v : (v as { message: string }).message,
       ])
     )
-    this.messages = { ...localeMessages, ...messages }
+    // Normalise caller-supplied messages: LocaleMessage objects → plain string
+    const normMessages: ErrorMessages = Object.fromEntries(
+      Object.entries(messages).map(([k, v]) => [
+        k,
+        v == null ? undefined : typeof v === 'string' ? v : (v as { message: string }).message,
+      ])
+    )
+    this.messages = { ...localeMessages, ...normMessages }
   }
 
   get locale(): string {

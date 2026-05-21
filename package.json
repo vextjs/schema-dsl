@@ -17,19 +17,34 @@
       }
     },
     "./plugins/custom-format": {
-      "types": "./dist/plugins/custom-format.d.ts",
-      "import": "./dist/plugins/custom-format.js",
-      "require": "./plugins/custom-format.cjs"
+      "import": {
+        "types": "./dist/plugins/custom-format.d.ts",
+        "default": "./dist/plugins/custom-format.js"
+      },
+      "require": {
+        "types": "./dist/plugins/custom-format.d.cts",
+        "default": "./plugins/custom-format.cjs"
+      }
     },
     "./plugins/custom-validator": {
-      "types": "./dist/plugins/custom-validator.d.ts",
-      "import": "./dist/plugins/custom-validator.js",
-      "require": "./plugins/custom-validator.cjs"
+      "import": {
+        "types": "./dist/plugins/custom-validator.d.ts",
+        "default": "./dist/plugins/custom-validator.js"
+      },
+      "require": {
+        "types": "./dist/plugins/custom-validator.d.cts",
+        "default": "./plugins/custom-validator.cjs"
+      }
     },
     "./plugins/custom-type-example": {
-      "types": "./dist/plugins/custom-type-example.d.ts",
-      "import": "./dist/plugins/custom-type-example.js",
-      "require": "./plugins/custom-type-example.cjs"
+      "import": {
+        "types": "./dist/plugins/custom-type-example.d.ts",
+        "default": "./dist/plugins/custom-type-example.js"
+      },
+      "require": {
+        "types": "./dist/plugins/custom-type-example.d.cts",
+        "default": "./plugins/custom-type-example.cjs"
+      }
     }
   },
   "scripts": {
@@ -101,7 +116,10 @@
   },
   "type": "module",
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.cjs",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.cts",
     "plugins",
     "src",
     "docs",

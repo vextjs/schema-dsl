@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import Ajv from 'ajv'
+import { Ajv } from 'ajv'
 import { validate, Validator } from '../../src/index.js'
 import { ErrorFormatter } from '../../src/core/ErrorFormatter.js'
 

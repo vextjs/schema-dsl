@@ -21,7 +21,7 @@ describe('StringExtensions - Complete Tests', () => {
   })
 
   afterAll(() => {
-    uninstallStringExtensions(dsl as any)
+    uninstallStringExtensions()
   })
 
   describe('Chaining Basics', () => {
@@ -304,7 +304,7 @@ describe('StringExtensions - Complete Tests', () => {
 
   describe('uninstall', () => {
     it('string extensions no longer available after uninstall', () => {
-      uninstallStringExtensions(dsl as any)
+      uninstallStringExtensions()
       expect(typeof ('string' as any).label).not.toBe('function')
       // reinstall for afterAll cleanup
       installStringExtensions(dsl as any)

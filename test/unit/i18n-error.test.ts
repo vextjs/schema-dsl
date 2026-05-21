@@ -6,7 +6,7 @@
  * - account.insufficientCredits is string format (no code extraction)
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { I18nError, dsl, Locale } from '../../src/index.js'
 
 describe('I18nError - Multilingual Error Class', () => {

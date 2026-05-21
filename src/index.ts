@@ -61,7 +61,7 @@ export { ErrorCodes } from './core/ErrorCodes.js'
 export { PATTERNS } from './config/patterns.js'
 
 // ==================== Type exports ====================
-export type { JSONSchema } from './types/schema.js'
+export type { JSONSchema, SchemaIOOptions } from './types/schema.js'
 
 export type {
   IDslBuilder,
@@ -80,7 +80,9 @@ export type {
   ValidationErrorItem,
 } from './types/validate.js'
 
-export type { DslConfigOptions } from './types/config.js'
+export type { DslConfigOptions, I18nConfig, CacheOptions, ValidatorOptions } from './types/config.js'
+// v1 BC: CacheConfig was renamed to CacheOptions in v2
+export type { CacheOptions as CacheConfig } from './types/config.js'
 
 export type { IConditionalBuilder } from './types/conditional.js'
 
@@ -107,6 +109,7 @@ import { I18nError as _I18nError } from './errors/I18nError.js'
 import type { LocaleMessage as _LocaleMessage } from './locales/types.js'
 import type { JSONSchema as _JSONSchema } from './types/schema.js'
 import type { IDslBuilder as _IDslBuilder, DslDefinition as _DslDefinition, DslConditionMarker as _DslConditionMarker } from './types/dsl.js'
+import type { IConditionalBuilder as _IConditionalBuilder } from './types/conditional.js'
 import type { DslConfigOptions as _DslConfigOptions } from './types/config.js'
 import type { ValidationResult as _ValidationResult } from './types/validate.js'
 import JSON5 from 'json5'
@@ -274,7 +277,7 @@ function _isDslObject(schema: unknown): schema is _DslDefinition {
 // DslBuilder.toSchema() / DslAdapter.parseObject() executes only on the first call
 const _normalizeSchemaCache = new WeakMap<object, _JSONSchema>()
 
-function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuilder): _JSONSchema {
+function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuilder | _IConditionalBuilder): _JSONSchema {
   if (!schema || typeof schema !== 'object') return schema as _JSONSchema
 
   const schemaObj = schema as object
@@ -476,7 +479,7 @@ export function resetDefaultValidator(): void {
  * Automatically coerces string → number when options.coerce !== false.
  */
 export function validate<T = unknown>(
-  schema: _JSONSchema | _DslDefinition | _IDslBuilder,
+  schema: _JSONSchema | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
   data: T,
   options: Record<string, unknown> = {},
 ): _ValidationResult<T> {
@@ -493,7 +496,7 @@ export function validate<T = unknown>(
  * Convenience async validate function
  */
 export async function validateAsync<T = unknown>(
-  schema: _JSONSchema | _DslDefinition | _IDslBuilder,
+  schema: _JSONSchema | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
   data: T,
   options: Record<string, unknown> = {},
 ): Promise<T> {
