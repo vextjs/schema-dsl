@@ -63,7 +63,7 @@ export class TypeConverter {
 
     // Enum detection: if schema has enum values, use ENUM type
     if (schema?.enum && Array.isArray(schema.enum)) {
-      const values = (schema.enum as unknown[]).map(v => `'${String(v)}'`).join(', ')
+      const values = (schema.enum as unknown[]).map(v => `'${String(v).replace(/'/g, "''")}'`).join(', ')
       return `ENUM(${values})`
     }
 

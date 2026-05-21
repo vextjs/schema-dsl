@@ -23,7 +23,6 @@ export class CustomKeywords {
   static registerAll(ajv: Ajv): void {
     CustomKeywords.registerRegexKeyword(ajv)
     CustomKeywords.registerFunctionKeyword(ajv)
-    CustomKeywords.registerRangeKeyword(ajv)
     CustomKeywords.registerCustomValidatorsKeyword(ajv)
     CustomKeywords.registerMetadataKeywords(ajv)
     CustomKeywords.registerStringValidators(ajv)
@@ -97,10 +96,25 @@ export class CustomKeywords {
 
   // ─── regex ──────────────────────────────────────────────────────────────
 
+  // Detect patterns with nested quantifiers that can cause ReDoS (e.g., (a+)+)
+  private static _isUnsafePattern(pattern: string): boolean {
+    // Nested quantifier: group containing +/*/{n,} followed by +/*/{n,}
+    return /(\([^)]*[+*][^)]*\)[+*{]|\([^)]*\|[^)]*\)[+*{])/.test(pattern)
+  }
+
   static registerRegexKeyword(ajv: Ajv): void {
     const validate: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
+      const patternStr = String(schema)
+      if (CustomKeywords._isUnsafePattern(patternStr)) {
+        validate.errors = [{
+          keyword: 'regex',
+          message: Locale.getMessageText('string.pattern'),
+          params: { pattern: patternStr, reason: 'unsafe nested quantifier' },
+        }]
+        return false
+      }
       try {
-        const regex = new RegExp(String(schema))
+        const regex = new RegExp(patternStr)
         if (regex.test(String(data))) return true
         // CK-02 fix: use locale key instead of concatenating raw error message
         validate.errors = [{
@@ -392,12 +406,35 @@ export class CustomKeywords {
     const dateFormat: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const fmt = String(schema)
       const pattern = DATE_FORMATS[fmt]
-      if (!pattern || !pattern.test(String(data))) {
+      const str = String(data)
+      if (!pattern || !pattern.test(str)) {
         dateFormat.errors = [{
           keyword: 'dateFormat',
           message: Locale.getMessageText('date.format'),
           params: { format: schema },
         }]
+        return false
+      }
+      // Calendar validity: extract components based on format and verify via Date
+      const sep = /[-/]/.exec(str)?.[0] ?? '-'
+      const parts = str.split(sep)
+      let y: number, m: number, dd: number
+      if (fmt === 'DD-MM-YYYY' || fmt === 'DD/MM/YYYY') {
+        [dd, m, y] = [parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2], 10)]
+      } else if (fmt === 'ISO8601') {
+        const d2 = new Date(str)
+        if (isNaN(d2.getTime())) {
+          dateFormat.errors = [{ keyword: 'dateFormat', message: Locale.getMessageText('date.format'), params: { format: schema } }]
+          return false
+        }
+        return true
+      } else {
+        [y, m, dd] = [parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2], 10)]
+      }
+      // Verify the date exists (e.g., reject 2024-13-99, 2024-02-31)
+      const probe = new Date(y, m - 1, dd)
+      if (probe.getFullYear() !== y || probe.getMonth() !== m - 1 || probe.getDate() !== dd) {
+        dateFormat.errors = [{ keyword: 'dateFormat', message: Locale.getMessageText('date.format'), params: { format: schema } }]
         return false
       }
       return true

@@ -14,8 +14,10 @@ export interface LocaleResolvedMessage {
  *   - getMessageText() → always returns final message text (used internally by v2)
  *   - getMessageConfig() → returns raw LocaleMessage (may contain code object; used by I18nError)
  */
+export const DEFAULT_LOCALE = 'zh-CN'
+
 export class Locale {
-  private static _currentLocale: string = 'zh-CN'
+  private static _currentLocale: string = DEFAULT_LOCALE
   private static _customMessages: Record<string, LocaleMessage> = {}
 
   /** v1 compat: expose custom messages */
@@ -138,7 +140,7 @@ export class Locale {
    * Reset to defaults (for testing).
    */
   static reset(): void {
-    this._currentLocale = 'zh-CN'
+    this._currentLocale = DEFAULT_LOCALE
     this._customMessages = {}
   }
 

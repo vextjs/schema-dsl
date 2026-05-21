@@ -81,6 +81,10 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
 
     if (schema.type) {
       result['bsonType'] = TypeConverter.toMongoDBType(schema.type as string | string[])
+    } else if (schema.anyOf ?? schema.oneOf) {
+      const variants = (schema.anyOf ?? schema.oneOf) as JSONSchema[]
+      const bsonTypes = [...new Set(variants.map(v => v.type ? TypeConverter.toMongoDBType(v.type as string) : null).filter(Boolean))]
+      result['bsonType'] = bsonTypes.length === 1 ? bsonTypes[0] : bsonTypes
     }
 
     if (schema.properties) {

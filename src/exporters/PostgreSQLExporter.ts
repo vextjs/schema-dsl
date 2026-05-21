@@ -112,10 +112,10 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
   }
 
   private _convertColumn(name: string, schema: JSONSchema, isRequired: boolean): string {
-    const pgType = TypeConverter.toPostgreSQLType(
-      (schema.type as string | string[]) ?? 'string',
-      schema,
-    )
+    const effectiveType: string | string[] = schema.type
+      ? (schema.type as string | string[])
+      : ((schema.anyOf ?? schema.oneOf) as JSONSchema[] | undefined)?.[0]?.type as string ?? 'string'
+    const pgType = TypeConverter.toPostgreSQLType(effectiveType, schema)
 
     let def = `${this._quoteIdent(name)} ${pgType}`
 

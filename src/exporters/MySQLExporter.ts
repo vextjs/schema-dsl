@@ -47,11 +47,11 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
     const columns = this._convertProperties(jsonSchema)
     const primaryKey = this._detectPrimaryKey(jsonSchema)
 
-    let ddl = `CREATE TABLE \`${tableName}\` (\n`
+    let ddl = `CREATE TABLE ${this._quoteIdent(tableName)} (\n`
     ddl += columns.map(col => `  ${col}`).join(',\n')
 
     if (primaryKey) {
-      ddl += `,\n  PRIMARY KEY (\`${primaryKey}\`)`
+      ddl += `,\n  PRIMARY KEY (${this._quoteIdent(primaryKey)})`
     }
 
     ddl += `\n)`
@@ -68,7 +68,7 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
   generateIndex(tableName: string, columnName: string, options: GenerateIndexOptions = {}): string {
     const indexName = options.name ?? `idx_${tableName}_${columnName}`
     const unique = options.unique ? 'UNIQUE ' : ''
-    return `CREATE ${unique}INDEX \`${indexName}\` ON \`${tableName}\` (\`${columnName}\`);`
+    return `CREATE ${unique}INDEX ${this._quoteIdent(indexName)} ON ${this._quoteIdent(tableName)} (${this._quoteIdent(columnName)});`
   }
 
   /**
@@ -79,6 +79,10 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
   }
 
   // ==================== Private methods ====================
+
+  private _quoteIdent(name: string): string {
+    return '`' + name.replace(/`/g, '``') + '`'
+  }
 
   private _convertProperties(schema: JSONSchema): string[] {
     if (!schema.properties) return []
@@ -94,13 +98,13 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
   }
 
   private _convertColumn(name: string, schema: JSONSchema, isRequired: boolean): string {
-    // Pass full schema so TypeConverter can read maxLength and other constraints
-    const mysqlType = TypeConverter.toMySQLType(
-      (schema.type as string | string[]) ?? 'string',
-      schema,
-    )
+    // For anyOf/oneOf without top-level type, resolve the effective type from the first variant
+    const effectiveType: string | string[] = schema.type
+      ? (schema.type as string | string[])
+      : ((schema.anyOf ?? schema.oneOf) as JSONSchema[] | undefined)?.[0]?.type as string ?? 'string'
+    const mysqlType = TypeConverter.toMySQLType(effectiveType, schema)
 
-    let def = `\`${name}\` ${mysqlType}`
+    let def = `${this._quoteIdent(name)} ${mysqlType}`
 
     def += isRequired ? ' NOT NULL' : ' NULL'
 

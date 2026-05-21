@@ -68,13 +68,20 @@ const EXTENSION_METHODS = [
 
 type DslFn = (dslStr: string) => DslBuilder
 
+// Track which dslFunction the extensions were installed with
+let _installedDslFn: DslFn | null = null
+
 /**
  * Install String.prototype extensions.
  * @param dslFunction - dsl() function (converts a string to a DslBuilder instance)
  */
 export function installStringExtensions(dslFunction: DslFn): void {
-  // Idempotent: skip if already installed
-  if ((String.prototype as unknown as Record<string, unknown>)['_dslExtensionsInstalled']) return
+  // Idempotent: skip only if installed with the same dslFunction reference
+  if (_installedDslFn === dslFunction) return
+  // If installed with a different function, uninstall first then reinstall
+  if (_installedDslFn !== null) {
+    uninstallStringExtensions()
+  }
 
   const proto = String.prototype as unknown as Record<string, unknown>
 
@@ -115,6 +122,7 @@ export function installStringExtensions(dslFunction: DslFn): void {
 
   // Installation marker (v1 BC)
   proto['_dslExtensionsInstalled'] = true
+  _installedDslFn = dslFunction
 }
 
 /**
@@ -128,4 +136,5 @@ export function uninstallStringExtensions(): void {
   for (const method of EXTENSION_METHODS) {
     delete proto[method]
   }
+  _installedDslFn = null
 }

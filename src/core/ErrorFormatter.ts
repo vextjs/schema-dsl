@@ -4,6 +4,7 @@ import { renderTemplate } from './TemplateEngine.js'
 import { KEYWORD_MAP } from './ErrorCodes.js'
 import { getMessages } from '../locales/index.js'
 import type { LocaleMessage } from '../locales/types.js'
+import { DEFAULT_LOCALE } from './Locale.js'
 
 type AjvRawError = {
   keyword: string
@@ -25,7 +26,7 @@ export class ErrorFormatter {
   private messages: ErrorMessages
   private _locale: string
 
-  constructor(locale = 'zh-CN', messages: ErrorMessages | Record<string, LocaleMessage | string | undefined> = {}) {
+  constructor(locale = DEFAULT_LOCALE, messages: ErrorMessages | Record<string, LocaleMessage | string | undefined> = {}) {
     this._locale = locale
     // Load locale messages as defaults; constructor-level custom messages override them
     const rawLocaleMessages = getMessages(locale)

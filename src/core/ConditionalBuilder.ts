@@ -165,9 +165,11 @@ export class ConditionalBuilder implements IConditionalBuilder {
 
   // ==================== Validation Methods ====================
 
+  private _validator: Validator | null = null
+
   validate(data: unknown, options: Record<string, unknown> = {}): ValidationResult<unknown> {
-    const validator = new Validator(options)
-    return validator.validate(this.toSchema(), data, options)
+    if (!this._validator) this._validator = new Validator(options)
+    return this._validator.validate(this.toSchema(), data, options)
   }
 
   async validateAsync(data: unknown, options: Record<string, unknown> = {}): Promise<ValidationResult<unknown>> {

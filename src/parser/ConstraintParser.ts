@@ -61,12 +61,12 @@ export const ConstraintParser = {
       const result: Partial<JSONSchema> = {}
 
       if (baseType === 'string') {
-        // string type: minLength / maxLength (integers)
-        if (rawMin) result.minLength = parseInt(rawMin, 10)
+        // string type: minLength / maxLength (integers, non-negative)
+        if (rawMin) result.minLength = Math.max(0, parseInt(rawMin, 10))
         // "-M" format: take absolute value
         if (rawMax) result.maxLength = Math.abs(parseInt(rawMax, 10))
       } else if (baseType === 'array') {
-        if (rawMin) result.minItems = parseInt(rawMin, 10)
+        if (rawMin) result.minItems = Math.max(0, parseInt(rawMin, 10))
         if (rawMax) result.maxItems = Math.abs(parseInt(rawMax, 10))
       } else {
         // number / integer
@@ -94,7 +94,8 @@ export const ConstraintParser = {
       }
     }
 
-    // ========== 5. Unparseable: return {} ==========
+    // ========== 5. Unparseable: warn and return {} ==========
+    console.warn(`[schema-dsl] ConstraintParser: unrecognized constraint "${constraintStr}" for type "${baseType}" — ignored`)
     return {}
   },
 }

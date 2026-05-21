@@ -92,7 +92,7 @@ export class SchemaUtils {
 
     for (const field of fields) {
       if (schema.properties?.[field]) {
-        (result['properties'] as Record<string, unknown>)[field] = schema.properties[field]
+        (result['properties'] as Record<string, unknown>)[field] = this._clone(schema.properties[field] as JSONSchema)
         if (schema.required?.includes(field)) {
           (result['required'] as string[]).push(field)
         }
@@ -139,16 +139,7 @@ export class SchemaUtils {
       raw = this._clone(schema)
     }
 
-    delete raw['required']
-
-    // Recursively remove nested required
-    if (raw['properties']) {
-      for (const prop of Object.values(raw['properties'] as Record<string, Record<string, unknown>>)) {
-        if (prop && prop['type'] === 'object' && prop['required']) {
-          delete prop['required']
-        }
-      }
-    }
+    this._deleteRequired(raw)
 
     return this._makeChainable(raw as JSONSchema)
   }
@@ -274,6 +265,18 @@ export class SchemaUtils {
   }
 
   // ==================== Private Utilities ====================
+
+  private static _deleteRequired(obj: Record<string, unknown>): void {
+    delete obj['required']
+    const props = obj['properties']
+    if (props && typeof props === 'object') {
+      for (const prop of Object.values(props as Record<string, unknown>)) {
+        if (prop && typeof prop === 'object') {
+          this._deleteRequired(prop as Record<string, unknown>)
+        }
+      }
+    }
+  }
 
   private static _clone(schema: JSONSchema | ChainableSchema): Record<string, unknown> {
     const raw = '_isChainable' in schema ? this._extractSchema(schema as ChainableSchema) : schema

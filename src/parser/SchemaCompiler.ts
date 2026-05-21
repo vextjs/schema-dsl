@@ -1,8 +1,8 @@
 import type { JSONSchema } from '../types/schema.js'
 import type { TypeDefinition } from './TypeRegistry.js'
 
-/** Callback type for the afterCompile hook. */
-export type AfterCompileHook = (schema: JSONSchema) => void | Promise<void>
+/** Callback type for the afterCompile hook (synchronous only). */
+export type AfterCompileHook = (schema: JSONSchema) => void
 
 /**
  * SchemaCompiler — assembles TypeDefinition + constraints into the final JSONSchema.
@@ -43,15 +43,9 @@ export const SchemaCompiler = {
     if (meta?.label) schema['_label'] = meta.label
     if (meta?.required) schema['_required'] = true
 
-    // Fire afterCompile hook (sync portion; async is awaited by DslParser in async path)
+    // Fire afterCompile hook (synchronous)
     if (meta?.afterCompileHook) {
-      const result = meta.afterCompileHook(schema)
-      // Non-blocking: if the hook returns a Promise, the caller is responsible for awaiting it
-      if (result instanceof Promise) {
-        result.catch(err => {
-          console.warn('[schema-dsl] afterCompile hook error:', err)
-        })
-      }
+      meta.afterCompileHook(schema)
     }
 
     return schema

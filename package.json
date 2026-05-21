@@ -23,7 +23,7 @@
       },
       "require": {
         "types": "./dist/plugins/custom-format.d.cts",
-        "default": "./plugins/custom-format.cjs"
+        "default": "./dist/plugins/custom-format.cjs"
       }
     },
     "./plugins/custom-validator": {
@@ -33,7 +33,7 @@
       },
       "require": {
         "types": "./dist/plugins/custom-validator.d.cts",
-        "default": "./plugins/custom-validator.cjs"
+        "default": "./dist/plugins/custom-validator.cjs"
       }
     },
     "./plugins/custom-type-example": {
@@ -43,7 +43,7 @@
       },
       "require": {
         "types": "./dist/plugins/custom-type-example.d.cts",
-        "default": "./plugins/custom-type-example.cjs"
+        "default": "./dist/plugins/custom-type-example.cjs"
       }
     }
   },

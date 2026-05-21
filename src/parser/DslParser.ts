@@ -273,6 +273,7 @@ export const DslParser = {
             ...(required ? { _required: true } : {}),
           }
         }
+        throw new Error(`[schema-dsl] Unsupported country/variant "${arg}" for type "${typeName}"`)
       }
     }
 

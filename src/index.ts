@@ -285,10 +285,12 @@ function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuild
   if (cached !== undefined) return cached
 
   const obj = schema as Record<string, unknown>
-  let result: _JSONSchema
   if (typeof obj['toSchema'] === 'function') {
-    result = (obj['toSchema'] as () => _JSONSchema)()
-  } else if (_isDslObject(schema)) {
+    // Mutable builders must NOT be cached — their schema changes as chain methods are called
+    return (obj['toSchema'] as () => _JSONSchema)()
+  }
+  let result: _JSONSchema
+  if (_isDslObject(schema)) {
     result = _DslAdapter.parseObject(schema).toSchema()
   } else {
     result = schema as _JSONSchema
@@ -594,6 +596,4 @@ export function installStringExtensions(dslFunction: Parameters<typeof _install>
   _install(dslFunction)
 }
 
-// v1 compatibility: requiring/importing the package installs String.prototype extensions.
-installStringExtensions()
 

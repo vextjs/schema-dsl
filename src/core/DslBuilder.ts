@@ -460,12 +460,14 @@ export class DslBuilder implements IDslBuilder {
 
   /** v1.0.2 alias: dateGreater. */
   dateGreater(date: string): this {
+    this._assertStringType('dateGreater')
     this._baseSchema.dateGreater = date
     return this
   }
 
   /** v1.0.2 alias: dateLess. */
   dateLess(date: string): this {
+    this._assertStringType('dateLess')
     this._baseSchema.dateLess = date
     return this
   }
@@ -744,10 +746,14 @@ export class DslBuilder implements IDslBuilder {
    * Validate data (BC with v1).
    * @param data - data to validate
    */
+  private _validator: unknown = null
+
   async validate(data: unknown): Promise<unknown> {
-    const { Validator } = await import('./Validator.js')
-    const validator = new Validator()
+    if (!this._validator) {
+      const { Validator } = await import('./Validator.js')
+      this._validator = new Validator()
+    }
     const schema = this.toSchema()
-    return validator.validate(schema, data)
+    return (this._validator as InstanceType<typeof import('./Validator.js').Validator>).validate(schema, data)
   }
 }
