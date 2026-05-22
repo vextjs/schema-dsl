@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.0.1] | 2026-05-22 | Patch | Post-release security & correctness fixes: safe-regex bypass, XSS escaping, reset completeness, cache rebuild, SQL injection in exporters |
 | [2.0.0] | 2026-05-09 | Major | Full release: BC-2/4/5/6/7 fixes, string:N compat, English comments, 58 enriched examples, 1095 tests [View](./changelogs/v2.0.0.md) |
 | [2.0.0-beta.2] | 2026-04-12 | Major | Full TypeScript rewrite: ESM+CJS dual format, AJV 8, tsup build, 1052 tests passing [View](./changelogs/v2.0.0-beta.2.md) |
 | [v1.2.5] | 2026-03-09 | Patch | Feature: `DslBuilder.toJsonSchema()` — exports clean JSON Schema, strips internal markers |
@@ -35,6 +36,21 @@ All notable changes to this project will be documented in this file.
 | v1.0.2 | 2025-12-31 | Patch | 15 new validators, complete docs, 75 tests |
 | v1.0.1 | 2025-12-31 | Patch | Enum support, auto type detection, unified error messages |
 | [v1.0.0] | 2025-12-29 | Pre-release | Initial release [View](./changelogs/v1.0.0.md) |
+
+---
+
+## [2.0.1] — 2026-05-22
+
+### Fixes
+
+- **Security (DslBuilder)**: built-in string validators (`domain`, `ip`, `base64`, `jwt`, `phone`, `idCard`, `slugChain`, `creditCard`, `licensePlate`, `postalCode`, `passport`, `username`, `password`) now use a new private `_setPattern()` that bypasses the safe-regex check. Public `.pattern()` still enforces the check for user-supplied patterns; this prevents false-positive ReDoS rejections on pre-approved, production-tested regex patterns.
+- **Security (SchemaUtils)**: `toHTML()` now escapes all dynamic content (`title`, field names, types, labels) through `_escapeHtml()`, preventing XSS when field names or labels contain `<`, `>`, `&`, `"`, or `'`. `toMarkdown()` escapes pipe characters and newlines through `_escapeMdCell()`, preventing broken table rendering.
+- **Security (Exporters)**: `PostgreSQLExporter._formatDefaultValue()` and `MySQLExporter._formatDefaultValue()` now call `_escapeString()` on JSON-stringified object/array default values, preventing SQL injection when default values contain single quotes (e.g. `{ name: "O'Brien" }`). `MySQLExporter` also no longer emits `[object Object]` for object-type defaults.
+- **Correctness (index)**: `resetRuntimeState()` now fully resets all runtime-mutable globals: `_strictMode` (TypeRegistry), custom types (DslBuilder + TypeRegistry), locale registry (Locale.reset()), and user-added pattern keys in `PATTERNS.phone / .idCard / .creditCard` via an initial-keys snapshot — preventing cross-test or cross-tenant leakage.
+- **Correctness (CacheManager)**: the `options` setter now rebuilds the internal `MemoryCache` instance when `maxSize` changes, migrating existing entries to the new capacity. Previously, only the `_maxSize` field was updated while the cache instance retained its original capacity.
+- **Correctness (TypeConverter)**: `toMySQLType()` and `toPostgreSQLType()` no longer map the JSON Schema `"null"` type to the SQL keyword `NULL` (which is a constraint, not a data type). Both now return `TEXT`.
+- **DX (Plugins)**: removed `console.log` calls from `install()` and `uninstall()` in `custom-format`, `custom-validator`, and `custom-type-example` example plugins. Runtime error logging via `console.error` is preserved.
+- **DX (SchemaUtils)**: added JSDoc to `SchemaUtils.validateBatch()` noting that it recompiles the schema on every call (no caching), with a recommendation to use `Validator.validateBatch()` for repeated validations of the same schema.
 
 ---
 
@@ -92,7 +108,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/vextjs/schema-dsl/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/vextjs/schema-dsl/compare/v2.0.0-beta.2...v2.0.0
 [2.0.0-beta.2]: https://github.com/vextjs/schema-dsl/releases/tag/v2.0.0-beta.2
 [v1.2.5]: https://github.com/vextjs/schema-dsl/compare/v1.2.4...v1.2.5

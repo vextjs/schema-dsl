@@ -150,6 +150,7 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
     if (value === null) return 'NULL'
     if (type === 'string') return `'${this._escapeString(String(value))}'`
     if (type === 'boolean') return value ? '1' : '0'
+    if (typeof value === 'object' && value !== null) return `'${this._escapeString(JSON.stringify(value))}'`
     return String(value)
   }
 }

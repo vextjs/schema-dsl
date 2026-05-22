@@ -197,7 +197,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
     if (value === null) return 'NULL'
     if (type === 'string') return `'${this._escapeString(String(value))}'`
     if (type === 'boolean') return value ? 'TRUE' : 'FALSE'
-    if (type === 'object' || type === 'array') return `'${JSON.stringify(value)}'::JSONB`
+    if (type === 'object' || type === 'array') return `'${this._escapeString(JSON.stringify(value))}'::JSONB`
     return String(value)
   }
 
