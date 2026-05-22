@@ -168,6 +168,10 @@ export class SchemaUtils {
 
   /**
    * Batch validate using a pre-compiled Ajv validate function.
+   *
+   * Note: the schema is compiled once per call but not cached between calls.
+   * For repeated batch validation of the same schema, prefer `Validator.validateBatch()`
+   * which benefits from the built-in compile cache and returns typed `ValidationResult[]`.
    */
   static validateBatch(
     schema: JSONSchema,
@@ -216,22 +220,23 @@ export class SchemaUtils {
 
       for (const [key, prop] of Object.entries(schema.properties)) {
         const required = schema.required?.includes(key) ? '✅' : '❌'
-        const type = (prop.type as string) ?? 'any'
+        const type = SchemaUtils._escapeMdCell((prop.type as string) ?? 'any')
         const p = prop as Record<string, unknown>
-        const label = (p['_label'] as string) ?? key
+        const label = SchemaUtils._escapeMdCell((p['_label'] as string) ?? key)
+        const escapedKey = SchemaUtils._escapeMdCell(key)
 
-        md += `| ${key} | ${type} | ${required} | ${label} |\n`
+        md += `| ${escapedKey} | ${type} | ${required} | ${label} |\n`
 
         const constraints: string[] = []
         if (prop.minLength) constraints.push(`minLength: ${prop.minLength}`)
         if (prop.maxLength) constraints.push(`maxLength: ${prop.maxLength}`)
         if (prop.minimum !== undefined) constraints.push(`minimum: ${prop.minimum}`)
         if (prop.maximum !== undefined) constraints.push(`maximum: ${prop.maximum}`)
-        if (prop.pattern) constraints.push(`pattern: \`${prop.pattern}\``)
+        if (prop.pattern) constraints.push(`pattern: \`${SchemaUtils._escapeMdCell(String(prop.pattern))}\``)
         if (prop.enum) constraints.push(`enum: ${(prop.enum as unknown[]).join(', ')}`)
 
         if (constraints.length > 0) {
-          md += `| | | | ${constraints.join('; ')} |\n`
+          md += `| | | | ${SchemaUtils._escapeMdCell(constraints.join('; '))} |\n`
         }
       }
     }
@@ -248,7 +253,8 @@ export class SchemaUtils {
    */
   static toHTML(schema: JSONSchema, options: { title?: string } = {}): string {
     const { title = 'Schema Documentation' } = options
-    let html = `<!DOCTYPE html>\n<html>\n<head><meta charset="utf-8"><title>${title}</title></head>\n<body>\n<h1>${title}</h1>\n`
+    const safeTitle = SchemaUtils._escapeHtml(title)
+    let html = `<!DOCTYPE html>\n<html>\n<head><meta charset="utf-8"><title>${safeTitle}</title></head>\n<body>\n<h1>${safeTitle}</h1>\n`
 
     if (schema.properties) {
       html += '<table border="1" cellpadding="4">\n'
@@ -256,11 +262,11 @@ export class SchemaUtils {
 
       for (const [key, prop] of Object.entries(schema.properties)) {
         const required = schema.required?.includes(key) ? '✅' : '❌'
-        const type = (prop.type as string) ?? 'any'
+        const type = SchemaUtils._escapeHtml((prop.type as string) ?? 'any')
         const p = prop as Record<string, unknown>
-        const label = (p['_label'] as string) ?? key
+        const label = SchemaUtils._escapeHtml((p['_label'] as string) ?? key)
 
-        html += `<tr><td>${key}</td><td>${type}</td><td>${required}</td><td>${label}</td></tr>\n`
+        html += `<tr><td>${SchemaUtils._escapeHtml(key)}</td><td>${type}</td><td>${required}</td><td>${label}</td></tr>\n`
       }
 
       html += '</table>\n'
@@ -271,6 +277,19 @@ export class SchemaUtils {
   }
 
   // ==================== Private Utilities ====================
+
+  private static _escapeMdCell(str: string): string {
+    return str.replace(/\|/g, '\\|').replace(/\r\n|\r|\n/g, '<br>')
+  }
+
+  private static _escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+  }
 
   private static _mergeProperties(
     base: Record<string, unknown>,

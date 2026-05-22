@@ -13,6 +13,7 @@ import type { IDslBuilder } from '../types/dsl.js'
 import { DslParser } from '../parser/DslParser.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
+import safeRegex from 'safe-regex'
 import type { Validator as ValidatorInstance } from './Validator.js'
 import type { ValidationResult } from '../types/validate.js'
 
@@ -216,7 +217,16 @@ export class DslBuilder implements IDslBuilder {
    * Add regex validation.
    */
   pattern(regex: RegExp | string, message?: string): this {
-    this._baseSchema.pattern = regex instanceof RegExp ? regex.source : regex
+    const source = regex instanceof RegExp ? regex.source : regex
+    if (!safeRegex(source)) {
+      throw new Error(`[schema-dsl] Unsafe regex pattern rejected (potential ReDoS): ${source}`)
+    }
+    return this._setPattern(source, message)
+  }
+
+  /** Internal: set pattern without safe-regex check (used by built-in validators with pre-approved patterns). */
+  private _setPattern(source: string, message?: string): this {
+    this._baseSchema.pattern = source
     if (message) {
       this._customMessages['string.pattern'] = message
     }
@@ -403,28 +413,28 @@ export class DslBuilder implements IDslBuilder {
   domain(): this {
     this._assertStringType('domain')
     const cfg = PATTERNS.common.domain
-    return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
+    return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** String IP address validation (IPv4 or IPv6). */
   ip(): this {
     this._assertStringType('ip')
     const cfg = PATTERNS.common.ip
-    return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
+    return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** String Base64 encoding validation. */
   base64(): this {
     this._assertStringType('base64')
     const cfg = PATTERNS.common.base64
-    return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
+    return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** String JWT token validation. */
   jwt(): this {
     this._assertStringType('jwt')
     const cfg = PATTERNS.common.jwt
-    return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
+    return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   // ==================== Identity / Pattern Chain Methods ====================
@@ -441,7 +451,7 @@ export class DslBuilder implements IDslBuilder {
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country: ${country}`)
     if (cfg.min !== undefined && !this._baseSchema.minLength) this._baseSchema.minLength = cfg.min
     if (cfg.max !== undefined && !this._baseSchema.maxLength) this._baseSchema.maxLength = cfg.max
-    return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
+    return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** phone() alias (BC). */
@@ -456,40 +466,40 @@ export class DslBuilder implements IDslBuilder {
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for idCard: ${country}`)
     if (cfg.min !== undefined && !this._baseSchema.minLength) this._baseSchema.minLength = cfg.min
     if (cfg.max !== undefined && !this._baseSchema.maxLength) this._baseSchema.maxLength = cfg.max
-    return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
+    return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** URL slug validation. */
   slugChain(): this {
-    return this.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).messages({ pattern: 'pattern.slug' })
+    return this._setPattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.source).messages({ pattern: 'pattern.slug' })
   }
 
   /** Credit card number validation. */
   creditCard(type = 'visa'): this {
     const cfg = PATTERNS.creditCard[type.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported credit card type: ${type}`)
-    return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
+    return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** Vehicle license plate validation. */
   licensePlate(country = 'cn'): this {
     const cfg = PATTERNS.licensePlate[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for licensePlate: ${country}`)
-    return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
+    return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** Postal code validation. */
   postalCode(country = 'cn'): this {
     const cfg = PATTERNS.postalCode[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for postalCode: ${country}`)
-    return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
+    return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** Passport number validation. */
   passport(country = 'cn'): this {
     const cfg = PATTERNS.passport[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for passport: ${country}`)
-    return this.pattern(cfg.pattern).messages({ pattern: cfg.key })
+    return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /**
@@ -536,7 +546,7 @@ export class DslBuilder implements IDslBuilder {
       pat += '[a-zA-Z]*$'
     }
 
-    return this.pattern(new RegExp(pat)).messages({ pattern: 'pattern.username' })
+    return this._setPattern(pat).messages({ pattern: 'pattern.username' })
   }
 
   /**
@@ -548,7 +558,7 @@ export class DslBuilder implements IDslBuilder {
     if (!pat) throw new Error(`[schema-dsl] Invalid password strength: ${strength}`)
     if (!this._baseSchema.minLength) this._baseSchema.minLength = PASSWORD_MIN_LENGTHS[strength]
     if (!this._baseSchema.maxLength) this._baseSchema.maxLength = 64
-    return this.pattern(pat).messages({ pattern: `pattern.password.${strength}` })
+    return this._setPattern(pat.source).messages({ pattern: `pattern.password.${strength}` })
   }
 
   // ==================== Number Chain Methods ====================

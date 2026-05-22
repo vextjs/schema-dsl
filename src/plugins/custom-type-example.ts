@@ -16,10 +16,8 @@ export const customTypeExamplePlugin: Plugin & {
     }
 
     this.registerCustomTypes(builder)
-    console.log('[Plugin] custom-type-example installed')
   },
   uninstall() {
-    console.log('[Plugin] custom-type-example uninstalled')
   },
   registerCustomTypes(dslBuilder) {
     dslBuilder.registerType('order-id', {

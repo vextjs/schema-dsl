@@ -106,10 +106,8 @@ export const customFormatPlugin: Plugin & {
     const ajv = getAjvLike(core)
     const dslBuilder = getDslBuilderLike(core)
     this.addCustomFormats(ajv, dslBuilder)
-    console.log('[Plugin] custom-format v2.0.0 installed (with DSL type registration)')
   },
   uninstall() {
-    console.log('[Plugin] custom-format uninstalled')
   },
   addCustomFormats(ajv, dslBuilder) {
     for (const [name, config] of Object.entries(FORMATS)) {

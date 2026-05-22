@@ -499,6 +499,13 @@ export function resetDefaultValidator(): void {
   _defaultValidator = null
 }
 
+// Initial PATTERNS keys snapshot — used by resetRuntimeState() to prune user-added patterns
+const _INITIAL_PATTERN_KEYS = {
+  phone: new Set(Object.keys(_PATTERNS.phone)),
+  idCard: new Set(Object.keys(_PATTERNS.idCard)),
+  creditCard: new Set(Object.keys(_PATTERNS.creditCard)),
+}
+
 /**
  * Reset global runtime state that may leak across tests, workers, or tenants.
  */
@@ -506,6 +513,17 @@ export function resetRuntimeState(): void {
   resetDefaultValidator()
   _DslBuilder.clearCustomTypes()
   _Locale.reset()
+  _TypeRegistry.setStrict(false)
+  // Remove any keys added to PATTERNS via dsl.config({ patterns })
+  for (const key of Object.keys(_PATTERNS.phone)) {
+    if (!_INITIAL_PATTERN_KEYS.phone.has(key)) delete _PATTERNS.phone[key]
+  }
+  for (const key of Object.keys(_PATTERNS.idCard)) {
+    if (!_INITIAL_PATTERN_KEYS.idCard.has(key)) delete _PATTERNS.idCard[key]
+  }
+  for (const key of Object.keys(_PATTERNS.creditCard)) {
+    if (!_INITIAL_PATTERN_KEYS.creditCard.has(key)) delete _PATTERNS.creditCard[key]
+  }
 }
 
 // ==================== Convenience validation functions ====================

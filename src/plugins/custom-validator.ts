@@ -32,11 +32,9 @@ export const customValidatorPlugin: Plugin & {
     const validator = getValidator(core)
     this.addCustomKeywords(validator)
     getPluginBucket()['custom-validator'] = this
-    console.log('[Plugin] custom-validator installed')
   },
   uninstall() {
     delete getPluginBucket()['custom-validator']
-    console.log('[Plugin] custom-validator uninstalled')
   },
   addCustomKeywords(validator) {
     const ajv = validator.getAjv() as {

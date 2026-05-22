@@ -34,7 +34,7 @@ export class CacheManager {
   private _enabled: boolean
   private _maxSize: number
   private _ttl: number
-  private readonly _cache: MemoryCache
+  private _cache: MemoryCache
   private _statsEnabled: boolean = true
   private _clears = 0
 
@@ -61,7 +61,17 @@ export class CacheManager {
   }
 
   set options(opts: Partial<{ maxSize: number; ttl: number; enabled: boolean; statsEnabled: boolean }>) {
-    if (opts.maxSize !== undefined) this._maxSize = opts.maxSize
+    if (opts.maxSize !== undefined && opts.maxSize !== this._maxSize) {
+      this._maxSize = opts.maxSize
+      // Rebuild MemoryCache so the new capacity actually takes effect
+      const oldKeys = this._cache.keys()
+      const newCache = new MemoryCache({ maxEntries: this._maxSize })
+      for (const key of oldKeys) {
+        const val = this._cache.get(key)
+        if (val !== undefined) newCache.set(key, val)
+      }
+      this._cache = newCache
+    }
     if (opts.ttl !== undefined) this._ttl = opts.ttl
     if (opts.enabled !== undefined) this._enabled = opts.enabled
     if (opts.statsEnabled !== undefined) this._statsEnabled = opts.statsEnabled

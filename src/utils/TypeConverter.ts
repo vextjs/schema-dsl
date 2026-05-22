@@ -105,7 +105,7 @@ export class TypeConverter {
       case 'array':
         return 'JSON'
       case 'null':
-        return 'NULL'
+        return 'TEXT'
       default:
         return 'VARCHAR(255)'
     }
@@ -137,7 +137,7 @@ export class TypeConverter {
       case 'array':
         return 'JSONB'
       case 'null':
-        return 'NULL'
+        return 'TEXT'
       default:
         return 'TEXT'
     }
