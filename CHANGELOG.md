@@ -6,22 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## Unreleased
-
-### Fixes
-
-- Security: replace the custom regex ReDoS heuristic in `CustomKeywords` with `safe-regex`, so catastrophic patterns such as `((a)+)+$` are rejected before execution.
-- Validation: stop caching `DslBuilder.toSchema()` results inside `Validator`, so chain mutations made after the first validation call are honored by both `validate()` and `validateAsync()`.
-- Validation: make `ConditionalBuilder` cache `Validator` instances by constructor-level option set, so repeated calls with different `allErrors` / `useDefaults` configurations no longer reuse a stale validator.
-- Exporters: fix MySQL integer sizing so `TypeConverter.toMySQLType()` checks both `minimum` and `maximum` before choosing `TINYINT` / `SMALLINT` / `INT`, avoiding undersized column types.
-- Exporters: escape Markdown table cell content in `MarkdownExporter`, so field names, constraint text, and multiline descriptions containing `|` or newlines no longer break rendered tables.
-- Tests: add focused regression coverage for unsafe regex rejection while preserving the existing invalid-regex error path.
-
 ## Version History
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
-| [2.0.0] | 2026-05-09 | Major | Full release: BC-2/4/5/6/7 fixes, string:N compat, English comments, 58 enriched examples, 1053 tests [View](./changelogs/v2.0.0.md) |
+| [2.0.0] | 2026-05-09 | Major | Full release: BC-2/4/5/6/7 fixes, string:N compat, English comments, 58 enriched examples, 1095 tests [View](./changelogs/v2.0.0.md) |
 | [2.0.0-beta.2] | 2026-04-12 | Major | Full TypeScript rewrite: ESM+CJS dual format, AJV 8, tsup build, 1052 tests passing [View](./changelogs/v2.0.0-beta.2.md) |
 | [v1.2.5] | 2026-03-09 | Patch | Feature: `DslBuilder.toJsonSchema()` — exports clean JSON Schema, strips internal markers |
 | [v1.2.4] | 2026-03-09 | Patch | P1 Fix: `enum:a,b,c` comma-separated format parsing completely broken |
@@ -73,9 +62,18 @@ All notable changes to this project will be documented in this file.
 
 ### Quality
 
-- 1053 tests passing (all 67 test files green).
+- 1095 tests passing (75 test files).
 - 0 TypeScript errors in source and examples.
 - ESM + CJS dual format build.
+
+### Fixes
+
+- **Security**: replace the custom regex ReDoS heuristic in `CustomKeywords` with `safe-regex`, so catastrophic patterns such as `((a)+)+$` are rejected before execution.
+- **Validation**: stop caching `DslBuilder.toSchema()` results inside `Validator`, so chain mutations made after the first validation call are honored by both `validate()` and `validateAsync()`.
+- **Validation**: make `ConditionalBuilder` cache `Validator` instances by constructor-level option set, so repeated calls with different `allErrors` / `useDefaults` configurations no longer reuse a stale validator.
+- **Exporters**: fix MySQL integer sizing so `TypeConverter.toMySQLType()` checks both `minimum` and `maximum` before choosing `TINYINT` / `SMALLINT` / `INT`, avoiding undersized column types.
+- **Exporters**: escape Markdown table cell content in `MarkdownExporter`, so field names, constraint text, and multiline descriptions containing `|` or newlines no longer break rendered tables.
+- **Tests**: add focused regression coverage for unsafe regex rejection while preserving the existing invalid-regex error path.
 
 ---
 

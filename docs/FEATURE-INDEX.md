@@ -460,8 +460,7 @@ const extended = SchemaUtils.extend(schema1, { age: 'number' });
 
 **可用关键字**:
 - ✅ `regex` - 正则验证
-- ✅ `validate` - 函数验证
-- ✅ `range` - 数值范围
+- ✅ `validate` - 自定义函数验证
 
 **使用示例**:
 ```javascript
@@ -538,7 +537,6 @@ const schema = {
 - 📖 [String扩展](./string-extensions.md) - String扩展特性
 - 📖 [API参考](./api-reference.md) - 完整API
 - 📖 [CHANGELOG](https://github.com/vextjs/schema-dsl/blob/main/CHANGELOG.md) - 更新日志
-- 📖 [STATUS](https://github.com/vextjs/schema-dsl/blob/main/STATUS.md) - 项目状态
 
 ---
 

@@ -172,6 +172,7 @@ export class ConditionalBuilder implements IConditionalBuilder {
   // ==================== Validation Methods ====================
 
   private readonly _validatorCache = new Map<string, Validator>()
+  private static readonly _VALIDATOR_CACHE_MAX = 20
 
   validate(data: unknown, options: Record<string, unknown> = {}): ValidationResult<unknown> {
     const validator = this._getValidator(options)
@@ -179,8 +180,18 @@ export class ConditionalBuilder implements IConditionalBuilder {
   }
 
   async validateAsync(data: unknown, options: Record<string, unknown> = {}): Promise<ValidationResult<unknown>> {
-    // ConditionalBuilder evaluation is synchronous; wrap sync result in a Promise
-    return Promise.resolve(this.validate(data, options))
+    const validator = this._getValidator(options)
+    // validator.validateAsync() throws ValidationError on failure and returns data on success.
+    // Adapt to the ValidationResult contract expected by ConditionalBuilder callers.
+    try {
+      const resultData = await validator.validateAsync(this.toSchema(), data, options)
+      return { valid: true, data: resultData as unknown, errors: [] }
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        return { valid: false, errors: err.errors, data: undefined }
+      }
+      throw err
+    }
   }
 
   /**
@@ -318,6 +329,10 @@ export class ConditionalBuilder implements IConditionalBuilder {
 
     let validator = this._validatorCache.get(cacheKey)
     if (!validator) {
+      if (this._validatorCache.size >= ConditionalBuilder._VALIDATOR_CACHE_MAX) {
+        const firstKey = this._validatorCache.keys().next().value
+        if (firstKey !== undefined) this._validatorCache.delete(firstKey)
+      }
       validator = new Validator(constructorOptions)
       this._validatorCache.set(cacheKey, validator)
     }

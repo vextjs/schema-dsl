@@ -182,27 +182,6 @@ export class CustomKeywords {
     ajv.addKeyword({ keyword: 'validate', validate, errors: true })
   }
 
-  // ─── range ───────────────────────────────────────────────────────────────
-
-  static registerRangeKeyword(ajv: Ajv): void {
-    const validate: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
-      const s = schema as { min?: number; max?: number }
-      const num = data as number
-
-      if (s.min !== undefined && num < s.min) {
-        validate.errors = [{ keyword: 'range', message: `must be >= ${s.min}`, params: { min: s.min } }]
-        return false
-      }
-      if (s.max !== undefined && num > s.max) {
-        validate.errors = [{ keyword: 'range', message: `must be <= ${s.max}`, params: { max: s.max } }]
-        return false
-      }
-      return true
-    }
-
-    ajv.addKeyword({ keyword: 'range', type: 'number', schemaType: 'object', validate, errors: true })
-  }
-
   // ─── String validators ───────────────────────────────────────────────────
 
   static registerStringValidators(ajv: Ajv): void {
@@ -285,9 +264,12 @@ export class CustomKeywords {
   static registerNumberValidators(ajv: Ajv): void {
     // precision — decimal place limit
     const precision: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
-      const decimalPart = String(data as number).split('.')[1]
-      const actualPrecision = decimalPart ? decimalPart.length : 0
-      if (actualPrecision > Number(schema)) {
+      const n = data as number
+      const limit = Number(schema)
+      const factor = Math.pow(10, limit)
+      const shifted = n * factor
+      // Epsilon-based check handles floating-point artifacts (e.g. 0.1+0.2 = 0.30000000000000004)
+      if (Math.abs(shifted - Math.round(shifted)) > 1e-10) {
         precision.errors = [{ keyword: 'precision', message: Locale.getMessageText('number.precision'), params: { limit: schema } }]
         return false
       }
@@ -348,6 +330,23 @@ export class CustomKeywords {
 
   // ─── Array validators ───────────────────────────────────────────────────
 
+  private static _deepEqual(a: unknown, b: unknown): boolean {
+    if (a === b) return true
+    if (a === null || b === null || typeof a !== typeof b) return false
+    if (typeof a !== 'object') return false
+    if (Array.isArray(a) !== Array.isArray(b)) return false
+    if (Array.isArray(a)) {
+      if ((a as unknown[]).length !== (b as unknown[]).length) return false
+      return (a as unknown[]).every((item, i) => CustomKeywords._deepEqual(item, (b as unknown[])[i]))
+    }
+    const aKeys = Object.keys(a as object).sort()
+    const bKeys = Object.keys(b as object).sort()
+    if (aKeys.length !== bKeys.length) return false
+    return aKeys.every(k =>
+      CustomKeywords._deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])
+    )
+  }
+
   static registerArrayValidators(ajv: Ajv): void {
     // noSparse — disallow sparse arrays
     const noSparse: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
@@ -375,7 +374,7 @@ export class CustomKeywords {
       const missing = (schema as unknown[]).filter(required => {
         return !arr.some(item => {
           if (typeof required === 'object' && required !== null) {
-            return JSON.stringify(item) === JSON.stringify(required)
+            return CustomKeywords._deepEqual(item, required)
           }
           return item === required
         })

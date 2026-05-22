@@ -1,7 +1,7 @@
 # schema-dsl API 参考文档
 
 
-> **更新时间**: 2025-12-25  
+> **更新时间**: 2026-05-22  
 
 ---
 
@@ -392,6 +392,45 @@ dsl.if('isVip', 'number:0-50', 'number:0-10')
 ---
 
 ## 运行时辅助函数
+
+### `dsl.config(options)`
+
+全局配置入口，在应用启动时调用一次，设置 i18n、缓存、自定义正则和严格类型解析模式。
+
+```javascript
+const { dsl } = require('schema-dsl');
+
+dsl.config({
+  // i18n：内置语言包路径 / 内联 locale bundle / { localesPath } / { locales }
+  i18n: './locales',
+
+  // 默认语言（默认 'en-US'）
+  defaultLocale: 'zh-CN',
+
+  // 编译缓存配置
+  cache: { maxSize: 2000, ttl: 0, enabled: true },
+
+  // strict: true → 遇到未知类型直接抛出 Error（默认 false：warn + 回退 string）
+  strict: true,
+
+  // 追加自定义正则规则（phone / idCard / creditCard 等）
+  patterns: {
+    phone: { us: /^\+1\d{10}$/ }
+  }
+});
+```
+
+**参数** (`DslConfigOptions`):
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `i18n` | `string \| object` | — | 语言包路径或内联对象 |
+| `defaultLocale` | `string` | `'en-US'` | 默认语言 |
+| `cache` | `CacheOptions` | — | `maxSize` / `ttl` / `enabled` / `statsEnabled` |
+| `strict` | `boolean` | `false` | `true` 时解析未知 DSL 类型抛出 Error |
+| `patterns` | `object` | — | 追加自定义格式正则（phone/idCard/creditCard） |
+
+---
 
 ### `getDefaultValidator()`
 
@@ -854,6 +893,8 @@ const schema = new JSONSchemaCore()
 - `TypeRegistry.has(typeName)`
 - `TypeRegistry.getInternalKeys()`
 - `TypeRegistry.toJsonSchema(schema)`
+- `TypeRegistry.clearCustomTypes()` — 清空所有自定义类型（含通过 `DslAdapter.registerType()` 注册的类型），适合测试后清理状态
+- `TypeRegistry.setStrict(flag)` — 设置严格模式，等效于 `dsl.config({ strict: flag })`
 
 ---
 

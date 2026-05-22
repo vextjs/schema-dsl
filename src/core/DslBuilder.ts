@@ -14,6 +14,7 @@ import { DslParser } from '../parser/DslParser.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
 import type { Validator as ValidatorInstance } from './Validator.js'
+import type { ValidationResult } from '../types/validate.js'
 
 // ==================== Internal Utilities ====================
 
@@ -124,9 +125,7 @@ export class DslBuilder implements IDslBuilder {
 
   /** Clear all custom types (primarily for testing). */
   static clearCustomTypes(): void {
-    for (const name of DslBuilder._customTypes.keys()) {
-      TypeRegistry.unregister(name)
-    }
+    TypeRegistry.clearCustomTypes()
     DslBuilder._customTypes.clear()
   }
 
@@ -667,7 +666,7 @@ export class DslBuilder implements IDslBuilder {
    */
   private _validator: ValidatorInstance | null = null
 
-  async validate(data: unknown): Promise<unknown> {
+  async validate(data: unknown): Promise<ValidationResult<unknown>> {
     if (!this._validator) {
       const { Validator } = await import('./Validator.js')
       this._validator = new Validator()

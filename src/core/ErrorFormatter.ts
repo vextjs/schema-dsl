@@ -25,6 +25,7 @@ type AjvRawError = {
 export class ErrorFormatter {
   private messages: ErrorMessages
   private _locale: string
+  private readonly _constructorCustomMessages: ErrorMessages
 
   constructor(locale = DEFAULT_LOCALE, messages: ErrorMessages | Record<string, LocaleMessage | string | undefined> = {}) {
     this._locale = locale
@@ -43,6 +44,7 @@ export class ErrorFormatter {
         v == null ? undefined : typeof v === 'string' ? v : (v as { message: string }).message,
       ])
     )
+    this._constructorCustomMessages = normMessages
     this.messages = { ...localeMessages, ...normMessages }
   }
 
@@ -64,7 +66,8 @@ export class ErrorFormatter {
           typeof v === 'string' ? v : (v as { message: string }).message,
         ])
       )
-      msgs = { ...localeMessages }
+      // Preserve constructor-level custom messages across locale switches (R-01 fix)
+      msgs = { ...localeMessages, ...this._constructorCustomMessages }
     }
 
     // Convert simple { type, path } format to AJV-like error
@@ -255,7 +258,7 @@ export class ErrorFormatter {
         typeof v === 'string' ? v : (v as { message: string }).message,
       ])
     )
-    this.messages = { ...localeMessages }
+    this.messages = { ...localeMessages, ...this._constructorCustomMessages }
   }
 
   addMessage(type: string, template: string): void {

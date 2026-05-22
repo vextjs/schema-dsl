@@ -98,6 +98,7 @@ export type {
 // ==================== dsl function (main API) ====================
 
 import { DslBuilder as _DslBuilder } from './core/DslBuilder.js'
+import { TypeRegistry as _TypeRegistry } from './parser/TypeRegistry.js'
 import { DslAdapter as _DslAdapter } from './adapters/DslAdapter.js'
 import { ConditionalBuilder as _ConditionalBuilder } from './core/ConditionalBuilder.js'
 import { Locale as _Locale } from './core/Locale.js'
@@ -296,28 +297,28 @@ function _isDslObject(schema: unknown): schema is _DslDefinition {
   return !_isRawJsonSchemaLike(obj)
 }
 
-// Perf O6: cache _normalizeSchemaInput results to avoid re-running _isDslObject on each call
-// DslBuilder.toSchema() / DslAdapter.parseObject() executes only on the first call
+// Perf O6: cache _normalizeSchemaInput results for immutable raw JSON Schema objects only.
+// Plain DSL definition objects ({ email: 'email!' }) are mutable — skip cache to prevent
+// stale results when the caller mutates the object between validate() calls (N-04 fix).
 const _normalizeSchemaCache = new WeakMap<object, _JSONSchema>()
 
 function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuilder | _IConditionalBuilder): _JSONSchema {
   if (!schema || typeof schema !== 'object') return schema as _JSONSchema
 
+  const obj = schema as Record<string, unknown>
+  if (typeof obj['toSchema'] === 'function') {
+    // Mutable builders: never cache — schema changes as chain methods are called
+    return (obj['toSchema'] as () => _JSONSchema)()
+  }
+  if (_isDslObject(schema)) {
+    // Plain DSL definition objects are mutable — skip cache
+    return _DslAdapter.parseObject(schema).toSchema()
+  }
+  // Raw JSON Schema objects: safe to cache (treated as immutable by convention)
   const schemaObj = schema as object
   const cached = _normalizeSchemaCache.get(schemaObj)
   if (cached !== undefined) return cached
-
-  const obj = schema as Record<string, unknown>
-  if (typeof obj['toSchema'] === 'function') {
-    // Mutable builders must NOT be cached — their schema changes as chain methods are called
-    return (obj['toSchema'] as () => _JSONSchema)()
-  }
-  let result: _JSONSchema
-  if (_isDslObject(schema)) {
-    result = _DslAdapter.parseObject(schema).toSchema()
-  } else {
-    result = schema as _JSONSchema
-  }
+  const result = schema as _JSONSchema
   _normalizeSchemaCache.set(schemaObj, result)
   return result
 }
@@ -432,6 +433,7 @@ function _loadLocalesFromDir(dirPath: string, strict = false): void {
 
 function _dslConfig(options: Partial<_DslConfigOptions> = {}): void {
   const strict = (options as Record<string, unknown>)['strict'] === true
+  _TypeRegistry.setStrict(strict)
 
   if (options.patterns) {
     const p = options.patterns as Record<string, unknown>

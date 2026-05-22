@@ -41,6 +41,8 @@ export interface DslConfigOptions {
   }
   /** Default locale (default 'en-US'). */
   defaultLocale?: string
+  /** Strict type resolution: throw on unknown types instead of warn + fallback to string. */
+  strict?: boolean
 }
 
 /**

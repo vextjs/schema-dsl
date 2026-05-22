@@ -52,7 +52,10 @@ export class SchemaUtils {
 
     // Copy base schema
     if (baseSchema.properties) {
-      Object.assign(result['properties'] as Record<string, unknown>, baseSchema.properties)
+      result['properties'] = this._mergeProperties(
+        result['properties'] as Record<string, unknown>,
+        baseSchema.properties as Record<string, unknown>,
+      )
     }
     if (baseSchema.required) {
       result['required'] = [...baseSchema.required]
@@ -66,9 +69,12 @@ export class SchemaUtils {
       extSchema = extensions as JSONSchema
     }
 
-    // Merge extension schema
+    // Merge extension schema (deep-merge same-name nested objects instead of replacing)
     if (extSchema.properties) {
-      Object.assign(result['properties'] as Record<string, unknown>, extSchema.properties)
+      result['properties'] = this._mergeProperties(
+        result['properties'] as Record<string, unknown>,
+        extSchema.properties as Record<string, unknown>,
+      )
     }
     if (extSchema.required) {
       result['required'] = [...new Set([
@@ -265,6 +271,29 @@ export class SchemaUtils {
   }
 
   // ==================== Private Utilities ====================
+
+  private static _mergeProperties(
+    base: Record<string, unknown>,
+    ext: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const result = { ...base }
+    for (const [key, extVal] of Object.entries(ext)) {
+      const baseVal = result[key]
+      if (
+        baseVal && extVal &&
+        typeof baseVal === 'object' && typeof extVal === 'object' &&
+        !Array.isArray(baseVal) && !Array.isArray(extVal)
+      ) {
+        result[key] = SchemaUtils._mergeProperties(
+          baseVal as Record<string, unknown>,
+          extVal as Record<string, unknown>,
+        )
+      } else {
+        result[key] = extVal
+      }
+    }
+    return result
+  }
 
   private static _deleteRequired(obj: Record<string, unknown>): void {
     delete obj['required']

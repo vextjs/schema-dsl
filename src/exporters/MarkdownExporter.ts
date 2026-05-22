@@ -15,12 +15,12 @@ import { BaseExporter, type ExporterOptions } from './BaseExporter.js'
 
 export interface MarkdownExporterOptions extends ExporterOptions {
   title?: string
-  locale?: 'zh-CN' | 'en-US' | 'ja-JP'
+  locale?: 'zh-CN' | 'en-US' | 'ja-JP' | 'fr-FR' | 'es-ES'
   includeExample?: boolean
   includeDescription?: boolean
 }
 
-type Locale = 'zh-CN' | 'en-US' | 'ja-JP'
+type Locale = 'zh-CN' | 'en-US' | 'ja-JP' | 'fr-FR' | 'es-ES'
 
 // ==================== MarkdownExporter ====================
 
@@ -76,24 +76,32 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
     'zh-CN': { fields: '字段列表', name: '字段名', type: '类型', required: '必填', constraints: '约束', description: '说明' },
     'en-US': { fields: 'Fields', name: 'Field', type: 'Type', required: 'Required', constraints: 'Constraints', description: 'Description' },
     'ja-JP': { fields: 'フィールド一覧', name: 'フィールド名', type: 'タイプ', required: '必須', constraints: '制約', description: '説明' },
+    'fr-FR': { fields: 'Liste des champs', name: 'Champ', type: 'Type', required: 'Obligatoire', constraints: 'Contraintes', description: 'Description' },
+    'es-ES': { fields: 'Lista de campos', name: 'Campo', type: 'Tipo', required: 'Requerido', constraints: 'Restricciones', description: 'Descripción' },
   }
 
   private static _i18nTypes: Record<Locale, Record<string, string>> = {
     'zh-CN': { string: '字符串', number: '数字', integer: '整数', boolean: '布尔值', array: '数组', object: '对象', email: '邮箱', url: '网址', date: '日期', uuid: 'UUID' },
     'en-US': { string: 'String', number: 'Number', integer: 'Integer', boolean: 'Boolean', array: 'Array', object: 'Object', email: 'Email', url: 'URL', date: 'Date', uuid: 'UUID' },
     'ja-JP': { string: '文字列', number: '数値', integer: '整数', boolean: 'ブール値', array: '配列', object: 'オブジェクト', email: 'メールアドレス', url: 'URL', date: '日付', uuid: 'UUID' },
+    'fr-FR': { string: 'Chaîne', number: 'Nombre', integer: 'Entier', boolean: 'Booléen', array: 'Tableau', object: 'Objet', email: 'E-mail', url: 'URL', date: 'Date', uuid: 'UUID' },
+    'es-ES': { string: 'Cadena', number: 'Número', integer: 'Entero', boolean: 'Booleano', array: 'Array', object: 'Objeto', email: 'Correo', url: 'URL', date: 'Fecha', uuid: 'UUID' },
   }
 
   private static _i18nConstraints: Record<Locale, Record<string, string>> = {
     'zh-CN': { length: '长度', range: '范围', pattern: '正则', enum: '枚举', items: '元素数' },
     'en-US': { length: 'Length', range: 'Range', pattern: 'Pattern', enum: 'Enum', items: 'Items' },
     'ja-JP': { length: '長さ', range: '範囲', pattern: '正規表現', enum: '列挙', items: '要素数' },
+    'fr-FR': { length: 'Longueur', range: 'Plage', pattern: 'Modèle', enum: 'Énumération', items: 'Éléments' },
+    'es-ES': { length: 'Longitud', range: 'Rango', pattern: 'Patrón', enum: 'Enumeración', items: 'Elementos' },
   }
 
   private static _i18nRules: Record<Locale, Record<string, string>> = {
     'zh-CN': { rules: '约束规则', required: '必填字段', optional: '可选字段' },
     'en-US': { rules: 'Validation Rules', required: 'Required Fields', optional: 'Optional Fields' },
     'ja-JP': { rules: '検証ルール', required: '必須フィールド', optional: 'オプションフィールド' },
+    'fr-FR': { rules: 'Règles de validation', required: 'Champs obligatoires', optional: 'Champs facultatifs' },
+    'es-ES': { rules: 'Reglas de validación', required: 'Campos requeridos', optional: 'Campos opcionales' },
   }
 
   private static _generateFieldsTable(schema: JSONSchema, locale: Locale): string {
@@ -209,6 +217,8 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
       'zh-CN': { example: '示例数据' },
       'en-US': { example: 'Example Data' },
       'ja-JP': { example: 'サンプルデータ' },
+      'fr-FR': { example: "Données d'exemple" },
+      'es-ES': { example: 'Datos de ejemplo' },
     }
     const t = i18n[locale] ?? i18n['en-US']
 

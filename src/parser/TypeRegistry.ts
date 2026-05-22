@@ -122,6 +122,8 @@ const BUILTIN_TYPES: Map<string, TypeDefinition> = new Map([
 const CUSTOM_TYPES: Map<string, TypeDefinition> = new Map()
 const DYNAMIC_TYPES: Map<string, () => JSONSchema> = new Map()
 
+let _strictMode = false
+
 /**
  * TypeRegistry — unified type registration and resolution
  *
@@ -145,7 +147,10 @@ export const TypeRegistry = {
     const builtin = BUILTIN_TYPES.get(typeName)
     if (builtin) return builtin
 
-    // Unknown type: warn and fall back to string
+    // Unknown type: throw in strict mode, otherwise warn and fall back to string
+    if (_strictMode) {
+      throw new Error(`[schema-dsl] Unknown type "${typeName}"`)
+    }
     console.warn(`[schema-dsl] Unknown type "${typeName}", falling back to string`)
     return { baseSchema: { type: 'string' } }
   },
@@ -179,6 +184,23 @@ export const TypeRegistry = {
   unregister(name: string): void {
     CUSTOM_TYPES.delete(name)
     DYNAMIC_TYPES.delete(name)
+  },
+
+  /**
+   * Clear all custom and dynamic types (primarily for testing; called by DslBuilder.clearCustomTypes).
+   * Built-in types are unaffected.
+   */
+  clearCustomTypes(): void {
+    CUSTOM_TYPES.clear()
+    DYNAMIC_TYPES.clear()
+  },
+
+  /**
+   * Enable or disable strict mode for type resolution.
+   * In strict mode, resolving an unknown type throws instead of warning and falling back to string.
+   */
+  setStrict(flag: boolean): void {
+    _strictMode = flag
   },
 
   /**

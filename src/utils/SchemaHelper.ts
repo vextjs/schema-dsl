@@ -16,7 +16,8 @@ export class SchemaHelper {
   static isValidSchema(schema: unknown): schema is JSONSchema {
     if (!schema || typeof schema !== 'object') return false
     const s = schema as Record<string, unknown>
-    return !!(s['type'] || s['properties'] || s['items'] || s['$ref'])
+    return !!(s['type'] || s['properties'] || s['items'] || s['$ref']
+      || s['anyOf'] || s['oneOf'] || s['allOf'] || s['enum'])
   }
 
   /**

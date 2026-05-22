@@ -58,7 +58,8 @@
     "examples:build": "tsc -p tsconfig.examples.json",
     "lint": "eslint src/**/*.ts",
     "test:version": "node -e \"const p=require('./package.json');const {VERSION}=require('./dist/index.cjs');if(p.version!==VERSION)throw new Error('Version mismatch: '+p.version+' vs '+VERSION);console.log('Version OK:',p.version)\"",
-    "bench": "node test/benchmarks/library-comparison.js"
+    "bench": "node test/benchmarks/library-comparison.js",
+    "prepublishOnly": "npm run build && npm run typecheck && npm test"
   },
   "keywords": [
     "schema",

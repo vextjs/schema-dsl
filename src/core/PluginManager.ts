@@ -59,6 +59,7 @@ export class PluginManager extends EventEmitter {
 
   constructor() {
     super()
+    this.setMaxListeners(0)
     for (const name of [...PluginManager.BUILTIN_HOOKS, ...PluginManager.LEGACY_HOOKS]) {
       this._ensureHook(name)
     }

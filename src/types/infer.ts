@@ -73,6 +73,8 @@ export type InferDslString<T extends string> = StripMarker<T> extends `types:${i
     ? SplitPipe<Rest>
     : StripMarker<T> extends `enum:${infer Values}`
     ? SplitPipe<Values>
+    : StripMarker<T> extends `array<${infer Item}>`
+    ? InferDslString<Item>[]
     : StripMarker<T> extends `${infer Base}:${string}`
     ? InferDslString<Base>
     : StripMarker<T> extends 'number' | 'integer' | 'port'
