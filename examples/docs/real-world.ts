@@ -1,4 +1,17 @@
-import { dsl, validate, validateAsync, DslAdapter, ValidationError, DslBuilder } from '../../dist/index.js'
+import {
+  dsl,
+  validate,
+  validateAsync,
+  ObjectDslBuilder,
+  ValidationError,
+  DslBuilder,
+  type DslDefinition,
+  type JSONSchema,
+} from '../../dist/index.js'
+
+function objectDsl(definition: DslDefinition): ObjectDslBuilder {
+  return new ObjectDslBuilder(dsl(definition) as JSONSchema)
+}
 
 // ============================================================
 // Real-world scenario: E-commerce platform
@@ -165,7 +178,7 @@ console.log('real-world.order.currency.default=', (validOrder.data as any)?.curr
 // 5. ObjectDslBuilder — strict schema definition for product creation API
 // ============================================================
 
-const productCreateSchema = DslAdapter.parseObject({
+const productCreateSchema = objectDsl({
   name:     'string:2-200!',
   sku:      'alphanum:5-20!',
   price:    'number:0.01-!',

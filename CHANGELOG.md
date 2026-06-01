@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.0.3] | 2026-06-01 | Patch | Async custom validation runtime fix, public-doc example alignment, docs site and link cleanup [View](./changelogs/v2.0.3.md) |
 | [2.0.2] | 2026-06-01 | Patch | v1 consumer compatibility: root error type exports, `dsl(object, options?)`, builder typing, validate input typing, release metadata hygiene [View](./changelogs/v2.0.2.md) |
 | [2.0.1] | 2026-05-22 | Patch | Post-release security & correctness fixes: safe-regex bypass, XSS escaping, reset completeness, cache rebuild, SQL injection in exporters |
 | [2.0.0] | 2026-05-09 | Major | Full release: BC-2/4/5/6/7 fixes, string:N compat, English comments, 58 enriched examples, 1095 tests [View](./changelogs/v2.0.0.md) |
@@ -37,6 +38,17 @@ All notable changes to this project will be documented in this file.
 | v1.0.2 | 2025-12-31 | Patch | 15 new validators, complete docs, 75 tests |
 | v1.0.1 | 2025-12-31 | Patch | Enum support, auto type detection, unified error messages |
 | [v1.0.0] | 2025-12-29 | Pre-release | Initial release [View](./changelogs/v1.0.0.md) |
+
+---
+
+## [2.0.3] — 2026-06-01
+
+### Fixes
+
+- **Validation:** `validateAsync()` now executes Promise-returning `.custom()` validators after the base AJV validation pass, while synchronous `validate()` still reports an explicit async-custom error.
+- **Validation errors:** async custom validator failures now preserve nested field paths and surface false/string/object/throw outcomes consistently.
+- **Examples:** documentation examples now use only the documented root public API and pass `examples:typecheck` / `examples:build`.
+- **Docs:** synchronized async custom validator wording, document version headers, Rspress navigation, internal links, release gate documentation and historical changelog links.
 
 ---
 
@@ -121,7 +133,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.2...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.3...HEAD
+[2.0.3]: https://github.com/vextjs/schema-dsl/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/vextjs/schema-dsl/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/vextjs/schema-dsl/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/vextjs/schema-dsl/compare/v2.0.0-beta.2...v2.0.0

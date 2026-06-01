@@ -590,7 +590,7 @@ const schema = dsl({
 ## 相关文档
 
 - [String 扩展](./string-extensions.md#多语言支持)
-- [Locale API](./api-reference.md#locale-类)
+- [Locale API](./api-reference.md#locale)
 - [Validator API](./api-reference.md#validator-类)
 
 ---

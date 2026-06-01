@@ -153,7 +153,7 @@ dsl('url').description('个人主页链接')
   - 签名：`(value) => boolean | string | { error, message } | void`
   - 返回 `true` 表示通过
   - 返回 `false`、错误消息字符串或错误对象表示失败
-  - 同步验证器由 `validate()` 和 `validateAsync()` 均执行；异步验证器（返回 `Promise`）仅由 `validateAsync()` 执行，`validate()` 调用时会跳过异步 validator
+  - 同步验证器由 `validate()` 和 `validateAsync()` 均执行；异步验证器（返回 `Promise`）仅由 `validateAsync()` 执行，`validate()` 调用时会返回明确的同步错误提示
 
 **返回**: **DslBuilder**
 
@@ -893,7 +893,7 @@ const schema = new JSONSchemaCore()
 - `TypeRegistry.has(typeName)`
 - `TypeRegistry.getInternalKeys()`
 - `TypeRegistry.toJsonSchema(schema)`
-- `TypeRegistry.clearCustomTypes()` — 清空所有自定义类型（含通过 `DslAdapter.registerType()` 注册的类型），适合测试后清理状态
+- `TypeRegistry.clearCustomTypes()` — 清空所有自定义类型（含通过 `TypeRegistry.register()` / `DslBuilder.registerType()` 注册的类型），适合测试后清理状态
 - `TypeRegistry.setStrict(flag)` — 设置严格模式，等效于 `dsl.config({ strict: flag })`
 
 ---
@@ -1039,7 +1039,7 @@ console.log(result.valid); // true
 ## 对应示例文件
 
 **示例入口**: [api-reference.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/api-reference.ts)  
-**说明**: 覆盖 `dsl()`、`validate()`、`validateAsync()`、默认 `Validator` 单例、模板渲染、`JSONSchemaCore`、`ErrorFormatter` 以及底层解析 / 编译工具的可运行调用链。
+**说明**: 覆盖 `dsl()`、`validate()`、`validateAsync()`、默认 `Validator` 单例、模板渲染、`JSONSchemaCore`、`ErrorFormatter`、`ObjectDslBuilder` 与 `TypeRegistry` 等公开 API 的可运行调用链。
 
 ---
 

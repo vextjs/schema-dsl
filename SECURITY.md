@@ -13,7 +13,9 @@ The current TypeScript rewrite targets the latest published package line and mai
 Before release, run:
 
 ```powershell
-npm audit --audit-level=moderate
-npm test
+npm run test:all:with-audit
+npm pack --dry-run
+npm run examples:typecheck
+npm run examples:build
 ```
 

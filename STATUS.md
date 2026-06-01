@@ -11,6 +11,11 @@ Current plugin compatibility status: v1 official plugin sub-paths `schema-dsl/pl
 - `npm test`
 - `npm run build`
 - `npm run test:version`
+- `npm run test:audit`
+- `npm run test:all:with-audit`
+- `npm pack --dry-run`
+- `npm run examples:typecheck`
+- `npm run examples:build`
 - CJS subpath smoke (`require('schema-dsl/plugins/*')`)
 - ESM subpath smoke (`import 'schema-dsl/plugins/*'`)
 

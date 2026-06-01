@@ -144,7 +144,7 @@ const result = validate(
 当前 TypeScript 重构版已补齐自动检测和转换逻辑：
 
 1. **检测 DSL 对象**：识别对象中的 DSL 字符串
-2. **自动转换**：调用 `DslAdapter.parseObject()` 转换为 JSON Schema
+2. **自动转换**：通过内部 DSL object 归一化流程转换为 JSON Schema
 3. **透明处理**：用户无需关心内部转换
 
 ---
@@ -574,5 +574,5 @@ validate(schema, data);
 ## 对应示例文件
 
 **示例入口**: [validate-dsl-object-support.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/validate-dsl-object-support.ts)  
-**说明**: 覆盖直接传入 DSL 对象、混合使用 `DslBuilder` 与 DSL 字符串，以及顶层 `validate()` / `validateAsync()` 的真实支持边界。
+**说明**: 覆盖直接传入 DSL 对象、混合使用 `DslBuilder` 与 DSL 字符串、`validateAsync<T>()` 类型化返回，以及顶层 `validate()` / `validateAsync()` 的真实支持边界。
 

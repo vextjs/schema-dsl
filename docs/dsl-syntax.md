@@ -420,7 +420,7 @@ const schema = dsl({
 
 ### 1. 链式调用
 
-> ⚠️ `.custom()` 当前仅支持同步自定义逻辑；异步业务校验请在验证通过后单独执行。
+> ⚠️ `.custom()` 支持同步自定义逻辑；返回 `Promise` 的异步 custom validator 请通过 `validateAsync()` 执行。
 
 ```javascript
 const schema = dsl({
@@ -520,7 +520,7 @@ const schema = dsl({
 'string!@custom'  // ❌ 不支持
 ```
 
-**解决方案**: 使用 `.custom()` 方法承载**同步**自定义逻辑
+**解决方案**: 使用 `.custom()` 方法承载自定义逻辑；同步逻辑可用 `validate()` / `validateAsync()`，Promise-returning 逻辑必须用 `validateAsync()`
 ```javascript
 'string!'.custom((value) => {
   // 自定义同步逻辑
@@ -530,7 +530,7 @@ const schema = dsl({
 })
 ```
 
-异步校验（如数据库查重）请在 `validate()` / `validateAsync()` 通过后于业务层单独执行。
+异步校验（如数据库查重）可以放在 Promise-returning `.custom()` 中并通过 `validateAsync()` 执行；也可以在结构校验通过后于业务层单独执行。
 
 ---
 

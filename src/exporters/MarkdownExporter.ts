@@ -5,7 +5,7 @@
  *   EX-01: required check prefers prop._required, then falls back to schema.required?.includes(key)
  *          (v1 already had this logic; v2 preserves it with stronger type safety)
  *
- * @version 2.0.0
+ * @version package.json
  */
 
 import type { JSONSchema } from '../types/schema.js'

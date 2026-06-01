@@ -422,7 +422,7 @@ const schema = dsl({
 
 ### 3. 处理外部异步校验错误
 
-> `.custom()` 当前仅支持同步函数；涉及数据库、RPC、HTTP 等异步检查时，请在基础校验通过后于业务层单独执行。
+> `.custom()` 支持同步函数；涉及数据库、RPC、HTTP 等异步检查时，可返回 `Promise` 并通过 `validateAsync()` 执行，也可以在基础校验通过后于业务层单独执行。
 
 ```javascript
 const schema = dsl({

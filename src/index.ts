@@ -4,7 +4,7 @@
  * Fix IX-01: VERSION is read dynamically from package.json instead of being hard-coded
  *
  * @module schema-dsl
- * @version 2.0.0
+ * @version package.json
  */
 
 // ==================== Version (fix IX-01) ====================

@@ -1,7 +1,17 @@
-import { dsl, validate, DslAdapter } from '../../dist/index.js'
+import {
+  dsl,
+  validate,
+  ObjectDslBuilder,
+  type DslDefinition,
+  type JSONSchema,
+} from '../../dist/index.js'
+
+function objectDsl(definition: DslDefinition): ObjectDslBuilder {
+  return new ObjectDslBuilder(dsl(definition) as JSONSchema)
+}
 
 // ============================================================
-// ObjectDslBuilder — returned by DslAdapter.parseObject()
+// ObjectDslBuilder — public chainable wrapper for object-form DSL schemas
 //
 // Provides a chainable API to configure an object schema:
 //   .strict()       — disallow extra properties
@@ -11,10 +21,10 @@ import { dsl, validate, DslAdapter } from '../../dist/index.js'
 // ============================================================
 
 // ============================================================
-// 1. Basic usage — parseObject() returns ObjectDslBuilder
+// 1. Basic usage — wrap dsl(object) in ObjectDslBuilder
 // ============================================================
 
-const builder = DslAdapter.parseObject({
+const builder = objectDsl({
   username: 'string:3-32!',
   email:    'email!',
   age:      'integer:0-150',
@@ -30,7 +40,7 @@ console.log('object-dsl-builder.schema.properties =',
 // 2. .strict() — set additionalProperties: false
 // ============================================================
 
-const strictSchema = DslAdapter.parseObject({
+const strictSchema = objectDsl({
   name:  'string:2-50!',
   email: 'email!',
 }).strict().toSchema()
@@ -47,7 +57,7 @@ console.log('object-dsl-builder.strict.clean.valid =',
 // 3. .requireAll() — add all properties to the required array
 // ============================================================
 
-const requiredSchema = DslAdapter.parseObject({
+const requiredSchema = objectDsl({
   name:    'string:2-50',   // note: no '!' marker — optional in DSL
   email:   'email',
   country: 'string:2-3',
@@ -65,7 +75,7 @@ console.log('object-dsl-builder.requireAll.all.valid =',
 // ============================================================
 
 // Mark only the fields you need with '!' in the DSL string
-const partiallyRequired = DslAdapter.parseObject({
+const partiallyRequired = objectDsl({
   id:          'uuid!',         // required via DSL '!'
   displayName: 'string:1-50!', // required via DSL '!'
   email:       'email',         // optional — no '!'
@@ -87,7 +97,7 @@ console.log('object-dsl-builder.required.both.valid =',
 // ============================================================
 
 // All fields required by .requireAll(); extra properties forbidden by .strict()
-const strictFullSchema = DslAdapter.parseObject({
+const strictFullSchema = objectDsl({
   name:  'string:2-50',
   email: 'email',
   role:  'admin|user|guest',
@@ -107,14 +117,14 @@ console.log('object-dsl-builder.strictFull.clean =',
 // 6. .toJsonSchema() — alias for .toSchema()
 // ============================================================
 
-const jsonSchema = DslAdapter.parseObject({ id: 'uuid!', value: 'string!' }).toJsonSchema()
+const jsonSchema = objectDsl({ id: 'uuid!', value: 'string!' }).toJsonSchema()
 console.log('object-dsl-builder.toJsonSchema.type =', (jsonSchema as any).type)     // 'object'
 
 // ============================================================
 // 7. Chaining all methods together
 // ============================================================
 
-const apiInputSchema = DslAdapter.parseObject({
+const apiInputSchema = objectDsl({
   name:        'string:2-100',
   email:       'email',
   phone:       'phone:cn',
@@ -127,9 +137,9 @@ const apiInputSchema = DslAdapter.parseObject({
   .toSchema()
 
 console.log('object-dsl-builder.chain.strict       =',
-  (apiInputSchema as any).additionalProperties)                                               // false
-console.log('object-dsl-builder.chain.required.len =',
-  (apiInputSchema as any).required?.length)                                                   // 6
+  (apiInputSchema as any).strictSchema)                                                       // true
+console.log('object-dsl-builder.chain.requiredAll  =',
+  (apiInputSchema as any).requiredAll)                                                        // true
 
 // Valid input (all required, no extras)
 console.log('object-dsl-builder.chain.valid =',
@@ -149,7 +159,7 @@ console.log('object-dsl-builder.chain.missing =',
 //    (automatically resolved via .toSchema() internally)
 // ============================================================
 
-const rawBuilder = DslAdapter.parseObject({
+const rawBuilder = objectDsl({
   username: 'string:3-32!',
   score:    'integer:0-100',
 })
@@ -165,7 +175,7 @@ console.log('object-dsl-builder.direct.invalid =',
 // ============================================================
 
 function validateCreateUser(body: unknown): { ok: boolean; data?: unknown; errors?: string[] } {
-  const schema = DslAdapter.parseObject({
+  const schema = objectDsl({
     username: 'string:3-32',
     email:    'email',
     password: 'string:8-64',

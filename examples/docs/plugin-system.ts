@@ -1,6 +1,18 @@
 import * as schemaDsl from '../../dist/index.js'
-import { DslBuilder, DslAdapter, PluginManager, dsl, validate } from '../../dist/index.js'
+import {
+  DslBuilder,
+  ObjectDslBuilder,
+  PluginManager,
+  dsl,
+  validate,
+  type DslDefinition,
+  type JSONSchema,
+} from '../../dist/index.js'
 import customFormatPlugin from '../../dist/plugins/custom-format.js'
+
+function objectDsl(definition: DslDefinition): ObjectDslBuilder {
+  return new ObjectDslBuilder(dsl(definition) as JSONSchema)
+}
 
 // ============================================================
 // 1. PluginManager — lifecycle: register, install, has, runHook, uninstall
@@ -91,7 +103,7 @@ console.log('plugin-system.custom.type.invalid.score =',
 
 // List all registered custom types
 const customTypes = DslBuilder.getCustomTypes()
-console.log('plugin-system.registerType.list =', [...customTypes.keys()].sort().join(','))  // 'score,sku'
+console.log('plugin-system.registerType.list =', customTypes.slice().sort().join(','))  // 'score,sku'
 
 // ============================================================
 // 3. custom-format plugin — adds phone-cn, email-cn, etc.
@@ -120,13 +132,13 @@ const geoTypesPlugin = {
   options: {},
 
   install(core: typeof schemaDsl): void {
-    // Register geo types directly via DslAdapter
-    core.DslAdapter.registerType('latitude', {
+    // Register geo types through the documented public extension API
+    core.DslBuilder.registerType('latitude', {
       type: 'number',
       minimum: -90,
       maximum: 90,
     })
-    core.DslAdapter.registerType('longitude', {
+    core.DslBuilder.registerType('longitude', {
       type: 'number',
       minimum: -180,
       maximum: 180,
@@ -160,16 +172,24 @@ pm3.uninstall('geo-types', schemaDsl)
 // ============================================================
 
 // Build a schema with 5 levels of object nesting
-const deepObjSchema = DslAdapter.parseObject({
-  a: dsl({ b: dsl({ c: dsl({ d: dsl({ e: 'string' }) }) }) }),
+const deepObjSchema = objectDsl({
+  a: {
+    b: {
+      c: {
+        d: {
+          e: 'string',
+        },
+      },
+    },
+  },
 }).toSchema()
 
-// depth 5 — exceeds limit of 4
-const depthResult = DslBuilder.validateNestingDepth(deepObjSchema as any, 4)
+// depth 4 — exceeds limit of 3
+const depthResult = DslBuilder.validateNestingDepth(deepObjSchema as any, 3)
 console.log('plugin-system.nestingDepth.tooDeep =', !depthResult.valid)   // true
 
 // depth 2 — within limit
-const shallowObjSchema = DslAdapter.parseObject({ a: dsl({ b: 'string' }) }).toSchema()
+const shallowObjSchema = objectDsl({ a: dsl({ b: 'string' }) }).toSchema()
 const shallowResult = DslBuilder.validateNestingDepth(shallowObjSchema as any, 4)
 console.log('plugin-system.nestingDepth.allowed =', shallowResult.valid)  // true
 

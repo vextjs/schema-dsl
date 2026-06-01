@@ -238,7 +238,7 @@ const formSchema = dsl({
 
 ### 自定义验证
 
-> `.custom()` 当前仅支持同步函数；如果需要异步查重，请在 `validate()` / `validateAsync()` 通过后于业务层单独执行。
+> `.custom()` 支持同步函数；如果返回 `Promise`，请使用 `validateAsync()`。同步 `validate()` 遇到 Promise-returning custom validator 会返回明确错误。
 
 ```javascript
 const schema = dsl({
@@ -286,8 +286,8 @@ const schema = dsl({
 
 ### 高级功能
 
-- [自定义验证器](./api-reference.md#custom)
-- [条件验证（when）](./api-reference.md#when)
+- [自定义验证器](./api-reference.md#customvalidator)
+- [条件验证](./conditional-api.md)
 - [数据库Schema导出](./api-reference.md#导出器)
 
 ---

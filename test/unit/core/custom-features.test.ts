@@ -78,6 +78,41 @@ describe('Custom Features & Error Messages', () => {
       expect(result.valid).toBe(false)
       expect(result.errors![0].message).toContain('Async validation not supported')
     })
+
+    it('should run async validators in validateAsync', async () => {
+      const schema = dsl({
+        username: ('string!' as any).custom(async (value: string) => {
+          return value === 'alice' || 'Username is already taken'
+        }),
+      })
+
+      await expect(validator.validateAsync(schema, { username: 'alice' })).resolves.toEqual({ username: 'alice' })
+      await expect(validator.validateAsync(schema, { username: 'admin' })).rejects.toMatchObject({
+        errors: [
+          expect.objectContaining({
+            path: 'username',
+            message: 'Username is already taken',
+          }),
+        ],
+      })
+    })
+
+    it('should surface async custom validator exceptions in validateAsync', async () => {
+      const schema = dsl({
+        username: ('string!' as any).custom(async () => {
+          throw new Error('External lookup failed')
+        }),
+      })
+
+      await expect(validator.validateAsync(schema, { username: 'alice' })).rejects.toMatchObject({
+        errors: [
+          expect.objectContaining({
+            path: 'username',
+            message: 'External lookup failed',
+          }),
+        ],
+      })
+    })
   })
 
   describe('Custom Labels & Messages', () => {

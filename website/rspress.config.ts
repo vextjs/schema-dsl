@@ -44,7 +44,7 @@ export default defineConfig({
         link: '/api-reference'
       },
       {
-        text: 'v2.0.0-beta.2',
+        text: 'Releases',
         items: [
           {
             text: '更新日志',

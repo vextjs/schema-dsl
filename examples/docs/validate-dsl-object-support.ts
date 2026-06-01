@@ -75,7 +75,7 @@ console.log('raw-dsl.mixed.valid              =', mixedValid.valid)   // true
 // ============================================================
 
 async function main(): Promise<void> {
-  const asyncData = await validateAsync(rawDslSchema, {
+  const asyncData = await validateAsync<{ username: string; email: string; age?: number }>(rawDslSchema, {
     username: 'alice_01',
     email:    'alice@example.com',
     age:       30,

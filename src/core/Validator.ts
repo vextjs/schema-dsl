@@ -160,20 +160,28 @@ export class Validator {
   async validateAsync<T = unknown>(schema: JSONSchema | AjvValidateFn, data: T, options: ValidateOptions = {}): Promise<T> {
     // Resolve DslBuilder/ObjectDslBuilder duck type to raw schema (mirrors _validateInternal logic)
     // so _runCustomValidators can access schema._customValidators
-    let resolvedSchema = schema as JSONSchema
+    let resolvedSchema = schema as JSONSchema | AjvValidateFn
     if (typeof (schema as Record<string, unknown>)['toSchema'] === 'function') {
       const obj = schema as Record<string, unknown>
       resolvedSchema = (obj['toSchema'] as () => JSONSchema)()
     }
 
-    const result = this._validateInternal(schema, data, options)
+    const validationSchema =
+      typeof resolvedSchema === 'function'
+        ? resolvedSchema
+        : this._stripCustomValidators(resolvedSchema)
+
+    const result = this._validateInternal(validationSchema, data, options)
     if (!result.valid) {
       const { ValidationError } = await import('../errors/ValidationError.js')
       throw new ValidationError(result.errors ?? [], data)
     }
 
     // BC-6: run async custom validators (sync AJV pass skips Promise-returning validators)
-    const customErr = await this._runCustomValidators(resolvedSchema, data)
+    const customErr =
+      typeof resolvedSchema === 'function'
+        ? null
+        : await this._runCustomValidators(resolvedSchema, result.data)
     if (customErr) {
       const { ValidationError } = await import('../errors/ValidationError.js')
       throw new ValidationError([customErr], data)
@@ -187,37 +195,112 @@ export class Validator {
    * AJV's sync keyword skips Promise-returning validators; this method runs the complete set in validateAsync.
    * Returns the first failing ValidationErrorItem, or null if all pass.
    */
-  private async _runCustomValidators(schema: JSONSchema, data: unknown): Promise<ValidationErrorItem | null> {
-    const validators = (schema as Record<string, unknown>)['_customValidators'] as Array<(v: unknown) => unknown> | undefined
-    if (!validators?.length) return null
+  private _stripCustomValidators(schema: JSONSchema): JSONSchema {
+    const strip = (value: unknown): unknown => {
+      if (Array.isArray(value)) {
+        let changed = false
+        const next = value.map(item => {
+          const stripped = strip(item)
+          if (stripped !== item) changed = true
+          return stripped
+        })
+        return changed ? next : value
+      }
 
-    for (const fn of validators) {
-      try {
-        const result = await Promise.resolve(fn(data))
-        if (result === false) {
-          return { message: Locale.getMessageText('CUSTOM_VALIDATION_FAILED'), path: '', keyword: '_customValidators', params: {} }
+      if (!value || typeof value !== 'object') return value
+
+      const source = value as Record<string, unknown>
+      let changed = false
+      const next: Record<string, unknown> = {}
+
+      for (const [key, child] of Object.entries(source)) {
+        if (key === '_customValidators') {
+          changed = true
+          continue
         }
-        if (typeof result === 'string') {
-          return { message: result, path: '', keyword: '_customValidators', params: {} }
-        }
-        if (result !== null && typeof result === 'object' && (result as Record<string, unknown>)['error']) {
-          const r = result as { error: unknown; message?: string }
+
+        const stripped = strip(child)
+        next[key] = stripped
+        if (stripped !== child) changed = true
+      }
+
+      return changed ? next : value
+    }
+
+    return strip(schema) as JSONSchema
+  }
+
+  private async _runCustomValidators(schema: JSONSchema, data: unknown, path = ''): Promise<ValidationErrorItem | null> {
+    const validators = (schema as Record<string, unknown>)['_customValidators'] as Array<(v: unknown) => unknown> | undefined
+    if (validators?.length) {
+      for (const fn of validators) {
+        try {
+          const result = await Promise.resolve(fn(data))
+          if (result === false) {
+            return {
+              message: Locale.getMessageText('CUSTOM_VALIDATION_FAILED'),
+              path,
+              keyword: '_customValidators',
+              params: {},
+              field: path,
+              type: '_customValidators',
+            }
+          }
+          if (typeof result === 'string') {
+            return {
+              message: result,
+              path,
+              keyword: '_customValidators',
+              params: {},
+              field: path,
+              type: '_customValidators',
+            }
+          }
+          if (result !== null && typeof result === 'object' && (result as Record<string, unknown>)['error']) {
+            const r = result as { error: unknown; message?: string }
+            return {
+              message: r.message ?? Locale.getMessageText('CUSTOM_VALIDATION_FAILED'),
+              path,
+              keyword: '_customValidators',
+              params: {},
+              field: path,
+              type: '_customValidators',
+            }
+          }
+        } catch (err) {
           return {
-            message: r.message ?? Locale.getMessageText('CUSTOM_VALIDATION_FAILED'),
-            path: '',
+            message: err instanceof Error ? err.message : String(err),
+            path,
             keyword: '_customValidators',
             params: {},
+            field: path,
+            type: '_customValidators',
           }
-        }
-      } catch (err) {
-        return {
-          message: err instanceof Error ? err.message : String(err),
-          path: '',
-          keyword: '_customValidators',
-          params: {},
         }
       }
     }
+
+    if (schema.properties && data && typeof data === 'object' && !Array.isArray(data)) {
+      const record = data as Record<string, unknown>
+      for (const [key, childSchema] of Object.entries(schema.properties)) {
+        if (!Object.prototype.hasOwnProperty.call(record, key)) continue
+        const childPath = path ? `${path}/${key}` : key
+        const err = await this._runCustomValidators(childSchema, record[key], childPath)
+        if (err) return err
+      }
+    }
+
+    if (schema.items && Array.isArray(data)) {
+      const itemSchemas = Array.isArray(schema.items) ? schema.items : null
+      for (let i = 0; i < data.length; i++) {
+        const childSchema = itemSchemas ? itemSchemas[i] : schema.items
+        if (!childSchema || Array.isArray(childSchema)) continue
+        const childPath = `${path}/${i}`.replace(/^\//, '')
+        const err = await this._runCustomValidators(childSchema, data[i], childPath)
+        if (err) return err
+      }
+    }
+
     return null
   }
 

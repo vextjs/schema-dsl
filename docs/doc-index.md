@@ -1,8 +1,8 @@
 # schema-dsl 文档索引
 
-> **更新时间**: 2026-05-06  
+> **更新时间**: 2026-06-01
 > **用途**: 所有文档的快速导航  
-> **在线文档**: https://schema-dsl.github.io  
+> **在线文档**: https://vextjs.github.io/schema-dsl
 > **文档数量**: `README.md + docs/*.md` 共 58 份
 
 ---

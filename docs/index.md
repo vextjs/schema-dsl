@@ -33,7 +33,7 @@ features:
 
 ## 入口导航
 
-- 在线文档: https://schema-dsl.github.io
+- 在线文档: https://vextjs.github.io/schema-dsl
 - 本地文档索引: [doc-index.md](./doc-index.md)
 - 快速开始: [quick-start.md](./quick-start.md)
 - 功能索引: [FEATURE-INDEX.md](./FEATURE-INDEX.md)

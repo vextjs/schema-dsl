@@ -63,7 +63,7 @@ const schema = dsl({
 | `.label(text)` | 字段标签 | `'email!'.label('邮箱地址')` |
 | `.messages(obj)` | 自定义消息 | `'string!'.messages({...})` |
 | `.description(text)` | 描述 | `'url'.description('主页')` |
-| `.custom(fn)` | 自定义同步验证 | `'string!'.custom(value => value !== "admin")` |
+| `.custom(fn)` | 自定义验证；返回 Promise 时需使用 `validateAsync()` | `'string!'.custom(value => value !== "admin")` |
 | `.default(value)` | 默认值 | `'string'.default('guest')` |
 | `.username(range?)` | 用户名验证 | `'string!'.username('5-20')` |
 | `.phone(country)` | 手机号验证 | `'string!'.phone('cn')` |
@@ -196,7 +196,7 @@ const schema = dsl({
 });
 ```
 
-⚠️ `.custom()` 当前仅支持同步函数；需要异步查库或远程调用时，请在 `validate()` / `validateAsync()` 通过后于业务层单独执行。
+⚠️ `.custom()` 支持同步函数；需要异步查库或远程调用时，可以返回 `Promise` 并使用 `validateAsync()`。同步 `validate()` 遇到 Promise-returning custom validator 会返回明确错误。
 
 **支持的返回值**:
 - 不返回/`undefined` → 验证通过 ✅
@@ -207,8 +207,8 @@ const schema = dsl({
 - 返回 `false` → 验证失败（默认消息）
 
 **注意**: 
-- 当前版本**不支持**在 `.custom()` 中直接返回 `Promise`；即使调用 `validateAsync()`，异步 custom validator 仍会报 `同步验证不支持异步操作`。
-- 需要异步校验时，请改为：① 先用 `schema-dsl` 做同步结构校验；② 再在业务层执行异步检查。
+- 当前版本支持在 `.custom()` 中返回 `Promise`，但必须通过 `validateAsync()` 执行。
+- 如果你希望把数据库/RPC/HTTP 检查留在业务层，也可以先用 `schema-dsl` 做结构校验，再在业务层执行异步检查。
 
 
 ---

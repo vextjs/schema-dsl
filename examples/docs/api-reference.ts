@@ -1,10 +1,8 @@
 import {
-  ConstraintParser,
-  DslParser,
   ErrorFormatter,
   JSONSchemaCore,
   MessageTemplate,
-  SchemaCompiler,
+  ObjectDslBuilder,
   TypeRegistry,
   ValidationError,
   Validator,
@@ -83,19 +81,13 @@ const batchedTemplates = MessageTemplate.renderBatch(
   { label: 'Email' },
 )
 
-const parserStringSchema = DslParser.parseString('string:3-32!')
-const parserObjectSchema = DslParser.parseObject({
+const resolvedEmailType = TypeRegistry.resolve('email')
+const builderStringSchema = dsl('string:3-32!').label('Username').toSchema()
+const objectBuilder = new ObjectDslBuilder(dsl({
   email: 'email!',
   age: 'number:18-65',
-})
-const resolvedEmailType = TypeRegistry.resolve('email')
-const parsedConstraints = ConstraintParser.parse('3-32', 'string')
-const compiledSchema = SchemaCompiler.compile(
-  TypeRegistry.resolve('string'),
-  parsedConstraints,
-  { label: 'Username', required: true },
-)
-const compiledJsonSchema = SchemaCompiler.toJsonSchema(compiledSchema, TypeRegistry.getInternalKeys())
+}))
+const objectBuilderSchema = objectBuilder.requireAll().toSchema()
 
 const jsonSchemaCore = new JSONSchemaCore()
   .type('object')
@@ -125,11 +117,8 @@ console.log('api-reference.defaultValidator.reset =', sharedDefaultValidator !==
 console.log('api-reference.renderTemplate =', rendered)
 console.log('api-reference.messageTemplate.render =', messageTemplate.render({ label: 'Email' }))
 console.log('api-reference.messageTemplate.batch =', batchedTemplates)
-console.log('api-reference.dslParser.string.required =', parserStringSchema._required)
-console.log('api-reference.dslParser.object.required =', parserObjectSchema.required)
+console.log('api-reference.dslBuilder.string.required =', builderStringSchema._required)
+console.log('api-reference.objectDslBuilder.required =', objectBuilderSchema.requiredAll)
 console.log('api-reference.typeRegistry.email =', resolvedEmailType.baseSchema.format)
-console.log('api-reference.constraintParser =', parsedConstraints)
-console.log('api-reference.schemaCompiler.required =', compiledSchema._required)
-console.log('api-reference.schemaCompiler.json =', compiledJsonSchema)
 console.log('api-reference.jsonSchemaCore.valid =', jsonSchemaCoreResult.valid)
 console.log('api-reference.errorFormatter =', formattedErrors)

@@ -1,7 +1,7 @@
 # schema-dsl 功能索引
 
 
-> **更新时间**: 2026-04-30  
+> **更新时间**: 2026-06-01
 > **用途**: 快速查找所有功能及其文档位置  
 
 ---
@@ -60,7 +60,7 @@ const schema = dsl({
 - ✅ `when(field, opts)` - 条件验证
 - ✅ `default(value)` - 默认值
 - ✅ `toSchema()` - 转为JSON Schema（含内部标记字段）
-- ✅ `toJsonSchema()` - 转为纯净 JSON Schema（自动清理 `_required`/`_customMessages` 等内部标记，适用于 OpenAPI / 外部系统）🆕 v1.2.5
+- ✅ `toJsonSchema()` - 转为纯净 JSON Schema（自动清理 `_required`/`_customMessages` 等内部标记，适用于 OpenAPI / 外部系统）
 - ✅ `validate(data)` - 验证数据
 - ✅ `validateNestingDepth(schema, maxDepth)` - 检测嵌套深度（静态方法）
 

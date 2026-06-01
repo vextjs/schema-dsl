@@ -73,14 +73,14 @@ email: 'email!'.custom(async (value) => {
 
 **可能原因及解决方案**:
 
-#### 原因1: 异步验证器在同步模式下不执行
+#### 原因1: 异步验证器不能用同步 validate() 执行
 
 ```javascript
 // ❌ 错误：在 validate() 中使用异步验证器
 const result = validate(schema, data); // 同步模式
 
-// ❌ 误区：validateAsync() 也不会让 .custom(async fn) 生效
-await validateAsync(schema, data); // 仍会抛“同步验证不支持异步操作”
+// ✅ 正确：使用 validateAsync() 执行 Promise-returning custom validator
+await validateAsync(schema, data);
 
 // ✅ 正确：使用同步验证器
 email: 'email!'.custom((value) => {
@@ -95,15 +95,15 @@ if (result.valid) {
 }
 ```
 
-#### 原因2: custom() 返回值不正确
+#### 原因2: custom() 返回值不符合预期
 
 ```javascript
-// ❌ 错误：返回 true/false
+// ✅ 可以：返回 boolean
 .custom((value) => {
-  return value.includes('@'); // 返回 boolean
+  return value.includes('@'); // true 通过，false 使用默认错误消息
 })
 
-// ✅ 正确：只在失败时返回错误消息
+// ✅ 更推荐：失败时返回可读错误消息
 .custom((value) => {
   if (!value.includes('@')) {
     return '必须包含@符号'; // 失败时返回消息
