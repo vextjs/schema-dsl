@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.0.2] | 2026-06-01 | Patch | v1 consumer compatibility: root error type exports, `dsl(object, options?)`, builder typing, validate input typing, release metadata hygiene [View](./changelogs/v2.0.2.md) |
 | [2.0.1] | 2026-05-22 | Patch | Post-release security & correctness fixes: safe-regex bypass, XSS escaping, reset completeness, cache rebuild, SQL injection in exporters |
 | [2.0.0] | 2026-05-09 | Major | Full release: BC-2/4/5/6/7 fixes, string:N compat, English comments, 58 enriched examples, 1095 tests [View](./changelogs/v2.0.0.md) |
 | [2.0.0-beta.2] | 2026-04-12 | Major | Full TypeScript rewrite: ESM+CJS dual format, AJV 8, tsup build, 1052 tests passing [View](./changelogs/v2.0.0-beta.2.md) |
@@ -36,6 +37,18 @@ All notable changes to this project will be documented in this file.
 | v1.0.2 | 2025-12-31 | Patch | 15 new validators, complete docs, 75 tests |
 | v1.0.1 | 2025-12-31 | Patch | Enum support, auto type detection, unified error messages |
 | [v1.0.0] | 2025-12-29 | Pre-release | Initial release [View](./changelogs/v1.0.0.md) |
+
+---
+
+## [2.0.2] — 2026-06-01
+
+### Fixes
+
+- **Compatibility (entry types)**: exported `ErrorMessages` and `ErrorCodeMap` from the root entry so existing consumers can import public error template types directly from `schema-dsl`.
+- **Compatibility (`dsl` overloads)**: restored the optional `SchemaIOOptions` second argument for `dsl(object, options?)` and `dsl(string, options?)`, preserving v1-style call sites.
+- **Compatibility (`dsl` builder typing)**: narrowed the root `dsl('...')` overload to the concrete `DslBuilder` type so builder-specific APIs remain type-safe for consumers.
+- **Compatibility (`validate` generics)**: relaxed the top-level `validate<T>()` and `validateAsync<T>()` input parameter to `unknown` while preserving typed return data.
+- **Release**: synchronized package metadata, changelog coverage, lockfile versioning, audit gate and npm repository URL normalization before tag-based publish.
 
 ---
 
@@ -108,7 +121,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/vextjs/schema-dsl/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/vextjs/schema-dsl/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/vextjs/schema-dsl/compare/v2.0.0-beta.2...v2.0.0
 [2.0.0-beta.2]: https://github.com/vextjs/schema-dsl/releases/tag/v2.0.0-beta.2

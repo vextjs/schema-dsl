@@ -134,6 +134,29 @@ describe('v1 entry compatibility', () => {
     })
   })
 
+  it('dsl(object, options) should retain the v1 optional second-argument shape', () => {
+    const schema = dsl(
+      {
+        email: 'email!',
+      },
+      {
+        allErrors: true,
+        locale: 'zh-CN',
+      },
+    ) as any
+
+    expect(schema).toMatchObject({
+      type: 'object',
+      properties: {
+        email: {
+          type: 'string',
+          format: 'email',
+        },
+      },
+      required: ['email'],
+    })
+  })
+
   it('top-level validateAsync() should accept a DSL object directly', async () => {
     await expect(validateAsync(
       {

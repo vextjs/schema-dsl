@@ -1,4 +1,4 @@
-import type { JSONSchema } from './schema.js'
+import type { JSONSchema, SchemaIOOptions } from './schema.js'
 import type { DslConfigOptions } from './config.js'
 import type { IConditionalBuilder } from './conditional.js'
 
@@ -121,8 +121,8 @@ export interface DslErrorNamespace {
  * ⚠️ Uses function overloads rather than union return types to ensure TypeScript type narrowing works correctly.
  */
 export interface DslFn {
-  (def: string): IDslBuilder
-  (def: DslDefinition): JSONSchema
+  (def: string, options?: SchemaIOOptions): IDslBuilder
+  (def: DslDefinition, options?: SchemaIOOptions): JSONSchema
   config: (options?: Partial<DslConfigOptions>) => void
   if: DslIfFn & DslFieldIfFn
   _if: DslIfFn & DslFieldIfFn

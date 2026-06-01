@@ -56,6 +56,7 @@ export { PATTERNS } from './config/patterns.js'
 
 // ==================== Type exports ====================
 export type { JSONSchema, SchemaIOOptions } from './types/schema.js'
+export type { ErrorMessages, ErrorCodeMap } from './types/error.js'
 
 export type {
   IDslBuilder,
@@ -110,6 +111,7 @@ import { Validator as _Validator } from './core/Validator.js'
 import { I18nError as _I18nError } from './errors/I18nError.js'
 import type { LocaleMessage as _LocaleMessage } from './locales/types.js'
 import type { JSONSchema as _JSONSchema } from './types/schema.js'
+import type { SchemaIOOptions as _SchemaIOOptions } from './types/schema.js'
 import type { IDslBuilder as _IDslBuilder, DslDefinition as _DslDefinition, DslConditionMarker as _DslConditionMarker } from './types/dsl.js'
 import type { IConditionalBuilder as _IConditionalBuilder } from './types/conditional.js'
 import type { DslConfigOptions as _DslConfigOptions } from './types/config.js'
@@ -534,7 +536,7 @@ export function resetRuntimeState(): void {
  */
 export function validate<T = unknown>(
   schema: _JSONSchema | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
-  data: T,
+  data: unknown,
   options: Record<string, unknown> = {},
 ): _ValidationResult<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
@@ -551,7 +553,7 @@ export function validate<T = unknown>(
  */
 export async function validateAsync<T = unknown>(
   schema: _JSONSchema | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
-  data: T,
+  data: unknown,
   options: Record<string, unknown> = {},
 ): Promise<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
@@ -565,10 +567,13 @@ export async function validateAsync<T = unknown>(
 
 // ==================== dsl main function ====================
 
-// Core dsl function: string → IDslBuilder (chain), object definition → JSONSchema
-function _dslFn(def: string): _IDslBuilder
-function _dslFn(def: _DslDefinition): _JSONSchema
-function _dslFn(def: unknown): _IDslBuilder | _JSONSchema {
+// Core dsl function: string → DslBuilder (chain), object definition → JSONSchema
+// v1 BC: keep the optional 2nd SchemaIOOptions parameter even though v2 no longer
+// needs it during object compilation. Existing consumers such as vext still call
+// dsl(definition, options), so the overload remains source-compatible.
+function _dslFn(def: string, options?: _SchemaIOOptions): _DslBuilder
+function _dslFn(def: _DslDefinition, options?: _SchemaIOOptions): _JSONSchema
+function _dslFn(def: unknown, _options?: _SchemaIOOptions): _DslBuilder | _JSONSchema {
   if (typeof def === 'string') return new _DslBuilder(def)
   if (def === null || def === undefined || typeof def !== 'object' || Array.isArray(def)) {
     throw new Error('[schema-dsl] Invalid DSL definition: expected string or object')
@@ -578,8 +583,8 @@ function _dslFn(def: unknown): _IDslBuilder | _JSONSchema {
 
 // Namespace shape (mirrors DslFn interface in types/dsl.ts)
 const _dslWithNS = _dslFn as {
-  (def: string): _IDslBuilder
-  (def: _DslDefinition): _JSONSchema
+  (def: string, options?: _SchemaIOOptions): _DslBuilder
+  (def: _DslDefinition, options?: _SchemaIOOptions): _JSONSchema
   config: (options?: Partial<_DslConfigOptions>) => void
   if: {
     (condition: string, thenSchema: unknown, elseSchema?: unknown): _DslConditionMarker

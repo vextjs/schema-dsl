@@ -1,6 +1,6 @@
 {
   "name": "schema-dsl",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A concise and powerful JSON Schema validation library - DSL syntax + String extensions + convenient validate API",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -57,9 +57,11 @@
     "examples:typecheck": "tsc -p tsconfig.examples.json --noEmit",
     "examples:build": "tsc -p tsconfig.examples.json",
     "lint": "eslint src/**/*.ts",
+    "test:audit": "npm audit --omit=dev --audit-level=moderate",
     "test:version": "node -e \"const p=require('./package.json');const {VERSION}=require('./dist/index.cjs');if(p.version!==VERSION)throw new Error('Version mismatch: '+p.version+' vs '+VERSION);console.log('Version OK:',p.version)\"",
+    "test:all:with-audit": "npm run lint && npm run build && npm run typecheck && npm test && npm run test:version && npm run test:audit",
     "bench": "node test/benchmarks/library-comparison.js",
-    "prepublishOnly": "npm run build && npm run typecheck && npm test"
+    "prepublishOnly": "npm run test:all:with-audit && npm pack --dry-run"
   },
   "keywords": [
     "schema",
@@ -86,12 +88,16 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vextjs/schema-dsl.git"
+    "url": "git+https://github.com/vextjs/schema-dsl.git"
   },
   "bugs": {
     "url": "https://github.com/vextjs/schema-dsl/issues"
   },
   "homepage": "https://github.com/vextjs/schema-dsl#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
