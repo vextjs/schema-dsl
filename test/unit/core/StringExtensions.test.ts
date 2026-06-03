@@ -2,7 +2,7 @@
  * StringExtensions Complete Tests — v2 Migration
  *
  * v2 changes:
- * - requires explicit call to installStringExtensions(dsl) to install (opt-in)
+ * - root entry auto-installs; explicit install/uninstall remains available
  * - 'length' and 'trim' removed from extension list (v2 bugfix)
  * - uninstallStringExtensions() can uninstall
  */

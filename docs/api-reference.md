@@ -459,7 +459,7 @@ resetDefaultValidator();
 
 ### `installStringExtensions(dslFunction?)`
 
-手动安装 String 扩展。模块导入时默认已自动安装；只有在调用过 `uninstallStringExtensions()` 或需要显式恢复扩展时才需要手动执行。
+显式安装 String 扩展。模块导入不会自动修改 `String.prototype`；只有业务代码明确需要 `'string!'.description(...)` 这类链式写法时才调用。
 
 ```javascript
 const { installStringExtensions } = require('schema-dsl');

@@ -3,7 +3,7 @@
  *
  * v2 Changes:
  * - DslBuilder imported from src/core/DslBuilder.js (with .js extension)
- * - installStringExtensions called manually
+ * - String extensions are available from the root entry
  * - .exist → .toBeTruthy()
  */
 

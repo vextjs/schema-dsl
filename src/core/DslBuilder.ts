@@ -45,8 +45,10 @@ export class DslBuilder implements IDslBuilder {
   private static readonly _customTypes = new Map<string, JSONSchema | (() => JSONSchema)>()
 
   private _baseSchema: JSONSchema
-  private _required: boolean
-  private _optional: boolean
+  /** v1 compatibility marker read by downstream schema converters such as vext. */
+  _required: boolean
+  /** v1 compatibility marker for nullable/optional field syntax. */
+  _optional: boolean
   private _customMessages: Record<string, string>
   private _label: string | null
   private _description: string | null

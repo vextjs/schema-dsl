@@ -395,11 +395,12 @@ email: 'email!'
   .messages({...})
 ```
 
-### Q: 如何禁用String扩展？
+### Q: 如何启用或卸载 String 扩展？
 
 **A**: 
 ```javascript
-const { uninstallStringExtensions } = require('schema-dsl');
+const { installStringExtensions, uninstallStringExtensions } = require('schema-dsl');
+installStringExtensions();
 uninstallStringExtensions();
 ```
 

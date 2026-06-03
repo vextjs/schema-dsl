@@ -35,6 +35,11 @@ describe('v1 entry compatibility', () => {
     expect(exporters).toHaveProperty('MongoDBExporter')
   })
 
+  it('root entry import should not mutate String.prototype by default', () => {
+    uninstallStringExtensions()
+    expect(typeof ('email!' as any).description).toBe('undefined')
+  })
+
   it('installStringExtensions() should support being called with no arguments', () => {
     uninstallStringExtensions()
     expect(typeof ('email!' as any).label).toBe('undefined')
@@ -47,6 +52,16 @@ describe('v1 entry compatibility', () => {
       format: 'email',
       _label: 'Email',
     })
+  })
+
+  it('DslBuilder should expose v1 field marker properties for downstream converters', () => {
+    const required = dsl('string!')
+    const optional = dsl('string?')
+
+    expect((required as any)._required).toBe(true)
+    expect((required as any)._optional).toBe(false)
+    expect((optional as any)._required).toBe(false)
+    expect((optional as any)._optional).toBe(true)
   })
 
   it('Locale.getMessage() should retain the v1 { code, message } return shape', () => {

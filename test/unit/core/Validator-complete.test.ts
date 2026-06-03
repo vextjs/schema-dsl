@@ -2,7 +2,7 @@
  * Validator Complete Tests — v2 Migration (v1 Validator-complete.test.js)
  *
  * v2 changes:
- * - string extensions (.username()/.phone()/.password()) require installStringExtensions
+ * - string extensions (.username()/.phone()/.password()) are available from the root entry
  * - array<string:1-20> syntax not supported, use 'array' instead
  */
 

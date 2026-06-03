@@ -1,7 +1,6 @@
 ﻿/**
  * Integration Tests — v2 module end-to-end
- * Note: does not import from src/index.ts to avoid installStringExtensions crashing in test env
- * Tests equivalent functionality via individual modules
+ * Tests equivalent functionality via individual modules.
  */
 
 import { describe, it, expect } from 'vitest'

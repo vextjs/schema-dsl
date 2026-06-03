@@ -2,7 +2,7 @@
  * DslBuilder Complete Tests — v2 Migration
  *
  * v2 Changes:
- * - installStringExtensions must be called manually
+ * - root entry enables String extensions for compatibility
  * - string:N single value → exactLength:N (DA-03 fix)
  * - errors field is undefined on success (not empty array)
  */

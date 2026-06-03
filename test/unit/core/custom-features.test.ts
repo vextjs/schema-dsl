@@ -1,13 +1,13 @@
 ﻿/**
  * Custom Features & Error Messages Tests — v2 Migration
  *
- * v2 changes: use installStringExtensions to enable string extensions (opt-in)
+ * v2 changes: root entry enables string extensions for compatibility
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { dsl, Validator, Locale, installStringExtensions } from '../../../src/index.js'
 
-// v2: manually install string extensions
+// Explicit install remains idempotent for callers that keep the v2 setup style.
 installStringExtensions(dsl as any)
 
 describe('Custom Features & Error Messages', () => {

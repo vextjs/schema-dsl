@@ -442,7 +442,7 @@ const schema = dsl({
 
 ### Q1: String扩展会污染全局吗？
 
-**A**: 会扩展 `String.prototype`，但冲突概率极低。提供 `uninstallStringExtensions()` 可以卸载。
+**A**: 只有显式调用 `installStringExtensions()` 时才会扩展 `String.prototype`。扩展可通过 `uninstallStringExtensions()` 卸载；库的 root entry 默认不修改全局原型。
 
 ### Q2: 性能如何？
 

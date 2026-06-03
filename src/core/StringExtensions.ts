@@ -1,5 +1,5 @@
 /**
- * StringExtensions — opt-in String.prototype chainable DSL extensions.
+ * StringExtensions — String.prototype chainable DSL extensions.
  *
  * v2 fixes:
  *   S-01/S-02: array-driven symmetric install/uninstall (v1 uninstall was missing `format` and
@@ -8,8 +8,7 @@
  *
  * @example
  * import { installStringExtensions } from 'schema-dsl'
- * installStringExtensions(dsl)
- * // Then you can use:
+ * installStringExtensions()
  * 'email!'.label('Email address').messages({ format: 'Invalid format' })
  * 'string:3-32!'.username('medium')
  */

@@ -2,7 +2,7 @@
  * DslBuilder Extensions & Fixes Tests — v2 Migration
  *
  * v2 changes:
- * - use installStringExtensions (opt-in)
+ * - root entry enables string extensions for compatibility
  * - SchemaUtils.createLibrary is still available
  * - DslBuilder.validateNestingDepth static method exists
  */
