@@ -1,6 +1,6 @@
 {
   "name": "schema-dsl",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "A concise and powerful JSON Schema validation library - DSL syntax + String extensions + convenient validate API",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -85,7 +85,7 @@
     "input-validation"
   ],
   "author": "rocky <rockyshi1993@gmail.com>",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vextjs/schema-dsl.git"

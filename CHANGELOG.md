@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.0.5] | 2026-06-04 | Patch | License metadata and package distribution updated to Apache-2.0 [View](./changelogs/v2.0.5.md) |
 | [2.0.4] | 2026-06-03 | Patch | Explicit String extension installation, v1 compatibility guard coverage, and documentation alignment [View](./changelogs/v2.0.4.md) |
 | [2.0.3] | 2026-06-01 | Patch | Async custom validation runtime fix, public-doc example alignment, docs site and link cleanup [View](./changelogs/v2.0.3.md) |
 | [2.0.2] | 2026-06-01 | Patch | v1 consumer compatibility: root error type exports, `dsl(object, options?)`, builder typing, validate input typing, release metadata hygiene [View](./changelogs/v2.0.2.md) |
@@ -39,6 +40,14 @@ All notable changes to this project will be documented in this file.
 | v1.0.2 | 2025-12-31 | Patch | 15 new validators, complete docs, 75 tests |
 | v1.0.1 | 2025-12-31 | Patch | Enum support, auto type detection, unified error messages |
 | [v1.0.0] | 2025-12-29 | Pre-release | Initial release [View](./changelogs/v1.0.0.md) |
+
+---
+
+## [2.0.5] — 2026-06-04
+
+### Changes
+
+- Updated package license metadata, lockfile metadata, README badge, LICENSE text, and release notes to Apache-2.0.
 
 ---
 
@@ -142,7 +151,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.4...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.5...HEAD
+[2.0.5]: https://github.com/vextjs/schema-dsl/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/vextjs/schema-dsl/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/vextjs/schema-dsl/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/vextjs/schema-dsl/compare/v2.0.1...v2.0.2

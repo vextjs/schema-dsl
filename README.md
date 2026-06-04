@@ -8,7 +8,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/schema-dsl.svg?style=flat-square)](https://www.npmjs.com/package/schema-dsl)
 [![Build Status](https://github.com/vextjs/schema-dsl/workflows/CI/badge.svg)](https://github.com/vextjs/schema-dsl/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Native-3178C6.svg?style=flat-square)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)](https://www.apache.org/licenses/LICENSE-2.0)
 
 [Quick Start](#-quick-start) · [Documentation](https://vextjs.github.io/schema-dsl) · [Feature Overview](#-feature-overview) · [Examples](./examples)
 
@@ -611,7 +611,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 ## 📄 License
 
-[MIT](./LICENSE)
+[Apache-2.0](./LICENSE)
 
 ---
 
