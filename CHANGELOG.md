@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.0.6] | 2026-06-09 | Patch | Direct runtime and development dependencies pinned to exact versions for deterministic consumer installs [View](./changelogs/v2.0.6.md) |
 | [2.0.5] | 2026-06-04 | Patch | License metadata and package distribution updated to Apache-2.0 [View](./changelogs/v2.0.5.md) |
 | [2.0.4] | 2026-06-03 | Patch | Explicit String extension installation, v1 compatibility guard coverage, and documentation alignment [View](./changelogs/v2.0.4.md) |
 | [2.0.3] | 2026-06-01 | Patch | Async custom validation runtime fix, public-doc example alignment, docs site and link cleanup [View](./changelogs/v2.0.3.md) |
@@ -151,7 +152,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.5...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.6...HEAD
+[2.0.6]: https://github.com/vextjs/schema-dsl/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/vextjs/schema-dsl/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/vextjs/schema-dsl/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/vextjs/schema-dsl/compare/v2.0.2...v2.0.3
