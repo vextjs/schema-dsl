@@ -2,13 +2,11 @@ import { dsl, validate, installStringExtensions, uninstallStringExtensions } fro
 
 // ============================================================
 // 1. What string extensions do
-//    installStringExtensions() patches String.prototype with a full
-//    DslBuilder-like chain API, so DSL string literals behave like builders.
+//    The root entry installs a non-enumerable String.prototype chain API by
+//    default, so DSL string literals behave like builders in JavaScript.
 // ============================================================
 
-installStringExtensions()
-
-// Before uninstall — chain methods are available on string literals
+// Before uninstall — chain methods are available on string literals by default
 console.log('string-ext.installed.label  =', typeof ('email!' as any).label)     // 'function'
 console.log('string-ext.installed.error  =', typeof ('string!' as any).error)    // 'function'
 console.log('string-ext.installed.custom =', typeof ('string!' as any).custom)   // 'function'

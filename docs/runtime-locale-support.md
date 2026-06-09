@@ -1,7 +1,7 @@
 # 运行时多语言支持 - schema-dsl
 
 **版本**: v1.1.8+  
-**更新日期**: 2026-01-30
+**更新日期**: 2026-06-10
 
 ---
 
@@ -116,7 +116,7 @@ console.log(error2.message);  // "没有管理员权限"
 
 ---
 
-### 方式 2: 运行时指定语言（推荐用于 API）⭐
+### 方式 3: 运行时指定语言（推荐用于 API）⭐
 
 ```javascript
 const { dsl, Locale } = require('schema-dsl');
@@ -527,6 +527,6 @@ app.get('/api/users/:id', async (req, res) => {
 
 ---
 
-**最后更新**: 2026-05-08  
+**最后更新**: 2026-06-10
 **作者**: schema-dsl Team
 

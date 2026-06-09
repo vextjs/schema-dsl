@@ -1,7 +1,7 @@
 # schema-dsl API 参考文档
 
 
-> **更新时间**: 2026-05-22  
+> **更新时间**: 2026-06-10
 
 ---
 
@@ -352,7 +352,7 @@ console.log(result.valid); // true
 
 ### 静态方法 
 
-#### `dsl.match(field, map)```
+#### `dsl.match(field, map)`
 
 创建条件验证规则（类似 switch-case）。
 
@@ -459,7 +459,7 @@ resetDefaultValidator();
 
 ### `installStringExtensions(dslFunction?)`
 
-显式安装 String 扩展。模块导入不会自动修改 `String.prototype`；只有业务代码明确需要 `'string!'.description(...)` 这类链式写法时才调用。
+安装或重新安装 String 扩展。root entry 默认已经安装，用于兼容 v1.1.x 的 `'string!'.description(...)` 链式写法；显式调用通常只用于主动卸载后的重新启用，或传入自定义 `dslFunction`。
 
 ```javascript
 const { installStringExtensions } = require('schema-dsl');
@@ -471,7 +471,7 @@ installStringExtensions();
 
 ### `uninstallStringExtensions()`
 
-卸载挂载到 `String.prototype` 上的扩展方法。
+卸载挂载到 `String.prototype` 上的扩展方法。卸载后如需链式调用，请使用 `dsl('...')` 包裹字符串，或再次调用 `installStringExtensions()`。
 
 ```javascript
 const { uninstallStringExtensions } = require('schema-dsl');
@@ -1043,5 +1043,5 @@ console.log(result.valid); // true
 
 ---
 
-**最后更新**: 2026-05-08
+**最后更新**: 2026-06-10
 

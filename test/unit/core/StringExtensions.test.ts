@@ -60,6 +60,113 @@ describe('StringExtensions - Complete Tests', () => {
     })
   })
 
+  describe('installation semantics', () => {
+    it('should install extension descriptors as non-enumerable properties', () => {
+      const labelDescriptor = Object.getOwnPropertyDescriptor(String.prototype, 'label')
+      const markerDescriptor = Object.getOwnPropertyDescriptor(String.prototype, '_dslExtensionsInstalled')
+
+      expect(labelDescriptor).toMatchObject({
+        configurable: true,
+        enumerable: false,
+        writable: true,
+      })
+      expect(markerDescriptor).toMatchObject({
+        configurable: true,
+        enumerable: false,
+        writable: true,
+        value: true,
+      })
+      expect(Object.keys(String.prototype)).not.toContain('label')
+    })
+
+    it('should not expose extension methods through for-in iteration', () => {
+      const keys: string[] = []
+      for (const key in Object('email!')) {
+        keys.push(key)
+      }
+
+      expect(keys).not.toContain('label')
+      expect(keys).not.toContain('pattern')
+      expect(keys).not.toContain('_dslExtensionsInstalled')
+    })
+
+    it('should reject external String.prototype method conflicts instead of overwriting them', () => {
+      uninstallStringExtensions()
+      Object.defineProperty(String.prototype, 'label', {
+        value: () => 'external label',
+        configurable: true,
+        enumerable: false,
+        writable: true,
+      })
+
+      try {
+        expect(() => installStringExtensions(dsl as any)).toThrow(/String\.prototype\.label already exists/)
+        expect(('string' as any).label()).toBe('external label')
+      } finally {
+        delete (String.prototype as unknown as Record<PropertyKey, unknown>)['label']
+        installStringExtensions(dsl as any)
+      }
+    })
+
+    it('should reject external conflicts even when a legacy install marker exists', () => {
+      uninstallStringExtensions()
+      Object.defineProperty(String.prototype, '_dslExtensionsInstalled', {
+        value: true,
+        configurable: true,
+        enumerable: false,
+        writable: true,
+      })
+      Object.defineProperty(String.prototype, 'label', {
+        value: () => 'external label',
+        configurable: true,
+        enumerable: false,
+        writable: true,
+      })
+
+      try {
+        expect(() => installStringExtensions(dsl as any)).toThrow(/String\.prototype\.label already exists/)
+        expect(('string' as any).label()).toBe('external label')
+      } finally {
+        delete (String.prototype as unknown as Record<PropertyKey, unknown>)['label']
+        delete (String.prototype as unknown as Record<PropertyKey, unknown>)['_dslExtensionsInstalled']
+        installStringExtensions(dsl as any)
+      }
+    })
+
+    it('should take over v1-style legacy schema-dsl extensions safely', () => {
+      uninstallStringExtensions()
+      const dslFunction = dsl as any
+      Object.defineProperty(String.prototype, '_dslExtensionsInstalled', {
+        value: true,
+        configurable: true,
+        enumerable: true,
+        writable: true,
+      })
+      Object.defineProperty(String.prototype, 'label', {
+        value: function (label: string) {
+          return dslFunction(String(this)).label(label)
+        },
+        configurable: true,
+        enumerable: true,
+        writable: true,
+      })
+
+      try {
+        expect(() => installStringExtensions(dsl as any)).not.toThrow()
+        const labelDescriptor = Object.getOwnPropertyDescriptor(String.prototype, 'label')
+        expect(labelDescriptor?.enumerable).toBe(false)
+        expect(('email!' as any).label('Email').toSchema()).toMatchObject({
+          type: 'string',
+          format: 'email',
+          _label: 'Email',
+        })
+      } finally {
+        uninstallStringExtensions()
+        installStringExtensions(dsl as any)
+      }
+    })
+  })
+
   describe('.pattern() method', () => {
     it('should add regex validation', () => {
       const schema = dsl({

@@ -35,9 +35,13 @@ describe('v1 entry compatibility', () => {
     expect(exporters).toHaveProperty('MongoDBExporter')
   })
 
-  it('root entry import should not mutate String.prototype by default', () => {
-    uninstallStringExtensions()
-    expect(typeof ('email!' as any).description).toBe('undefined')
+  it('root entry import should install String.prototype extensions by default', () => {
+    expect(typeof ('email!' as any).description).toBe('function')
+    expect(('email!' as any).description('Email field').toSchema()).toMatchObject({
+      type: 'string',
+      format: 'email',
+      description: 'Email field',
+    })
   })
 
   it('installStringExtensions() should support being called with no arguments', () => {

@@ -1,6 +1,6 @@
 # 常见问题解答 (FAQ)
 
-> **更新时间**: 2026-05-08  
+> **更新时间**: 2026-06-10
 
 
 ---
@@ -147,7 +147,7 @@ const schema = dsl({
 
 ### Q: 如何使用 String 扩展？
 
-**A**: 字符串可以直接链式调用方法：
+**A**: JavaScript 中导入 `schema-dsl` 后默认可以直接字符串链式调用；TypeScript 中为了完整类型提示，复杂字段仍推荐使用 `dsl()` 包裹。
 
 ```javascript
 const schema = dsl({
@@ -162,6 +162,14 @@ const schema = dsl({
     .pattern(/^[a-z0-9_]+$/)
     .label('用户名')
     .username('medium')
+});
+
+// 如果需要完全非侵入式写法，可以先卸载再用 dsl() 包裹。
+const { uninstallStringExtensions } = require('schema-dsl');
+uninstallStringExtensions();
+
+const safeSchema = dsl({
+  email: dsl('email!').label('邮箱地址')
 });
 ```
 

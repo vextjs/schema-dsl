@@ -1,9 +1,9 @@
 # schema-dsl 文档索引
 
-> **更新时间**: 2026-06-01
+> **更新时间**: 2026-06-10
 > **用途**: 所有文档的快速导航  
 > **在线文档**: https://vextjs.github.io/schema-dsl
-> **文档数量**: `README.md + docs/*.md` 共 58 份
+> **文档数量**: `README.md + docs/*.md` 共 59 份
 
 ---
 
@@ -18,6 +18,7 @@
 - [使用指南](#doc-index-guides) - 完整教程
 - [补充文档](#doc-index-supplemental) - 其余未在专题区展开的文档
 - [故障排查](#doc-index-troubleshooting) - 问题解决
+- [开发与贡献](#doc-index-contributing) - 贡献指南
 - [示例代码](#doc-index-examples) - 完整示例
 - [常见问题](#doc-index-faq) - FAQ
 
@@ -276,7 +277,17 @@
 
 <a id="doc-index-troubleshooting"></a>
 
-## 🔧 开发指南
+## 🔧 故障排查
+
+| 文档 | 说明 |
+|------|------|
+| [troubleshooting.md](troubleshooting.md) | 常见错误、排查步骤与可复制修复示例 |
+
+---
+
+<a id="doc-index-contributing"></a>
+
+## 🛠️ 开发与贡献
 
 | 文档 | 说明 |
 |------|------|
@@ -300,8 +311,8 @@
 | `docs/*.md` 文档数 | **58** |
 | `README.md + docs/*.md` 文档数 | **59** |
 | 文档总行数 | **持续演进（以仓库实时内容为准）** |
-| 测试文件数 | **67** |
-| 最近一次全量验证 | **67 files / 1052 tests passed** |
+| 测试文件数 | **75** |
+| 最近一次全量验证 | **75 files / 1105 tests passed** |
 
 ---
 
@@ -319,6 +330,6 @@
 
 ---
 
-**最后更新**: 2026-05-08
+**最后更新**: 2026-06-10
 
 

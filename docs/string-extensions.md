@@ -1,6 +1,6 @@
 # String 扩展文档
 
-> **更新时间**: 2026-05-22  
+> **更新时间**: 2026-06-10
 
 ---
 
@@ -11,7 +11,7 @@
 - [快速开始](#快速开始)
 - [详细示例](#详细示例)
 - [多语言支持](#多语言支持)
-- [安装与卸载](#安装与卸载)
+- [默认安装与卸载](#默认安装与卸载)
 - [最佳实践](#最佳实践)
 - [常见问题](#常见问题)
 
@@ -19,30 +19,33 @@
 
 ## 核心特性
 
-**字符串可以直接调用链式方法**
+**导入 schema-dsl 后，字符串可以直接调用链式方法**
 
 ```javascript
-// ✅ 字符串直接链式调用
-email: 'email!'.pattern(/custom/).label('邮箱')
+const { dsl } = require('schema-dsl');
 
-// ✅ 纯DSL仍然有效
-age: 'number:18-120'
+const schema = dsl({
+  // ✅ root entry 默认已安装 String 扩展
+  email: 'email!'.pattern(/custom/).label('邮箱'),
+
+  // ✅ 纯DSL仍然有效
+  age: 'number:18-120'
+});
 ```
 
 **优势**:
 - ✅ 更简洁自然
 - ✅ 减少代码量
-- ✅ 100%向后兼容
+- ✅ 与 `dsl()` 包裹写法可共存
 
-## 替代方案（非侵入式）
+## 替代方案（主动卸载后非侵入式）
 
-如果你介意修改 `String.prototype`，可以直接使用 `dsl()` 包裹字符串：
+如果你介意修改 `String.prototype`，可以主动卸载扩展，然后使用 `dsl()` 包裹字符串：
 
 ```javascript
-const { dsl } = require('schema-dsl');
+const { dsl, uninstallStringExtensions } = require('schema-dsl');
 
-// 禁用 String 扩展
-require('schema-dsl').uninstallStringExtensions();
+uninstallStringExtensions();
 
 const schema = dsl({
   // 使用 dsl() 包裹字符串
@@ -56,6 +59,8 @@ const schema = dsl({
 ---
 
 ## 可用方法
+
+下表示例默认在导入 `schema-dsl` 后即可使用。
 
 | 方法 | 说明 | 示例 |
 |------|------|------|
@@ -86,7 +91,7 @@ const schema = dsl({
 const { dsl } = require('schema-dsl');
 
 const schema = dsl({
-  // 字符串直接链式调用
+  // 默认可以直接字符串链式调用
   email: 'email!'.label('邮箱地址'),
   
   username: 'string:3-32!'
@@ -102,6 +107,8 @@ const schema = dsl({
 ---
 
 ## 详细示例
+
+以下示例默认在导入 `schema-dsl` 后即可使用。如果你不想保留 `String.prototype` 扩展，可以先调用 `uninstallStringExtensions()`，再把每个复杂字段改写为 `dsl('...')` 包裹。
 
 ### 1. 正则验证
 
@@ -370,16 +377,23 @@ const enSchema = getSchema('en-US');
 
 ---
 
-## 安装与卸载
+## 默认安装与卸载
 
-### 自动安装
+### 默认安装
 
-String扩展在导入时自动安装：
+root entry 默认安装 String 扩展，用于兼容 v1.1.x 直接字符串链式写法：
 
 ```javascript
 const { dsl } = require('schema-dsl');
-// String扩展已自动安装
+
+const schema = dsl({
+  email: 'email!'.label('邮箱地址')
+});
 ```
+
+扩展以不可枚举属性挂载到 `String.prototype`，并在安装时检测同名外部方法；如果发现不是 schema-dsl 自己安装的方法，会拒绝覆盖。
+
+如果你的运行环境在导入 `schema-dsl` 之前已经扩展了同名方法（例如 `String.prototype.label`），root entry 会在导入阶段抛出冲突错误，避免静默覆盖外部实现。处理方式是先移除或重命名冲突的外部扩展，再导入 `schema-dsl`；普通项目通常不会遇到这个场景。
 
 ### 手动禁用
 
@@ -392,7 +406,7 @@ uninstallStringExtensions();
 'email!'.pattern(/custom/)  // ❌ 报错
 ```
 
-### 重新启用
+### 重新启用或自定义安装
 
 ```javascript
 const { installStringExtensions } = require('schema-dsl');
@@ -434,7 +448,7 @@ const schema = dsl({
 
 ### 3. 遵循 80/20 法则
 
-**80%字段用纯DSL，20%字段用String扩展**
+**JavaScript 中 80% 字段用纯 DSL，20% 复杂字段可直接字符串链式调用；TypeScript 中为了类型提示，复杂字段优先用 `dsl()` 包裹。**
 
 ---
 
@@ -442,7 +456,7 @@ const schema = dsl({
 
 ### Q1: String扩展会污染全局吗？
 
-**A**: 只有显式调用 `installStringExtensions()` 时才会扩展 `String.prototype`。扩展可通过 `uninstallStringExtensions()` 卸载；库的 root entry 默认不修改全局原型。
+**A**: 会扩展 `String.prototype`，root entry 默认安装以兼容 v1.1.x。副作用已降到较低：扩展方法不可枚举、安装前检测同名冲突、可通过 `uninstallStringExtensions()` 卸载；如果你需要完全非侵入式写法，卸载后使用 `dsl('...')` 包裹字符串。
 
 ### Q2: 性能如何？
 
@@ -483,6 +497,6 @@ const schema = dsl({
 
 ---
 
-**最后更新**: 2026-05-08
+**最后更新**: 2026-06-10
 
 

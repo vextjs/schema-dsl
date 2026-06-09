@@ -1,7 +1,7 @@
 # TypeScript 使用指南
 
-> **版本**: schema-dsl v2.0.5
-> **更新日期**: 2026-05-08  
+> **版本**: schema-dsl v2.0.6
+> **更新日期**: 2026-06-10
 > **重要**: v1.0.6 移除了全局 String 类型扩展以避免类型污染
 
 ---
@@ -69,9 +69,9 @@ const schema = dsl({
   email: 'email!'.label('邮箱')  // 类型错误：Property 'label' does not exist on type 'string'
 });
 
-// ✅ JavaScript 中仍然可以正常使用
+// ✅ TypeScript 中使用 dsl() 包裹，JavaScript 中可直接字符串链式
 const schema = dsl({
-  email: 'email!'.label('邮箱')  // 运行时完全正常
+  email: dsl('email!').label('邮箱')
 });
 ```
 
@@ -382,12 +382,22 @@ dsl('email!').label('邮箱')
 
 ### 5.2 JavaScript 用户需要改变写法吗？
 
-**不需要！** JavaScript 用户可以继续使用字符串链式调用：
+JavaScript 用户导入 `schema-dsl` 后默认可以直接字符串链式调用，这与 v1.1.x 使用习惯兼容：
 
 ```javascript
-// JavaScript 中完全正常
 const schema = dsl({
   email: 'email!'.label('邮箱')
+});
+```
+
+如果你不想保留 `String.prototype` 扩展，可以主动卸载，然后使用 `dsl()` 包裹：
+
+```javascript
+const { dsl, uninstallStringExtensions } = require('schema-dsl');
+uninstallStringExtensions();
+
+const schema = dsl({
+  email: dsl('email!').label('邮箱')
 });
 ```
 
@@ -579,6 +589,6 @@ dsl.config({
 
 ---
 
-**更新日期**: 2026-05-08  
-**文档版本**: v2.0.5
+**更新日期**: 2026-06-10
+**文档版本**: v2.0.6
 

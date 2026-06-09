@@ -645,6 +645,9 @@ _dslWithNS.error = {
  */
 export const dsl = _dslWithNS
 
+// v1 compatibility: root imports enable direct string chaining by default.
+_install(_dslWithNS as unknown as Parameters<typeof _install>[0])
+
 export default dsl
 
 export const config = _dslConfig

@@ -1,7 +1,7 @@
 # 常见问题排查指南
 
 > **用途**: 快速解决 schema-dsl 使用中的常见问题  
-> **更新**: 2025-12-26  
+> **更新**: 2026-06-10
 
 ---
 
@@ -382,12 +382,11 @@ db.createCollection('users', {
 // TypeError: "string!".pattern is not a function
 ```
 
-**原因**: String 扩展未安装
+**原因**: root entry 默认会安装 String 扩展；如果仍然报错，通常是之前调用过 `uninstallStringExtensions()`，或导入了不包含 root side effect 的旧构建/异常入口。
 
 **解决方案**:
 ```javascript
-// schema-dsl 默认会自动安装 String 扩展
-// 如果未生效，手动安装：
+// 重新启用直接字符串链式调用：
 const { installStringExtensions } = require('schema-dsl');
 installStringExtensions();
 
@@ -396,6 +395,27 @@ const schema = dsl({
   username: dsl('string!').pattern(/test/)
 });
 ```
+
+---
+
+### 问题12: 导入时提示 String.prototype 方法已存在
+
+**症状**:
+```text
+[schema-dsl] Cannot install String extension "label": String.prototype.label already exists and is not owned by schema-dsl
+```
+
+**原因**: schema-dsl 为兼容 v1.1.x 会在 root entry 默认安装 String 扩展。为了避免覆盖宿主环境已有的同名方法，安装器会在导入阶段检测 `String.prototype.label` / `pattern` 等方法；如果这些方法不是 schema-dsl 自己安装的扩展，就会抛出冲突错误。
+
+**解决方案**:
+```javascript
+// 在导入 schema-dsl 前，先移除或重命名外部同名扩展。
+delete String.prototype.label;
+
+const { dsl } = require('schema-dsl');
+```
+
+如果冲突方法来自其他库，优先在应用初始化顺序或依赖配置中避免两个库同时扩展同名 `String.prototype` 方法。
 
 ---
 
