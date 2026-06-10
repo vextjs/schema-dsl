@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.0.7] | 2026-06-10 | Patch | String extension compatibility restoration, English-default documentation site, and canonical package homepage metadata [View](./changelogs/v2.0.7.md) |
 | [2.0.6] | 2026-06-09 | Patch | Direct runtime and development dependencies pinned to exact versions for deterministic consumer installs [View](./changelogs/v2.0.6.md) |
 | [2.0.5] | 2026-06-04 | Patch | License metadata and package distribution updated to Apache-2.0 [View](./changelogs/v2.0.5.md) |
 | [2.0.4] | 2026-06-03 | Patch | Explicit String extension installation, v1 compatibility guard coverage, and documentation alignment [View](./changelogs/v2.0.4.md) |
@@ -41,6 +42,16 @@ All notable changes to this project will be documented in this file.
 | v1.0.2 | 2025-12-31 | Patch | 15 new validators, complete docs, 75 tests |
 | v1.0.1 | 2025-12-31 | Patch | Enum support, auto type detection, unified error messages |
 | [v1.0.0] | 2025-12-29 | Pre-release | Initial release [View](./changelogs/v1.0.0.md) |
+
+---
+
+## [2.0.7] — 2026-06-10
+
+### Changes
+
+- Restored v1-style direct string DSL chains through the root entry while keeping String extension descriptors non-enumerable, conflict-aware, and uninstallable.
+- Published the English-default Rspress documentation site with Chinese docs under `/zh/` and 58-page content/link parity across both languages.
+- Updated README and package homepage metadata to `https://vextjs.github.io/schema-dsl`.
 
 ---
 
@@ -152,7 +163,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.6...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.7...HEAD
+[2.0.7]: https://github.com/vextjs/schema-dsl/compare/v2.0.6...v2.0.7
 [2.0.6]: https://github.com/vextjs/schema-dsl/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/vextjs/schema-dsl/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/vextjs/schema-dsl/compare/v2.0.3...v2.0.4

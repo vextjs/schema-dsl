@@ -401,4 +401,4 @@ console.log('✅ Document has been generated');
 ---
 
 **Document update date**: 2026-06-10
-**Version**: v2.0.6
+**Version**: v2.0.7

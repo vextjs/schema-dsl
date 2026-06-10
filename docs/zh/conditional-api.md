@@ -1,6 +1,6 @@
 # 链式条件 API - ConditionalBuilder
 
-> **版本**: schema-dsl v2.0.6
+> **版本**: schema-dsl v2.0.7
 > **更新日期**: 2026-06-10
 > **状态**: ✅ 稳定
 
