@@ -432,10 +432,10 @@ const savedLang = localStorage.getItem('userLanguage') || 'zh-CN';
 **A**: 创建新的语言包文件并重启应用
 
 ```javascript
-// i18n/labels/ko-KR.cjs（韩语）
+// i18n/labels/fr-FR.cjs（法语）
 module.exports = {
-  'username': '사용자 이름',
-  'email': '이메일 주소'
+  'username': 'nom utilisateur',
+  'email': 'adresse e-mail'
 };
 ```
 

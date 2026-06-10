@@ -10,7 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Native-3178C6.svg?style=flat-square)](https://www.typescriptlang.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)](https://www.apache.org/licenses/LICENSE-2.0)
 
-[Quick Start](#-quick-start) · [Documentation](https://vextjs.github.io/schema-dsl) · [Feature Overview](#-feature-overview) · [Examples](./examples)
+[Quick Start](#quick-start) · [Documentation](https://vextjs.github.io/schema-dsl) · [Feature Overview](#feature-overview) · [Examples](./examples)
 
 ```bash
 npm install schema-dsl
@@ -56,11 +56,11 @@ Then that **same set of rules** continues to power:
 
 **Getting started**:
 - [Quick Start](https://vextjs.github.io/schema-dsl/quick-start) — up and running in 5 minutes
-- [DSL Syntax Reference](#-dsl-syntax-reference) — syntax cheatsheet
+- [DSL Syntax Reference](#dsl-syntax-reference) — syntax cheatsheet
 - [FAQ](https://vextjs.github.io/schema-dsl/faq) — common questions
 
 **Core features**:
-- [Validation Guide](https://vextjs.github.io/schema-dsl/validation-guide) — all validation scenarios
+- [validate()](https://vextjs.github.io/schema-dsl/validate) — synchronous validation API
 - [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) — schema reuse
 - [Conditional Validation API](https://vextjs.github.io/schema-dsl/conditional-api) — dsl.if / dsl.match
 - [Async Validation & Framework Integration](https://vextjs.github.io/schema-dsl/validate-async) — Express / Koa / Fastify
@@ -71,7 +71,7 @@ Then that **same set of rules** continues to power:
 - [TypeScript Guide](https://vextjs.github.io/schema-dsl/typescript-guide) — type inference and usage
 - [Plugin System](https://vextjs.github.io/schema-dsl/plugin-system) — custom extensions
 
-**Full docs**: [Online Documentation](https://vextjs.github.io/schema-dsl) · [Feature Index](https://vextjs.github.io/schema-dsl/FEATURE-INDEX)
+**Full docs**: [Online Documentation](https://vextjs.github.io/schema-dsl) · [Chinese Documentation](./docs/zh/index.md) · [Feature Index](https://vextjs.github.io/schema-dsl/FEATURE-INDEX)
 
 ---
 
@@ -171,6 +171,8 @@ npm install schema-dsl
 **Runtime requirement**: Node.js >= 18.0.0
 
 ---
+
+<a id="quick-start"></a>
 
 ## 🚀 Quick Start
 
@@ -313,6 +315,8 @@ const markdown = exporters.MarkdownExporter.export(productSchema, { title: 'Prod
 
 ---
 
+<a id="feature-overview"></a>
+
 ## 🗒️ Feature Overview
 
 ### Common use cases
@@ -320,7 +324,7 @@ const markdown = exporters.MarkdownExporter.export(productSchema, { title: 'Prod
 | Use case | API | Docs |
 |----------|-----|------|
 | API parameter validation | `validateAsync` + `ValidationError` | [Async Validation](https://vextjs.github.io/schema-dsl/validate-async) |
-| Form / script validation | `validate()` | [Validation Guide](https://vextjs.github.io/schema-dsl/validation-guide) |
+| Form / script validation | `validate()` | [validate()](https://vextjs.github.io/schema-dsl/validate) |
 | Batch data validation | `SchemaUtils.validateBatch()` | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
 | create / update derivation | `pick / omit / partial` | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
 | Database table creation | `MongoDBExporter / MySQLExporter` | [Export Guide](https://vextjs.github.io/schema-dsl/export-guide) |
@@ -330,6 +334,8 @@ const markdown = exporters.MarkdownExporter.export(productSchema, { title: 'Prod
 | Custom type extensions | `PluginManager` | [Plugin System](https://vextjs.github.io/schema-dsl/plugin-system) |
 
 ---
+
+<a id="dsl-syntax-reference"></a>
 
 ## 📖 DSL Syntax Reference
 
@@ -499,7 +505,7 @@ const result = validator.validate(schema, { color: '#FF5733', mac: '00:1A:2B:3C:
 | API | Purpose | Returns | Docs |
 |-----|---------|---------|------|
 | `dsl(schema)` | Create a schema | Schema object | [DSL Syntax](https://vextjs.github.io/schema-dsl/dsl-syntax) |
-| `validate(schema, data)` | Synchronous validation | `{ valid, errors, data }` | [Validation Guide](https://vextjs.github.io/schema-dsl/validation-guide) |
+| `validate(schema, data)` | Synchronous validation | `{ valid, errors, data }` | [validate()](https://vextjs.github.io/schema-dsl/validate) |
 | `validateAsync(schema, data)` | Asynchronous validation | Promise (throws on failure) | [Async Validation](https://vextjs.github.io/schema-dsl/validate-async) |
 | `SchemaUtils.pick()` | Select fields | New schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
 | `SchemaUtils.omit()` | Exclude fields | New schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
@@ -573,7 +579,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 ### 📖 Core documentation
 - [Quick Start](https://vextjs.github.io/schema-dsl/quick-start) — up and running in 5 minutes
 - [DSL Syntax Guide](https://vextjs.github.io/schema-dsl/dsl-syntax) — complete syntax reference
-- [Validation Guide](https://vextjs.github.io/schema-dsl/validation-guide) — advanced validation techniques
+- [validate()](https://vextjs.github.io/schema-dsl/validate) — synchronous validation API
 - [API Reference](https://vextjs.github.io/schema-dsl/api-reference) — complete API docs
 - [TypeScript Guide](https://vextjs.github.io/schema-dsl/typescript-guide) — required reading for TS users
 - [Best Practices](https://vextjs.github.io/schema-dsl/best-practices) — avoid common pitfalls

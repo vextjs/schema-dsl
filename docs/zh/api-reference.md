@@ -457,6 +457,8 @@ resetDefaultValidator();
 
 ---
 
+<a id="string-扩展"></a>
+
 ### `installStringExtensions(dslFunction?)`
 
 安装或重新安装 String 扩展。root entry 默认已经安装，用于兼容 v1.1.x 的 `'string!'.description(...)` 链式写法；显式调用通常只用于主动卸载后的重新启用，或传入自定义 `dslFunction`。

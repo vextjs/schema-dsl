@@ -125,9 +125,9 @@ DslBuilder.registerType('wechat-id', {
 ```typescript
 import { Locale } from 'schema-dsl';
 
-Locale.addLocale('ko-KR', {
-  required: '{{#label}}은(는) 필수 항목입니다',
-  type: '{{#label}}은(는) {{#expected}} 유형이어야 합니다'
+Locale.addLocale('fr-FR', {
+  required: '{{#label}} est obligatoire',
+  type: '{{#label}} doit etre de type {{#expected}}'
 });
 ```
 
@@ -137,8 +137,8 @@ Locale.addLocale('ko-KR', {
 dsl.config({
   i18n: {
     locales: {
-      'ko-KR': {
-        required: '{{#label}}은(는) 필수 항목입니다'
+      'fr-FR': {
+        required: '{{#label}} est obligatoire'
       }
     }
   }
@@ -148,7 +148,7 @@ dsl.config({
 3. **使用新语言**
 
 ```javascript
-validate(schema, data, { locale: 'ko-KR' });
+validate(schema, data, { locale: 'fr-FR' });
 ```
 
 ### 自定义错误消息

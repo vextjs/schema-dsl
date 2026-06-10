@@ -432,7 +432,7 @@ dsl({ level: 'number:=5' })    // 等于
 
 - [DSL 语法速查](./dsl-syntax.md)
 - [完整示例](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/number-operators.ts)
-- [测试用例](../test/unit/number-operators.test.ts)
+- [测试用例](https://github.com/vextjs/schema-dsl/blob/main/test/unit/number-operators.test.ts)
 - [CHANGELOG](https://github.com/vextjs/schema-dsl/blob/main/CHANGELOG.md)
 
 ---

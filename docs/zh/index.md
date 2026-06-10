@@ -8,10 +8,10 @@ hero:
   actions:
     - theme: brand
       text: 快速上手
-      link: /quick-start
+      link: /zh/quick-start
     - theme: alt
       text: 文档索引
-      link: /doc-index
+      link: /zh/doc-index
     - theme: alt
       text: GitHub
       link: https://github.com/vextjs/schema-dsl
@@ -33,7 +33,7 @@ features:
 
 ## 入口导航
 
-- 在线文档: https://vextjs.github.io/schema-dsl
+- 在线文档: [中文首页](/schema-dsl/zh/)
 - 本地文档索引: [doc-index.md](./doc-index.md)
 - 快速开始: [quick-start.md](./quick-start.md)
 - 功能索引: [FEATURE-INDEX.md](./FEATURE-INDEX.md)

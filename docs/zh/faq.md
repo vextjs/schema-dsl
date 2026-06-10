@@ -583,7 +583,7 @@ const schema = dsl({
 1. 查看 [完整文档](doc-index.md)
 2. 查看 [DSL 语法指南](dsl-syntax.md)
 3. 查看 [API 参考](api-reference.md)
-4. 提交 [GitHub Issue](https://github.com/schema-dsl/schema-dsl/issues)
+4. 提交 [GitHub Issue](https://github.com/vextjs/schema-dsl/issues)
 
 ---
 

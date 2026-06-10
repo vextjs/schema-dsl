@@ -242,7 +242,7 @@ const result = SchemaUtils.validateBatch(schema, records, validator.getAjv());
 .pattern(/^[a-z]{3,10}$/)
 ```
 
-**工具**: 使用 [regexploit](https://www.npmjs.com/package/regexploit) 检测危险正则。
+**工具**: 使用 [safe-regex2](https://github.com/fastify/safe-regex2) 检测危险正则。
 
 ---
 

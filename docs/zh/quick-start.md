@@ -16,8 +16,8 @@
   - [4. 完整示例（2分钟）](#4-完整示例2分钟)
 
 ### 进阶功能
-- [🔧 自定义验证](#-自定义验证)
-- [🗄️ 数据库导出](#️-数据库导出)
+- [🔧 自定义验证](#自定义验证)
+- [🗄️ 数据库导出](#database-export)
 - [📚 下一步](#-下一步)
 
 ---
@@ -283,6 +283,8 @@ const schema = dsl({
 - [Quick Start 完整示例](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/quick-start.ts)
 
 其余主题示例现在都已分别挂到各自文档底部，并统一切到稳定 GitHub 示例链接。
+
+<a id="database-export"></a>
 
 ### 高级功能
 

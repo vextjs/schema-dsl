@@ -2,7 +2,7 @@
 
 > **更新时间**: 2026-06-10
 > **用途**: 所有文档的快速导航  
-> **在线文档**: https://vextjs.github.io/schema-dsl
+> **在线文档**: [中文首页](/schema-dsl/zh/)
 > **文档数量**: `README.md + docs/*.md` 共 59 份
 
 ---

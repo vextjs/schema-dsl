@@ -1,6 +1,9 @@
 # Unreleased
 
 ## 2026-06-10
+- **[Docs Site]** Added Rspress i18n structure with English as the default documentation language, moved existing Chinese docs under `/zh/`, and completed full 58-page English/Chinese documentation parity.
+- **[Docs Site]** Reworked the English documentation from summary-style pages into content-level parity with the Chinese source docs, including matching sections, code blocks, tables, examples, and internal anchors across all 58 pages.
+- **[Docs Site]** Tightened bilingual documentation link/reference parity by fixing README anchors, page TOCs, English home routing, issue links, and external tool references, then verified Markdown, built HTML, and external URLs across three zero-issue review rounds.
 - **[Docs/Profile]** 修复提交前复审发现的文档/Profile 残留：同步测试基线为 75 files / 1105 tests，修正 String 扩展相关目录锚点、文档版本/更新时间与重复步骤/编号。
 
 ## 2026-06-09

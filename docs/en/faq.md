@@ -1,0 +1,603 @@
+# Frequently Asked Questions (FAQ)
+
+> **Update time**: 2026-06-10
+
+
+---
+
+## 📑 Table of Contents
+
+- [Basic question](#basic-questions)
+- [DSL syntax issue](#dsl-syntax-issues)
+- [Validation Issue](#validation-issues)
+- [Performance issue](#performance-issues)
+- [Design Concept](#design-concept)
+- [Error handling](#error-handling)
+- [Database export](#database-export)
+- [TypeScript Support](#typescript-support)
+
+---
+
+## Basic questions
+
+### Q: What is the difference between schema-dsl and Joi and Yup?
+
+**A**: schema-dsl uses DSL syntax, which is more concise:
+
+```javascript
+// schema-dsl - concise
+const schema = dsl({
+  username: 'string:3-32!',
+  email: 'email!'
+});
+
+// Joi - tedious
+const schema = Joi.object({
+  username: Joi.string().min(3).max(32).required(),
+  email: Joi.string().email().required()
+});
+```
+
+**Main Differences**:
+- More concise DSL syntax
+- Support database Schema export
+- Built-in common authenticators (username, password, phone)
+- Based on JSON Schema standard
+
+---
+
+### Q: How to install schema-dsl?
+
+```bash
+npm install schema-dsl
+```
+
+**Node.js version requirement**: `>=18.0.0`
+
+The current refactored version of TypeScript uses `Node.js >=18.0.0` as the only runtime baseline and no longer promises compatibility with older Node versions.
+
+---
+
+### Q: Are ES Modules supported?
+
+**A**: Supported.
+
+```javascript
+// CommonJS
+const { dsl, validate } = require('schema-dsl');
+
+// ES Modules（named import）
+import { dsl, validate } from 'schema-dsl';
+
+// ES Modules（default import）
+import dslDefault from 'schema-dsl';
+```
+
+### Q: What language pack file formats are supported by i18n directory loading?
+
+**A**: Under **Node.js >= 18.0.0**, `dsl.config({ i18n: '/path/to/locales' })` supports:
+
+- `.js` (CommonJS language pack)
+- `.cjs`
+- `.json`
+- `.jsonc`
+- `.json5`
+
+**Recommendation**: If your project is `type: module` / ESM, give priority to using `.cjs`, `.json`, `.jsonc`, `.json5`, as the compatibility is the most stable.
+
+---
+
+## DSL syntax issues
+
+### Q: `'string:3-32!'` What does it mean?
+
+**A**: This is the DSL syntax:
+- `string` - ​​Type
+- `3-32` - ​​length range (minimum 3, maximum 32)
+- `!` - ​​required
+
+More examples:
+```javascript
+'string:10' // Maximum length 10
+'string:3-' // Minimum length 3
+'number:0-100' //Number range 0-100
+'email!' // Required email address
+'a|b|c' // enumeration value
+```
+
+---
+
+### Q: How to define an array?
+
+**A**: Use `array` type:
+
+```javascript
+// simple array
+tags: 'array'
+
+//With length constraints
+tags: 'array:1-10' // 1-10 elements
+tags: 'array!1-10' // Required, 1-10 elements
+
+//With element type
+tags: 'array<string>' // String array
+tags: 'array<number>' // array of numbers
+tags: 'array<string:1-20>' // Constrained string array
+```
+
+---
+
+### Q: How to define nested objects?
+
+**A**: Just nest directly:
+
+```javascript
+const schema = dsl({
+  user: {
+    name: 'string!',
+    address: {
+      city: 'string!',
+      zip: 'string:5-10!'
+    }
+  }
+});
+```
+
+---
+
+### Q: How to use String extension?
+
+**A**: After importing `schema-dsl` in JavaScript, it can be called directly in string chain by default; in TypeScript, for complete type hints, it is still recommended to use `dsl()` package for complex fields.
+
+```javascript
+const schema = dsl({
+  email: 'email!'
+    .label('email address')
+    .messages({
+      'required': '{{#label}} cannot be empty',
+      'format': 'Please enter a valid {{#label}}'
+    }),
+
+  username: 'string:3-32!'
+    .pattern(/^[a-z0-9_]+$/)
+    .label('username')
+    .username('medium')
+});
+
+// If you need completely non-intrusive writing, you can uninstall it first and then wrap it with dsl().
+const { uninstallStringExtensions } = require('schema-dsl');
+uninstallStringExtensions();
+
+const safeSchema = dsl({
+  email: dsl('email!').label('email address')
+});
+```
+
+---
+
+## Validation issues
+
+### Q: How to verify data?
+
+**A**: Use `validate()` function or `Validator` class:
+
+```javascript
+// Method 1: Convenience function
+const { dsl, validate } = require('schema-dsl');
+const result = validate(schema, data);
+
+// Method 2: Validator instance
+const { Validator } = require('schema-dsl');
+const validator = new Validator();
+const result = validator.validate(schema, data);
+```
+
+---
+
+### Q: What is the format of the validation results?
+
+**A**: The returned object contains:
+
+```javascript
+{
+  valid: true/false, // whether to pass
+  data: {}, // The current implementation will return this validation data, which is also convenient for locating input when it fails.
+  errors: [] // Empty array on success, detailed errors on failure
+}
+```
+
+---
+
+### Q: How to get all errors instead of just the first one?
+
+**A**: All errors will be returned by default. If you only want to keep the first error, you can explicitly turn off `allErrors`:
+
+```javascript
+const validator = new Validator({ allErrors: false });
+```
+
+`allErrors` needs to be configured when creating the `Validator` instance. `validator.validate(schema, data, options)` cannot override this switch one by one.
+
+---
+
+### Q: How to use default values?
+
+**A**: Use `.default()` method:
+
+```javascript
+const schema = dsl({
+  status: 'string'.default('active'),
+  count: 'integer'.default(0)
+});
+
+const result = validate(schema, {});
+console.log(result.data);
+// { status: 'active', count: 0 }
+```
+
+---
+
+## Performance issues
+
+### Q: What is the performance of schema-dsl?
+
+**A**: The performance is good, **S3 nested scenes are faster than Zod (28%), and the fair comparison of invalid data is 89x** faster:
+
+| scene | Schema-DSL | Zod | contrast |
+|------|-----------|-----|------|
+| S1 is simple and effective | **1.301M ops/s** | 1.305M ops/s | ≈ flat (difference <1%)|
+| S2 invalid (neither i18n)| **1.205M ops/s** | 13.49K ops/s | ✅ Fast **89x** |
+| S3 nesting works | **1.085M ops/s** | 847K ops/s | ✅ Fast **28%** |
+| Bottom Ajv (raw) | ~4.7M ops/s | — | underlying engine |
+
+**in conclusion**:
+- ✅ S3 nested scenes are faster than Zod (**28%**), S1 simple and effective scenes are the same; fair comparison of invalid data is faster **89x**
+- ✅ About **13x** faster than Joi (invalid data for fair comparison)
+- ✅ Built-in caching ensures zero parsing overhead for hot paths
+
+---
+
+### Q: Why is the performance difference between valid/invalid data scenarios so big?
+
+**A**: Fair comparison (S2, neither does i18n formatting) schema-dsl is significantly faster than Zod (**89x**). The root cause of Zod's extreme slowness in invalid data scenarios is that its error collection uses exception driver (`try/catch` control flow). Each invalid field throws an Error. 4 error fields = 4 Error instance creations + 4 stack captures. schema-dsl is an exception-free collection path based on AJV, reaching 1.2M ops/s without formatting.
+
+---
+
+### Q: When will performance become a bottleneck?
+
+**A**: The following scenarios may become a bottleneck:
+
+1. **API Gateway** (>500,000 verifications per second)
+2. **High concurrency service** (>500,000 requests per second)
+3. **Real-time data processing** (millisecond-level latency requirements)
+
+**Most applications** (<100,000 verifications per second) will not encounter performance bottlenecks.
+
+---
+
+### Q: What should I do if the validation speed is slow?
+
+**A**: Use precompilation and caching:
+
+```javascript
+// 1. Use precompilation
+const validator = new Validator();
+const validateUser = validator.compile(userSchema);
+
+// 2. Enable caching
+
+const validator = new Validator({
+  cache: {
+    maxSize: 5000, // Cache 5000 Schemas
+    ttl: 3600000 // Expires in 1 hour
+  }
+});
+
+// 3. Reuse Validator instance
+// ❌ Error: Create new instance every time
+app.post('/api/users', (req, res) => {
+  const validator = new Validator(); // slow
+  // ...
+});
+
+// ✅ Correct: reuse instance
+const validator = new Validator();
+app.post('/api/users', (req, res) => {
+  const result = validator.validate(schema, req.body); // Fast
+  // ...
+});
+```
+
+---
+
+### Q: How does caching work?
+
+**A**: schema-dsl currently implements compilation caching through `CacheManager` entrusting `cache-hub`’s `MemoryCache`:
+
+```javascript
+const validator = new Validator({
+  cache: {
+    maxSize: 5000, // Maximum cache 5000 items
+    ttl: 3600000 // Expires in 1 hour
+  }
+});
+
+// cache statistics
+const stats = validator.getCacheStats();
+console.log(stats);
+// {
+//   hits: 8500,
+//   misses: 150,
+//   hitRate: '98.27',
+//   size: 150,
+//   maxSize: 5000,
+//   enabled: true
+// }
+```
+
+---
+
+### Q: How to verify in batches?
+
+**A**: Use `SchemaUtils.validateBatch()`:
+
+```javascript
+const { SchemaUtils, Validator } = require('schema-dsl');
+
+const validator = new Validator();
+const batch = SchemaUtils.validateBatch(schema, [data1, data2, data3], validator.getAjv());
+
+console.log(batch.summary.valid);
+console.log(batch.results[0].valid);
+```
+
+---
+
+## design concept
+
+### Q: Why choose run-time parsing instead of compile-time building?
+
+**A**: This is an intentional design choice that prioritizes **flexibility** over **extreme performance**.
+
+**Advantages of runtime parsing**:
+1. ✅ **Fully Dynamic** - Rules can be generated dynamically from configuration/database
+2. ✅ **Multi-tenant support** - different rules for each tenant, zero code modification
+3. ✅ **Serializable** - can be stored, transmitted and shared
+4. ✅ **Front-end and back-end sharing** - one set of rules, used by both ends
+5. ✅ **Low Code Basics** - Visual configuration form validation
+
+**Compile-time build limitations**:
+- ❌ Schema is fixed and cannot be dynamically adjusted
+- ❌ Unable to serialize and transmit
+- ❌ Difficulties with multi-tenancy
+- ❌ Unable to read rules from database
+
+**Detailed description**: [Design concept document](design-philosophy.md)
+
+---
+
+### Q: What scenarios is schema-dsl suitable for?
+
+**A**: ✅ **Most suitable scenario**:
+
+1. **Multi-tenant SaaS system** - different validation rules for each tenant
+2. **Backstage Management System** - Administrator configures form validation
+3. **Configuration Driven Development** - Validation rules are stored in config/database
+4. **Low-Code/No-Code Platform** - Visual form builder
+5. **Rapid Prototyping** - Get started in 5 minutes with minimal code
+6. **Front-end and back-end shared validation** - a set of rules, used by both ends
+
+⚠️ **Unsuitable scene**:
+1. Absolute throughput is preferred and DSL dynamic capabilities are not required → Recommended **Ajv**
+2. TypeScript Strong Type Inference → Recommended **Zod**
+3. Static validation rules → Recommended **Zod**
+
+---
+
+### Q: Why not make a compile-time library like Zod?
+
+**A**: Because the core value will be lost:
+
+**Loss of Abilities**:
+```javascript
+// ❌ Unable to read rules from database
+const rules = await db.findOne({ entity: 'user' });
+const schema = dsl(rules);
+
+// ❌ Unable to multi-tenant dynamic rules
+function getTenantSchema(tenantId) {
+  return dsl(tenantConfig[tenantId]);
+}
+
+// ❌ Cannot be transferred via API
+res.json({ validationRules: rules });
+
+// ❌ Unable to configure form validation in the background
+```
+
+**RESERVED ABILITIES**:
+```javascript
+// ✅ Fully dynamic
+const schema = dsl({
+  username: `string:${config.min}-${config.max}!`
+});
+
+// ✅ Serializable
+JSON.stringify({ username: 'string:3-32!' });
+
+// ✅ Front-end and back-end sharing
+// Backend definition → API transmission → Front-end usage
+```
+
+---
+
+### Q: How to balance performance and flexibility?
+
+**A**: schema-dsl design priorities:
+
+```text
+Flexibility > Ease of use > Performance
+```
+
+**Weigh the results**:
+- Gain: S3 nested scene is 28% faster than Zod, S1 is the same; invalid data fair comparison is 89x faster
+
+---
+
+## Error handling
+
+### Q: How to customize error messages?
+
+**A**: Use `.messages()` method:
+
+```javascript
+username: 'string:3-32!'
+  .label('username')
+  .messages({
+    'min': '{{#label}} is too short',
+    'max': '{{#label}} is too long',
+    'required': 'Please enter {{#label}}'
+  })
+```
+
+---
+
+### Q: How to support multiple languages?
+
+**A**: Use `Locale` class:
+
+```javascript
+const { Locale } = require('schema-dsl');
+
+//Add language pack
+Locale.addLocale('zh-CN', {
+  'required': '{{#label}} cannot be empty',
+  'min': '{{#label}} cannot be less than {{#limit}}'
+});
+
+//Specify language when validating
+validator.validate(schema, data, { locale: 'zh-CN' });
+```
+
+---
+
+### Q: What is the error path format?
+
+**A**: Currently the slash path is returned:
+
+```javascript
+'username' // Top-level field
+'user/name' // Nested fields
+'items/0/name' // array elements
+```
+
+---
+
+## Database export
+
+### Q: How to export to MongoDB Schema?
+
+```javascript
+const { exporters } = require('schema-dsl');
+
+const exporter = new exporters.MongoDBExporter();
+const mongoSchema = exporter.export(schema);
+```
+
+---
+
+### Q: How to export to MySQL DDL?
+
+```javascript
+const exporter = new exporters.MySQLExporter();
+const ddl = exporter.export('table_name', schema);
+```
+
+---
+
+### Q: How to export to PostgreSQL DDL?
+
+```javascript
+const exporter = new exporters.PostgreSQLExporter({ schema: 'public' });
+const ddl = exporter.export('table_name', schema);
+```
+
+---
+
+### Q: How to add comments when exporting?
+
+**A**: Use `.description()`:
+
+```javascript
+username: 'string:3-32!'
+  .description('User login name, can only contain letters and numbers')
+```
+
+MySQL will generate `COMMENT` and PostgreSQL will generate `COMMENT ON COLUMN`.
+
+---
+
+## TypeScript support
+
+### Q: Does schema-dsl support TypeScript?
+
+**A**: Supported. The current more stable way to write TypeScript is to use the `dsl('...')` Builder API directly instead of relying on the String prototype extension:
+
+```typescript
+import { dsl, validate, Validator } from 'schema-dsl';
+
+const schema = dsl({
+  username: 'string:3-32!',
+  email: dsl('email!').label('Email address').error({
+    required: 'Please enter your email address'
+  })
+});
+
+const validator = new Validator({ allErrors: true });
+const result = validate(schema, data);
+if (result.valid) {
+  console.log(result.data);
+}
+```
+
+---
+
+### Q: How to write a more reliable chain prompt in TypeScript?
+
+**A**: It is recommended to always start the chain call from `dsl('...')`; this can be consistent with the current type declaration:
+
+```typescript
+const schema = dsl({
+  email: dsl('email!')
+    .label('mailbox')
+    .error({ format: 'Please enter a valid email address' })
+});
+```
+
+---
+
+## more questions
+
+If you have further questions:
+
+1. View [Full Document](doc-index.md)
+2. Check out the [DSL Syntax Guide](dsl-syntax.md)
+3. View [API Reference](api-reference.md)
+4. Submit [GitHub Issue](https://github.com/vextjs/schema-dsl/issues)
+
+---
+
+## Related documents
+
+- [Quick Start](quick-start.md)
+- [DSL syntax](dsl-syntax.md)
+- [Validation Guide](validation-guide.md)
+- [Export Guide](export-guide.md)
+- [Error handling](error-handling.md)
+
+---
+
+## Corresponding sample file
+
+**Example entry**: [faq.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/faq.ts)
+**Instructions**: Put the 4 most commonly copied scenarios in the FAQ into a runnable example: single validation, multi-language errors, batch validation, and cache statistics.
