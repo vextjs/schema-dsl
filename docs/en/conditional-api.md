@@ -1,6 +1,6 @@
 # Chained Condition API - ConditionalBuilder
 
-> **Version**: schema-dsl v2.0.7
+> **Version**: schema-dsl v2.0.8
 > **Updated date**: 2026-06-10
 > **Status**: ✅ Stable
 

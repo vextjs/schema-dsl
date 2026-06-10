@@ -314,7 +314,7 @@
 | `README.md + docs/*.md` Number of documents | **59** |
 | Total number of lines in the document | **Continuous evolution (subject to the real-time content of the warehouse)** |
 | Number of test files | **75** |
-| The latest full validation | **75 files / 1105 tests passed** |
+| The latest full validation | **76 files / 1114 tests passed** |
 
 ---
 

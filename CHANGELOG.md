@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.0.8] | 2026-06-10 | Patch | Validator/AJV cache lifecycle bounds, locale cache invalidation, and official plugin uninstall cleanup [View](./changelogs/v2.0.8.md) |
 | [2.0.7] | 2026-06-10 | Patch | String extension compatibility restoration, English-default documentation site, and canonical package homepage metadata [View](./changelogs/v2.0.7.md) |
 | [2.0.6] | 2026-06-09 | Patch | Direct runtime and development dependencies pinned to exact versions for deterministic consumer installs [View](./changelogs/v2.0.6.md) |
 | [2.0.5] | 2026-06-04 | Patch | License metadata and package distribution updated to Apache-2.0 [View](./changelogs/v2.0.5.md) |
@@ -42,6 +43,22 @@ All notable changes to this project will be documented in this file.
 | v1.0.2 | 2025-12-31 | Patch | 15 new validators, complete docs, 75 tests |
 | v1.0.1 | 2025-12-31 | Patch | Enum support, auto type detection, unified error messages |
 | [v1.0.0] | 2025-12-29 | Pre-release | Initial release [View](./changelogs/v1.0.0.md) |
+
+---
+
+## [2.0.8] — 2026-06-10
+
+### Fixes
+
+- **Validation cache:** repeated DSL definitions and `DslBuilder` materialization now reuse stable internal cache keys, and Validator eviction / `clearCache()` release managed AJV schema refs.
+- **Remove additional:** `_removeAdditional` validation paths now use a bounded internal compile cache instead of growing independent AJV refs.
+- **Locale cache:** flattened locale message caching is now bounded and invalidated when runtime locale messages change.
+- **Plugin cleanup:** official plugin uninstall paths now clean custom formats, types, keywords, global plugin state, and Validator caches.
+
+### Docs & Tests
+
+- Added `DslBuilder.unregisterType(name)` documentation in English and Chinese API / custom type / union type guides.
+- Added focused memory lifecycle tests and official plugin uninstall cleanup coverage.
 
 ---
 
@@ -163,7 +180,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.7...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.8...HEAD
+[2.0.8]: https://github.com/vextjs/schema-dsl/compare/v2.0.7...v2.0.8
 [2.0.7]: https://github.com/vextjs/schema-dsl/compare/v2.0.6...v2.0.7
 [2.0.6]: https://github.com/vextjs/schema-dsl/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/vextjs/schema-dsl/compare/v2.0.4...v2.0.5
