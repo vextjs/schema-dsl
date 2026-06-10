@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as schemaDsl from '../../src/index.js'
-import { DslBuilder, PluginManager, dsl, resetDefaultValidator, validate } from '../../src/index.js'
+import { DslBuilder, PluginManager, dsl, getDefaultValidator, resetRuntimeState, validate } from '../../src/index.js'
 import customFormatPlugin from '../../src/plugins/custom-format.js'
 import customValidatorPlugin from '../../src/plugins/custom-validator.js'
 import customTypeExamplePlugin from '../../src/plugins/custom-type-example.js'
@@ -10,8 +10,7 @@ describe('Official Plugin Entry Compatibility', () => {
 
   beforeEach(() => {
     pluginManager = new PluginManager()
-    DslBuilder.clearCustomTypes()
-    resetDefaultValidator()
+    resetRuntimeState()
     delete (globalThis as typeof globalThis & { __schemaDsl_plugins?: Record<string, unknown> }).__schemaDsl_plugins
   })
 
@@ -33,6 +32,20 @@ describe('Official Plugin Entry Compatibility', () => {
     expect(validate(dsl({ phone: 'phone-cn!' }), { phone: '123' }).valid).toBe(false)
   })
 
+  it('should clean custom-format DSL types and AJV formats when uninstalled', () => {
+    pluginManager.register(customFormatPlugin)
+    pluginManager.install(schemaDsl, 'custom-format')
+
+    const ajv = getDefaultValidator().getAjv() as { formats?: Record<string, unknown> }
+    expect(DslBuilder.hasType('phone-cn')).toBe(true)
+    expect(ajv.formats?.['phone-cn']).toBeDefined()
+
+    pluginManager.unregister('custom-format', schemaDsl)
+
+    expect(DslBuilder.hasType('phone-cn')).toBe(false)
+    expect(ajv.formats?.['phone-cn']).toBeUndefined()
+  })
+
   it('should register order-id type via official custom-type-example plugin entry', () => {
     pluginManager.register(customTypeExamplePlugin)
     pluginManager.install(schemaDsl, 'custom-type-example')
@@ -40,6 +53,19 @@ describe('Official Plugin Entry Compatibility', () => {
     expect(DslBuilder.hasType('order-id')).toBe(true)
     expect(validate(dsl({ orderId: 'order-id!' }), { orderId: 'ORD202401010001' }).valid).toBe(true)
     expect(validate(dsl({ orderId: 'order-id!' }), { orderId: 'BAD' }).valid).toBe(false)
+  })
+
+  it('should clean custom-type-example DSL types when uninstalled', () => {
+    pluginManager.register(customTypeExamplePlugin)
+    pluginManager.install(schemaDsl, 'custom-type-example')
+
+    expect(DslBuilder.hasType('order-id')).toBe(true)
+    expect(DslBuilder.hasType('sku')).toBe(true)
+
+    pluginManager.unregister('custom-type-example', schemaDsl)
+
+    expect(DslBuilder.hasType('order-id')).toBe(false)
+    expect(DslBuilder.hasType('sku')).toBe(false)
   })
 
   it('should expose sync keyword capability via official custom-validator plugin entry', () => {
@@ -71,6 +97,27 @@ describe('Official Plugin Entry Compatibility', () => {
 
     expect(globalBucket).toBeDefined()
     expect(globalBucket?.['custom-validator']).toBe(customValidatorPlugin)
+  })
+
+  it('should clean custom-validator global bucket and AJV keywords when uninstalled', () => {
+    pluginManager.register(customValidatorPlugin)
+    pluginManager.install(schemaDsl, 'custom-validator')
+
+    const ajv = getDefaultValidator().getAjv() as {
+      getKeyword?: (name: string) => unknown
+    }
+    expect(ajv.getKeyword?.('passwordStrength')).toBeTruthy()
+    expect(ajv.getKeyword?.('idCard')).toBeTruthy()
+
+    pluginManager.unregister('custom-validator', schemaDsl)
+
+    const globalBucket = (globalThis as typeof globalThis & {
+      __schemaDsl_plugins?: Record<string, unknown>
+    }).__schemaDsl_plugins
+
+    expect(globalBucket?.['custom-validator']).toBeUndefined()
+    expect(ajv.getKeyword?.('passwordStrength')).toBeFalsy()
+    expect(ajv.getKeyword?.('idCard')).toBeFalsy()
   })
 
   it('should install custom-validator without emitting AJV deprecated addKeyword warning', () => {

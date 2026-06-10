@@ -184,6 +184,10 @@ Check if the type is registered.
 
 Get all registered custom types.
 
+#### `DslBuilder.unregisterType(name)`
+
+Remove one custom type registered through `DslBuilder.registerType()` / `TypeRegistry`.
+
 #### `DslBuilder.clearCustomTypes()`
 
 Clear all custom types (mainly for testing).

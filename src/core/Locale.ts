@@ -19,6 +19,11 @@ export const DEFAULT_LOCALE = 'en-US'
 export class Locale {
   private static _currentLocale: string = DEFAULT_LOCALE
   private static _customMessages: Record<string, LocaleMessage> = {}
+  private static _revision = 0
+
+  static get revision(): number {
+    return this._revision
+  }
 
   /** v1 compat: expose custom messages */
   static get customMessages(): Record<string, LocaleMessage> {
@@ -59,6 +64,7 @@ export class Locale {
 
   static setMessages(messages: Record<string, LocaleMessage>): void {
     this._customMessages = { ...this._customMessages, ...messages }
+    this._revision++
   }
 
   static addLocale(locale: string, messages: Record<string, LocaleMessage>): void {
@@ -67,6 +73,7 @@ export class Locale {
     for (const [k, v] of Object.entries(messages)) {
       this._customMessages[`${locale}:${k}`] = v
     }
+    this._revision++
   }
 
   static getAvailableLocales(): string[] {
@@ -142,6 +149,7 @@ export class Locale {
   static reset(): void {
     this._currentLocale = DEFAULT_LOCALE
     this._customMessages = {}
+    this._revision++
   }
 
   // ─── Private Helpers ──────────────────────────────────────────────────────

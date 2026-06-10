@@ -116,6 +116,15 @@ export class DslBuilder implements IDslBuilder {
     }
   }
 
+  /** Unregister a custom type from both DslBuilder and TypeRegistry. */
+  static unregisterType(name: string): void {
+    if (!name || typeof name !== 'string') {
+      throw new Error('[schema-dsl] Type name must be a non-empty string')
+    }
+    TypeRegistry.unregister(name)
+    DslBuilder._customTypes.delete(name)
+  }
+
   /** Check whether a type is registered (built-in or custom). */
   static hasType(type: string): boolean {
     return TypeRegistry.has(type)

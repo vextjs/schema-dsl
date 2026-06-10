@@ -892,6 +892,7 @@ const schema = new JSONSchemaCore()
 - `TypeRegistry.register(name, def)`
 - `TypeRegistry.registerDynamic(name, factory)`
 - `TypeRegistry.unregister(name)`
+- `DslBuilder.unregisterType(name)` — 同时从 Builder 侧自定义类型表和 `TypeRegistry` 移除一个自定义类型
 - `TypeRegistry.has(typeName)`
 - `TypeRegistry.getInternalKeys()`
 - `TypeRegistry.toJsonSchema(schema)`

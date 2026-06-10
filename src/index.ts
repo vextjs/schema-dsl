@@ -107,7 +107,7 @@ import { installStringExtensions as _install } from './core/StringExtensions.js'
 import { PATTERNS as _PATTERNS } from './config/patterns.js'
 import * as _CONSTANTS from './config/constants.js'
 import * as _exporters from './exporters/index.js'
-import { Validator as _Validator } from './core/Validator.js'
+import { Validator as _Validator, SCHEMA_DSL_CACHE_KEY as _SCHEMA_DSL_CACHE_KEY, createSchemaCacheKey as _createSchemaCacheKey } from './core/Validator.js'
 import { I18nError as _I18nError } from './errors/I18nError.js'
 import type { LocaleMessage as _LocaleMessage } from './locales/types.js'
 import type { JSONSchema as _JSONSchema } from './types/schema.js'
@@ -304,17 +304,34 @@ function _isDslObject(schema: unknown): schema is _DslDefinition {
 // stale results when the caller mutates the object between validate() calls (N-04 fix).
 const _normalizeSchemaCache = new WeakMap<object, _JSONSchema>()
 
+function _markSchemaCacheKey(schema: _JSONSchema): _JSONSchema {
+  const cacheKey = _createSchemaCacheKey(schema)
+  if (!cacheKey || !schema || typeof schema !== 'object') return schema
+
+  try {
+    Object.defineProperty(schema, _SCHEMA_DSL_CACHE_KEY, {
+      value: cacheKey,
+      enumerable: false,
+      configurable: true,
+    })
+  } catch {
+    // Non-extensible schemas still validate; Validator falls back to runtime key generation.
+  }
+
+  return schema
+}
+
 function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuilder | _IConditionalBuilder): _JSONSchema {
   if (!schema || typeof schema !== 'object') return schema as _JSONSchema
 
   const obj = schema as Record<string, unknown>
   if (typeof obj['toSchema'] === 'function') {
     // Mutable builders: never cache — schema changes as chain methods are called
-    return (obj['toSchema'] as () => _JSONSchema)()
+    return _markSchemaCacheKey((obj['toSchema'] as () => _JSONSchema)())
   }
   if (_isDslObject(schema)) {
     // Plain DSL definition objects are mutable — skip cache
-    return _DslAdapter.parseObject(schema).toSchema()
+    return _markSchemaCacheKey(_DslAdapter.parseObject(schema).toSchema())
   }
   // Raw JSON Schema objects: safe to cache (treated as immutable by convention)
   const schemaObj = schema as object
@@ -578,7 +595,7 @@ function _dslFn(def: unknown, _options?: _SchemaIOOptions): _DslBuilder | _JSONS
   if (def === null || def === undefined || typeof def !== 'object' || Array.isArray(def)) {
     throw new Error('[schema-dsl] Invalid DSL definition: expected string or object')
   }
-  return _DslAdapter.parseObject(def as _DslDefinition).toSchema() as _JSONSchema
+  return _markSchemaCacheKey(_DslAdapter.parseObject(def as _DslDefinition).toSchema() as _JSONSchema)
 }
 
 // Namespace shape (mirrors DslFn interface in types/dsl.ts)

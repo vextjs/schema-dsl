@@ -950,6 +950,7 @@ Unified type registry. It is the public entry for custom type extension. If you 
 - `TypeRegistry.register(name, def)`
 - `TypeRegistry.registerDynamic(name, factory)`
 - `TypeRegistry.unregister(name)`
+- `DslBuilder.unregisterType(name)` - removes one custom type from both the Builder-side custom type table and `TypeRegistry`.
 - `TypeRegistry.has(typeName)`
 - `TypeRegistry.getInternalKeys()`
 - `TypeRegistry.toJsonSchema(schema)`

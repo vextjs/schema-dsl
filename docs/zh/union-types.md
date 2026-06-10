@@ -185,6 +185,10 @@ install(schemaDsl, options, context) {
 
 获取所有已注册的自定义类型。
 
+#### `DslBuilder.unregisterType(name)`
+
+移除一个通过 `DslBuilder.registerType()` / `TypeRegistry` 注册的自定义类型。
+
 #### `DslBuilder.clearCustomTypes()`
 
 清除所有自定义类型（主要用于测试）。

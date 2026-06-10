@@ -23,6 +23,8 @@ DslBuilder.registerType('orderCode', {
 });
 ```
 
+Use `DslBuilder.unregisterType('orderCode')` when a plugin or test needs to remove one Builder-side custom type. Use `DslBuilder.clearCustomTypes()` only when you intentionally want to clear all custom types, such as after isolated tests.
+
 Plug-in extensions can be used in conjunction with [plugin-system.md](./plugin-system.md).
 
 ---
@@ -30,4 +32,4 @@ Plug-in extensions can be used in conjunction with [plugin-system.md](./plugin-s
 ## Corresponding sample file
 
 **Example entry**: [plugin-type-registration.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/plugin-type-registration.ts)
-**Note**: Covers both entrances `TypeRegistry.register()` and `DslBuilder.registerType()`, as well as the real validation and cleanup process after registration.
+**Note**: Covers `TypeRegistry.register()`, `DslBuilder.registerType()`, and cleanup with `DslBuilder.unregisterType()` / `DslBuilder.clearCustomTypes()`.

@@ -21,6 +21,8 @@ function getPluginBucket(): Record<string, unknown> {
   return globalRecord.__schemaDsl_plugins
 }
 
+const CUSTOM_KEYWORD_NAMES = ['unique', 'passwordStrength', 'idCard']
+
 export const customValidatorPlugin: Plugin & {
   addCustomKeywords: (validator: Validator) => void
   _validateIdCardChecksum: (idCard: string) => boolean
@@ -33,8 +35,22 @@ export const customValidatorPlugin: Plugin & {
     this.addCustomKeywords(validator)
     getPluginBucket()['custom-validator'] = this
   },
-  uninstall() {
+  uninstall(core) {
     delete getPluginBucket()['custom-validator']
+    if (!core) return
+
+    const validator = getValidator(core)
+    const ajv = validator.getAjv() as {
+      getKeyword?: (name: string) => unknown
+      removeKeyword?: (name: string) => unknown
+    }
+
+    for (const name of CUSTOM_KEYWORD_NAMES) {
+      if (typeof ajv.removeKeyword === 'function' && (!ajv.getKeyword || ajv.getKeyword(name))) {
+        ajv.removeKeyword(name)
+      }
+    }
+    validator.clearCache()
   },
   addCustomKeywords(validator) {
     const ajv = validator.getAjv() as {

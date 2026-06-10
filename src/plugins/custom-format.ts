@@ -78,17 +78,24 @@ const FORMATS: Record<string, FormatConfig> = {
   },
 }
 
-function getAjvLike(core: unknown): {
+const CUSTOM_FORMAT_NAMES = Object.keys(FORMATS)
+
+type AjvFormatRegistry = {
   addFormat: (name: string, definition: RegExp | { validate: RegExp | ((value: string) => boolean) }) => void
-} {
+  formats?: Record<string, unknown>
+}
+
+function getValidator(core: unknown): Validator {
   const coreRecord = core as { getDefaultValidator?: () => Validator }
   const validator = coreRecord.getDefaultValidator?.()
   if (!validator) {
     throw new Error('getDefaultValidator() is not available. Please provide schema-dsl core object.')
   }
-  return validator.getAjv() as {
-    addFormat: (name: string, definition: RegExp | { validate: RegExp | ((value: string) => boolean) }) => void
-  }
+  return validator
+}
+
+function getAjvLike(core: unknown): AjvFormatRegistry {
+  return getValidator(core).getAjv() as AjvFormatRegistry
 }
 
 function getDslBuilderLike(core: unknown): typeof DslBuilder {
@@ -107,7 +114,17 @@ export const customFormatPlugin: Plugin & {
     const dslBuilder = getDslBuilderLike(core)
     this.addCustomFormats(ajv, dslBuilder)
   },
-  uninstall() {
+  uninstall(core) {
+    if (!core) return
+    const validator = getValidator(core)
+    const ajv = validator.getAjv() as AjvFormatRegistry
+    const dslBuilder = getDslBuilderLike(core)
+
+    for (const name of CUSTOM_FORMAT_NAMES) {
+      dslBuilder.unregisterType(name)
+      delete ajv.formats?.[name]
+    }
+    validator.clearCache()
   },
   addCustomFormats(ajv, dslBuilder) {
     for (const [name, config] of Object.entries(FORMATS)) {

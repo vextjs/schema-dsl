@@ -23,6 +23,8 @@ DslBuilder.registerType('orderCode', {
 });
 ```
 
+当插件或测试只需要移除一个 Builder 侧自定义类型时，使用 `DslBuilder.unregisterType('orderCode')`；只有确实要清空全部自定义类型（例如隔离测试收尾）时，才使用 `DslBuilder.clearCustomTypes()`。
+
 插件化扩展可结合 [plugin-system.md](./plugin-system.md) 使用。
 
 ---
@@ -30,5 +32,5 @@ DslBuilder.registerType('orderCode', {
 ## 对应示例文件
 
 **示例入口**: [plugin-type-registration.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/plugin-type-registration.ts)  
-**说明**: 同时覆盖 `TypeRegistry.register()` 和 `DslBuilder.registerType()` 两条入口，以及注册后的真实验证与清理流程。
+**说明**: 覆盖 `TypeRegistry.register()`、`DslBuilder.registerType()`，以及通过 `DslBuilder.unregisterType()` / `DslBuilder.clearCustomTypes()` 清理注册状态的路径。
 

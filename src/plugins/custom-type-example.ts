@@ -1,6 +1,17 @@
 import type { Plugin } from '../types/plugin.js'
 import { DslBuilder } from '../core/DslBuilder.js'
 
+const CUSTOM_TYPE_NAMES = [
+  'order-id',
+  'sku',
+  'price',
+  'rating',
+  'color-code',
+  'semver',
+  'dynamic-age',
+  'phone-intl',
+]
+
 export const customTypeExamplePlugin: Plugin & {
   registerCustomTypes: (dslBuilder: typeof DslBuilder) => void
 } = {
@@ -17,7 +28,12 @@ export const customTypeExamplePlugin: Plugin & {
 
     this.registerCustomTypes(builder)
   },
-  uninstall() {
+  uninstall(core) {
+    const coreRecord = core as { DslBuilder?: typeof DslBuilder } | undefined
+    const builder = coreRecord?.DslBuilder ?? DslBuilder
+    for (const name of CUSTOM_TYPE_NAMES) {
+      builder.unregisterType(name)
+    }
   },
   registerCustomTypes(dslBuilder) {
     dslBuilder.registerType('order-id', {

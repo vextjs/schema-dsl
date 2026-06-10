@@ -8,7 +8,7 @@ import { CacheManager } from './CacheManager.js'
 import type { CacheStats } from './CacheManager.js'
 import { ErrorFormatter } from './ErrorFormatter.js'
 import { CustomKeywords } from '../validators/CustomKeywords.js'
-import { Locale } from './Locale.js'
+import { Locale, DEFAULT_LOCALE } from './Locale.js'
 import { ConditionalValidator, type ConditionalInternalSchema } from './ConditionalValidator.js'
 
 // Non-AJV custom option keys (V-Y01 fix: filter before passing to new Ajv())
@@ -20,6 +20,7 @@ const NON_AJV_KEYS = new Set([
 // AJV ValidateFunction type
 type AjvValidateFn = ValidateFunction
 type KeywordDefinitionInput = KeywordDefinition | ({ keyword?: string;[key: string]: unknown })
+type SchemaCacheKeyCarrier = JSONSchema & Record<symbol, unknown>
 
 // Schema with _removeAdditional or _isConditional internal markers
 type InternalSchema = JSONSchema & {
@@ -30,6 +31,60 @@ type InternalSchema = JSONSchema & {
 
 // Performance: share empty array on valid path to avoid `{ errors: [] }` allocation every time
 const EMPTY_ERRORS: ValidationErrorItem[] = []
+const FLAT_LOCALE_CACHE_MAX_SIZE = 32
+
+export const SCHEMA_DSL_CACHE_KEY = Symbol.for('schema-dsl.schemaCacheKey')
+
+export function createSchemaCacheKey(schema: unknown): string | null {
+  const serialized = stableStringify(schema, new WeakSet<object>())
+  return serialized === null ? null : `schema:${serialized}`
+}
+
+function stableStringify(value: unknown, seen: WeakSet<object>): string | null {
+  if (value === null) return 'null'
+
+  switch (typeof value) {
+    case 'string':
+      return JSON.stringify(value)
+    case 'number':
+      return Number.isFinite(value) ? JSON.stringify(value) : null
+    case 'boolean':
+      return value ? 'true' : 'false'
+    case 'object':
+      break
+    default:
+      return null
+  }
+
+  if (Array.isArray(value)) {
+    const items: string[] = []
+    for (const item of value) {
+      const serialized = stableStringify(item, seen)
+      if (serialized === null) return null
+      items.push(serialized)
+    }
+    return `[${items.join(',')}]`
+  }
+
+  const obj = value as Record<string, unknown>
+  const proto = Object.getPrototypeOf(obj)
+  if (proto !== Object.prototype && proto !== null) return null
+  if (seen.has(obj)) return null
+
+  seen.add(obj)
+  const entries: string[] = []
+  for (const key of Object.keys(obj).sort()) {
+    const serialized = stableStringify(obj[key], seen)
+    if (serialized === null) {
+      seen.delete(obj)
+      return null
+    }
+    entries.push(`${JSON.stringify(key)}:${serialized}`)
+  }
+  seen.delete(obj)
+
+  return `{${entries.join(',')}}`
+}
 
 /**
  * ValidatorOptions — constructor options for Validator (extends AJV base options).
@@ -67,6 +122,11 @@ export class Validator {
   // WeakMap: schema object → unique cacheKey (avoids JSON.stringify)
   private readonly _schemaMap = new WeakMap<object, string>()
   private _schemaKeyCounter = 0
+  private readonly _compiledSchemaRefs = new Map<string, JSONSchema>()
+  private readonly _compiledSchemaLru = new Map<string, true>()
+  private readonly _removeAdditionalCache = new Map<string, AjvValidateFn>()
+  private readonly _removeAdditionalSchemaRefs = new Map<string, JSONSchema>()
+  private readonly _removeAdditionalSchemaLru = new Map<string, true>()
 
   // Performance: cache whether a schema has any conditional fields (avoids traversing properties on every validation)
   private readonly _conditionalFlagCache = new WeakMap<object, boolean>()
@@ -129,17 +189,9 @@ export class Validator {
    * Compile a schema → AJV validate function (with cache).
    */
   compile(schema: JSONSchema, cacheKey?: string | null): AjvValidateFn {
-    const key = cacheKey ?? null
-
-    if (key) {
-      const cached = this._cache.get(key) as AjvValidateFn | null
-      if (cached !== null) return cached
-    }
-
+    const key = cacheKey || this._getSchemaCacheKey(schema)
     try {
-      const validate = this._ajv.compile(schema)
-      if (key) this._cache.set(key, validate as unknown as object)
-      return validate
+      return this._compileWithManagedCache(schema, key)
     } catch (error) {
       throw new Error(`Schema compilation failed: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -355,7 +407,15 @@ export class Validator {
 
   getAjv(): InstanceType<typeof Ajv> { return this._ajv }
   get cache(): CacheManager { return this._cache }
-  clearCache(): void { this._cache.clear() }
+  clearCache(): void {
+    this._cache.clear()
+    this._releaseAllManagedSchemas(this._ajv, this._compiledSchemaRefs, this._compiledSchemaLru)
+    if (this._removeAdditionalAjv) {
+      this._releaseAllManagedSchemas(this._removeAdditionalAjv, this._removeAdditionalSchemaRefs, this._removeAdditionalSchemaLru, this._removeAdditionalCache)
+      this._removeAdditionalAjv = null
+    }
+    this._flatLocaleCache.clear()
+  }
   getCacheStats(): CacheStats { return this._cache.getStats() }
 
   // ─── Static Factory ────────────────────────────────────────────────────
@@ -430,7 +490,8 @@ export class Validator {
       delete (cleanSchema as InternalSchema)._removeAdditional
 
       try {
-        const validate = this._removeAdditionalAjv.compile(cleanSchema)
+        const cacheKey = this._getRemoveAdditionalCacheKey(cleanSchema)
+        const validate = this._compileRemoveAdditionalSchema(cleanSchema, cacheKey)
         const valid = validate(data) as boolean
         if (valid) return { valid: true, data, errors: EMPTY_ERRORS }
         const fmtErrors = this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat)
@@ -445,24 +506,8 @@ export class Validator {
       if (typeof schema === 'function') {
         validate = schema as AjvValidateFn
       } else {
-        // Performance: merge _generateCacheKey + compile() into a single WeakMap lookup
-        const schemaObj = schema as object
-        let cacheKey = this._schemaMap.get(schemaObj)
-        if (!cacheKey) {
-          cacheKey = `s${++this._schemaKeyCounter}`
-          this._schemaMap.set(schemaObj, cacheKey)
-        }
-        const cached = this._cache.get(cacheKey) as AjvValidateFn | null
-        if (cached !== null) {
-          validate = cached
-        } else {
-          try {
-            validate = this._ajv.compile(schema as JSONSchema)
-            this._cache.set(cacheKey, validate as unknown as object)
-          } catch (error) {
-            throw new Error(`Schema compilation failed: ${error instanceof Error ? error.message : String(error)}`)
-          }
-        }
+        const cacheKey = this._getSchemaCacheKey(schema)
+        validate = this._compileWithManagedCache(schema, cacheKey)
       }
 
       const valid = validate(data) as boolean
@@ -477,29 +522,203 @@ export class Validator {
   // ─── Helper methods ─────────────────────────────────────────────────────
 
   private _generateCacheKey(schema: object): string {
-    if (!this._schemaMap.has(schema)) {
-      this._schemaMap.set(schema, `schema_${++this._schemaKeyCounter}`)
+    return this._getSchemaCacheKey(schema as JSONSchema)
+  }
+
+  private _getSchemaCacheKey(schema: JSONSchema): string {
+    const markedKey = (schema as SchemaCacheKeyCarrier)[SCHEMA_DSL_CACHE_KEY]
+    if (typeof markedKey === 'string' && markedKey) return markedKey
+
+    const structuralKey = createSchemaCacheKey(schema)
+    if (structuralKey) return structuralKey
+
+    const schemaObj = schema as object
+    let cacheKey = this._schemaMap.get(schemaObj)
+    if (!cacheKey) {
+      cacheKey = `schema_${++this._schemaKeyCounter}`
+      this._schemaMap.set(schemaObj, cacheKey)
     }
-    return this._schemaMap.get(schema)!
+    return cacheKey
+  }
+
+  private _getRemoveAdditionalCacheKey(schema: JSONSchema): string {
+    const structuralKey = createSchemaCacheKey(schema)
+    if (structuralKey) return `removeAdditional:${structuralKey}`
+    return `removeAdditional:${this._getSchemaCacheKey(schema)}`
+  }
+
+  private _compileWithManagedCache(schema: JSONSchema, cacheKey: string): AjvValidateFn {
+    const cached = this._cache.get(cacheKey) as AjvValidateFn | null
+    if (cached !== null) {
+      this._touchManagedKey(this._compiledSchemaLru, cacheKey)
+      return cached
+    }
+
+    return this._compileAndRememberSchema(this._ajv, schema, cacheKey, this._compiledSchemaRefs, this._compiledSchemaLru, this._cache)
+  }
+
+  private _compileRemoveAdditionalSchema(schema: JSONSchema, cacheKey: string): AjvValidateFn {
+    const cached = this._removeAdditionalCache.get(cacheKey)
+    if (cached) {
+      this._touchManagedKey(this._removeAdditionalSchemaLru, cacheKey)
+      return cached
+    }
+
+    return this._compileAndRememberSchema(
+      this._removeAdditionalAjv!,
+      schema,
+      cacheKey,
+      this._removeAdditionalSchemaRefs,
+      this._removeAdditionalSchemaLru,
+      undefined,
+      this._removeAdditionalCache
+    )
+  }
+
+  private _compileAndRememberSchema(
+    ajv: InstanceType<typeof Ajv>,
+    schema: JSONSchema,
+    cacheKey: string,
+    schemaRefs: Map<string, JSONSchema>,
+    lru: Map<string, true>,
+    cache?: CacheManager,
+    values?: Map<string, AjvValidateFn>
+  ): AjvValidateFn {
+    if (!this._cache.options.enabled || this._cache.options.maxSize <= 0) {
+      const validate = ajv.compile(schema)
+      ajv.removeSchema(schema)
+      return validate
+    }
+
+    if (schemaRefs.has(cacheKey)) {
+      this._releaseManagedSchema(ajv, cacheKey, schemaRefs, lru, cache, values)
+    }
+    this._ensureManagedCapacity(ajv, schemaRefs, lru, cache, values)
+
+    const validate = ajv.compile(schema)
+    schemaRefs.set(cacheKey, schema)
+    this._touchManagedKey(lru, cacheKey)
+
+    if (cache) {
+      cache.set(cacheKey, validate as unknown as object)
+    }
+    if (values) {
+      values.set(cacheKey, validate)
+    }
+
+    return validate
+  }
+
+  private _ensureManagedCapacity(
+    ajv: InstanceType<typeof Ajv>,
+    schemaRefs: Map<string, JSONSchema>,
+    lru: Map<string, true>,
+    cache?: CacheManager,
+    values?: Map<string, AjvValidateFn>
+  ): void {
+    const maxSize = this._cache.options.maxSize
+    while (lru.size >= maxSize) {
+      const oldestKey = lru.keys().next().value as string | undefined
+      if (!oldestKey) return
+      this._releaseManagedSchema(ajv, oldestKey, schemaRefs, lru, cache, values)
+    }
+  }
+
+  private _releaseManagedSchema(
+    ajv: InstanceType<typeof Ajv>,
+    cacheKey: string,
+    schemaRefs: Map<string, JSONSchema>,
+    lru: Map<string, true>,
+    cache?: CacheManager,
+    values?: Map<string, AjvValidateFn>
+  ): void {
+    const schemaRef = schemaRefs.get(cacheKey)
+    if (schemaRef) {
+      try {
+        ajv.removeSchema(schemaRef)
+      } catch {
+        // AJV may reject removal for already-pruned refs; cache bookkeeping still needs cleanup.
+      }
+    }
+    schemaRefs.delete(cacheKey)
+    lru.delete(cacheKey)
+    cache?.delete(cacheKey)
+    values?.delete(cacheKey)
+  }
+
+  private _releaseAllManagedSchemas(
+    ajv: InstanceType<typeof Ajv>,
+    schemaRefs: Map<string, JSONSchema>,
+    lru: Map<string, true>,
+    values?: Map<string, AjvValidateFn>
+  ): void {
+    for (const cacheKey of Array.from(schemaRefs.keys())) {
+      this._releaseManagedSchema(ajv, cacheKey, schemaRefs, lru, undefined, values)
+    }
+    lru.clear()
+    values?.clear()
+  }
+
+  private _touchManagedKey(lru: Map<string, true>, cacheKey: string): void {
+    lru.delete(cacheKey)
+    lru.set(cacheKey, true)
   }
 
   // Performance: cache flattened locale messages (key = locale, value = flat ErrorMessages)
   // to avoid re-running Locale.getMessages + Object.entries.map on every validation failure
   private readonly _flatLocaleCache = new Map<string, ErrorMessages>()
+  private _flatLocaleCacheRevision = Locale.revision
 
   private _getFlatLocaleMessages(locale: string): ErrorMessages {
-    let flat = this._flatLocaleCache.get(locale)
+    if (this._flatLocaleCacheRevision !== Locale.revision) {
+      this._flatLocaleCache.clear()
+      this._flatLocaleCacheRevision = Locale.revision
+    }
+
+    const cacheKey = this._resolveLocaleCacheKey(locale)
+    let flat = this._flatLocaleCache.get(cacheKey)
     if (!flat) {
-      const raw = Locale.getMessages(locale)
-      flat = Object.fromEntries(
-        Object.entries(raw).map(([k, v]) => [
-          k,
-          typeof v === 'string' ? v : (v as { message: string }).message,
-        ])
-      ) as ErrorMessages
-      this._flatLocaleCache.set(locale, flat)
+      flat = this._flattenLocaleMessages(cacheKey)
+      this._rememberFlatLocaleMessages(cacheKey, flat)
+    } else {
+      this._touchFlatLocaleKey(cacheKey, flat)
     }
     return flat
+  }
+
+  private _resolveLocaleCacheKey(locale: string): string {
+    if (Locale.isSupportedLocale(locale) || this._hasCustomLocale(locale)) {
+      return locale
+    }
+    return DEFAULT_LOCALE
+  }
+
+  private _hasCustomLocale(locale: string): boolean {
+    return Object.keys(Locale.customMessages).some(key => key.startsWith(`${locale}:`))
+  }
+
+  private _flattenLocaleMessages(locale: string): ErrorMessages {
+    const raw = Locale.getMessages(locale)
+    return Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => [
+        k,
+        typeof v === 'string' ? v : (v as { message: string }).message,
+      ])
+    ) as ErrorMessages
+  }
+
+  private _rememberFlatLocaleMessages(locale: string, messages: ErrorMessages): void {
+    while (this._flatLocaleCache.size >= FLAT_LOCALE_CACHE_MAX_SIZE) {
+      const oldestKey = this._flatLocaleCache.keys().next().value as string | undefined
+      if (!oldestKey) break
+      this._flatLocaleCache.delete(oldestKey)
+    }
+    this._flatLocaleCache.set(locale, messages)
+  }
+
+  private _touchFlatLocaleKey(locale: string, messages: ErrorMessages): void {
+    this._flatLocaleCache.delete(locale)
+    this._flatLocaleCache.set(locale, messages)
   }
 
   private _formatErrors(
