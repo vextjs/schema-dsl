@@ -93,7 +93,7 @@
   "bugs": {
     "url": "https://github.com/vextjs/schema-dsl/issues"
   },
-  "homepage": "https://github.com/vextjs/schema-dsl#readme",
+  "homepage": "https://vextjs.github.io/schema-dsl",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

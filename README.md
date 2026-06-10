@@ -4,6 +4,8 @@
 
 **Declare field rules with the simplest DSL — let one schema drive validation, derivation, export, and documentation.**
 
+📚 **Documentation**: [https://vextjs.github.io/schema-dsl](https://vextjs.github.io/schema-dsl)
+
 [![npm version](https://img.shields.io/npm/v/schema-dsl.svg?style=flat-square)](https://www.npmjs.com/package/schema-dsl)
 [![npm downloads](https://img.shields.io/npm/dm/schema-dsl.svg?style=flat-square)](https://www.npmjs.com/package/schema-dsl)
 [![Build Status](https://github.com/vextjs/schema-dsl/workflows/CI/badge.svg)](https://github.com/vextjs/schema-dsl/actions)
