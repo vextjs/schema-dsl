@@ -1,6 +1,6 @@
 # Custom extension guide
 
-> **Version**: 2.0.8
+> **Version**: 2.0.9
 > **Updated date**: 2026-06-10
 > **Purpose**: Explain the runtime extension method recommended by the current version, and how to continue to extend it in depth when maintaining the source code of schema-dsl itself.
 

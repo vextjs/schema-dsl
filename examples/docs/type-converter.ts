@@ -90,7 +90,7 @@ console.log('type-converter.pg.jsonb     =', TypeConverter.toPostgreSQLType('obj
 
 console.log('type-converter.norm.spaces  =', TypeConverter.normalizePropertyName('first name'))  // 'first_name'
 console.log('type-converter.norm.dashes  =', TypeConverter.normalizePropertyName('user-id'))     // 'user_id'
-console.log('type-converter.norm.digits  =', TypeConverter.normalizePropertyName('123created'))  // '_123created' or similar
+console.log('type-converter.norm.digits  =', TypeConverter.normalizePropertyName('123created-at'))  // '123created_at'
 console.log('type-converter.norm.clean   =', TypeConverter.normalizePropertyName(' email '))     // 'email'
 
 // ============================================================

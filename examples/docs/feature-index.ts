@@ -1,11 +1,20 @@
 import {
   dsl,
   validate,
+  validateAsync,
+  Validator,
+  ValidationError,
+  SchemaUtils,
+  TypeConverter,
   MarkdownExporter,
   MongoDBExporter,
   MySQLExporter,
   PostgreSQLExporter,
 } from '../../dist/index.js'
+
+function expect(label: string, condition: boolean): void {
+  if (!condition) throw new Error(`feature-index expectation failed: ${label}`)
+}
 
 // ============================================================
 // Feature index — all major features in one file
@@ -32,6 +41,7 @@ const validResult = validate(userSchema, {
 })
 
 console.log('feature-index.validate.valid             =', validResult.valid)  // true
+expect('main user schema validates', validResult.valid)
 
 // ============================================================
 // 2. Validation errors — all fields at once
@@ -47,18 +57,104 @@ const invalidResult = validate(userSchema, {
 console.log('feature-index.validate.invalid           =', invalidResult.valid)   // false
 console.log('feature-index.validate.errorCount        =',
   (invalidResult.errors?.length ?? 0) >= 3)  // true
+expect('main user schema rejects invalid input', invalidResult.valid === false)
 
 // ============================================================
-// 3. Markdown export
+// 3. Validator instance — compile, batch, cache
+// ============================================================
+
+const featureValidator = new Validator({
+  allErrors: true,
+  cache: { maxSize: 64, statsEnabled: true },
+})
+const compiledUser = featureValidator.compile(userSchema, 'feature-index-user')
+const compiledValid = compiledUser({
+  username: 'compiled_user',
+  email: 'compiled@example.com',
+  role: 'user',
+  score: 91,
+  tags: ['docs'],
+})
+const batchUsers = featureValidator.validateBatch(userSchema, [
+  { username: 'batch_one', email: 'one@example.com', role: 'user', score: 1, tags: ['one'] },
+  { username: 'bad user', email: 'bad', role: 'owner', score: -1 },
+])
+const featureCache = featureValidator.getCacheStats()
+
+console.log('feature-index.validator.compile          =', compiledValid)
+console.log('feature-index.validator.batch            =', batchUsers.map(r => r.valid))
+console.log('feature-index.validator.cache            =', featureCache.enabled)
+expect('compiled feature validator passes', compiledValid === true)
+expect('feature batch includes invalid row', batchUsers[1]?.valid === false)
+
+// ============================================================
+// 4. Conditional fields — dsl.match()
+// ============================================================
+
+const contactSchema = dsl({
+  contactType: 'email|phone!',
+  contact: dsl.match('contactType', {
+    email: 'email!',
+    phone: 'phone:cn!',
+  }),
+})
+
+const contactOk = validate(contactSchema, { contactType: 'email', contact: 'user@example.com' })
+const contactBad = validate(contactSchema, { contactType: 'email', contact: '13800138000' })
+
+console.log('feature-index.conditional.valid          =', contactOk.valid)
+console.log('feature-index.conditional.invalid        =', contactBad.valid)
+expect('conditional schema accepts matching branch', contactOk.valid)
+expect('conditional schema rejects branch mismatch', contactBad.valid === false)
+
+// ============================================================
+// 5. Async custom validators
+// ============================================================
+
+const asyncSignupSchema = dsl({
+  email: dsl('email!').custom(async value =>
+    value !== 'taken@example.com' || 'Email already exists'),
+})
+
+let asyncFailure = false
+try {
+  await validateAsync(asyncSignupSchema, { email: 'taken@example.com' })
+} catch (err) {
+  if (err instanceof ValidationError) {
+    asyncFailure = err.hasFieldError('email')
+  }
+}
+
+console.log('feature-index.async.failure              =', asyncFailure)
+expect('async custom validator failure is observable', asyncFailure)
+
+// ============================================================
+// 6. Schema utilities and type conversion
+// ============================================================
+
+const publicUserSchema = SchemaUtils.pick(userSchema, ['username', 'email'])
+const publicUserUpdateSchema = SchemaUtils.partial(publicUserSchema)
+const mongoStringType = TypeConverter.toMongoDBType('string')
+
+console.log('feature-index.utils.publicFields         =', Object.keys(publicUserSchema.properties ?? {}))
+console.log('feature-index.utils.partialRequired      =', publicUserUpdateSchema.required?.length ?? 0)
+console.log('feature-index.utils.mongoType            =', mongoStringType)
+expect('SchemaUtils.pick selects two public fields', Object.keys(publicUserSchema.properties ?? {}).length === 2)
+expect('SchemaUtils.partial removes required fields', (publicUserUpdateSchema.required?.length ?? 0) === 0)
+expect('TypeConverter maps string to MongoDB string', mongoStringType === 'string')
+
+// ============================================================
+// 7. Markdown export
 // ============================================================
 
 const markdown = MarkdownExporter.export(userSchema, { title: 'User API Schema' })
 
 console.log('feature-index.markdown.containsTitle     =', markdown.includes('User API Schema'))  // true
 console.log('feature-index.markdown.hasFields         =', markdown.includes('username'))          // true
+expect('Markdown export includes title and fields', markdown.includes('User API Schema') && markdown.includes('username'))
 
 // ============================================================
-// 4. MongoDB export
+// 8. MongoDB export
 // ============================================================
 
 const mongo = MongoDBExporter.export(userSchema)
@@ -66,26 +162,29 @@ const mongoSchema = mongo as { $jsonSchema?: { bsonType?: string } }
 
 console.log('feature-index.mongo.hasJsonSchema        =', Boolean(mongoSchema.$jsonSchema))      // true
 console.log('feature-index.mongo.rootType             =', mongoSchema.$jsonSchema?.bsonType)     // 'object'
+expect('MongoDB export has root $jsonSchema', Boolean(mongoSchema.$jsonSchema))
 
 // ============================================================
-// 5. MySQL export
+// 9. MySQL export
 // ============================================================
 
 const mysql = MySQLExporter.export('feature_users', userSchema)
 
 console.log('feature-index.mysql.containsCreateTable  =', mysql.includes('CREATE TABLE'))       // true
 console.log('feature-index.mysql.containsTableName    =', mysql.includes('feature_users'))      // true
+expect('MySQL export creates table', mysql.includes('CREATE TABLE') && mysql.includes('feature_users'))
 
 // ============================================================
-// 6. PostgreSQL export
+// 10. PostgreSQL export
 // ============================================================
 
 const postgres = PostgreSQLExporter.export('feature_users', userSchema)
 
 console.log('feature-index.postgres.containsCreate    =', postgres.includes('CREATE TABLE'))    // true
+expect('PostgreSQL export creates table', postgres.includes('CREATE TABLE'))
 
 // ============================================================
-// 7. Nested object schema
+// 11. Nested object schema
 // ============================================================
 
 const nestedSchema = dsl({
@@ -107,3 +206,9 @@ console.log('feature-index.nested.valid               =', validate(nestedSchema,
     contact:  { email: 'rocky@example.com', phone: '13800138000' },
   },
 }).valid)  // true
+expect('nested schema validates valid nested data', validate(nestedSchema, {
+  user: {
+    profile: { firstName: 'Rocky', lastName: 'Dev' },
+    contact: { email: 'rocky@example.com', phone: '13800138000' },
+  },
+}).valid)

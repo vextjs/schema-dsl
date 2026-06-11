@@ -7,7 +7,7 @@
 - [Method signature](#method-signature) - API definition
 
 ### Detailed explanation of parameters
-- [Detailed explanation of parameters](#detailed-explanation-of-parameters-1)
+- [Detailed explanation of parameters](#detailed-explanation-of-parameters)
   - [schema parameter](#schema-parameters)
   - [options object properties](#options-object-properties)
 - [Detailed explanation of return value](#detailed-explanation-of-return-value)

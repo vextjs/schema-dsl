@@ -3,6 +3,10 @@ import {
   I18nError, Locale, ErrorFormatter, ValidationError,
 } from '../../dist/index.js'
 
+function expect(label: string, condition: boolean): void {
+  if (!condition) throw new Error(`error-handling expectation failed: ${label}`)
+}
+
 // ============================================================
 // 1. ValidationErrorItem structure — path, keyword, message
 // ============================================================
@@ -25,6 +29,7 @@ const invalidData = {
 
 const result = validate(profileSchema, invalidData, { allErrors: true })
 console.log('error-handling.valid =', result.valid) // false
+expect('profile schema should be invalid', result.valid === false)
 
 // Each error item — { message, path, keyword, params, field, type }
 result.errors?.forEach(err => {
@@ -112,7 +117,7 @@ const balanceError = new I18nError(
   'payment.insufficientBalance',
   { balance: 50, required: 200 },
   40210,
-  'en-US',
+  'zh-CN',
 )
 
 console.log('error-handling.i18n.message =',
@@ -126,7 +131,7 @@ console.log('error-handling.i18n.json =',     JSON.stringify(balanceError.toJSON
 // 5. I18nError.create() — factory without throwing
 // ============================================================
 
-const tokenError = I18nError.create('auth.tokenExpired', {}, 40101)
+const tokenError = I18nError.create('auth.tokenExpired', {}, 40101, 'zh-CN')
 console.log('error-handling.i18n.create.instanceof =', tokenError instanceof I18nError)
 console.log('error-handling.i18n.create.code =',       tokenError.code)
 
@@ -140,6 +145,7 @@ function withdraw(balance: number, amount: number): void {
     'payment.insufficientBalance',
     { balance, required: amount },
     40210,
+    'zh-CN',
   )
 }
 
@@ -162,7 +168,7 @@ console.log('error-handling.i18n.assert.noThrow =', threw) // false
 
 const strictSchema = dsl({ email: 'email!', username: 'string:3-20!' })
 
-async function tryValidateAsync(): Promise<void> {
+async function tryValidateAsync(): Promise<ValidationError | null> {
   try {
     await validateAsync(strictSchema, { email: 'bad', username: 'x' })
   } catch (err) {
@@ -170,8 +176,56 @@ async function tryValidateAsync(): Promise<void> {
       console.log('error-handling.ValidationError.instanceof =', true)
       console.log('error-handling.ValidationError.errors.length =', err.errors.length)
       console.log('error-handling.ValidationError.message =',       err.message)
+      return err
     }
+  }
+  return null
+}
+
+const asyncValidationError = await tryValidateAsync()
+
+if (asyncValidationError) {
+  const fieldErrors = asyncValidationError.getFieldErrors()
+  const usernameError = asyncValidationError.getFieldError('username')
+  const usernameErrorByPointer = asyncValidationError.getFieldError('/username')
+  const serialized = asyncValidationError.toJSON()
+
+  console.log('error-handling.ValidationError.count =', asyncValidationError.getErrorCount())
+  console.log('error-handling.ValidationError.hasEmail =', asyncValidationError.hasFieldError('email'))
+  console.log('error-handling.ValidationError.fieldMap.email =', fieldErrors.email)
+  console.log('error-handling.ValidationError.field.username =', usernameError?.message)
+  console.log('error-handling.ValidationError.pointer.username =', usernameErrorByPointer?.message)
+  console.log('error-handling.ValidationError.json.status =', serialized.statusCode)
+  console.log('error-handling.ValidationError.json.details =', serialized.details.length)
+
+  expect('ValidationError exposes email field', asyncValidationError.hasFieldError('email'))
+  expect('ValidationError pointer lookup matches field lookup', usernameError?.message === usernameErrorByPointer?.message)
+  expect('ValidationError serializes all details', serialized.details.length === asyncValidationError.getErrorCount())
+}
+
+// ============================================================
+// 8. dsl.error facade — create / throw / assert without importing I18nError
+// ============================================================
+
+const facadeError = dsl.error.create('auth.tokenExpired', {}, 40101, 'zh-CN')
+console.log('error-handling.dsl.error.create =', facadeError instanceof I18nError)
+expect('dsl.error.create returns I18nError', facadeError instanceof I18nError)
+
+try {
+  dsl.error.assert(false, 'payment.insufficientBalance', { balance: 1, required: 10 }, 40210, 'zh-CN')
+} catch (err) {
+  if (err instanceof I18nError) {
+    console.log('error-handling.dsl.error.assert.caught =', err.code)
+    expect('dsl.error.assert resolves locale code', err.code === 40210)
+    expect('dsl.error.assert preserves status code', err.statusCode === 40210)
   }
 }
 
-await tryValidateAsync()
+try {
+  dsl.error.throw('auth.tokenExpired', {}, 40101, 'zh-CN')
+} catch (err) {
+  if (err instanceof I18nError) {
+    console.log('error-handling.dsl.error.throw.caught =', err.is('auth.tokenExpired'))
+    expect('dsl.error.throw preserves key', err.is('auth.tokenExpired'))
+  }
+}

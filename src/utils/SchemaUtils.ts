@@ -215,29 +215,17 @@ export class SchemaUtils {
 
     if (schema.properties) {
       md += '## Fields\n\n'
-      md += '| Field | Type | Required | Description |\n'
-      md += '|-------|------|----------|-------------|\n'
+      md += '| Field | Type | Required | Constraints | Description |\n'
+      md += '|-------|------|----------|-------------|-------------|\n'
 
       for (const [key, prop] of Object.entries(schema.properties)) {
         const required = schema.required?.includes(key) ? '✅' : '❌'
-        const type = SchemaUtils._escapeMdCell((prop.type as string) ?? 'any')
-        const p = prop as Record<string, unknown>
-        const label = SchemaUtils._escapeMdCell((p['_label'] as string) ?? key)
+        const type = SchemaUtils._escapeMdCell(SchemaUtils._formatExportType(prop))
+        const description = SchemaUtils._escapeMdCell(SchemaUtils._getDisplayDescription(prop))
+        const constraints = SchemaUtils._escapeMdCell(SchemaUtils._formatExportConstraints(prop))
         const escapedKey = SchemaUtils._escapeMdCell(key)
 
-        md += `| ${escapedKey} | ${type} | ${required} | ${label} |\n`
-
-        const constraints: string[] = []
-        if (prop.minLength) constraints.push(`minLength: ${prop.minLength}`)
-        if (prop.maxLength) constraints.push(`maxLength: ${prop.maxLength}`)
-        if (prop.minimum !== undefined) constraints.push(`minimum: ${prop.minimum}`)
-        if (prop.maximum !== undefined) constraints.push(`maximum: ${prop.maximum}`)
-        if (prop.pattern) constraints.push(`pattern: \`${SchemaUtils._escapeMdCell(String(prop.pattern))}\``)
-        if (prop.enum) constraints.push(`enum: ${(prop.enum as unknown[]).join(', ')}`)
-
-        if (constraints.length > 0) {
-          md += `| | | | ${SchemaUtils._escapeMdCell(constraints.join('; '))} |\n`
-        }
+        md += `| ${escapedKey} | ${type} | ${required} | ${constraints} | ${description} |\n`
       }
     }
 
@@ -258,15 +246,15 @@ export class SchemaUtils {
 
     if (schema.properties) {
       html += '<table border="1" cellpadding="4">\n'
-      html += '<tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>\n'
+      html += '<tr><th>Field</th><th>Type</th><th>Required</th><th>Constraints</th><th>Description</th></tr>\n'
 
       for (const [key, prop] of Object.entries(schema.properties)) {
         const required = schema.required?.includes(key) ? '✅' : '❌'
-        const type = SchemaUtils._escapeHtml((prop.type as string) ?? 'any')
-        const p = prop as Record<string, unknown>
-        const label = SchemaUtils._escapeHtml((p['_label'] as string) ?? key)
+        const type = SchemaUtils._escapeHtml(SchemaUtils._formatExportType(prop))
+        const description = SchemaUtils._escapeHtml(SchemaUtils._getDisplayDescription(prop))
+        const constraints = SchemaUtils._escapeHtml(SchemaUtils._formatExportConstraints(prop))
 
-        html += `<tr><td>${SchemaUtils._escapeHtml(key)}</td><td>${type}</td><td>${required}</td><td>${label}</td></tr>\n`
+        html += `<tr><td>${SchemaUtils._escapeHtml(key)}</td><td>${type}</td><td>${required}</td><td>${constraints}</td><td>${description}</td></tr>\n`
       }
 
       html += '</table>\n'
@@ -277,6 +265,45 @@ export class SchemaUtils {
   }
 
   // ==================== Private Utilities ====================
+
+  private static _getDisplayDescription(prop: JSONSchema): string {
+    const p = prop as Record<string, unknown>
+    const label = typeof p['_label'] === 'string' && p['_label'].length > 0
+      ? p['_label']
+      : undefined
+    const description = typeof prop.description === 'string' && prop.description.length > 0
+      ? prop.description
+      : undefined
+
+    if (description && label && label !== description) return `${label} - ${description}`
+    return description ?? label ?? '-'
+  }
+
+  private static _formatExportType(prop: JSONSchema): string {
+    if (typeof prop.format === 'string' && prop.format.length > 0) return prop.format
+    return String(prop.type ?? 'any')
+  }
+
+  private static _formatExportConstraints(prop: JSONSchema): string {
+    const constraints: string[] = []
+    if (prop.minLength !== undefined && prop.maxLength !== undefined) {
+      constraints.push(`length: ${prop.minLength}-${prop.maxLength}`)
+    } else if (prop.minLength !== undefined) {
+      constraints.push(`minLength: ${prop.minLength}`)
+    } else if (prop.maxLength !== undefined) {
+      constraints.push(`maxLength: ${prop.maxLength}`)
+    }
+    if (prop.minimum !== undefined && prop.maximum !== undefined) {
+      constraints.push(`range: ${prop.minimum}-${prop.maximum}`)
+    } else if (prop.minimum !== undefined) {
+      constraints.push(`minimum: ${prop.minimum}`)
+    } else if (prop.maximum !== undefined) {
+      constraints.push(`maximum: ${prop.maximum}`)
+    }
+    if (prop.pattern) constraints.push(`pattern: \`${String(prop.pattern)}\``)
+    if (prop.enum) constraints.push(`enum: ${(prop.enum as unknown[]).join(', ')}`)
+    return constraints.length > 0 ? constraints.join('; ') : '-'
+  }
 
   private static _escapeMdCell(str: string): string {
     return str.replace(/\|/g, '\\|').replace(/\r\n|\r|\n/g, '<br>')

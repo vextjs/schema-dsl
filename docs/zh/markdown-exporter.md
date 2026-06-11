@@ -323,11 +323,13 @@ console.log('\nPostgreSQL DDL:\n', pgDDL);
 
 ### Q: 如何自定义字段说明？
 
-A: 使用 `.label()` 方法：
+A: 使用 `.label()` 设置展示名，使用 `.description()` 设置字段说明。两者同时存在时，Markdown 输出会同时保留这两类元数据。
 
 ```javascript
 const schema = dsl({
-  email: 'email!'.label('用户邮箱地址')
+  email: 'email!'
+    .label('邮箱地址')
+    .description('用于登录和接收通知')
 });
 ```
 
@@ -402,5 +404,5 @@ console.log('✅ 文档已生成');
 ---
 
 **文档更新日期**: 2026-06-10
-**版本**: v2.0.8
+**版本**: v2.0.9
 

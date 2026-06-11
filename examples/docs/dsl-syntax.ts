@@ -1,4 +1,8 @@
-import { dsl, validate } from '../../dist/index.js'
+import { dsl, validate, validateAsync, ValidationError } from '../../dist/index.js'
+
+function expect(label: string, condition: boolean): void {
+  if (!condition) throw new Error(`dsl-syntax expectation failed: ${label}`)
+}
 
 // ============================================================
 // 1. Primitive types — all base types
@@ -19,6 +23,10 @@ console.log('dsl-syntax.primitives.valid =',
     name: 'Alice', count: 3.14, qty: 42, active: true,
     meta: {}, list: [1, 2], empty: null, anything: { x: 1 },
   }).valid)
+expect('primitive schema accepts valid data', validate(primitives, {
+  name: 'Alice', count: 3.14, qty: 42, active: true,
+  meta: {}, list: [1, 2], empty: null, anything: { x: 1 },
+}).valid)
 
 // ============================================================
 // 2. Required (!) and optional (?) markers
@@ -32,6 +40,7 @@ const markers = dsl({
 
 console.log('dsl-syntax.markers.missing.valid =',  validate(markers, {}).valid)        // false
 console.log('dsl-syntax.markers.present.valid =',  validate(markers, { must: 'hi' }).valid) // true
+expect('required marker rejects missing value', validate(markers, {}).valid === false)
 
 // ============================================================
 // 3. String constraints — exact length, range, one-sided
@@ -105,6 +114,32 @@ console.log('dsl-syntax.arrays.valid =',
   }).valid)
 console.log('dsl-syntax.arrays.tags.overflow =',
   validate(arrays, { tags: ['a','b','c','d','e','f'], required: ['x@y.com'] }).valid) // false
+expect('array overflow is rejected', validate(arrays, { tags: ['a','b','c','d','e','f'], required: ['x@y.com'] }).valid === false)
+
+const advancedArrays = {
+  type: 'object',
+  properties: {
+    matrix: dsl('array<array<number>>').toJsonSchema(),
+    users: {
+      type: 'array',
+      minItems: 1,
+      items: dsl({
+        name: 'string:1-32!',
+        age: 'integer:0-120',
+      }),
+    },
+  },
+}
+
+console.log('dsl-syntax.arrays.matrix =',
+  validate(advancedArrays, {
+    matrix: [[1, 2], [3, 4]],
+    users: [{ name: 'Alice', age: 28 }],
+  }).valid)
+console.log('dsl-syntax.arrays.object.invalid =',
+  validate(advancedArrays, { matrix: [[1]], users: [{ name: '' }] }).valid)
+expect('full object-array schema validates nested records',
+  validate(advancedArrays, { matrix: [[1, 2]], users: [{ name: 'Alice', age: 28 }] }).valid)
 
 // ============================================================
 // 7. Union types — value can be one of several types
@@ -118,6 +153,7 @@ const unions = dsl({
 console.log('dsl-syntax.union.string =',  validate(unions, { id: 'abc-123', value: 'hello' }).valid)
 console.log('dsl-syntax.union.number =',  validate(unions, { id: 42, value: 50 }).valid)
 console.log('dsl-syntax.union.invalid =', validate(unions, { id: -1, value: true }).valid) // false
+expect('union rejects values outside every branch', validate(unions, { id: -1, value: true }).valid === false)
 
 // ============================================================
 // 8. Nested objects
@@ -177,6 +213,33 @@ console.log('dsl-syntax.chain.valid =',          chainValid.valid)
 console.log('dsl-syntax.chain.bio.default =',    (chainValid.data as Record<string, unknown>)?.bio) // ''
 console.log('dsl-syntax.chain.invalid.valid =',  chainInvalid.valid)
 console.log('dsl-syntax.chain.invalid.errors =', chainInvalid.errors?.map(e => `${e.path}:${e.keyword}`))
+expect('chain schema applies defaults', (chainValid.data as Record<string, unknown>)?.bio === '')
+expect('chain schema rejects invalid username/password', chainInvalid.valid === false)
+
+const syncCustomSchema = dsl({
+  username: dsl('string:3-32!')
+    .custom(value => value !== 'admin' || 'Reserved username'),
+})
+console.log('dsl-syntax.custom.sync.valid =',
+  validate(syncCustomSchema, { username: 'alice' }).valid)
+console.log('dsl-syntax.custom.sync.invalid =',
+  validate(syncCustomSchema, { username: 'admin' }).valid)
+expect('sync custom validator rejects reserved value',
+  validate(syncCustomSchema, { username: 'admin' }).valid === false)
+
+const asyncCustomSchema = dsl({
+  email: dsl('email!').custom(async value =>
+    value !== 'taken@example.com' || 'Email already exists'),
+})
+
+let asyncCustomRejected = false
+try {
+  await validateAsync(asyncCustomSchema, { email: 'taken@example.com' })
+} catch (err) {
+  if (err instanceof ValidationError) asyncCustomRejected = err.hasFieldError('email')
+}
+console.log('dsl-syntax.custom.async.invalid =', asyncCustomRejected)
+expect('async custom validator requires validateAsync', asyncCustomRejected)
 
 // ============================================================
 // 10. Conditional fields — dsl.if and dsl.match
@@ -196,6 +259,8 @@ console.log('dsl-syntax.if.premium.false.underLimit =',
   validate(subscriptionSchema, { premium: false, maxDownloads: 3 }).valid)
 console.log('dsl-syntax.if.premium.false.overLimit =',
   validate(subscriptionSchema, { premium: false, maxDownloads: 10 }).valid) // false
+expect('dsl.if rejects false branch over limit',
+  validate(subscriptionSchema, { premium: false, maxDownloads: 10 }).valid === false)
 
 // dsl.match(fieldName, { value: schema, ... })
 // Selects the schema based on the value of the named field
@@ -211,3 +276,7 @@ console.log('dsl-syntax.match.email =',
   validate(contactSchema, { type: 'email', value: 'user@example.com' }).valid)
 console.log('dsl-syntax.match.phone =',
   validate(contactSchema, { type: 'phone', value: '13800138000' }).valid)
+console.log('dsl-syntax.match.mismatch =',
+  validate(contactSchema, { type: 'email', value: '13800138000' }).valid)
+expect('dsl.match rejects branch mismatch',
+  validate(contactSchema, { type: 'email', value: '13800138000' }).valid === false)

@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.0.9] | 2026-06-11 | Patch | Documentation/example convergence, Markdown label preservation, cache-hub 2.2.4, and release dependency audit cleanup [View](./changelogs/v2.0.9.md) |
 | [2.0.8] | 2026-06-10 | Patch | Validator/AJV cache lifecycle bounds, locale cache invalidation, and official plugin uninstall cleanup [View](./changelogs/v2.0.8.md) |
 | [2.0.7] | 2026-06-10 | Patch | String extension compatibility restoration, English-default documentation site, and canonical package homepage metadata [View](./changelogs/v2.0.7.md) |
 | [2.0.6] | 2026-06-09 | Patch | Direct runtime and development dependencies pinned to exact versions for deterministic consumer installs [View](./changelogs/v2.0.6.md) |
@@ -43,6 +44,32 @@ All notable changes to this project will be documented in this file.
 | v1.0.2 | 2025-12-31 | Patch | 15 new validators, complete docs, 75 tests |
 | v1.0.1 | 2025-12-31 | Patch | Enum support, auto type detection, unified error messages |
 | [v1.0.0] | 2025-12-29 | Pre-release | Initial release [View](./changelogs/v1.0.0.md) |
+
+---
+
+## [2.0.9] — 2026-06-11
+
+### Changes
+
+- **Docs/examples:** completed a full document-to-example review, added the runnable `examples:run` gate, and expanded high-risk documentation examples with assertions.
+- **Markdown output:** aligned `MarkdownExporter` and `SchemaUtils` with label-vs-description documentation so labels and descriptions are preserved distinctly.
+- **Dependencies:** upgraded `cache-hub` to `2.2.4` and moved Vitest tooling to the Node 18-compatible `3.2.6` security patch line.
+- **Website/docs:** kept the refreshed documentation site theme, localized navigation, and responsive home page button fixes in the release notes.
+
+### Validation
+
+- `npm run build`
+- `npm run typecheck`
+- `npm run examples:typecheck`
+- `npm run examples:run`
+- `npm test`
+- `npm run lint`
+- `npm run test:version`
+- `npm run test:audit`
+- `npm run build` in `website/`
+- `npm pack --dry-run`
+- tarball install smoke for ESM, CJS, and plugin subpath exports
+- `npm publish --dry-run --access public`
 
 ---
 
@@ -180,7 +207,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.8...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.9...HEAD
+[2.0.9]: https://github.com/vextjs/schema-dsl/compare/v2.0.8...v2.0.9
 [2.0.8]: https://github.com/vextjs/schema-dsl/compare/v2.0.7...v2.0.8
 [2.0.7]: https://github.com/vextjs/schema-dsl/compare/v2.0.6...v2.0.7
 [2.0.6]: https://github.com/vextjs/schema-dsl/compare/v2.0.5...v2.0.6

@@ -255,12 +255,14 @@ console.log(markdown);
 ```markdown
 # 用户注册Schema
 
-| 字段 | 类型 | 必填 | 约束 | 说明 |
+| Field | Type | Required | Constraints | Description |
 |------|------|------|------|------|
-| username | string | ✅ | 3-32字符 | 用户名 |
+| username | string | ✅ | length: 3-32 | 用户名 |
 | email | email | ✅ | - | 邮箱地址 |
-| age | number | ❌ | 18-120 | - |
+| age | number | ❌ | range: 18-120 | - |
 ```
+
+`SchemaUtils.toMarkdown()` 是轻量工具，表头固定为英文；如需多语言字段表、示例数据和完整导出选项，优先使用 [MarkdownExporter](./markdown-exporter.md)。
 
 **用途**: 生成API文档
 

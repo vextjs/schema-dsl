@@ -1,6 +1,6 @@
 # TypeScript usage guide
 
-> **Version**: schema-dsl v2.0.8
+> **Version**: schema-dsl v2.0.9
 > **Updated date**: 2026-06-10
 > **Important**: v1.0.6 removed the global String type extension to avoid type pollution
 
@@ -590,4 +590,4 @@ dsl.config({
 ---
 
 **Updated date**: 2026-06-10
-**Document version**: v2.0.8
+**Document version**: v2.0.9

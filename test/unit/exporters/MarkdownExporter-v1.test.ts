@@ -148,5 +148,28 @@ describe('MarkdownExporter', () => {
 
       expect(result).toContain('第一行 \\| first<br>第二行')
     })
+
+    it('should preserve both label and description when both are present', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          email: {
+            type: 'string',
+            format: 'email',
+            _label: 'Email Address',
+            description: 'Primary login email',
+          },
+          username: {
+            type: 'string',
+            _label: 'Username',
+          },
+        },
+      }
+
+      const result = MarkdownExporter.export(schema, { locale: 'en-US' })
+
+      expect(result).toContain('Email Address - Primary login email')
+      expect(result).toContain('Username')
+    })
   })
 })

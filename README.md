@@ -604,6 +604,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 - [⚠️ Export Limitations](https://vextjs.github.io/schema-dsl/export-limitations)
 
 ### 💻 Examples
+- Run all documentation examples with `npm run examples:run`.
 - [quick-start.ts](./examples/docs/quick-start.ts) — basic usage and registration form
 - [validate-async.ts](./examples/docs/validate-async.ts) — async validation and `ValidationError` handling
 - [export-guide.ts](./examples/docs/export-guide.ts) — database export overview

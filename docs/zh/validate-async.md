@@ -485,7 +485,7 @@ new ValidationError(errors, data)
 
 ---
 
-**版本**: v2.0.8
+**版本**: v2.0.9
 **更新日期**: 2026-06-10
 **作者**: schema-dsl Team
 

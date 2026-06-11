@@ -1,4 +1,8 @@
-import { SchemaUtils, Validator, dsl, validate } from '../../dist/index.js'
+import { SchemaUtils, ValidationError, Validator, dsl, validate, validateAsync } from '../../dist/index.js'
+
+function expect(label: string, condition: boolean): void {
+  if (!condition) throw new Error(`faq expectation failed: ${label}`)
+}
 
 // ============================================================
 // FAQ — frequently asked questions and common patterns
@@ -25,6 +29,7 @@ const allErrors = validator.validate(schema, {
 
 console.log('faq.allErrors.valid           =', allErrors.valid)                         // false
 console.log('faq.allErrors.count           =', (allErrors.errors?.length ?? 0) >= 2)    // true
+expect('allErrors validator returns multiple errors', (allErrors.errors?.length ?? 0) >= 2)
 
 // ============================================================
 // Q2: How do I validate in a specific language?
@@ -54,6 +59,7 @@ console.log('faq.batch.total               =', batch.summary.total)   // 3
 console.log('faq.batch.valid               =', batch.summary.valid)   // 2
 console.log('faq.batch.invalid             =', batch.summary.invalid) // 1
 console.log('faq.batch.hasDuration         =', batch.summary.duration >= 0)  // true
+expect('batch validation summarizes all records', batch.summary.total === 3)
 
 // ============================================================
 // Q4: Does the validator cache schemas?
@@ -67,6 +73,7 @@ const stats = validator.getCacheStats()
 
 console.log('faq.cache.enabled             =', stats.enabled)   // true
 console.log('faq.cache.hits                =', stats.hits >= 0) // true
+expect('cache is enabled', stats.enabled)
 
 // ============================================================
 // Q5: How do I compile a schema for repeated use?
@@ -95,3 +102,59 @@ const schemaWithDefault = dsl({
 const noTheme = validate(schemaWithDefault, { name: 'Alice' })
 
 console.log('faq.default.valid             =', noTheme.valid)    // true (theme defaults to 'light')
+console.log('faq.default.value             =', (noTheme.data as any).theme)
+expect('default value is applied', (noTheme.data as any).theme === 'light')
+
+// ============================================================
+// Q7: Can I turn allErrors on per validate() call?
+//     A: No — allErrors is an AJV constructor option. Create another Validator.
+// ============================================================
+
+const firstOnlyValidator = new Validator({ allErrors: false })
+const firstOnly = firstOnlyValidator.validate(schema, {
+  username: 'x',
+  email: 'bad-email',
+  age: 12,
+}, { allErrors: true } as any)
+
+console.log('faq.allErrors.constructorOnly  =', firstOnly.errors?.length)  // 1
+expect('allErrors is controlled by constructor', firstOnly.errors?.length === 1)
+
+// ============================================================
+// Q8: Why did "42" validate as number?
+//     A: top-level validate() smart-coerces by default; pass { coerce: false }.
+// ============================================================
+
+const numericSchema = dsl({ age: 'number:18-120!' })
+const coercedAge = validate(numericSchema, { age: '42' })
+const strictAge = validate(numericSchema, { age: '42' }, { coerce: false })
+
+console.log('faq.coerce.default.valid       =', coercedAge.valid)  // true
+console.log('faq.coerce.disabled.valid      =', strictAge.valid)   // false
+expect('default validate coerces numeric strings', coercedAge.valid)
+expect('coerce false keeps numeric strings invalid', strictAge.valid === false)
+
+// ============================================================
+// Q9: How do I catch async validation failures?
+//     A: validateAsync() throws ValidationError with field helpers.
+// ============================================================
+
+try {
+  await validateAsync(schema, { username: 'x', email: 'bad-email', age: 12 })
+} catch (err) {
+  if (err instanceof ValidationError) {
+    console.log('faq.validateAsync.caught     =', err.getErrorCount())
+    console.log('faq.validateAsync.email      =', err.hasFieldError('email'))
+    expect('validateAsync throws ValidationError', err.hasFieldError('email'))
+  }
+}
+
+// ============================================================
+// Q10: How do I clear cache between tenants/tests?
+//      A: use validator.clearCache().
+// ============================================================
+
+validator.clearCache()
+const clearedStats = validator.getCacheStats()
+console.log('faq.cache.cleared.size        =', clearedStats.size)
+expect('cache clear removes entries', clearedStats.size === 0)

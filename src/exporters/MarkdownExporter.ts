@@ -200,14 +200,21 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
 
   private static _getDescription(prop: JSONSchema, locale: Locale): string {
     const p = prop as Record<string, unknown>
+    let label: string | undefined
 
     if (p['_labelI18n'] && typeof p['_labelI18n'] === 'object') {
       const i18n = p['_labelI18n'] as Record<string, string>
-      if (i18n[locale]) return i18n[locale]
+      if (i18n[locale]) label = i18n[locale]
     }
 
-    if (p['_label']) return p['_label'] as string
-    if (prop.description) return prop.description
+    if (!label && p['_label']) label = p['_label'] as string
+    const description = typeof prop.description === 'string' && prop.description.length > 0
+      ? prop.description
+      : undefined
+
+    if (label && description && label !== description) return `${label} - ${description}`
+    if (description) return description
+    if (label) return label
 
     return '-'
   }

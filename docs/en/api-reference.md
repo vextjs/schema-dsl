@@ -12,6 +12,9 @@
 - [Validator Class](#validator-class)
 - [Exporters](#exporters)
 - [Utility Functions](#utility-functions)
+- [Constants](#constants)
+- [v1-Compatible Root Exports](#v1-compatible-root-exports)
+- [Complete Example](#complete-example)
 
 ---
 
@@ -420,6 +423,18 @@ dsl.if('isVip', 'number:0-50', 'number:0-10')
 
 ## Runtime Helper Functions
 
+### `VERSION`
+
+Current package version exported from the root module. It is read from `package.json`, so it stays aligned with the published package version.
+
+```javascript
+const { VERSION } = require('schema-dsl');
+
+console.log(VERSION);
+```
+
+---
+
 ### `dsl.config(options)`
 
 Global configuration entry. Call it once during application startup to configure i18n, cache, custom patterns, and strict type parsing.
@@ -481,6 +496,18 @@ Resets the default `Validator` singleton used by top-level `validate()` / `valid
 const { resetDefaultValidator } = require('schema-dsl');
 
 resetDefaultValidator();
+```
+
+---
+
+### `resetRuntimeState()`
+
+Resets global runtime state used by tests, workers, or tenant-isolated processes: the default validator singleton, registered custom types, locale state, strict parser mode, and runtime-added pattern keys.
+
+```javascript
+const { resetRuntimeState } = require('schema-dsl');
+
+resetRuntimeState();
 ```
 
 ---
@@ -771,6 +798,18 @@ const ok = Validator.quickValidate(schema, data);
 
 ## Exporters
 
+### BaseExporter
+
+Abstract base class exported for custom exporter subclasses. Built-in exporters inherit its shared option storage and schema assertion helpers; application code usually uses `MongoDBExporter`, `MySQLExporter`, `PostgreSQLExporter`, or `MarkdownExporter` directly.
+
+```javascript
+const { BaseExporter } = require('schema-dsl');
+
+console.log(typeof BaseExporter); // 'function'
+```
+
+---
+
 ### MongoDBExporter
 
 Exports to MongoDB validation schema.
@@ -999,6 +1038,47 @@ array<string:1-50>  # constrained array items
 
 ## Constants
 
+### `VERSION`
+
+String export matching `package.json` version.
+
+```javascript
+const { VERSION } = require('schema-dsl');
+
+console.log(VERSION);
+```
+
+---
+
+### `VALIDATION`, `CACHE`, `FORMATS`, `CONSTANTS`
+
+Named constants and the aggregate `CONSTANTS` namespace. Use named exports for common access; use `CONSTANTS` when iterating over all constant groups.
+
+```javascript
+const { VALIDATION, CACHE, FORMATS, CONSTANTS } = require('schema-dsl');
+
+console.log(VALIDATION.MAX_RECURSION_DEPTH);
+console.log(CACHE.ENABLED);
+console.log(FORMATS.BUILT_IN.includes('email'));
+console.log(CONSTANTS.FORMATS === FORMATS);
+```
+
+---
+
+### `PATTERNS`, `PATTERN_IPV4`, `PATTERN_IPV6`
+
+Reusable regular expression groups and IPv4/IPv6 helpers used by built-in formats and custom validation scenarios.
+
+```javascript
+const { PATTERNS, PATTERN_IPV4, PATTERN_IPV6 } = require('schema-dsl');
+
+console.log(Object.keys(PATTERNS.phone));
+console.log(PATTERN_IPV4.test('127.0.0.1'));
+console.log(PATTERN_IPV6.test('::1'));
+```
+
+---
+
 ### ErrorCodes
 
 Error code constants.
@@ -1046,6 +1126,25 @@ Locale.setLocale('en-US');  // set English
 - `check(data)`
 
 For complete examples and behavior details, see [conditional-api.md](./conditional-api.md).
+
+---
+
+## v1-Compatible Root Exports
+
+v2 is a TypeScript refactor of the v1 JavaScript line. These root exports remain part of the compatibility surface, even when most users reach them through higher-level APIs.
+
+| Export | Purpose | More detail |
+|--------|---------|-------------|
+| `VERSION` | Runtime package version string aligned with `package.json`. | This page |
+| `CONSTANTS` | Namespace for validation, cache, format and plugin constants; named constants such as `VALIDATION`, `CACHE`, `FORMATS`, `PATTERNS`, `PATTERN_IPV4` and `PATTERN_IPV6` are also exported. | This page |
+| `BaseExporter` | Abstract base class for custom exporter subclasses. | This page |
+| `CacheManager` | LRU/TTL cache used by `Validator` and available for manual cache scenarios. | [cache-manager.md](./cache-manager.md) |
+| `CustomKeywords` | Registers schema-dsl custom AJV keywords. Most applications use it indirectly through `Validator`. | [add-keyword.md](./add-keyword.md) |
+| `I18nError` | Internationalized application error helper with `create()`, `throw()`, `assert()`, `is()` and `toJSON()`. | [error-handling.md](./error-handling.md) |
+| `PluginManager` | Plugin registry and hook manager for v1-compatible plugin workflows. | [plugin-system.md](./plugin-system.md) |
+| `resetRuntimeState` | Test and worker cleanup helper for global runtime state. | This page |
+
+The companion example [api-reference.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/api-reference.ts) exercises these exports so API reference drift is caught by `npm run examples:run`.
 
 ---
 
@@ -1101,7 +1200,7 @@ console.log(result.valid); // true
 ## Corresponding Example File
 
 **Example entry**: [api-reference.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/api-reference.ts)
-**Description**: Covers runnable call chains for `dsl()`, `validate()`, `validateAsync()`, the default `Validator` singleton, template rendering, `JSONSchemaCore`, `ErrorFormatter`, `ObjectDslBuilder`, `TypeRegistry`, and other public APIs.
+**Description**: Covers runnable call chains for `dsl()`, `validate()`, `validateAsync()`, the default `Validator` singleton, `CacheManager`, `CustomKeywords`, `I18nError`, `PluginManager`, `CONSTANTS`, template rendering, `JSONSchemaCore`, `ErrorFormatter`, `ObjectDslBuilder`, `TypeRegistry`, and other public APIs.
 
 ---
 

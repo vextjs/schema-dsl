@@ -13,6 +13,9 @@
 - [Validator 类](#validator-类)
 - [导出器](#导出器)
 - [工具函数](#工具函数)
+- [常量](#常量)
+- [v1 兼容根导出](#v1-兼容根导出)
+- [完整示例](#完整示例)
 
 ---
 
@@ -393,6 +396,18 @@ dsl.if('isVip', 'number:0-50', 'number:0-10')
 
 ## 运行时辅助函数
 
+### `VERSION`
+
+根模块导出的当前包版本号。该值从 `package.json` 读取，因此会与发布包版本保持一致。
+
+```javascript
+const { VERSION } = require('schema-dsl');
+
+console.log(VERSION);
+```
+
+---
+
 ### `dsl.config(options)`
 
 全局配置入口，在应用启动时调用一次，设置 i18n、缓存、自定义正则和严格类型解析模式。
@@ -453,6 +468,18 @@ console.log(validator.getCacheStats());
 const { resetDefaultValidator } = require('schema-dsl');
 
 resetDefaultValidator();
+```
+
+---
+
+### `resetRuntimeState()`
+
+重置测试、worker 或多租户隔离进程中可能共享的运行时状态：默认 validator 单例、自定义类型、locale 状态、严格解析模式，以及运行期追加的 pattern key。
+
+```javascript
+const { resetRuntimeState } = require('schema-dsl');
+
+resetRuntimeState();
 ```
 
 ---
@@ -719,6 +746,18 @@ const ok = Validator.quickValidate(schema, data);
 
 ## 导出器
 
+### BaseExporter
+
+用于自定义导出器子类的抽象基类。内置导出器继承它的通用 options 保存和 schema 断言辅助方法；业务代码通常直接使用 `MongoDBExporter`、`MySQLExporter`、`PostgreSQLExporter` 或 `MarkdownExporter`。
+
+```javascript
+const { BaseExporter } = require('schema-dsl');
+
+console.log(typeof BaseExporter); // 'function'
+```
+
+---
+
 ### MongoDBExporter
 
 导出为 MongoDB 验证Schema。
@@ -941,6 +980,47 @@ array<string:1-50>  # 带约束的数组元素
 
 ## 常量
 
+### `VERSION`
+
+与 `package.json` 版本一致的字符串导出。
+
+```javascript
+const { VERSION } = require('schema-dsl');
+
+console.log(VERSION);
+```
+
+---
+
+### `VALIDATION`, `CACHE`, `FORMATS`, `CONSTANTS`
+
+命名常量以及聚合命名空间 `CONSTANTS`。常规代码可优先使用命名导出；需要遍历所有常量分组时可使用 `CONSTANTS`。
+
+```javascript
+const { VALIDATION, CACHE, FORMATS, CONSTANTS } = require('schema-dsl');
+
+console.log(VALIDATION.MAX_RECURSION_DEPTH);
+console.log(CACHE.ENABLED);
+console.log(FORMATS.BUILT_IN.includes('email'));
+console.log(CONSTANTS.FORMATS === FORMATS);
+```
+
+---
+
+### `PATTERNS`, `PATTERN_IPV4`, `PATTERN_IPV6`
+
+可复用的正则分组和 IPv4/IPv6 辅助正则，供内置 format 与自定义验证场景使用。
+
+```javascript
+const { PATTERNS, PATTERN_IPV4, PATTERN_IPV6 } = require('schema-dsl');
+
+console.log(Object.keys(PATTERNS.phone));
+console.log(PATTERN_IPV4.test('127.0.0.1'));
+console.log(PATTERN_IPV6.test('::1'));
+```
+
+---
+
 ### ErrorCodes
 
 错误代码常量。
@@ -987,6 +1067,25 @@ Locale.setLocale('en-US');  // 设置英文
 - `check(data)`
 
 更完整的示例和行为说明请参考 [conditional-api.md](./conditional-api.md)。
+
+---
+
+## v1 兼容根导出
+
+v2 是基于 v1 JavaScript 线的 TypeScript 重构。以下根导出仍属于兼容面，即使大多数业务代码会通过更高层 API 间接使用它们。
+
+| 导出 | 用途 | 更多说明 |
+|------|------|----------|
+| `VERSION` | 与 `package.json` 对齐的运行时包版本字符串。 | 本页 |
+| `CONSTANTS` | 验证、缓存、格式和插件常量命名空间；`VALIDATION`、`CACHE`、`FORMATS`、`PATTERNS`、`PATTERN_IPV4`、`PATTERN_IPV6` 等也提供命名导出。 | 本页 |
+| `BaseExporter` | 自定义导出器子类使用的抽象基类。 | 本页 |
+| `CacheManager` | `Validator` 使用的 LRU/TTL 缓存，也可用于手动缓存场景。 | [cache-manager.md](./cache-manager.md) |
+| `CustomKeywords` | 注册 schema-dsl 自定义 AJV 关键字。多数应用通过 `Validator` 间接使用。 | [add-keyword.md](./add-keyword.md) |
+| `I18nError` | 国际化业务错误工具，提供 `create()`、`throw()`、`assert()`、`is()` 和 `toJSON()`。 | [error-handling.md](./error-handling.md) |
+| `PluginManager` | v1 兼容插件流程使用的插件注册与 hook 管理器。 | [plugin-system.md](./plugin-system.md) |
+| `resetRuntimeState` | 用于测试和 worker 清理的全局运行时状态重置工具。 | 本页 |
+
+对应示例 [api-reference.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/api-reference.ts) 会运行这些导出，`npm run examples:run` 可用于捕获 API reference 漂移。
 
 ---
 
@@ -1042,7 +1141,7 @@ console.log(result.valid); // true
 ## 对应示例文件
 
 **示例入口**: [api-reference.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/api-reference.ts)  
-**说明**: 覆盖 `dsl()`、`validate()`、`validateAsync()`、默认 `Validator` 单例、模板渲染、`JSONSchemaCore`、`ErrorFormatter`、`ObjectDslBuilder` 与 `TypeRegistry` 等公开 API 的可运行调用链。
+**说明**: 覆盖 `dsl()`、`validate()`、`validateAsync()`、默认 `Validator` 单例、`CacheManager`、`CustomKeywords`、`I18nError`、`PluginManager`、`CONSTANTS`、模板渲染、`JSONSchemaCore`、`ErrorFormatter`、`ObjectDslBuilder` 与 `TypeRegistry` 等公开 API 的可运行调用链。
 
 ---
 

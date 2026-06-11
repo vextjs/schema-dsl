@@ -486,6 +486,6 @@ new ValidationError(errors, data)
 
 ---
 
-**Version**: v2.0.8
+**Version**: v2.0.9
 **Updated date**: 2026-06-10
 **Author**: schema-dsl Team

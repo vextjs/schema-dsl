@@ -4,10 +4,18 @@ This directory contains TypeScript examples referenced in the documentation. Exa
 
 - `examples/docs/*.ts`: Documentation example entry points. Most files map to `docs/*.md`; a few standalone scenario examples, such as `object-dsl-builder.ts` and `real-world.ts`, exercise public APIs that are referenced across multiple docs.
 
+Documentation examples are part of the public contract. When a document changes, its matching example must be updated in the same change unless the report explicitly records why no code sample is needed. Examples should show realistic success, failure, boundary, and output paths for the documented feature; a minimal smoke demo is not enough for long-form guides or API reference pages.
+
 Type-check all examples:
 
 ```powershell
 npm run examples:typecheck
+```
+
+Build and run every documentation example:
+
+```powershell
+npm run examples:run
 ```
 
 Build and run a single example:

@@ -77,16 +77,16 @@ console.log('string-ext.custom.reserved =',
 // 7. .pattern() — regular expression constraint
 // ============================================================
 
-const slugField = ('string:3-80!' as any)
-  .label('Slug')
-  .pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-  .error({ pattern: 'Slug may only contain lowercase letters, digits, and hyphens' })
+const accountNameField = ('string:3-32!' as any)
+  .label('Account Name')
+  .pattern(/^[a-z][a-z0-9_]{2,31}$/)
+  .error({ pattern: 'Account name must start with a lowercase letter and use only lowercase letters, digits, or underscores' })
 
-const slugSchema = dsl({ slug: slugField })
+const accountNameSchema = dsl({ accountName: accountNameField })
 console.log('string-ext.pattern.valid   =',
-  validate(slugSchema, { slug: 'my-blog-post' }).valid)   // true
+  validate(accountNameSchema, { accountName: 'rocky_dev' }).valid)   // true
 console.log('string-ext.pattern.invalid =',
-  validate(slugSchema, { slug: 'My Blog Post' }).valid)   // false — uppercase + spaces
+  validate(accountNameSchema, { accountName: 'Rocky Dev' }).valid)   // false — uppercase + spaces
 
 // ============================================================
 // 8. Full profile schema with all extensions combined

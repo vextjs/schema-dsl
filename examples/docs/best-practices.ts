@@ -1,4 +1,8 @@
-import { SchemaUtils, dsl, validate } from '../../dist/index.js'
+import { SchemaUtils, Validator, dsl, validate } from '../../dist/index.js'
+
+function expect(label: string, condition: boolean): void {
+  if (!condition) throw new Error(`best-practices expectation failed: ${label}`)
+}
 
 // ============================================================
 // Best practices — reusable field library, composable schemas,
@@ -79,6 +83,8 @@ console.log('best-practices.register.valid      =', regValid.valid)    // true
 console.log('best-practices.register.invalid    =', regInvalid.valid)  // false
 console.log('best-practices.register.errorCount =',
   (regInvalid.errors?.length ?? 0) >= 3)  // true — 3+ fields fail
+expect('register accepts valid data', regValid.valid)
+expect('register rejects invalid data', regInvalid.valid === false)
 
 // ============================================================
 // 4. Validate login (minimal schema)
@@ -109,11 +115,108 @@ console.log('best-practices.profile.valid       =', profResult.valid)  // true
 const a = fields.username()
 const b = fields.username()
 
-a.label('A Username')
-b.label('B Username')
+a.default('alpha_user')
+b.default('beta_user')
 
 const schemaA = a.toJsonSchema()
 const schemaB = b.toJsonSchema()
 
 console.log('best-practices.library.isolated    =',
-  schemaA._label !== schemaB._label)  // true — independent builders
+  schemaA.default !== schemaB.default)  // true — independent builders
+expect('field factory returns isolated builders', schemaA.default !== schemaB.default)
+
+// ============================================================
+// 7. Precompile hot-path schemas and inspect cache behavior
+// ============================================================
+
+const productionValidator = new Validator({
+  allErrors: true,
+  cache: { maxSize: 128, statsEnabled: true },
+})
+
+const validateRegister = productionValidator.compile(registerSchema, 'register-form')
+const hotPathValid = validateRegister({
+  username: 'hot_path',
+  email: 'hot@example.com',
+  password: 'Pass2026A',
+  displayName: 'Hot Path',
+})
+const hotPathInvalid = validateRegister({ username: 'x', email: 'bad', password: 'short' })
+
+console.log('best-practices.hotPath.valid       =', hotPathValid)
+console.log('best-practices.hotPath.invalid     =', hotPathInvalid)
+console.log('best-practices.hotPath.errors      =', validateRegister.errors?.length ?? 0)
+expect('precompiled validator accepts valid input', hotPathValid === true)
+expect('precompiled validator rejects invalid input', hotPathInvalid === false)
+
+// ============================================================
+// 8. Batch import: compile once, validate every record
+// ============================================================
+
+const importRows = [
+  { username: 'alice_01', email: 'alice@example.com', password: 'Pass2026A' },
+  { username: 'root', email: 'root@example.com', password: 'Pass2026A' },
+  { username: 'bad user', email: 'bad', password: 'short' },
+]
+
+const importResults = productionValidator.validateBatch(registerSchema, importRows)
+const importSummary = {
+  total: importResults.length,
+  valid: importResults.filter(item => item.valid).length,
+  invalid: importResults.filter(item => !item.valid).length,
+}
+
+console.log('best-practices.batch.summary       =', importSummary)
+expect('batch import keeps all rows', importSummary.total === 3)
+expect('batch import reports one invalid row', importSummary.invalid === 1)
+
+// ============================================================
+// 9. Derive schemas for create/update/public views
+// ============================================================
+
+const accountBaseSchema = dsl({
+  username: fields.username(),
+  email: fields.email(),
+  displayName: fields.displayName(),
+})
+
+const accountCreateSchema = SchemaUtils.extend(accountBaseSchema, dsl({
+  password: fields.password(),
+}))
+const accountUpdateSchema = SchemaUtils.partial(accountCreateSchema)
+const accountPublicSchema = SchemaUtils.omit(accountCreateSchema, ['password'])
+
+const createOk = validate(accountCreateSchema, {
+  username: 'derived_user',
+  email: 'derived@example.com',
+  password: 'Pass2026A',
+})
+const updateOk = validate(accountUpdateSchema, { displayName: 'Renamed User' })
+const publicFields = Object.keys(accountPublicSchema.properties ?? {})
+
+console.log('best-practices.derive.create       =', createOk.valid)
+console.log('best-practices.derive.update       =', updateOk.valid)
+console.log('best-practices.derive.publicFields =', publicFields)
+expect('create derived schema validates password', createOk.valid)
+expect('partial update schema allows one field', updateOk.valid)
+expect('public schema omits password', !publicFields.includes('password'))
+
+// ============================================================
+// 10. Wrap validation with lightweight performance metadata
+// ============================================================
+
+const monitoredValidator = SchemaUtils.withPerformance(new Validator({ cache: false }) as any) as Validator
+const monitoredResult = monitoredValidator.validate(registerSchema, {
+  username: 'metric_user',
+  email: 'metric@example.com',
+  password: 'Pass2026A',
+}) as typeof regValid & { performance?: { duration: number; timestamp: string } }
+
+console.log('best-practices.performance.valid   =', monitoredResult.valid)
+console.log('best-practices.performance.duration =', monitoredResult.performance?.duration)
+expect('performance wrapper preserves validation result', monitoredResult.valid === true)
+expect('performance wrapper adds duration', typeof monitoredResult.performance?.duration === 'number')
+
+const cacheStats = productionValidator.getCacheStats()
+console.log('best-practices.cache.stats         =', cacheStats.enabled, cacheStats.size)
+expect('production validator cache is enabled', cacheStats.enabled)

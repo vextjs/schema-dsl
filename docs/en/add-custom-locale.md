@@ -1,6 +1,6 @@
 # Guide to adding custom language packs
 
-**Version**: v2.0.8
+**Version**: v2.0.9
 **Last updated**: 2026-06-10
 
 ---

@@ -15,7 +15,7 @@
    - [📚 Core API](#-core-api)
    - [🔧 Configure language pack](#-configure-language-pack)
    - [🌐Default language mechanism](#default-language-mechanism)
-   - [Intelligent parameter recognition (v1.1.8)](#intelligent-parameter-recognition-v118-1)
+   - [Intelligent parameter recognition (v1.1.8)](#intelligent-parameter-recognition-v118)
    - [🌐 Actual scene](#-actual-scene)
    - [📦 Error object structure](#-error-object-structure)
    - [❓ FAQ](#-faq)
@@ -30,6 +30,8 @@
 ---
 
 ## I18nError - Multilingual error thrown
+
+<a id="-overview"></a>
 
 ### 📖 Overview
 
@@ -52,6 +54,8 @@
 - `I18nError`: Business logic error (application-level error)
 
 ---
+
+<a id="-quick-start"></a>
 
 ### 🚀 Quick start
 
@@ -88,6 +92,8 @@ try {
 ```
 
 ---
+
+<a id="-core-api"></a>
 
 ### 📚 Core API
 
@@ -214,6 +220,8 @@ dsl.error.assert(order, 'order.notFound');
 - ✅ When importing fewer dependencies (only `dsl` is required)
 
 ---
+
+<a id="-configure-language-pack"></a>
 
 ### 🔧 Configure language pack
 
@@ -406,8 +414,6 @@ app.get('/api/account/:id', async (req, res) => {
 
 ### Intelligent parameter recognition (v1.1.8)
 
-### Intelligent parameter recognition (v1.1.8)
-
 **v1.1.8 New**: Support simplified syntax and intelligently identify the second parameter type
 
 #### Simplified syntax
@@ -491,6 +497,8 @@ app.get('/api/account/:id', async (req, res) => {
 ```
 
 ---
+
+<a id="-actual-scene"></a>
 
 ### 🌐 Actual scene
 
@@ -728,6 +736,8 @@ async function getAccount(id: string): Promise<Account> {
 
 ---
 
+<a id="-error-object-structure"></a>
+
 ### 📦 Error object structure
 
 #### toJSON() output format
@@ -808,6 +818,8 @@ try {
 ```
 
 ---
+
+<a id="-faq"></a>
 
 ### ❓ FAQ
 

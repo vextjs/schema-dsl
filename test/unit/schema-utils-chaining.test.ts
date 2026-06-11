@@ -59,6 +59,28 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
     });
   });
 
+  describe('schema export metadata', () => {
+    it('should preserve both label and description in Markdown and HTML exports', () => {
+      const schema = dsl({
+        email: ('email!' as any)
+          .label('Email Address')
+          .description('Primary login email'),
+        username: ('string:3-32!' as any)
+          .label('Username')
+          .description('Login handle'),
+      });
+
+      const markdown = SchemaUtils.toMarkdown(schema);
+      const html = SchemaUtils.toHTML(schema);
+
+      expect(markdown).toContain('| Field | Type | Required | Constraints | Description |');
+      expect(markdown).toContain('Email Address - Primary login email');
+      expect(markdown).toContain('length: 3-32');
+      expect(html).toContain('Email Address - Primary login email');
+      expect(html).toContain('<th>Constraints</th>');
+    });
+  });
+
   describe('omit() - Exclude Fields', () => {
     it('should exclude the specified fields', () => {
       const omittedSchema = SchemaUtils.omit(baseSchema, ['password', 'createdAt', 'updatedAt']);

@@ -21,9 +21,9 @@ export interface CacheStats {
  *
  * v2 delegates to cache-hub's MemoryCache (fix BD-04: miss returns undefined → normalized to null).
  *
- * cache-hub MemoryCache actual API:
+ * cache-hub MemoryCache 2.x API used here:
  *   get(key) → value | undefined
- *   set(key, value, opts?) — opts.ttl in ms
+ *   set(key, value, ttl?, options?) — ttl in ms
  *   del(key) → boolean           ← note: del, not delete
  *   has(key) → boolean
  *   clear() → void
@@ -47,8 +47,8 @@ export class CacheManager {
     this._maxSize = options.maxSize ?? CACHE.SCHEMA_CACHE.MAX_SIZE
     this._ttl = options.ttl ?? CACHE.SCHEMA_CACHE.TTL
     this._enabled = options.enabled !== false
-    this._cache = new MemoryCache({ maxEntries: this._maxSize })
     this._statsEnabled = options.statsEnabled !== false
+    this._cache = this._createCache()
   }
 
   get options(): { maxSize: number; ttl: number; enabled: boolean; statsEnabled: boolean } {
@@ -61,20 +61,26 @@ export class CacheManager {
   }
 
   set options(opts: Partial<{ maxSize: number; ttl: number; enabled: boolean; statsEnabled: boolean }>) {
-    if (opts.maxSize !== undefined && opts.maxSize !== this._maxSize) {
+    const shouldResize = opts.maxSize !== undefined && opts.maxSize !== this._maxSize
+    const oldCache = this._cache
+
+    if (opts.maxSize !== undefined) {
       this._maxSize = opts.maxSize
-      // Rebuild MemoryCache so the new capacity actually takes effect
-      const oldKeys = this._cache.keys()
-      const newCache = new MemoryCache({ maxEntries: this._maxSize })
-      for (const key of oldKeys) {
-        const val = this._cache.get(key)
-        if (val !== undefined) newCache.set(key, val)
-      }
-      this._cache = newCache
     }
     if (opts.ttl !== undefined) this._ttl = opts.ttl
     if (opts.enabled !== undefined) this._enabled = opts.enabled
     if (opts.statsEnabled !== undefined) this._statsEnabled = opts.statsEnabled
+
+    if (shouldResize) {
+      // Rebuild MemoryCache so the new capacity and current config take effect.
+      const newCache = this._createCache()
+      for (const key of oldCache.keys()) {
+        const val = oldCache.get(key)
+        if (val !== undefined) newCache.set(key, val)
+      }
+      oldCache.destroy()
+      this._cache = newCache
+    }
   }
 
   /**
@@ -165,5 +171,14 @@ export class CacheManager {
   resetStats(): void {
     this._cache.resetStats()
     this._clears = 0
+  }
+
+  private _createCache(): MemoryCache {
+    return new MemoryCache({
+      maxEntries: this._maxSize,
+      defaultTtl: this._ttl,
+      enableStats: this._statsEnabled,
+      enabled: this._enabled,
+    })
   }
 }

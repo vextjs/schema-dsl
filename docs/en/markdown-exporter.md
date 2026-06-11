@@ -322,11 +322,13 @@ console.log('\nPostgreSQL DDL:\n', pgDDL);
 
 ### Q: How to customize field descriptions?
 
-A: Use `.label()` method:
+A: Use `.label()` for the display name and `.description()` for the field note. When both are present, Markdown output includes both pieces of metadata.
 
 ```javascript
 const schema = dsl({
-  email: 'email!'.label('user email address')
+  email: 'email!'
+    .label('Email Address')
+    .description('Primary login email')
 });
 ```
 
@@ -401,4 +403,4 @@ console.log('✅ Document has been generated');
 ---
 
 **Document update date**: 2026-06-10
-**Version**: v2.0.8
+**Version**: v2.0.9

@@ -257,9 +257,9 @@ console.log(markdown);
 
 | Field | Type | Required | Constraints | Description |
 |------|------|------|------|------|
-| username | string | ✅ | 3-32 characters | username |
-| email | email | ✅ | - | Email address |
-| age | number | ❌ | 18-120 | - |
+| username | string | ✅ | length: 3-32 | username |
+| email | email | ✅ | - | email address |
+| age | number | ❌ | range: 18-120 | - |
 ```
 
 **Purpose**: Generate API documentation
