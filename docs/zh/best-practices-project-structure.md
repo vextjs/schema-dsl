@@ -267,6 +267,7 @@ router.post('/register', (req, res) => {
 - ❌ 每次请求都执行 DSL → JSON Schema 转换
 - ❌ 1000 次请求 = 1000 次转换
 - ❌ 高并发时性能损失明显
+- ❌ 如果请求会改变 schema 结构，缓存难以命中，内存和 CPU 压力都会上升
 
 ### ✅ 推荐：项目启动时转换
 
@@ -287,6 +288,25 @@ router.post('/register', (req, res) => {
 - ✅ 启动时转换 1 次
 - ✅ 1000 次请求 = 0 次转换
 - ✅ 高并发时性能最优
+
+### 缓存与内存边界
+
+稳定的请求级 DSL 通常是性能问题，而不是内存泄漏问题。只要 schema 结构相同，即使处理函数里创建了新的对象，validator 也可以复用编译缓存；但它仍然慢于启动时转换，因为 DSL 对象还需要重新归一化。
+
+长运行服务真正有内存风险的场景，是接收或构造无限多种不同的 schema 结构：
+
+```javascript
+// ❌ 避免：请求级字段名会让每次请求都产生新的 schema 结构
+router.post('/dynamic', (req, res) => {
+  const schema = dsl({ [`field_${req.id}`]: 'string!' });
+  const result = validate(schema, req.body);
+  // ...
+});
+```
+
+缓存对重复结构有效，但不能替代对动态 schema 基数的约束。
+
+普通请求处理函数里也应避免 `new Validator()`。如果实例没有被保存，它通常不是保留型内存泄漏；但每次请求都会丢弃 AJV 实例和编译缓存。
 
 ---
 

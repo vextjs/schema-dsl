@@ -26,6 +26,20 @@ new Validator({
 });
 ```
 
+The cache is owned by the `Validator` instance. In a server, create the instance during application startup and reuse it:
+
+```javascript
+const validator = new Validator({ cache: { maxSize: 500 } });
+
+app.post('/users', (req, res) => {
+  res.json(validator.validate(userSchema, req.body));
+});
+```
+
+Creating `new Validator()` inside every request handler is usually not a retained-memory leak by itself, but it throws away the previous AJV instance and compile cache. That pattern increases allocation, garbage collection and schema compilation work, so it should only be used for isolated one-off validation paths where the instance is not stored.
+
+The cache only helps when schema structures repeat. If each request produces a never-before-seen dynamic schema, cache entries will churn and the application still pays the compile cost for each miss. Bound the number of dynamic schema shapes, or validate them in an isolated short-lived path.
+
 > If you wish to pass in a DSL object directly (e.g. `validate({ email: 'email!' }, data)`), please use the top-level convenience functions `validate()` / `validateAsync()`; `Validator` instance methods are still recommended to receive the conversion results of standard JSON Schema or `dsl({...})`.
 
 Related methods: `compile()`, `validate()`, `validateAsync()`, `validateBatch()`, `addKeyword()`, `addFormat()`.

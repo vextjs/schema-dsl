@@ -439,6 +439,12 @@ app.post('/api/user', (req, res) => {
 
 **Performance difference**: ~3-5% (for simple schema)
 
+**Cache and memory boundary**:
+
+- A stable raw DSL object shape is normally not a memory leak. The object is normalized again, but the validator can still reuse the compilation cache for the same resulting schema structure.
+- A request path that produces unbounded unique schema structures can keep missing the cache. schema-dsl's managed cache is bounded, but each miss still pays conversion and AJV compilation cost.
+- Do not create `new Validator()` for every normal request. If the instance is not retained it usually will not leak permanently, but it resets AJV and the per-instance cache, increasing allocation and GC pressure.
+
 **✅ Your understanding is completely correct! **
 
 **Best Practice**: Configure all schemas at project startup

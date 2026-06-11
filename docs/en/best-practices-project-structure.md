@@ -267,6 +267,7 @@ router.post('/register', (req, res) => {
 - ❌ Perform DSL → JSON Schema conversion on every request
 - ❌ 1000 requests = 1000 conversions
 - ❌ Performance loss is obvious when concurrency is high
+- ❌ If the request changes the schema shape, cache hits become unlikely and memory/CPU pressure rises
 
 ### ✅ Recommended: Convert when project starts
 
@@ -287,6 +288,25 @@ router.post('/register', (req, res) => {
 - ✅ 1 conversion on launch
 - ✅ 1000 requests = 0 conversions
 - ✅ Best performance during high concurrency
+
+### Cache and memory boundary
+
+Stable request-time DSL is normally a performance concern rather than a memory leak. When the schema structure is the same, the validator can reuse the compile cache even if a handler creates a fresh object. It is still slower than converting at startup because the DSL object must be normalized again.
+
+The memory risk appears when a long-running service accepts or constructs an unbounded number of unique schema shapes:
+
+```javascript
+// ❌ Avoid: request-specific field names create a new schema shape every time
+router.post('/dynamic', (req, res) => {
+  const schema = dsl({ [`field_${req.id}`]: 'string!' });
+  const result = validate(schema, req.body);
+  // ...
+});
+```
+
+The cache works for repeated structures; it is not a substitute for bounding dynamic schema cardinality.
+
+Also avoid creating `new Validator()` inside normal request handlers. It is not usually a retained-memory leak when the instance is not stored, but it discards the AJV instance and compilation cache for every request.
 
 ---
 

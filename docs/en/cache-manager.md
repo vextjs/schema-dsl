@@ -13,6 +13,7 @@
 - [API Reference](#api-reference)
 - [Configuration Options](#configuration-options)
 - [Statistics](#statistics)
+- [Cache Boundaries](#cache-boundaries)
 - [Best Practice](#best-practices)
 
 ---
@@ -267,6 +268,18 @@ function printCacheDashboard(cache) {
   console.log('└─────────────────────────────┘');
 }
 ```
+
+---
+
+## Cache boundaries
+
+`CacheManager` stores compiled validators for repeated schema cache keys. It reduces repeated AJV compilation, but it does not make unlimited dynamic schema shapes free.
+
+- Stable schema structure + reused `Validator` instance: cache hits are expected.
+- `new Validator()` on every request: each instance starts with a new cache, so previous hits are lost.
+- A different schema shape on every request: cache misses and evictions are expected even with a large `maxSize`.
+
+If low hit rate is caused by high-cardinality dynamic schemas, prefer bounding or reusing schema shapes. Increasing `maxSize` only helps when entries are likely to be reused.
 
 ---
 

@@ -5,6 +5,7 @@
 - Reuse the same schema object and let the default validator cache hit.
 - Adjust caching policy via `dsl.config({ cache })` or `new Validator({ cache })`.
 - Avoid repeatedly constructing DSL in loops for hotspot paths.
+- Reuse a long-lived `Validator` instance in servers; creating one per request resets AJV and the instance cache.
 - If you already manage Ajv instances yourself, consider low-level batch paths like `SchemaUtils.validateBatch()`.
 
 ## Recommended practices
@@ -26,6 +27,46 @@ validator.validate(schema, { email: 'b@example.com', age: 21 });
 
 console.log(validator.getCacheStats());
 ```
+
+## Request-time DSL and memory boundaries
+
+Calling `dsl()` itself does not keep unbounded global state. The common production risk is not "every request calls `dsl()` and therefore always leaks"; the risk is creating an unlimited number of different schema structures on a hot path.
+
+```typescript
+// Usually safe but still slower than startup conversion:
+// the structure is stable, so validation can reuse the compile cache.
+app.post('/users', (req, res) => {
+	const schema = dsl({ email: 'email!', age: 'number:18-100' });
+	const result = validate(schema, req.body);
+	res.json(result);
+});
+
+// Avoid this pattern in long-running services:
+// every request creates a different schema shape, so cache hits are unlikely.
+app.post('/dynamic', (req, res) => {
+	const schema = dsl({ [`field_${req.id}`]: 'string!' });
+	const result = validate(schema, req.body);
+	res.json(result);
+});
+```
+
+The built-in cache helps when the same schema structure is reused. It cannot make an unbounded stream of never-repeated schemas cheap: schema-dsl's managed cache is bounded, but each miss still pays conversion and AJV compilation cost.
+
+## Validator lifecycle in servers
+
+Do not create a new `Validator` for every normal API request:
+
+```typescript
+// Not recommended in request handlers
+app.post('/users', (req, res) => {
+	const validator = new Validator();
+	res.json(validator.validate(userSchema, req.body));
+});
+```
+
+This is not usually a long-term memory leak if the instance is not retained, but it discards the per-instance cache and forces new AJV/cache objects through allocation and garbage collection. Prefer one application-level validator, or a small set of validators for distinct option profiles.
+
+For truly one-off, high-cardinality dynamic schemas, isolate that path and keep the validator short-lived, but do not store request-created validators or schema objects in application-level collections.
 
 ## When is lower-level optimization needed?
 
