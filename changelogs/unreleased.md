@@ -2,7 +2,7 @@
 
 ## 2026-06-11
 
-- No unreleased changes.
+- Fixed the homepage hero desktop alignment so the tagline and action buttons align with the title block.
 
 ## 2026-06-10
 

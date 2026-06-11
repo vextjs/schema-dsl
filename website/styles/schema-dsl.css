@@ -196,11 +196,14 @@ body:not(.notTopArrived) .rp-nav.rp-nav {
 
 .rp-home-hero .rp-home-hero__container {
   gap: clamp(48px, 8vw, 104px);
-  align-items: center;
+  align-items: flex-start;
 }
 
 .rp-home-hero .rp-home-hero__content {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   max-width: 650px;
 }
 
@@ -230,6 +233,8 @@ body:not(.notTopArrived) .rp-nav.rp-nav {
 
 .rp-home-hero .rp-home-hero__tagline {
   max-width: 680px;
+  margin-left: 0;
+  text-align: left;
   color: var(--sdl-text-muted);
   line-height: 1.72;
 }
@@ -239,6 +244,8 @@ body:not(.notTopArrived) .rp-nav.rp-nav {
   flex-wrap: wrap;
   gap: 14px 16px;
   align-items: center;
+  justify-content: flex-start;
+  margin-left: 0;
   max-width: 100%;
 }
 
@@ -420,6 +427,10 @@ body:not(.notTopArrived) .rp-nav.rp-nav {
     margin-inline: auto;
   }
 
+  .rp-home-hero .rp-home-hero__container {
+    align-items: center;
+  }
+
   .rp-home-hero .rp-home-hero__title-brand {
     display: block;
     width: auto !important;
@@ -430,6 +441,7 @@ body:not(.notTopArrived) .rp-nav.rp-nav {
   .rp-home-hero .rp-home-hero__subtitle,
   .rp-home-hero .rp-home-hero__tagline {
     overflow-wrap: anywhere;
+    text-align: center;
     white-space: normal;
   }
 
