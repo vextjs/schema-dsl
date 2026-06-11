@@ -5,6 +5,9 @@ hero:
   name: schema-dsl
   text: 简洁强大的 JSON Schema 验证库
   tagline: DSL 语法 · 链式 API · 多格式导出 · 完整 TypeScript 支持
+  image:
+    src: /favicon.svg
+    alt: schema-dsl logo
   actions:
     - theme: brand
       text: 快速上手

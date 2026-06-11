@@ -212,6 +212,70 @@ const chineseSidebar = [
   }
 ];
 
+const englishNav = [
+  {
+    text: 'Guide',
+    link: '/quick-start'
+  },
+  {
+    text: 'Export',
+    link: '/export-guide'
+  },
+  {
+    text: 'Utilities',
+    link: '/schema-utils'
+  },
+  {
+    text: 'API',
+    link: '/api-reference'
+  },
+  {
+    text: 'Releases',
+    items: [
+      {
+        text: 'Changelog',
+        link: 'https://github.com/vextjs/schema-dsl/blob/main/CHANGELOG.md'
+      },
+      {
+        text: 'Contributing',
+        link: 'https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md'
+      }
+    ]
+  }
+];
+
+const chineseNav = [
+  {
+    text: '指南',
+    link: '/zh/quick-start'
+  },
+  {
+    text: '导出',
+    link: '/zh/export-guide'
+  },
+  {
+    text: '工具',
+    link: '/zh/schema-utils'
+  },
+  {
+    text: 'API',
+    link: '/zh/api-reference'
+  },
+  {
+    text: '发布',
+    items: [
+      {
+        text: '更新日志',
+        link: 'https://github.com/vextjs/schema-dsl/blob/main/CHANGELOG.md'
+      },
+      {
+        text: '贡献指南',
+        link: 'https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md'
+      }
+    ]
+  }
+];
+
 export default defineConfig({
   // Keep the repository-root docs directory as the single source of truth.
   // Many docs link back to ../README.md, ../examples/, ../CHANGELOG.md, etc.,
@@ -221,6 +285,9 @@ export default defineConfig({
   lang: 'en',
   title: 'schema-dsl',
   icon: '/favicon.svg',
+  logo: '/favicon.svg',
+  logoText: 'schema-dsl',
+  globalStyles: path.join(__dirname, 'styles', 'schema-dsl.css'),
   description: 'A concise and powerful JSON Schema validation library with DSL syntax, chainable APIs, multi-format export, and TypeScript support.',
   outDir: 'dist',
   locales: [
@@ -254,35 +321,27 @@ export default defineConfig({
     enabled: true
   },
   themeConfig: {
-    nav: [
+    nav: englishNav,
+    locales: [
       {
-        text: 'Guide',
-        link: '/quick-start'
+        lang: 'en',
+        label: 'English',
+        title: 'schema-dsl',
+        description: 'A concise and powerful JSON Schema validation library.',
+        nav: englishNav,
+        sidebar: {
+          '/': englishSidebar
+        }
       },
       {
-        text: 'Export',
-        link: '/export-guide'
-      },
-      {
-        text: 'Utilities',
-        link: '/schema-utils'
-      },
-      {
-        text: 'API',
-        link: '/api-reference'
-      },
-      {
-        text: 'Releases',
-        items: [
-          {
-            text: 'Changelog',
-            link: 'https://github.com/vextjs/schema-dsl/blob/main/CHANGELOG.md'
-          },
-          {
-            text: 'Contributing',
-            link: 'https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md'
-          }
-        ]
+        lang: 'zh',
+        label: '简体中文',
+        title: 'schema-dsl',
+        description: '简洁强大的 JSON Schema 验证库。',
+        nav: chineseNav,
+        sidebar: {
+          '/zh/': chineseSidebar
+        }
       }
     ],
     sidebar: {

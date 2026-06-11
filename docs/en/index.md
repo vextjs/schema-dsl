@@ -5,6 +5,9 @@ hero:
   name: schema-dsl
   text: Simple and powerful JSON Schema validation library
   tagline: DSL syntax · Chained API · Multi-format export · Full TypeScript support
+  image:
+    src: /favicon.svg
+    alt: schema-dsl logo
   actions:
     - theme: brand
       text: Get started quickly
