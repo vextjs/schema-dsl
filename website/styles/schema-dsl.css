@@ -370,6 +370,20 @@ html.rp-dark .rp-home-hero .rp-home-hero__image-img--dark {
   display: block !important;
 }
 
+@media (min-width: 769px) {
+  .rp-home-hero .rp-home-hero__container {
+    min-height: 430px;
+  }
+
+  .rp-home-hero .rp-home-hero__content {
+    margin-bottom: 26px;
+  }
+
+  .rp-home-hero .rp-home-hero__tagline {
+    margin-top: auto !important;
+  }
+}
+
 .rp-home-feature {
   --rp-home-feature-gap: 18px;
   max-width: 1130px;
