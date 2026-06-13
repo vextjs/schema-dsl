@@ -12,6 +12,26 @@ export interface TypeDefinition {
   isPattern?: boolean
 }
 
+export type SchemaDslUnknownTypeMode = 'warn' | 'error' | 'ignore'
+
+export interface SchemaDslDiagnostic {
+  code: 'UNKNOWN_TYPE'
+  severity: 'warning' | 'error'
+  path: string
+  input: string
+  typeName?: string
+  message: string
+}
+
+export interface TypeResolveOptions {
+  unknownType?: SchemaDslUnknownTypeMode
+  diagnostics?: SchemaDslDiagnostic[]
+  path?: string
+  input?: string
+  emitWarning?: boolean
+  throwOnError?: boolean
+}
+
 /** Known internal key set (stripped from output during toJsonSchema) */
 const INTERNAL_KEYS: ReadonlySet<string> = new Set([
   '_label',
@@ -50,11 +70,13 @@ const BUILTIN_TYPES: Map<string, TypeDefinition> = new Map([
   ['string', { baseSchema: { type: 'string' } }],
   ['number', { baseSchema: { type: 'number' } }],
   ['integer', { baseSchema: { type: 'integer' } }],
+  ['int', { baseSchema: { type: 'integer' } }],
   ['boolean', { baseSchema: { type: 'boolean' } }],
   ['object', { baseSchema: { type: 'object' } }],
   ['array', { baseSchema: { type: 'array' } }],
   ['null', { baseSchema: { type: 'null' } }],
   ['any', { baseSchema: {} }],
+  ['mixed', { baseSchema: {} }],
 
   // --- Format types ---
   ['email', { baseSchema: { type: 'string', format: 'email' } }],
@@ -71,7 +93,9 @@ const BUILTIN_TYPES: Map<string, TypeDefinition> = new Map([
 
   // --- Special string types ---
   ['binary', { baseSchema: { type: 'string', contentEncoding: 'base64' } }],
+  ['buffer', { baseSchema: { type: 'string', contentEncoding: 'base64' } }],
   ['objectId', { baseSchema: { type: 'string', pattern: '^[0-9a-fA-F]{24}$' }, customMessages: { pattern: 'pattern.objectId' } }],
+  ['objectid', { baseSchema: { type: 'string', pattern: '^[0-9a-fA-F]{24}$' }, customMessages: { pattern: 'pattern.objectId' } }],
   ['hexColor', { baseSchema: { type: 'string', pattern: '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$' }, customMessages: { pattern: 'pattern.hexColor' } }],
   ['macAddress', {
     baseSchema: { type: 'string', pattern: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$' },
@@ -114,7 +138,27 @@ const BUILTIN_TYPES: Map<string, TypeDefinition> = new Map([
   ['upper', { baseSchema: { type: 'string', uppercase: true } }],
   ['json', { baseSchema: { type: 'string', jsonString: true } }],
   ['port', { baseSchema: { type: 'integer', port: true } }],
+
+  // --- Numeric aliases used by legacy schema-dsl / ODM consumers ---
+  ['float', { baseSchema: { type: 'number' } }],
+  ['double', { baseSchema: { type: 'number' } }],
+  ['decimal', { baseSchema: { type: 'number' } }],
 ])
+
+function getUnknownTypeMessage(typeName: string): string {
+  return `[schema-dsl] Unknown type "${typeName}"`
+}
+
+function recordUnknownType(typeName: string, options: TypeResolveOptions, severity: 'warning' | 'error'): void {
+  options.diagnostics?.push({
+    code: 'UNKNOWN_TYPE',
+    severity,
+    path: options.path ?? '',
+    input: options.input ?? typeName,
+    typeName,
+    message: `${getUnknownTypeMessage(typeName)}, falling back to string`,
+  })
+}
 
 /**
  * Custom type registry (populated via registerType)
@@ -134,7 +178,7 @@ export const TypeRegistry = {
    * Resolve a type name to its TypeDefinition.
    * Built-in types take priority; custom types may override non-primitive built-ins.
    */
-  resolve(typeName: string): TypeDefinition {
+  resolve(typeName: string, options: TypeResolveOptions = {}): TypeDefinition {
     // Dynamic types: call factory function each time
     const dynamicFn = DYNAMIC_TYPES.get(typeName)
     if (dynamicFn) {
@@ -147,11 +191,22 @@ export const TypeRegistry = {
     const builtin = BUILTIN_TYPES.get(typeName)
     if (builtin) return builtin
 
-    // Unknown type: throw in strict mode, otherwise warn and fall back to string
-    if (_strictMode) {
-      throw new Error(`[schema-dsl] Unknown type "${typeName}"`)
+    const unknownType = options.unknownType ?? (_strictMode ? 'error' : 'warn')
+
+    if (unknownType === 'error') {
+      recordUnknownType(typeName, options, 'error')
+      if (options.throwOnError !== false) {
+        throw new Error(getUnknownTypeMessage(typeName))
+      }
+      return { baseSchema: { type: 'string' } }
     }
-    console.warn(`[schema-dsl] Unknown type "${typeName}", falling back to string`)
+
+    if (unknownType === 'warn') {
+      recordUnknownType(typeName, options, 'warning')
+      if (options.emitWarning !== false) {
+        console.warn(`${getUnknownTypeMessage(typeName)}, falling back to string`)
+      }
+    }
     return { baseSchema: { type: 'string' } }
   },
 

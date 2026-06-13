@@ -28,6 +28,13 @@ describe('TypeRegistry', () => {
       expect(def.baseSchema.type).toBe('integer')
     })
 
+    it('legacy numeric aliases resolve to JSON Schema numeric types', () => {
+      expect(TypeRegistry.resolve('int').baseSchema.type).toBe('integer')
+      expect(TypeRegistry.resolve('float').baseSchema.type).toBe('number')
+      expect(TypeRegistry.resolve('double').baseSchema.type).toBe('number')
+      expect(TypeRegistry.resolve('decimal').baseSchema.type).toBe('number')
+    })
+
     it('email → format:email', () => {
       const def = TypeRegistry.resolve('email')
       expect(def.baseSchema.type).toBe('string')
@@ -47,6 +54,12 @@ describe('TypeRegistry', () => {
     it('datetime → format:date-time', () => {
       const def = TypeRegistry.resolve('datetime')
       expect(def.baseSchema.format).toBe('date-time')
+    })
+
+    it('legacy aliases resolve to canonical compatible schemas', () => {
+      expect(TypeRegistry.resolve('mixed').baseSchema).toEqual({})
+      expect(TypeRegistry.resolve('buffer').baseSchema.contentEncoding).toBe('base64')
+      expect(TypeRegistry.resolve('objectid').baseSchema.pattern).toBe(TypeRegistry.resolve('objectId').baseSchema.pattern)
     })
 
     it('uuid → format:uuid', () => {
@@ -69,6 +82,27 @@ describe('TypeRegistry', () => {
     it('unknown type returns fallback string', () => {
       const def = TypeRegistry.resolve('nonexistent_xyz')
       expect(def.baseSchema.type).toBe('string')
+    })
+
+    it('unknown type can be collected as a diagnostic without throwing', () => {
+      const diagnostics = []
+      const def = TypeRegistry.resolve('nonexistent_xyz', {
+        unknownType: 'error',
+        diagnostics,
+        input: 'nonexistent_xyz!',
+        path: 'field',
+        throwOnError: false,
+      })
+
+      expect(def.baseSchema.type).toBe('string')
+      expect(diagnostics).toEqual([{
+        code: 'UNKNOWN_TYPE',
+        severity: 'error',
+        path: 'field',
+        input: 'nonexistent_xyz!',
+        typeName: 'nonexistent_xyz',
+        message: '[schema-dsl] Unknown type "nonexistent_xyz", falling back to string',
+      }])
     })
   })
 

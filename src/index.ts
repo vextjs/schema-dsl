@@ -26,6 +26,12 @@ export { PluginManager } from './core/PluginManager.js'
 
 // ==================== Parser layer ====================
 export { TypeRegistry } from './parser/TypeRegistry.js'
+export type {
+  SchemaDslDiagnostic,
+  SchemaDslUnknownTypeMode,
+  TypeDefinition,
+  TypeResolveOptions,
+} from './parser/TypeRegistry.js'
 
 // ==================== Error classes ====================
 export { ValidationError } from './errors/ValidationError.js'
@@ -100,6 +106,7 @@ export type {
 
 import { DslBuilder as _DslBuilder } from './core/DslBuilder.js'
 import { TypeRegistry as _TypeRegistry } from './parser/TypeRegistry.js'
+import { DslParser as _DslParser } from './parser/DslParser.js'
 import { DslAdapter as _DslAdapter } from './adapters/DslAdapter.js'
 import { ConditionalBuilder as _ConditionalBuilder } from './core/ConditionalBuilder.js'
 import { Locale as _Locale } from './core/Locale.js'
@@ -116,6 +123,7 @@ import type { IDslBuilder as _IDslBuilder, DslDefinition as _DslDefinition, DslC
 import type { IConditionalBuilder as _IConditionalBuilder } from './types/conditional.js'
 import type { DslConfigOptions as _DslConfigOptions } from './types/config.js'
 import type { ValidationResult as _ValidationResult } from './types/validate.js'
+import type { SchemaDslDiagnostic as _SchemaDslDiagnostic, SchemaDslUnknownTypeMode as _SchemaDslUnknownTypeMode } from './parser/TypeRegistry.js'
 import JSON5 from 'json5'
 import { createRequire } from 'node:module'
 import { readdirSync, statSync, readFileSync } from 'node:fs'
@@ -671,5 +679,37 @@ export const config = _dslConfig
 
 export function installStringExtensions(dslFunction: Parameters<typeof _install>[0] = _dslWithNS as unknown as Parameters<typeof _install>[0]): void {
   _install(dslFunction)
+}
+
+export interface CompileWithDiagnosticsOptions {
+  unknownType?: _SchemaDslUnknownTypeMode
+}
+
+export interface CompileWithDiagnosticsResult {
+  schema: _JSONSchema
+  diagnostics: _SchemaDslDiagnostic[]
+}
+
+/**
+ * Compile a DSL string or object and return structured diagnostics without
+ * mutating global strict-mode state.
+ */
+export function compileWithDiagnostics(
+  definition: string | _DslDefinition,
+  options: CompileWithDiagnosticsOptions = {}
+): CompileWithDiagnosticsResult {
+  const diagnostics: _SchemaDslDiagnostic[] = []
+  const parseOptions = {
+    unknownType: options.unknownType ?? 'warn',
+    diagnostics,
+    emitWarning: false,
+    throwOnError: false,
+  } satisfies Parameters<typeof _DslParser.parseString>[1]
+
+  const schema = typeof definition === 'string'
+    ? _TypeRegistry.toJsonSchema(_DslParser.parseString(definition, parseOptions))
+    : _markSchemaCacheKey(_DslParser.parseObject(definition, parseOptions))
+
+  return { schema, diagnostics }
 }
 

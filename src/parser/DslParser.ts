@@ -1,6 +1,7 @@
 import type { JSONSchema } from '../types/schema.js'
 import type { DslDefinition } from '../types/dsl.js'
 import { TypeRegistry } from './TypeRegistry.js'
+import type { SchemaDslDiagnostic, SchemaDslUnknownTypeMode, TypeResolveOptions } from './TypeRegistry.js'
 import { ConstraintParser } from './ConstraintParser.js'
 import { SchemaCompiler } from './SchemaCompiler.js'
 import { PATTERNS } from '../config/patterns.js'
@@ -15,6 +16,39 @@ import { PATTERNS } from '../config/patterns.js'
 
 /** Set of standard JSON Schema types used to distinguish native JSON Schema objects from DSL definition objects. */
 const JSON_SCHEMA_TYPES = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'])
+
+export interface DslParseOptions {
+  unknownType?: SchemaDslUnknownTypeMode
+  diagnostics?: SchemaDslDiagnostic[]
+  path?: string
+  emitWarning?: boolean
+  throwOnError?: boolean
+}
+
+function _childPath(parent: string | undefined, key: string): string {
+  return parent ? `${parent}.${key}` : key
+}
+
+function _withPath(options: DslParseOptions | undefined, path: string): DslParseOptions | undefined {
+  if (!options) return undefined
+  return { ...options, path }
+}
+
+function _toTypeResolveOptions(
+  dslStr: string,
+  typeName: string,
+  options: DslParseOptions | undefined
+): TypeResolveOptions {
+  const resolveOptions: TypeResolveOptions = {
+    path: options?.path ?? '',
+    input: dslStr || typeName,
+  }
+  if (options?.unknownType !== undefined) resolveOptions.unknownType = options.unknownType
+  if (options?.diagnostics !== undefined) resolveOptions.diagnostics = options.diagnostics
+  if (options?.emitWarning !== undefined) resolveOptions.emitWarning = options.emitWarning
+  if (options?.throwOnError !== undefined) resolveOptions.throwOnError = options.throwOnError
+  return resolveOptions
+}
 
 /**
  * Determine whether an object is a raw JSON Schema (rather than a DSL definition object).
@@ -50,20 +84,20 @@ function _copyHiddenSchemaProperties(source: object, target: object): void {
   }
 }
 
-function _resolveDsl(value: unknown): JSONSchema {
+function _resolveDsl(value: unknown, options?: DslParseOptions): JSONSchema {
   if (value === null || value === undefined) return {}
-  if (typeof value === 'string') return DslParser.parseString(value)
+  if (typeof value === 'string') return DslParser.parseString(value, options)
   if (typeof value === 'object' && !Array.isArray(value)) {
     const obj = value as Record<string, unknown>
     if (typeof obj['toSchema'] === 'function') return (obj['toSchema'] as () => JSONSchema)()
     if (_isRawJsonSchema(obj)) return value as JSONSchema
-    return DslParser.parseObject(value as DslDefinition)
+    return DslParser.parseObject(value as DslDefinition, options)
   }
   return value as JSONSchema
 }
 
-function _schemaForTarget(targetField: string, dslValue: unknown): JSONSchema {
-  const s = _resolveDsl(dslValue)
+function _schemaForTarget(targetField: string, dslValue: unknown, options?: DslParseOptions): JSONSchema {
+  const s = _resolveDsl(dslValue, _withPath(options, targetField))
   const isRequired = s._required
   _cleanRequiredMarks(s)
   const result: JSONSchema = { properties: { [targetField]: s } }
@@ -71,7 +105,7 @@ function _schemaForTarget(targetField: string, dslValue: unknown): JSONSchema {
   return result
 }
 
-function _buildMatchSchema(conditionField: string, targetField: string, map: Record<string, unknown>): JSONSchema {
+function _buildMatchSchema(conditionField: string, targetField: string, map: Record<string, unknown>, options?: DslParseOptions): JSONSchema {
   const entries = Object.entries(map).filter(([k]) => k !== '_default')
   const defaultDsl = map['_default']
 
@@ -80,12 +114,12 @@ function _buildMatchSchema(conditionField: string, targetField: string, map: Rec
       if (defaultDsl === null || defaultDsl === undefined) return {}
       const defaultObj = defaultDsl as Record<string, unknown>
       if (defaultObj && defaultObj['_isMatch']) {
-        return _buildMatchSchema(String(defaultObj['field']), targetField, defaultObj['map'] as Record<string, unknown>)
+        return _buildMatchSchema(String(defaultObj['field']), targetField, defaultObj['map'] as Record<string, unknown>, options)
       }
       if (defaultObj && defaultObj['_isIf']) {
-        return _buildIfSchema(String(defaultObj['condition']), targetField, defaultObj['then'], defaultObj['else'])
+        return _buildIfSchema(String(defaultObj['condition']), targetField, defaultObj['then'], defaultObj['else'], options)
       }
-      return _schemaForTarget(targetField, defaultDsl)
+      return _schemaForTarget(targetField, defaultDsl, options)
     }
 
     const [val, dslValue] = entries[index]
@@ -94,11 +128,11 @@ function _buildMatchSchema(conditionField: string, targetField: string, map: Rec
     const branchObj = dslValue as Record<string, unknown>
     let thenSchema: JSONSchema
     if (branchObj && branchObj['_isMatch']) {
-      thenSchema = _buildMatchSchema(String(branchObj['field']), targetField, branchObj['map'] as Record<string, unknown>)
+      thenSchema = _buildMatchSchema(String(branchObj['field']), targetField, branchObj['map'] as Record<string, unknown>, options)
     } else if (branchObj && branchObj['_isIf']) {
-      thenSchema = _buildIfSchema(String(branchObj['condition']), targetField, branchObj['then'], branchObj['else'])
+      thenSchema = _buildIfSchema(String(branchObj['condition']), targetField, branchObj['then'], branchObj['else'], options)
     } else {
-      thenSchema = _schemaForTarget(targetField, dslValue)
+      thenSchema = _schemaForTarget(targetField, dslValue, options)
     }
 
     return {
@@ -111,27 +145,27 @@ function _buildMatchSchema(conditionField: string, targetField: string, map: Rec
   return build(0)
 }
 
-function _buildIfSchema(conditionField: string, targetField: string, thenDsl: unknown, elseDsl: unknown): JSONSchema {
+function _buildIfSchema(conditionField: string, targetField: string, thenDsl: unknown, elseDsl: unknown, options?: DslParseOptions): JSONSchema {
   const thenObj = thenDsl as Record<string, unknown>
   const elseObj = elseDsl as Record<string, unknown>
 
   let thenResult: JSONSchema
   if (thenObj && thenObj['_isMatch']) {
-    thenResult = _buildMatchSchema(String(thenObj['field']), targetField, thenObj['map'] as Record<string, unknown>)
+    thenResult = _buildMatchSchema(String(thenObj['field']), targetField, thenObj['map'] as Record<string, unknown>, options)
   } else if (thenObj && thenObj['_isIf']) {
-    thenResult = _buildIfSchema(String(thenObj['condition']), targetField, thenObj['then'], thenObj['else'])
+    thenResult = _buildIfSchema(String(thenObj['condition']), targetField, thenObj['then'], thenObj['else'], options)
   } else {
-    thenResult = _schemaForTarget(targetField, thenDsl)
+    thenResult = _schemaForTarget(targetField, thenDsl, options)
   }
 
   let elseResult: JSONSchema = {}
   if (elseDsl !== null && elseDsl !== undefined) {
     if (elseObj && elseObj['_isMatch']) {
-      elseResult = _buildMatchSchema(String(elseObj['field']), targetField, elseObj['map'] as Record<string, unknown>)
+      elseResult = _buildMatchSchema(String(elseObj['field']), targetField, elseObj['map'] as Record<string, unknown>, options)
     } else if (elseObj && elseObj['_isIf']) {
-      elseResult = _buildIfSchema(String(elseObj['condition']), targetField, elseObj['then'], elseObj['else'])
+      elseResult = _buildIfSchema(String(elseObj['condition']), targetField, elseObj['then'], elseObj['else'], options)
     } else {
-      elseResult = _schemaForTarget(targetField, elseDsl)
+      elseResult = _schemaForTarget(targetField, elseDsl, options)
     }
   }
 
@@ -157,7 +191,7 @@ export const DslParser = {
    *   - 'a|b|c'           → { type: 'string', enum: ['a','b','c'] }
    *   - 'array!1-10'      → { type: 'array', minItems:1, maxItems:10, _required:true }
    */
-  parseString(dslStr: string): JSONSchema {
+  parseString(dslStr: string, options?: DslParseOptions): JSONSchema {
     if (!dslStr || typeof dslStr !== 'string') {
       return { type: 'string' }
     }
@@ -222,7 +256,7 @@ export const DslParser = {
     // 'types:string:3-10|number:0-100'   → oneOf with constraints
     // 'types:email|phone'                → oneOf with format types
     if (s.startsWith('types:')) {
-      return DslParser._parseUnionTypes(s.slice(6), required)
+      return DslParser._parseUnionTypes(s.slice(6), required, options)
     }
 
     // ========== Special case: array<TYPE> syntax ==========
@@ -232,7 +266,7 @@ export const DslParser = {
     const arrayAngleWithConstraintMatch = /^array:([^<]+)<(.+)>$/.exec(s)
     if (arrayAngleWithConstraintMatch) {
       const arrayConstraint = ConstraintParser.parse(arrayAngleWithConstraintMatch[1], 'array')
-      const itemSchema = DslParser.parseString(arrayAngleWithConstraintMatch[2])
+      const itemSchema = DslParser.parseString(arrayAngleWithConstraintMatch[2], _withPath(options, `${options?.path ?? ''}[]`))
       return {
         type: 'array',
         ...arrayConstraint,
@@ -242,7 +276,7 @@ export const DslParser = {
     }
     const arrayAngleMatch = /^array<(.+)>$/.exec(s)
     if (arrayAngleMatch) {
-      const itemSchema = DslParser.parseString(arrayAngleMatch[1])
+      const itemSchema = DslParser.parseString(arrayAngleMatch[1], _withPath(options, `${options?.path ?? ''}[]`))
       return {
         type: 'array',
         items: itemSchema,
@@ -285,7 +319,7 @@ export const DslParser = {
     }
 
     // TypeRegistry resolution
-    const typeDef = TypeRegistry.resolve(typeName)
+    const typeDef = TypeRegistry.resolve(typeName, _toTypeResolveOptions(dslStr, typeName, options))
 
     // ConstraintParser parse — use resolved base type (e.g., 'string' for 'alphanum')
     const resolvedBaseType = (typeDef.baseSchema.type as string) ?? typeName
@@ -302,7 +336,7 @@ export const DslParser = {
   /**
    * Parse an object DSL definition → JSONSchema (type:object + properties + required[])
    */
-  parseObject(dslObj: DslDefinition): JSONSchema {
+  parseObject(dslObj: DslDefinition, options?: DslParseOptions): JSONSchema {
     const schema: JSONSchema = {
       type: 'object',
       properties: {},
@@ -322,16 +356,16 @@ export const DslParser = {
       let fieldSchema: JSONSchema
 
       if (typeof value === 'string') {
-        fieldSchema = DslParser.parseString(value)
+        fieldSchema = DslParser.parseString(value, _withPath(options, _childPath(options?.path, fieldKey)))
       } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         const obj = value as Record<string, unknown>
         if (obj['_isMatch']) {
           if (!schema.allOf) schema.allOf = []
-          schema.allOf.push(_buildMatchSchema(String(obj['field']), fieldKey, obj['map'] as Record<string, unknown>))
+          schema.allOf.push(_buildMatchSchema(String(obj['field']), fieldKey, obj['map'] as Record<string, unknown>, options))
           fieldSchema = { description: `Depends on ${String(obj['field'])}` }
         } else if (obj['_isIf']) {
           if (!schema.allOf) schema.allOf = []
-          schema.allOf.push(_buildIfSchema(String(obj['condition']), fieldKey, obj['then'], obj['else']))
+          schema.allOf.push(_buildIfSchema(String(obj['condition']), fieldKey, obj['then'], obj['else'], options))
           fieldSchema = { description: `Conditional field based on ${String(obj['condition'])}` }
         } else if (typeof obj['toSchema'] === 'function') {
           // DslBuilder instance or ConditionalBuilder (has toSchema method)
@@ -341,7 +375,7 @@ export const DslParser = {
           fieldSchema = value as JSONSchema
         } else {
           // Nested DslDefinition (e.g., { street: 'string!', city: 'string!' })
-          fieldSchema = DslParser.parseObject(value as DslDefinition)
+          fieldSchema = DslParser.parseObject(value as DslDefinition, _withPath(options, _childPath(options?.path, fieldKey)))
         }
       } else {
         // Pass through as-is (compatible with direct schema fragment input)
@@ -429,7 +463,7 @@ export const DslParser = {
    * Uses smart splitting: 'string:3-10|number:0-100' → ['string:3-10', 'number:0-100']
    * When only a single type is present, emits a plain schema instead of a oneOf wrapper.
    */
-  _parseUnionTypes(typesStr: string, required: boolean): JSONSchema {
+  _parseUnionTypes(typesStr: string, required: boolean, options?: DslParseOptions): JSONSchema {
     // Smart split by | that is a type separator (not inside constraints)
     const segments: string[] = []
     let current = ''
@@ -454,13 +488,13 @@ export const DslParser = {
 
     // Single type → optimize to direct schema (no oneOf)
     if (segments.length === 1) {
-      const schema = DslParser.parseString(segments[0])
+      const schema = DslParser.parseString(segments[0], options)
       if (required) schema._required = true
       return schema
     }
 
     // Multiple types → oneOf
-    const oneOf = segments.map(seg => DslParser.parseString(seg))
+    const oneOf = segments.map(seg => DslParser.parseString(seg, options))
 
     return {
       oneOf,
