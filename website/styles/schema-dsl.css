@@ -233,7 +233,7 @@ body:not(.notTopArrived) .rp-nav.rp-nav {
 
 .rp-home-hero .rp-home-hero__tagline {
   max-width: 680px;
-  margin-top: 34px !important;
+  margin-top: 28px !important;
   margin-left: 0;
   text-align: left;
   color: var(--sdl-text-muted);
@@ -371,16 +371,8 @@ html.rp-dark .rp-home-hero .rp-home-hero__image-img--dark {
 }
 
 @media (min-width: 769px) {
-  .rp-home-hero .rp-home-hero__container {
-    min-height: 430px;
-  }
-
-  .rp-home-hero .rp-home-hero__content {
-    margin-bottom: 26px;
-  }
-
-  .rp-home-hero .rp-home-hero__tagline {
-    margin-top: auto !important;
+  .rp-home-hero .rp-home-hero__image {
+    align-self: flex-start;
   }
 }
 
