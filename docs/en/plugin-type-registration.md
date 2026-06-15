@@ -25,6 +25,8 @@ DslBuilder.registerType('orderCode', {
 
 Use `DslBuilder.unregisterType('orderCode')` when a plugin or test needs to remove one Builder-side custom type. Use `DslBuilder.clearCustomTypes()` only when you intentionally want to clear all custom types, such as after isolated tests.
 
+Since `2.0.11`, the custom type registry is shared across the package's ESM and CJS entrypoints in the same Node.js process. A type registered through `import { DslBuilder } from 'schema-dsl'` can be resolved through `require('schema-dsl')`, and the reverse works as well. This supports frameworks that compile user code to CJS while their own OpenAPI or validation pipeline imports schema-dsl from ESM.
+
 Plug-in extensions can be used in conjunction with [plugin-system.md](./plugin-system.md).
 
 ---

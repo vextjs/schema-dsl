@@ -62,7 +62,7 @@ export { PATTERNS } from './config/patterns.js'
 
 // ==================== Type exports ====================
 export type { JSONSchema, SchemaIOOptions } from './types/schema.js'
-export type { ErrorMessages, ErrorCodeMap } from './types/error.js'
+export type { ErrorMessages, ErrorCodeMap, ErrorMessageConfig, LocaleMessages } from './types/error.js'
 
 export type {
   IDslBuilder,
@@ -81,9 +81,10 @@ export type {
   ValidationErrorItem,
 } from './types/validate.js'
 
-export type { DslConfigOptions, I18nConfig, CacheOptions, ValidatorOptions } from './types/config.js'
+export type { DslConfigOptions, I18nConfig, CacheOptions, CacheManagerOptions, ValidatorOptions } from './types/config.js'
 // v1 BC: CacheConfig was renamed to CacheOptions in v2
 export type { CacheOptions as CacheConfig } from './types/config.js'
+export type { Plugin, HookFn, HookName, HookContext, PluginManagerOptions } from './types/plugin.js'
 
 export type { IConditionalBuilder } from './types/conditional.js'
 

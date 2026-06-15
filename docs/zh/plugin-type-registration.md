@@ -25,6 +25,8 @@ DslBuilder.registerType('orderCode', {
 
 当插件或测试只需要移除一个 Builder 侧自定义类型时，使用 `DslBuilder.unregisterType('orderCode')`；只有确实要清空全部自定义类型（例如隔离测试收尾）时，才使用 `DslBuilder.clearCustomTypes()`。
 
+自 `2.0.11` 起，自定义类型注册表在同一 Node.js 进程内会跨 ESM / CJS 入口共享。也就是说，`import { DslBuilder } from 'schema-dsl'` 注册的类型可以被 `require('schema-dsl')` 解析到，反向也成立。这适用于框架先把用户代码编译成 CJS、再由自身 ESM 链路生成 OpenAPI 或执行校验的场景。
+
 插件化扩展可结合 [plugin-system.md](./plugin-system.md) 使用。
 
 ---

@@ -32,6 +32,28 @@ export interface TypeResolveOptions {
   throwOnError?: boolean
 }
 
+interface TypeRegistryRuntimeState {
+  customTypes: Map<string, TypeDefinition>
+  dynamicTypes: Map<string, () => JSONSchema>
+  strictMode: boolean
+}
+
+const TYPE_REGISTRY_STATE_KEY = Symbol.for('schema-dsl.v2.TypeRegistry.state')
+
+function getRuntimeState(): TypeRegistryRuntimeState {
+  const host = globalThis as typeof globalThis & Record<symbol, TypeRegistryRuntimeState | undefined>
+  const existing = host[TYPE_REGISTRY_STATE_KEY]
+  if (existing) return existing
+
+  const state: TypeRegistryRuntimeState = {
+    customTypes: new Map(),
+    dynamicTypes: new Map(),
+    strictMode: false,
+  }
+  host[TYPE_REGISTRY_STATE_KEY] = state
+  return state
+}
+
 /** Known internal key set (stripped from output during toJsonSchema) */
 const INTERNAL_KEYS: ReadonlySet<string> = new Set([
   '_label',
@@ -163,10 +185,9 @@ function recordUnknownType(typeName: string, options: TypeResolveOptions, severi
 /**
  * Custom type registry (populated via registerType)
  */
-const CUSTOM_TYPES: Map<string, TypeDefinition> = new Map()
-const DYNAMIC_TYPES: Map<string, () => JSONSchema> = new Map()
-
-let _strictMode = false
+const RUNTIME_STATE = getRuntimeState()
+const CUSTOM_TYPES = RUNTIME_STATE.customTypes
+const DYNAMIC_TYPES = RUNTIME_STATE.dynamicTypes
 
 /**
  * TypeRegistry — unified type registration and resolution
@@ -191,7 +212,7 @@ export const TypeRegistry = {
     const builtin = BUILTIN_TYPES.get(typeName)
     if (builtin) return builtin
 
-    const unknownType = options.unknownType ?? (_strictMode ? 'error' : 'warn')
+    const unknownType = options.unknownType ?? (RUNTIME_STATE.strictMode ? 'error' : 'warn')
 
     if (unknownType === 'error') {
       recordUnknownType(typeName, options, 'error')
@@ -221,6 +242,7 @@ export const TypeRegistry = {
     const normalized: TypeDefinition =
       'baseSchema' in def ? (def as TypeDefinition) : { baseSchema: def as Partial<JSONSchema> }
     CUSTOM_TYPES.set(name, normalized)
+    DYNAMIC_TYPES.delete(name)
   },
 
   /**
@@ -231,6 +253,7 @@ export const TypeRegistry = {
       throw new Error('[schema-dsl] TypeRegistry.registerDynamic: name must be a non-empty string')
     }
     DYNAMIC_TYPES.set(name, factory)
+    CUSTOM_TYPES.delete(name)
   },
 
   /**
@@ -255,7 +278,7 @@ export const TypeRegistry = {
    * In strict mode, resolving an unknown type throws instead of warning and falling back to string.
    */
   setStrict(flag: boolean): void {
-    _strictMode = flag
+    RUNTIME_STATE.strictMode = flag
   },
 
   /**
@@ -266,11 +289,14 @@ export const TypeRegistry = {
   },
 
   /**
-   * Return an iterator over all registered types (built-in + custom; custom overrides same-name built-in)
+   * Return an iterator over all registered types (built-in + custom + dynamic; later entries override earlier ones)
    * BC-4 compat: consumed by the DslAdapter.typeMap getter
    */
   entries(): IterableIterator<[string, TypeDefinition]> {
     const merged: Map<string, TypeDefinition> = new Map([...BUILTIN_TYPES, ...CUSTOM_TYPES])
+    for (const [name, factory] of DYNAMIC_TYPES) {
+      merged.set(name, { baseSchema: factory() as Partial<JSONSchema> })
+    }
     return merged.entries()
   },
 

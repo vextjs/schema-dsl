@@ -43,6 +43,16 @@ export interface ErrorMessages {
 }
 
 /**
+ * v1-compatible locale message value.
+ */
+export type ErrorMessageConfig = string | { code?: string | number; message: string }
+
+/**
+ * v1-compatible locale message bundle.
+ */
+export type LocaleMessages = Record<string, ErrorMessageConfig>
+
+/**
  * Error code constant type (shape of the ErrorCodes object).
  */
 export interface ErrorCodeMap {

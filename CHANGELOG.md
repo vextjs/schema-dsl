@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.0.11] | 2026-06-15 | Patch | ESM/CJS shared custom type registry for vext dev route validation and OpenAPI generation [View](./changelogs/v2.0.11.md) |
 | [2.0.10] | 2026-06-13 | Patch | Legacy DSL aliases, structured unknown-type diagnostics, and downstream adapter delegation support [View](./changelogs/v2.0.10.md) |
 | [2.0.9] | 2026-06-11 | Patch | Documentation/example convergence, Markdown label preservation, cache-hub 2.2.4, and release dependency audit cleanup [View](./changelogs/v2.0.9.md) |
 | [2.0.8] | 2026-06-10 | Patch | Validator/AJV cache lifecycle bounds, locale cache invalidation, and official plugin uninstall cleanup [View](./changelogs/v2.0.8.md) |
@@ -45,6 +46,20 @@ All notable changes to this project will be documented in this file.
 | v1.0.2 | 2025-12-31 | Patch | 15 new validators, complete docs, 75 tests |
 | v1.0.1 | 2025-12-31 | Patch | Enum support, auto type detection, unified error messages |
 | [v1.0.0] | 2025-12-29 | Pre-release | Initial release [View](./changelogs/v1.0.0.md) |
+
+---
+
+## [2.0.11] — 2026-06-15
+
+### Fixes
+
+- **Interop:** custom types registered through `DslBuilder.registerType()` or `TypeRegistry.register()` are now shared across the package's ESM and CJS entrypoints in the same Node.js process.
+- **Framework compatibility:** fixes `vext dev` route files compiled to CJS registering a custom type while vext's ESM OpenAPI/validation chain resolved the same type as unknown.
+
+### Validation
+
+- `npm run build`
+- `npm run test:interop`
 
 ---
 
@@ -226,7 +241,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.10...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.11...HEAD
+[2.0.11]: https://github.com/vextjs/schema-dsl/compare/v2.0.10...v2.0.11
 [2.0.10]: https://github.com/vextjs/schema-dsl/compare/v2.0.9...v2.0.10
 [2.0.9]: https://github.com/vextjs/schema-dsl/compare/v2.0.8...v2.0.9
 [2.0.8]: https://github.com/vextjs/schema-dsl/compare/v2.0.7...v2.0.8

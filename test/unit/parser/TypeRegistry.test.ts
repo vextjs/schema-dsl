@@ -106,6 +106,33 @@ describe('TypeRegistry', () => {
     })
   })
 
+  describe('custom and dynamic type registration', () => {
+    it('includes dynamic types in entries()', () => {
+      TypeRegistry.clearCustomTypes()
+      TypeRegistry.registerDynamic('compatDynamic', () => ({ type: 'number', minimum: 1 }))
+
+      const entries = new Map(TypeRegistry.entries())
+
+      expect(entries.get('compatDynamic')?.baseSchema).toEqual({ type: 'number', minimum: 1 })
+      TypeRegistry.clearCustomTypes()
+    })
+
+    it('lets static and dynamic registrations replace each other deterministically', () => {
+      TypeRegistry.clearCustomTypes()
+
+      TypeRegistry.registerDynamic('compatSwap', () => ({ type: 'number', minimum: 1 }))
+      expect(TypeRegistry.resolve('compatSwap').baseSchema).toEqual({ type: 'number', minimum: 1 })
+
+      TypeRegistry.register('compatSwap', { type: 'string', minLength: 2 })
+      expect(TypeRegistry.resolve('compatSwap').baseSchema).toEqual({ type: 'string', minLength: 2 })
+
+      TypeRegistry.registerDynamic('compatSwap', () => ({ type: 'integer', minimum: 10 }))
+      expect(TypeRegistry.resolve('compatSwap').baseSchema).toEqual({ type: 'integer', minimum: 10 })
+
+      TypeRegistry.clearCustomTypes()
+    })
+  })
+
   describe('toJsonSchema()', () => {
     it('strips internal keys (_label / _required etc.)', () => {
       const raw = { type: 'string', _label: 'Name', _required: true }

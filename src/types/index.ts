@@ -10,8 +10,8 @@ export type {
   DslErrorNamespace,
 } from './dsl.js'
 export type { ValidateOptions, ValidationResult, ValidationErrorItem, AjvError } from './validate.js'
-export type { DslConfigOptions, I18nConfig, CacheOptions, ValidatorOptions } from './config.js'
-export type { ErrorMessages, ErrorCodeMap } from './error.js'
+export type { DslConfigOptions, I18nConfig, CacheOptions, CacheManagerOptions, ValidatorOptions } from './config.js'
+export type { ErrorMessages, ErrorCodeMap, ErrorMessageConfig, LocaleMessages } from './error.js'
 export type { Plugin, HookFn, HookName, HookContext, PluginManagerOptions } from './plugin.js'
 export type { IConditionalBuilder } from './conditional.js'
 export type { InferSchema, InferJsonSchema, InferDslDefinition, InferDslString } from './infer.js'

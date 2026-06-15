@@ -20,6 +20,25 @@ import type { ValidationResult } from '../types/validate.js'
 // ==================== Internal Utilities ====================
 
 type CustomValidatorFn = (value: unknown) => unknown
+type CustomTypeSchema = JSONSchema | (() => JSONSchema)
+
+interface DslBuilderRuntimeState {
+  customTypes: Map<string, CustomTypeSchema>
+}
+
+const DSL_BUILDER_STATE_KEY = Symbol.for('schema-dsl.v2.DslBuilder.state')
+
+function getRuntimeState(): DslBuilderRuntimeState {
+  const host = globalThis as typeof globalThis & Record<symbol, DslBuilderRuntimeState | undefined>
+  const existing = host[DSL_BUILDER_STATE_KEY]
+  if (existing) return existing
+
+  const state: DslBuilderRuntimeState = {
+    customTypes: new Map(),
+  }
+  host[DSL_BUILDER_STATE_KEY] = state
+  return state
+}
 
 /** Password strength presets. */
 const PASSWORD_PATTERNS: Record<string, RegExp> = {
@@ -42,7 +61,7 @@ export class DslBuilder implements IDslBuilder {
   static readonly _internalKeys: ReadonlySet<string> = TypeRegistry.getInternalKeys()
 
   /** Custom type cache (BC with v1 DslBuilder._customTypes). */
-  private static readonly _customTypes = new Map<string, JSONSchema | (() => JSONSchema)>()
+  private static readonly _customTypes = getRuntimeState().customTypes
 
   private _baseSchema: JSONSchema
   /** v1 compatibility marker read by downstream schema converters such as vext. */

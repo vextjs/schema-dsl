@@ -16,6 +16,14 @@ export interface CacheOptions {
 }
 
 /**
+ * v1-compatible cache manager option name.
+ *
+ * v2 internally uses CacheOptions; keep the old public type alias so existing
+ * type-only imports continue to compile.
+ */
+export type CacheManagerOptions = CacheOptions
+
+/**
  * I18n configuration type.
  */
 export type I18nConfig =
