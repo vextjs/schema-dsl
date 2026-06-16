@@ -138,6 +138,53 @@ describe('MySQLExporter', () => {
       expect(ddl).toContain('`ip` VARCHAR(255) NULL')
     })
 
+    it('should escape MySQL comment strings with backslashes and control characters', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          note: {
+            type: 'string',
+            description: "line\nbreak\rcut\x1azero\0quote'backslash\\",
+          },
+        },
+      } as any
+
+      const ddl = exporter.export('notes', schema)
+
+      expect(ddl).toContain("COMMENT 'line\\nbreak\\rcut\\Zzero\\0quote''backslash\\\\'")
+    })
+
+    it('should reject unsafe MySQL table options', () => {
+      const unsafeExporter = new MySQLExporter({
+        engine: 'InnoDB; DROP TABLE secrets; --',
+      } as any)
+      const schema = { type: 'object', properties: { id: { type: 'integer' } } } as any
+
+      expect(() => unsafeExporter.export('users', schema)).toThrow('Invalid MySQL engine')
+    })
+
+    it('should reject non-finite numeric defaults', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          age: { type: 'integer', default: '0); DROP TABLE users; --' },
+        },
+      } as any
+
+      expect(() => exporter.export('users', schema)).toThrow('MySQL numeric default must be a finite number')
+    })
+
+    it('should reject object defaults for numeric columns', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          age: { type: 'integer', default: { raw: '0); DROP TABLE users; --' } },
+        },
+      } as any
+
+      expect(() => exporter.export('users', schema)).toThrow('MySQL numeric default must be a finite number')
+    })
+
     it('should throw for anyOf when variants resolve to different MySQL types', () => {
       const schema = {
         type: 'object',

@@ -61,7 +61,11 @@ export class CacheManager {
   }
 
   set options(opts: Partial<{ maxSize: number; ttl: number; enabled: boolean; statsEnabled: boolean }>) {
-    const shouldResize = opts.maxSize !== undefined && opts.maxSize !== this._maxSize
+    const shouldRebuild =
+      (opts.maxSize !== undefined && opts.maxSize !== this._maxSize) ||
+      (opts.ttl !== undefined && opts.ttl !== this._ttl) ||
+      (opts.enabled !== undefined && opts.enabled !== this._enabled) ||
+      (opts.statsEnabled !== undefined && opts.statsEnabled !== this._statsEnabled)
     const oldCache = this._cache
 
     if (opts.maxSize !== undefined) {
@@ -71,12 +75,14 @@ export class CacheManager {
     if (opts.enabled !== undefined) this._enabled = opts.enabled
     if (opts.statsEnabled !== undefined) this._statsEnabled = opts.statsEnabled
 
-    if (shouldResize) {
-      // Rebuild MemoryCache so the new capacity and current config take effect.
+    if (shouldRebuild) {
+      // Rebuild MemoryCache so runtime option changes take effect in cache-hub.
       const newCache = this._createCache()
-      for (const key of oldCache.keys()) {
-        const val = oldCache.get(key)
-        if (val !== undefined) newCache.set(key, val)
+      if (this._enabled) {
+        for (const key of oldCache.keys()) {
+          const val = oldCache.get(key)
+          if (val !== undefined) newCache.set(key, val)
+        }
       }
       oldCache.destroy()
       this._cache = newCache
@@ -113,6 +119,7 @@ export class CacheManager {
    * Delete a single cache entry.
    */
   delete(key: string): boolean {
+    if (!this._enabled) return false
     return this._cache.del(key)
   }
 

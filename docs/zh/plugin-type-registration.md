@@ -27,6 +27,8 @@ DslBuilder.registerType('orderCode', {
 
 自 `2.0.11` 起，自定义类型注册表在同一 Node.js 进程内会跨 ESM / CJS 入口共享。也就是说，`import { DslBuilder } from 'schema-dsl'` 注册的类型可以被 `require('schema-dsl')` 解析到，反向也成立。这适用于框架先把用户代码编译成 CJS、再由自身 ESM 链路生成 OpenAPI 或执行校验的场景。
 
+该注册表按设计是进程级全局状态。请在应用或插件启动期一次性注册自定义类型，避免多个依赖分支重复定义同名类型；只有在插件显式卸载或隔离测试收尾时，才调用 `DslBuilder.unregisterType()` / `DslBuilder.clearCustomTypes()`。如果同一进程内同名注册发生多次，最后一次注册会生效。
+
 插件化扩展可结合 [plugin-system.md](./plugin-system.md) 使用。
 
 ---

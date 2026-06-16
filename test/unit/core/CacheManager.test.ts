@@ -43,6 +43,24 @@ describe('CacheManager', () => {
       expect(disabledCache.get('key1')).toBeNull()
     })
 
+    it('should use a non-expiring default TTL', () => {
+      const defaultCache = new CacheManager()
+      expect(defaultCache.options.ttl).toBe(0)
+    })
+
+    it('should synchronize runtime option changes to the inner cache', () => {
+      const runtimeCache = new CacheManager({ maxSize: 3, ttl: 1000, statsEnabled: true })
+      runtimeCache.set('key1', 'value1' as any)
+
+      runtimeCache.options = { enabled: false, ttl: 0, statsEnabled: false }
+
+      expect(runtimeCache.options).toMatchObject({ enabled: false, ttl: 0, statsEnabled: false })
+      expect(runtimeCache.get('key1')).toBeNull()
+      expect(runtimeCache.has('key1')).toBe(false)
+      expect(runtimeCache.delete('key1')).toBe(false)
+      expect(runtimeCache.getStats()).toMatchObject({ enabled: false, hits: 0, misses: 0 })
+    })
+
     it('should return cache size', () => {
       expect(cache.size()).toBe(0)
       cache.set('key1', 'value1' as any)

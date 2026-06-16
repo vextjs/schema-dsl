@@ -53,10 +53,10 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
       includeDescription = true,
     } = options
 
-    let markdown = `# ${title}\n\n`
+    let markdown = `# ${this._escapeMarkdownText(title)}\n\n`
 
     if (includeDescription && schema.description) {
-      markdown += `${schema.description}\n\n`
+      markdown += `${this._escapeMarkdownText(schema.description)}\n\n`
     }
 
     markdown += this._generateFieldsTable(schema, locale)
@@ -132,9 +132,34 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
   }
 
   private static _escapeTableCell(value: string): string {
-    return value
+    return this._escapeHtml(value)
       .replace(/\|/g, '\\|')
       .replace(/\r\n|\r|\n/g, '<br>')
+  }
+
+  private static _escapeMarkdownText(value: string): string {
+    return this._escapeHtml(value).replace(/\r\n|\r|\n/g, '\n')
+  }
+
+  private static _escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+  }
+
+  private static _formatInlineCode(value: unknown): string {
+    const text = String(value)
+    const runs = text.match(/`+/g) ?? []
+    const fence = '`'.repeat(Math.max(1, ...runs.map(run => run.length)) + 1)
+    const needsPadding = text.startsWith('`') || text.endsWith('`')
+    return needsPadding ? `${fence} ${text} ${fence}` : `${fence}${text}${fence}`
+  }
+
+  private static _formatEscapedInlineCode(value: unknown): string {
+    return this._formatInlineCode(this._escapeHtml(String(value)))
   }
 
   private static _formatType(prop: JSONSchema, locale: Locale): string {
@@ -187,15 +212,15 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
     }
 
     if (prop.pattern) {
-      constraints.push(`${t['pattern']}: \`${prop.pattern}\``)
+      constraints.push(`${t['pattern']}: ${this._formatInlineCode(prop.pattern)}`)
     }
 
     if (prop.enum) {
-      const enumStr = (prop.enum as unknown[]).map(v => `\`${String(v)}\``).join(', ')
+      const enumStr = (prop.enum as unknown[]).map(v => this._formatInlineCode(v)).join(', ')
       constraints.push(`${t['enum']}: ${enumStr}`)
     }
 
-    return constraints.length > 0 ? constraints.join('<br>') : '-'
+    return constraints.length > 0 ? constraints.join('\n') : '-'
   }
 
   private static _getDescription(prop: JSONSchema, locale: Locale): string {
@@ -300,11 +325,11 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
     let section = `## ${t['rules']}\n\n`
 
     if (requiredFields.length > 0) {
-      section += `**${t['required']}**: ${requiredFields.map(f => `\`${f}\``).join(', ')}\n\n`
+      section += `**${t['required']}**: ${requiredFields.map(f => this._formatEscapedInlineCode(f)).join(', ')}\n\n`
     }
 
     if (optionalFields.length > 0) {
-      section += `**${t['optional']}**: ${optionalFields.map(f => `\`${f}\``).join(', ')}\n`
+      section += `**${t['optional']}**: ${optionalFields.map(f => this._formatEscapedInlineCode(f)).join(', ')}\n`
     }
 
     return section

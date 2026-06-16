@@ -27,6 +27,8 @@ Use `DslBuilder.unregisterType('orderCode')` when a plugin or test needs to remo
 
 Since `2.0.11`, the custom type registry is shared across the package's ESM and CJS entrypoints in the same Node.js process. A type registered through `import { DslBuilder } from 'schema-dsl'` can be resolved through `require('schema-dsl')`, and the reverse works as well. This supports frameworks that compile user code to CJS while their own OpenAPI or validation pipeline imports schema-dsl from ESM.
 
+The registry is process-global by design. Register custom types during application or plugin startup, avoid redefining the same name from multiple dependency branches, and call `DslBuilder.unregisterType()` / `DslBuilder.clearCustomTypes()` only for explicit plugin teardown or isolated tests. If two registrations use the same name, the latest registration wins in that process.
+
 Plug-in extensions can be used in conjunction with [plugin-system.md](./plugin-system.md).
 
 ---

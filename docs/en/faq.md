@@ -289,7 +289,7 @@ const validateUser = validator.compile(userSchema);
 const validator = new Validator({
   cache: {
     maxSize: 5000, // Cache 5000 Schemas
-    ttl: 3600000 // Expires in 1 hour
+    ttl: 0 // No time-based expiration; LRU controls lifecycle
   }
 });
 
@@ -318,7 +318,7 @@ app.post('/api/users', (req, res) => {
 const validator = new Validator({
   cache: {
     maxSize: 5000, // Maximum cache 5000 items
-    ttl: 3600000 // Expires in 1 hour
+    ttl: 0 // No time-based expiration; LRU controls lifecycle
   }
 });
 

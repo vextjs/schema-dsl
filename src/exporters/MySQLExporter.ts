@@ -55,9 +55,7 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
     }
 
     ddl += `\n)`
-    ddl += ` ENGINE=${this.options.engine}`
-    ddl += ` DEFAULT CHARSET=${this.options.charset}`
-    ddl += ` COLLATE=${this.options.collate};`
+    ddl += this._formatTableOptions()
 
     return ddl
   }
@@ -79,6 +77,34 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
   }
 
   // ==================== Private methods ====================
+
+  protected override _escapeString(str: string): string {
+    return str.replace(/[\0\n\r\x1a\\']/g, char => {
+      switch (char) {
+        case '\0':
+          return '\\0'
+        case '\n':
+          return '\\n'
+        case '\r':
+          return '\\r'
+        case '\x1a':
+          return '\\Z'
+        case '\\':
+          return '\\\\'
+        case '\'':
+          return "''"
+        default:
+          return char
+      }
+    })
+  }
+
+  private _assertOptionIdent(kind: string, value: unknown): string {
+    if (typeof value !== 'string' || !/^[A-Za-z0-9_]+$/.test(value)) {
+      throw new Error(`[schema-dsl] Invalid MySQL ${kind}: ${value}`)
+    }
+    return value
+  }
 
   private _quoteIdent(name: string): string {
     return '`' + name.replace(/`/g, '``') + '`'
@@ -150,7 +176,19 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
     if (value === null) return 'NULL'
     if (type === 'string') return `'${this._escapeString(String(value))}'`
     if (type === 'boolean') return value ? '1' : '0'
+    if (type === 'number' || type === 'integer') {
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        throw new Error(`[schema-dsl] MySQL numeric default must be a finite number (got ${String(value)})`)
+      }
+    }
     if (typeof value === 'object' && value !== null) return `'${this._escapeString(JSON.stringify(value))}'`
     return String(value)
+  }
+
+  private _formatTableOptions(): string {
+    const engine = this._assertOptionIdent('engine', this.options.engine)
+    const charset = this._assertOptionIdent('charset', this.options.charset)
+    const collate = this._assertOptionIdent('collate', this.options.collate)
+    return ` ENGINE=${engine} DEFAULT CHARSET=${charset} COLLATE=${collate};`
   }
 }

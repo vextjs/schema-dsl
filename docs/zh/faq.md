@@ -289,7 +289,7 @@ const validateUser = validator.compile(userSchema);
 const validator = new Validator({
   cache: {
     maxSize: 5000,   // 缓存5000个Schema
-    ttl: 3600000     // 1小时过期
+    ttl: 0           // 不按时间过期，由 LRU 管理生命周期
   }
 });
 
@@ -318,7 +318,7 @@ app.post('/api/users', (req, res) => {
 const validator = new Validator({
   cache: {
     maxSize: 5000,   // 最大缓存5000条
-    ttl: 3600000     // 1小时过期
+    ttl: 0           // 不按时间过期，由 LRU 管理生命周期
   }
 });
 

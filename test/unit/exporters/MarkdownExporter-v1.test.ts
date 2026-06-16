@@ -171,5 +171,56 @@ describe('MarkdownExporter', () => {
       expect(result).toContain('Email Address - Primary login email')
       expect(result).toContain('Username')
     })
+
+    it('should HTML-escape untrusted Markdown table content', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          bio: {
+            type: 'string',
+            description: '<img src=x onerror=alert(1)>',
+            enum: ['<script>alert(1)</script>', 'tick`value'],
+            pattern: '<svg onload=alert(1)>',
+          },
+        },
+      }
+
+      const result = MarkdownExporter.export(schema, {
+        title: '<script>alert(1)</script>',
+        locale: 'en-US',
+      })
+
+      expect(result).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+      expect(result).toContain('&lt;img src=x onerror=alert(1)&gt;')
+      expect(result).toContain('&lt;svg onload=alert(1)&gt;')
+      expect(result).not.toContain('<img src=x onerror=alert(1)>')
+      expect(result).not.toContain('<script>alert(1)</script>')
+    })
+
+    it('should HTML-escape field names in validation rules', () => {
+      const schema = {
+        type: 'object',
+        required: ['<img src=x onerror=alert(1)>'],
+        properties: {
+          '<img src=x onerror=alert(1)>': {
+            type: 'string',
+            description: 'field',
+          },
+          'tick`field': {
+            type: 'string',
+            description: 'field',
+          },
+        },
+      }
+
+      const result = MarkdownExporter.export(schema, {
+        locale: 'en-US',
+        includeExample: false,
+      })
+
+      expect(result).toContain('&lt;img src=x onerror=alert(1)&gt;')
+      expect(result).toContain('``tick`field``')
+      expect(result).not.toContain('`<img src=x onerror=alert(1)>`')
+    })
   })
 })

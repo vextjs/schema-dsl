@@ -15,7 +15,7 @@ import { TypeConverter } from '../utils/TypeConverter.js'
 export interface PostgreSQLExporterOptions extends ExporterOptions {
   /** PostgreSQL schema name (default: public). */
   schema: string
-  /** Whether to wrap identifiers in double quotes (default false — compatible with v1 behaviour). */
+  /** Whether to wrap identifiers in double quotes (default true). Unsafe raw identifiers throw when false. */
   quoteIdentifiers?: boolean
 }
 
@@ -29,7 +29,7 @@ export interface GeneratePgIndexOptions {
 
 export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> {
   constructor(options: Partial<PostgreSQLExporterOptions> = {}) {
-    super({ schema: 'public', ...options })
+    super({ schema: 'public', quoteIdentifiers: true, ...options })
   }
 
   /**
@@ -90,10 +90,16 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
 
   // ==================== Private methods ====================
 
-  /** Conditionally wrap a PG identifier in double quotes (when quoteIdentifiers=true). */
+  /** Conditionally wrap a PG identifier in double quotes (default); raw mode only accepts safe identifiers. */
   private _quoteIdent(name: string): string {
+    if (typeof name !== 'string' || name.length === 0) {
+      throw new Error(`[schema-dsl] PostgreSQL identifier must be a non-empty string (got ${String(name)})`)
+    }
     if (this.options.quoteIdentifiers) {
       return `"${name.replace(/"/g, '""')}"`
+    }
+    if (!/^[A-Za-z_][A-Za-z0-9_$]*$/.test(name)) {
+      throw new Error(`[schema-dsl] Unsafe PostgreSQL identifier requires quoteIdentifiers=true: ${name}`)
     }
     return name
   }
@@ -167,21 +173,21 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
 
     if (schema.minLength !== undefined || schema.maxLength !== undefined) {
       if (schema.minLength !== undefined && schema.maxLength !== undefined) {
-        checks.push(`CHECK (LENGTH(${col}) BETWEEN ${schema.minLength} AND ${schema.maxLength})`)
+        checks.push(`CHECK (LENGTH(${col}) BETWEEN ${this._formatFiniteNumber(schema.minLength, 'minLength')} AND ${this._formatFiniteNumber(schema.maxLength, 'maxLength')})`)
       } else if (schema.minLength !== undefined) {
-        checks.push(`CHECK (LENGTH(${col}) >= ${schema.minLength})`)
+        checks.push(`CHECK (LENGTH(${col}) >= ${this._formatFiniteNumber(schema.minLength, 'minLength')})`)
       } else if (schema.maxLength !== undefined) {
-        checks.push(`CHECK (LENGTH(${col}) <= ${schema.maxLength})`)
+        checks.push(`CHECK (LENGTH(${col}) <= ${this._formatFiniteNumber(schema.maxLength, 'maxLength')})`)
       }
     }
 
     if (schema.minimum !== undefined || schema.maximum !== undefined) {
       if (schema.minimum !== undefined && schema.maximum !== undefined) {
-        checks.push(`CHECK (${col} BETWEEN ${schema.minimum} AND ${schema.maximum})`)
+        checks.push(`CHECK (${col} BETWEEN ${this._formatFiniteNumber(schema.minimum, 'minimum')} AND ${this._formatFiniteNumber(schema.maximum, 'maximum')})`)
       } else if (schema.minimum !== undefined) {
-        checks.push(`CHECK (${col} >= ${schema.minimum})`)
+        checks.push(`CHECK (${col} >= ${this._formatFiniteNumber(schema.minimum, 'minimum')})`)
       } else if (schema.maximum !== undefined) {
-        checks.push(`CHECK (${col} <= ${schema.maximum})`)
+        checks.push(`CHECK (${col} <= ${this._formatFiniteNumber(schema.maximum, 'maximum')})`)
       }
     }
 
@@ -198,6 +204,14 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
     if (type === 'string') return `'${this._escapeString(String(value))}'`
     if (type === 'boolean') return value ? 'TRUE' : 'FALSE'
     if (type === 'object' || type === 'array') return `'${this._escapeString(JSON.stringify(value))}'::JSONB`
+    if (type === 'number' || type === 'integer') return this._formatFiniteNumber(value, 'default')
+    return String(value)
+  }
+
+  private _formatFiniteNumber(value: unknown, label: string): string {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      throw new Error(`[schema-dsl] PostgreSQL ${label} must be a finite number (got ${String(value)})`)
+    }
     return String(value)
   }
 

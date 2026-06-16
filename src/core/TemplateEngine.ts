@@ -30,7 +30,7 @@ export function renderTemplate(template: string, params: Record<string, unknown>
   // Regex matches both formats: {{#key}} and {key}
   return template.replace(/\{\{#([^}]+)\}\}|\{([^}]+)\}/g, (match, k1: string | undefined, k2: string | undefined) => {
     const key = k1 ?? k2
-    if (key !== undefined && key in params) {
+    if (key !== undefined && Object.prototype.hasOwnProperty.call(params, key)) {
       const val = params[key]
       if (val === null) return 'null'
       if (val === undefined) return match

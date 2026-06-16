@@ -28,6 +28,11 @@ describe('MessageTemplate (via renderTemplate)', () => {
       const result = renderTemplate('{{#label}} is {{#missing}}', { label: 'Username' })
       expect(result).toBe('Username is {{#missing}}')
     })
+
+    it('should ignore inherited Object prototype properties', () => {
+      const result = renderTemplate('{constructor} {toString} {missing}', {})
+      expect(result).toBe('{constructor} {toString} {missing}')
+    })
   })
 
   describe('Special Value Handling', () => {

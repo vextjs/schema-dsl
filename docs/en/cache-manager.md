@@ -40,7 +40,7 @@ const { CacheManager } = require('schema-dsl');
 //Create cache instance
 const cache = new CacheManager({
   maxSize: 5000, //Default maximum cache size
-  ttl: 3600000 // Expires in 1 hour
+  ttl: 0 // Default: never expires; LRU controls compiled schema lifecycle
 });
 
 // store cache
@@ -72,7 +72,7 @@ new CacheManager(options)
 | Parameter | type | default value | Description |
 |------|------|--------|------|
 | `options.maxSize` | number | `5000` | Maximum number of cache entries |
-| `options.ttl` | number | `3600000` | Cache lifetime (milliseconds) |
+| `options.ttl` | number | `0` | Cache lifetime in milliseconds; `0` means no time-based expiration |
 | `options.enabled` | boolean | `true` | Whether to enable caching |
 | `options.statsEnabled` | boolean | `true` | Whether to enable statistics |
 

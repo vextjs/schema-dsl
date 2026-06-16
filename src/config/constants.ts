@@ -21,7 +21,7 @@ export const CACHE = {
   ENABLED: true,
   SCHEMA_CACHE: {
     MAX_SIZE: 5_000,
-    TTL: 3_600_000,   // 1 hour
+    TTL: 0,           // no expiration; LRU owns compiled schema lifecycle
     STRATEGY: 'LRU',
   },
   STATS_ENABLED: true,

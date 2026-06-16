@@ -25,6 +25,15 @@ describe('PostgreSQLExporter', () => {
       const customExporter = new PostgreSQLExporter({ schema: 'app' })
       expect((customExporter as any).options.schema).toBe('app')
     })
+
+    it('should quote identifiers by default', () => {
+      const defaultExporter = new PostgreSQLExporter()
+      const schema = { type: 'object', properties: { id: { type: 'integer' } } } as any
+
+      const ddl = defaultExporter.export('users"; DROP TABLE secrets; --', schema)
+
+      expect(ddl).toContain('CREATE TABLE "public"."users""; DROP TABLE secrets; --"')
+    })
   })
 
   describe('export()', () => {
@@ -119,6 +128,37 @@ describe('PostgreSQLExporter', () => {
       const ddl = exporter.export('hosts', schema)
 
       expect(ddl).toContain('"ip" VARCHAR(255)')
+    })
+
+    it('should reject unsafe identifiers when raw identifier mode is requested', () => {
+      const rawExporter = new PostgreSQLExporter({ quoteIdentifiers: false })
+      const schema = { type: 'object', properties: { id: { type: 'integer' } } } as any
+
+      expect(() => rawExporter.export('users"; DROP TABLE secrets; --', schema)).toThrow(
+        'Unsafe PostgreSQL identifier requires quoteIdentifiers=true'
+      )
+    })
+
+    it('should reject non-finite numeric constraints', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          age: { type: 'integer', minimum: '0) OR 1=1; --' },
+        },
+      } as any
+
+      expect(() => exporter.export('users', schema)).toThrow('PostgreSQL minimum must be a finite number')
+    })
+
+    it('should reject non-finite numeric defaults', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          age: { type: 'integer', default: '0); DROP TABLE users; --' },
+        },
+      } as any
+
+      expect(() => exporter.export('users', schema)).toThrow('PostgreSQL default must be a finite number')
     })
 
     it('should throw for anyOf when variants resolve to different PostgreSQL types', () => {

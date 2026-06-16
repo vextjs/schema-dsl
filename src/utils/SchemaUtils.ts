@@ -211,7 +211,7 @@ export class SchemaUtils {
 
   static toMarkdown(schema: JSONSchema, options: { title?: string } = {}): string {
     const { title = 'Schema Documentation' } = options
-    let md = `# ${title}\n\n`
+    let md = `# ${SchemaUtils._escapeMarkdownText(title)}\n\n`
 
     if (schema.properties) {
       md += '## Fields\n\n'
@@ -300,13 +300,25 @@ export class SchemaUtils {
     } else if (prop.maximum !== undefined) {
       constraints.push(`maximum: ${prop.maximum}`)
     }
-    if (prop.pattern) constraints.push(`pattern: \`${String(prop.pattern)}\``)
-    if (prop.enum) constraints.push(`enum: ${(prop.enum as unknown[]).join(', ')}`)
+    if (prop.pattern) constraints.push(`pattern: ${SchemaUtils._formatInlineCode(prop.pattern)}`)
+    if (prop.enum) constraints.push(`enum: ${(prop.enum as unknown[]).map(v => SchemaUtils._formatInlineCode(v)).join(', ')}`)
     return constraints.length > 0 ? constraints.join('; ') : '-'
   }
 
   private static _escapeMdCell(str: string): string {
-    return str.replace(/\|/g, '\\|').replace(/\r\n|\r|\n/g, '<br>')
+    return SchemaUtils._escapeHtml(str).replace(/\|/g, '\\|').replace(/\r\n|\r|\n/g, '<br>')
+  }
+
+  private static _escapeMarkdownText(str: string): string {
+    return SchemaUtils._escapeHtml(str).replace(/\r\n|\r|\n/g, '\n')
+  }
+
+  private static _formatInlineCode(value: unknown): string {
+    const text = String(value)
+    const runs = text.match(/`+/g) ?? []
+    const fence = '`'.repeat(Math.max(1, ...runs.map(run => run.length)) + 1)
+    const needsPadding = text.startsWith('`') || text.endsWith('`')
+    return needsPadding ? `${fence} ${text} ${fence}` : `${fence}${text}${fence}`
   }
 
   private static _escapeHtml(str: string): string {

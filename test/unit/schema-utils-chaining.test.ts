@@ -79,6 +79,29 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
       expect(html).toContain('Email Address - Primary login email');
       expect(html).toContain('<th>Constraints</th>');
     });
+
+    it('should HTML-escape Markdown export cells', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          bio: {
+            type: 'string',
+            _label: '<strong>Bio</strong>',
+            description: '<img src=x onerror=alert(1)>',
+            enum: ['<script>alert(1)</script>'],
+            pattern: '<svg onload=alert(1)>',
+          },
+        },
+      } as any;
+
+      const markdown = SchemaUtils.toMarkdown(schema, { title: '<script>alert(1)</script>' });
+
+      expect(markdown).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+      expect(markdown).toContain('&lt;strong&gt;Bio&lt;/strong&gt;');
+      expect(markdown).toContain('&lt;img src=x onerror=alert(1)&gt;');
+      expect(markdown).not.toContain('<img src=x onerror=alert(1)>');
+      expect(markdown).not.toContain('<script>alert(1)</script>');
+    });
   });
 
   describe('omit() - Exclude Fields', () => {

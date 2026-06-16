@@ -40,7 +40,7 @@ const { CacheManager } = require('schema-dsl');
 // 创建缓存实例
 const cache = new CacheManager({
   maxSize: 5000,   // 默认最大缓存数量
-  ttl: 3600000     // 1小时过期
+  ttl: 0           // 默认不过期，由 LRU 管理编译缓存生命周期
 });
 
 // 存储缓存
@@ -73,7 +73,7 @@ new CacheManager(options)
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `options.maxSize` | number | `5000` | 最大缓存条目数 |
-| `options.ttl` | number | `3600000` | 缓存生存时间（毫秒） |
+| `options.ttl` | number | `0` | 缓存生存时间（毫秒）；`0` 表示不过期 |
 | `options.enabled` | boolean | `true` | 是否启用缓存 |
 | `options.statsEnabled` | boolean | `true` | 是否启用统计 |
 
