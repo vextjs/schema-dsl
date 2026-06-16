@@ -174,8 +174,10 @@ function _getCoerceCandidates(schema: _JSONSchema): _CoerceCandidates {
   const objects: Array<{ key: string; schema: _JSONSchema }> = []
 
   for (const [key, f] of Object.entries(props)) {
-    if (f.enum) continue
     const ft = f.type
+    if (f.enum && !((ft === 'number' || ft === 'integer') && f.enum.every(v => typeof v === 'number')) && !(ft === 'boolean' && f.enum.every(v => typeof v === 'boolean'))) {
+      continue
+    }
     if (ft === 'number' || ft === 'integer') {
       numbers.push(key)
     } else if (ft === 'boolean') {
@@ -203,7 +205,7 @@ function _coerceNumber(value: unknown): unknown {
   const trimmed = value.trim()
   if (trimmed === '') return value
   const num = Number(trimmed)
-  return !isNaN(num) ? num : value
+  return Number.isFinite(num) ? num : value
 }
 
 function _coerceBoolean(value: unknown): unknown {
@@ -512,10 +514,16 @@ function _dslConfig(options: Partial<_DslConfigOptions> = {}): void {
 // ==================== Default Validator singleton ====================
 
 let _defaultValidator: InstanceType<typeof _Validator> | null = null
+let _noCoerceValidator: InstanceType<typeof _Validator> | null = null
 
 function _getDefaultValidator(): InstanceType<typeof _Validator> {
   if (!_defaultValidator) _defaultValidator = new _Validator()
   return _defaultValidator
+}
+
+function _getNoCoerceValidator(): InstanceType<typeof _Validator> {
+  if (!_noCoerceValidator) _noCoerceValidator = new _Validator({ coerceTypes: false })
+  return _noCoerceValidator
 }
 
 export { _getDefaultValidator as getDefaultValidator }
@@ -525,13 +533,14 @@ export { _getDefaultValidator as getDefaultValidator }
  */
 export function resetDefaultValidator(): void {
   _defaultValidator = null
+  _noCoerceValidator = null
 }
 
-// Initial PATTERNS keys snapshot — used by resetRuntimeState() to prune user-added patterns
-const _INITIAL_PATTERN_KEYS = {
-  phone: new Set(Object.keys(_PATTERNS.phone)),
-  idCard: new Set(Object.keys(_PATTERNS.idCard)),
-  creditCard: new Set(Object.keys(_PATTERNS.creditCard)),
+// Initial PATTERNS snapshot — used by resetRuntimeState() to restore user-overridden values
+const _INITIAL_PATTERNS = {
+  phone: { ..._PATTERNS.phone },
+  idCard: { ..._PATTERNS.idCard },
+  creditCard: { ..._PATTERNS.creditCard },
 }
 
 /**
@@ -542,16 +551,14 @@ export function resetRuntimeState(): void {
   _DslBuilder.clearCustomTypes()
   _Locale.reset()
   _TypeRegistry.setStrict(false)
-  // Remove any keys added to PATTERNS via dsl.config({ patterns })
-  for (const key of Object.keys(_PATTERNS.phone)) {
-    if (!_INITIAL_PATTERN_KEYS.phone.has(key)) delete _PATTERNS.phone[key]
-  }
-  for (const key of Object.keys(_PATTERNS.idCard)) {
-    if (!_INITIAL_PATTERN_KEYS.idCard.has(key)) delete _PATTERNS.idCard[key]
-  }
-  for (const key of Object.keys(_PATTERNS.creditCard)) {
-    if (!_INITIAL_PATTERN_KEYS.creditCard.has(key)) delete _PATTERNS.creditCard[key]
-  }
+  _restorePatternGroup(_PATTERNS.phone, _INITIAL_PATTERNS.phone)
+  _restorePatternGroup(_PATTERNS.idCard, _INITIAL_PATTERNS.idCard)
+  _restorePatternGroup(_PATTERNS.creditCard, _INITIAL_PATTERNS.creditCard)
+}
+
+function _restorePatternGroup<T>(target: Record<string, T>, snapshot: Record<string, T>): void {
+  for (const key of Object.keys(target)) delete target[key]
+  Object.assign(target, snapshot)
 }
 
 // ==================== Convenience validation functions ====================
@@ -571,7 +578,8 @@ export function validate<T = unknown>(
   const coercedData = shouldCoerce && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
-  return _getDefaultValidator().validate(normalizedSchema, coercedData as T, options)
+  const validator = shouldCoerce ? _getDefaultValidator() : _getNoCoerceValidator()
+  return validator.validate(normalizedSchema, coercedData as T, options)
 }
 
 /**
@@ -588,7 +596,8 @@ export async function validateAsync<T = unknown>(
   const coercedData = shouldCoerce && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
-  return _getDefaultValidator().validateAsync(normalizedSchema, coercedData as T, options)
+  const validator = shouldCoerce ? _getDefaultValidator() : _getNoCoerceValidator()
+  return validator.validateAsync(normalizedSchema, coercedData as T, options)
 }
 
 // ==================== dsl main function ====================

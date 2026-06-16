@@ -43,7 +43,7 @@ expect('allErrors false returns one error', failFirstOnly.errors?.length === 1)
 
 const validator = new Validator({
   allErrors:   true,
-  coerceTypes: true,
+  coerceTypes: true, // AJV native coercion; Validator also has schema-dsl smart coercion by default
   useDefaults: true,
   cache:       true,
 })

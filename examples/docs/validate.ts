@@ -141,7 +141,7 @@ console.log('validate.useDefaults.active =',   (useDefaultsResult.data as any)?.
 
 const validator = new Validator({
   allErrors:         true,         // always collect all errors
-  coerceTypes:       true,         // type coercion
+  coerceTypes:       true,         // AJV native coercion; Validator also has schema-dsl smart coercion by default
   removeAdditional:  'all',        // strip extra fields
   cache: { maxSize: 50, statsEnabled: true },
 })

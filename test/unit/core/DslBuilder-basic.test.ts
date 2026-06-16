@@ -72,9 +72,8 @@ describe('DslBuilder', () => {
         expect((schema as any).properties.phone.maxLength).toBe(11)
       })
 
-      it('should automatically correct number type to string', () => {
-        const schema = dsl({ phone: ('number!' as any).phone('cn') })
-        expect((schema as any).properties.phone.type).toBe('string')
+      it('should reject phone() on number type', () => {
+        expect(() => ('number!' as any).phone('cn')).toThrow('phone() only applies to string type')
       })
     })
 

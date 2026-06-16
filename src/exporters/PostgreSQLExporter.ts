@@ -22,8 +22,10 @@ export interface PostgreSQLExporterOptions extends ExporterOptions {
 export interface GeneratePgIndexOptions {
   name?: string
   unique?: boolean
-  method?: 'btree' | 'hash' | 'gin' | 'gist'
+  method?: 'btree' | 'hash' | 'gin' | 'gist' | string
 }
+
+const POSTGRESQL_INDEX_METHODS = new Set(['btree', 'hash', 'gin', 'gist'])
 
 // ==================== PostgreSQLExporter ====================
 
@@ -77,7 +79,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
     const fullTableName = `${this._quoteIdent(this.options.schema)}.${this._quoteIdent(tableName)}`
     const indexName = options.name ?? `idx_${tableName}_${columnName}`
     const unique = options.unique ? 'UNIQUE ' : ''
-    const method = options.method ?? 'btree'
+    const method = this._normalizeIndexMethod(options.method ?? 'btree')
     return `CREATE ${unique}INDEX ${this._quoteIdent(indexName)} ON ${fullTableName} USING ${method} (${this._quoteIdent(columnName)});`
   }
 
@@ -102,6 +104,14 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
       throw new Error(`[schema-dsl] Unsafe PostgreSQL identifier requires quoteIdentifiers=true: ${name}`)
     }
     return name
+  }
+
+  private _normalizeIndexMethod(method: string): string {
+    const normalized = method.toLowerCase()
+    if (!POSTGRESQL_INDEX_METHODS.has(normalized)) {
+      throw new Error(`[schema-dsl] Unsupported PostgreSQL index method: ${method}`)
+    }
+    return normalized
   }
 
   private _convertProperties(schema: JSONSchema): string[] {
@@ -138,8 +148,9 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
 
   private _resolveColumnType(name: string, schema: JSONSchema): { jsonType: string; sqlType: string } {
     if (schema.type) {
+      const jsonType = TypeConverter.primaryJSONType(schema.type as string | string[]) ?? String(schema.type)
       return {
-        jsonType: String(schema.type),
+        jsonType,
         sqlType: TypeConverter.toPostgreSQLType(schema.type as string | string[], schema),
       }
     }
@@ -162,7 +173,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
     }
 
     return {
-      jsonType: String(variants[0]?.type ?? 'string'),
+      jsonType: TypeConverter.primaryJSONType((variants[0]?.type as string | string[] | undefined) ?? 'string') ?? 'string',
       sqlType: [...sqlTypes][0],
     }
   }

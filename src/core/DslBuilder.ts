@@ -13,6 +13,7 @@ import type { IDslBuilder } from '../types/dsl.js'
 import { DslParser } from '../parser/DslParser.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
+import { cloneSchemaValue } from '../utils/schemaClone.js'
 import safeRegex from 'safe-regex'
 import type { Validator as ValidatorInstance } from './Validator.js'
 import type { ValidationResult } from '../types/validate.js'
@@ -233,6 +234,45 @@ export class DslBuilder implements IDslBuilder {
     this._assertType(method, 'array')
   }
 
+  private _normalizeEnumValues(values: unknown[]): unknown[] {
+    if (values.length === 1 && Array.isArray(values[0]) && this._baseSchema.type !== 'array') {
+      return [...values[0]]
+    }
+    return values
+  }
+
+  private _assertEnumCompatible(values: unknown[]): void {
+    if (values.length === 0) {
+      throw new Error('[schema-dsl] enum() requires at least one value')
+    }
+
+    const t = this._baseSchema.type
+    if (Array.isArray(t) || t === undefined) return
+
+    const isCompatible = (value: unknown): boolean => {
+      switch (t) {
+        case 'string':
+          return typeof value === 'string'
+        case 'number':
+          return typeof value === 'number' && Number.isFinite(value)
+        case 'integer':
+          return typeof value === 'number' && Number.isInteger(value)
+        case 'boolean':
+          return typeof value === 'boolean'
+        case 'null':
+          return value === null
+        default:
+          return true
+      }
+    }
+
+    const invalidIndex = values.findIndex(value => !isCompatible(value))
+    if (invalidIndex !== -1) {
+      const invalid = values[invalidIndex]
+      throw new Error(`[schema-dsl] enum() value ${JSON.stringify(invalid)} is not compatible with ${String(t)} schema`)
+    }
+  }
+
   // ==================== Common Chain Methods ====================
 
   /**
@@ -304,7 +344,9 @@ export class DslBuilder implements IDslBuilder {
    * Set allowed enum values (IDslBuilder).
    */
   enum(...values: unknown[]): this {
-    this._baseSchema.enum = values
+    const normalizedValues = this._normalizeEnumValues(values)
+    this._assertEnumCompatible(normalizedValues)
+    this._baseSchema.enum = normalizedValues
     return this
   }
 
@@ -469,14 +511,9 @@ export class DslBuilder implements IDslBuilder {
 
   // ==================== Identity / Pattern Chain Methods ====================
 
-  /** Phone number validation (auto-corrects number → string). */
+  /** Phone number validation. */
   phone(country = 'cn'): this {
-    // Auto-correct type
-    if (this._baseSchema.type === 'number' || this._baseSchema.type === 'integer') {
-      this._baseSchema.type = 'string'
-      delete (this._baseSchema as Record<string, unknown>)['minimum']
-      delete (this._baseSchema as Record<string, unknown>)['maximum']
-    }
+    this._assertStringType('phone')
     const cfg = PATTERNS.phone[country]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country: ${country}`)
     if (cfg.min !== undefined && !this._baseSchema.minLength) this._baseSchema.minLength = cfg.min
@@ -491,6 +528,7 @@ export class DslBuilder implements IDslBuilder {
 
   /** National ID (idCard) validation. */
   idCard(country = 'cn'): this {
+    this._assertStringType('idCard')
     const lower = country.toLowerCase()
     const cfg = PATTERNS.idCard[lower]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for idCard: ${country}`)
@@ -501,11 +539,13 @@ export class DslBuilder implements IDslBuilder {
 
   /** URL slug validation. */
   slugChain(): this {
+    this._assertStringType('slugChain')
     return this._setPattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.source).messages({ pattern: 'pattern.slug' })
   }
 
   /** Credit card number validation. */
   creditCard(type = 'visa'): this {
+    this._assertStringType('creditCard')
     const cfg = PATTERNS.creditCard[type.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported credit card type: ${type}`)
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
@@ -513,6 +553,7 @@ export class DslBuilder implements IDslBuilder {
 
   /** Vehicle license plate validation. */
   licensePlate(country = 'cn'): this {
+    this._assertStringType('licensePlate')
     const cfg = PATTERNS.licensePlate[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for licensePlate: ${country}`)
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
@@ -520,6 +561,7 @@ export class DslBuilder implements IDslBuilder {
 
   /** Postal code validation. */
   postalCode(country = 'cn'): this {
+    this._assertStringType('postalCode')
     const cfg = PATTERNS.postalCode[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for postalCode: ${country}`)
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
@@ -527,6 +569,7 @@ export class DslBuilder implements IDslBuilder {
 
   /** Passport number validation. */
   passport(country = 'cn'): this {
+    this._assertStringType('passport')
     const cfg = PATTERNS.passport[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for passport: ${country}`)
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
@@ -537,6 +580,7 @@ export class DslBuilder implements IDslBuilder {
    * @param preset - 'short'(3-16) | 'medium'(3-32) | 'long'(3-64) | 'N-M' | object
    */
   username(preset: string | { minLength?: number; maxLength?: number; allowUnderscore?: boolean; allowNumber?: boolean } = 'medium'): this {
+    this._assertStringType('username')
     let minLength: number
     let maxLength: number
     let allowUnderscore = true
@@ -584,6 +628,7 @@ export class DslBuilder implements IDslBuilder {
    * @param strength - 'weak' | 'medium' | 'strong' | 'veryStrong'
    */
   password(strength = 'medium'): this {
+    this._assertStringType('password')
     const pat = PASSWORD_PATTERNS[strength]
     if (!pat) throw new Error(`[schema-dsl] Invalid password strength: ${strength}`)
     if (!this._baseSchema.minLength) this._baseSchema.minLength = PASSWORD_MIN_LENGTHS[strength]
@@ -596,6 +641,9 @@ export class DslBuilder implements IDslBuilder {
   /** Number decimal places limit. */
   precision(n: number): this {
     this._assertNumberType('precision')
+    if (!Number.isInteger(n) || n < 0) {
+      throw new Error('[schema-dsl] precision() requires a non-negative integer')
+    }
     this._baseSchema.precision = n
     return this
   }
@@ -655,7 +703,7 @@ export class DslBuilder implements IDslBuilder {
    * Convert to a schema with schema-dsl internal fields (for use by Validator).
    */
   toSchema(): JSONSchema {
-    const schema: JSONSchema = { ...this._baseSchema }
+    const schema: JSONSchema = cloneSchemaValue(this._baseSchema)
 
     if (this._description) {
       schema.description = this._description
@@ -675,11 +723,11 @@ export class DslBuilder implements IDslBuilder {
     }
 
     if (this._customValidators.length > 0) {
-      schema._customValidators = this._customValidators as unknown[]
+      schema._customValidators = [...this._customValidators] as unknown[]
     }
 
     if (this._whenConditions.length > 0) {
-      schema._whenConditions = this._whenConditions
+      schema._whenConditions = cloneSchemaValue(this._whenConditions)
     }
 
     // Always output _required (BC with v1: output even when false)

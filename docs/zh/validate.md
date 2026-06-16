@@ -101,6 +101,8 @@ JSON Schema 对象，支持 JSON Schema Draft 7 标准。
 | `strict` | Schema 本身 | 如果需要禁止额外字段，请在 schema 层使用 `DslBuilder.strict()` 或等价的 schema 级约束 |
 | `coerce` | 顶层 `validate()` / `validateAsync()` 便捷函数 | 顶层 helper 默认会做字符串 → 数字 / 布尔值的便捷转换，传 `{ coerce: false }` 可关闭 |
 
+`new Validator()` 默认也会启用 schema-dsl 的窄 smart coercion。`coerceTypes: true` 表示在 schema-dsl smart coercion 之外再启用 AJV 原生 coercion；`coerceTypes: false` 或 `smartCoerce: false` 会关闭该 Validator 实例的 schema-dsl smart coercion。
+
 如果你需要在**单次调用**中覆盖错误输出，请使用上表中的 `format`、`locale`、`messages`；如果你需要调整验证器行为，请优先在 `Validator` 构造阶段配置。
 
 ---

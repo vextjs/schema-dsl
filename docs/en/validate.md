@@ -101,6 +101,8 @@ The following capabilities are **not part of** the sequential call parameters of
 | `strict` | Schema itself | If you need to prohibit additional fields, please use `DslBuilder.strict()` or equivalent schema-level constraints at the schema level |
 | `coerce` | Top-level `validate()` / `validateAsync()` convenience functions | By default, the top-level helper will perform convenient conversion of string → number/boolean value. Pass `{ coerce: false }` to turn it off. |
 
+`new Validator()` also enables schema-dsl's narrow smart coercion by default. `coerceTypes: true` opts into AJV's native coercion in addition to that schema-dsl layer; `coerceTypes: false` or `smartCoerce: false` disables schema-dsl smart coercion for the instance.
+
 If you need to override error output in a single call, please use `format`, `locale`, `messages` in the above table; if you need to adjust the validator behavior, please configure it in the `Validator` construction phase first.
 
 ---

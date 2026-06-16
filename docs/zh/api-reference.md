@@ -250,15 +250,12 @@ dsl('string!').password('strong')
 
 **返回**: **DslBuilder**
 
-**注意**: 自动将类型纠正为 `string`（即使写成 `number` 也会自动修正）
+**注意**: `phone()` 仅适用于 `string` schema。请使用 `dsl('string!').phone('cn')`；在 number schema 上调用会抛错，避免混合残留数字约束和字符串约束。
 
 **示例**:
 ```javascript
 // 推荐写法
 dsl('string!').phone('cn')
-
-// 自动纠正：number → string
-dsl('number!').phone('cn')  // 自动纠正为 string
 ```
 
 ---

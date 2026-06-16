@@ -8,3 +8,5 @@ export type { JSType } from './TypeConverter.js'
 export { SchemaHelper } from './SchemaHelper.js'
 
 export { SchemaUtils } from './SchemaUtils.js'
+
+export { cloneSchemaValue } from './schemaClone.js'

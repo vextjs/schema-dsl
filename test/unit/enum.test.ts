@@ -60,6 +60,10 @@ describe('Enum - Features', () => {
       expect(result.valid).toBe(true)
 
       result = validate(schema, { isActive: 'true' }) as any
+      expect(result.valid).toBe(true)
+      expect(result.data).toEqual({ isActive: true })
+
+      result = validate(schema, { isActive: 'true' }, { coerce: false }) as any
       expect(result.valid).toBe(false)
     })
 
@@ -73,6 +77,10 @@ describe('Enum - Features', () => {
       expect(result.valid).toBe(true)
 
       result = validate(schema, { isActive: 'true' }) as any
+      expect(result.valid).toBe(true)
+      expect(result.data).toEqual({ isActive: true })
+
+      result = validate(schema, { isActive: 'true' }, { coerce: false }) as any
       expect(result.valid).toBe(false)
     })
 
@@ -104,6 +112,10 @@ describe('Enum - Features', () => {
       expect(result.valid).toBe(true)
 
       result = validate(schema, { priority: '1' }) as any
+      expect(result.valid).toBe(true)
+      expect(result.data).toEqual({ priority: 1 })
+
+      result = validate(schema, { priority: '1' }, { coerce: false }) as any
       expect(result.valid).toBe(false)
 
       result = validate(schema, { priority: 4 }) as any

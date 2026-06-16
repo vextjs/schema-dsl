@@ -304,11 +304,11 @@ const mysqlDDL = new exporters.MySQLExporter().export('products', productSchema)
 /*
 CREATE TABLE `products` (
   `name`      VARCHAR(100) NOT NULL,
-  `price`     DECIMAL(10, 2) NOT NULL,
-  `stock`     INT NOT NULL,
+  `price`     DOUBLE NOT NULL,
+  `stock`     BIGINT NOT NULL,
   `category`  VARCHAR(255) NOT NULL,
   `createdAt` DATETIME NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 */
 
 // Markdown field documentation

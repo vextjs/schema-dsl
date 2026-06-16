@@ -118,6 +118,7 @@ export class Validator {
   private readonly _ajv: InstanceType<typeof Ajv>
   private readonly _cache: CacheManager
   private readonly _errorFormatter: ErrorFormatter
+  private readonly _smartCoerceEnabled: boolean
 
   // WeakMap: schema object → unique cacheKey (avoids JSON.stringify)
   private readonly _schemaMap = new WeakMap<object, string>()
@@ -146,7 +147,7 @@ export class Validator {
     const ajvOptions: Record<string, unknown> = {
       allErrors: options.allErrors !== false,
       useDefaults: options.useDefaults !== false,
-      coerceTypes: options.coerceTypes ?? false,
+      coerceTypes: options.coerceTypes === true || options.coerceTypes === 'array' ? options.coerceTypes : false,
       removeAdditional: options.removeAdditional ?? false,
       verbose: true, // verbose mode: enables parentSchema access on error objects
     }
@@ -159,6 +160,7 @@ export class Validator {
     }
 
     this._ajvOptions = ajvOptions
+    this._smartCoerceEnabled = options.coerceTypes !== false && options.smartCoerce !== false
     this._ajv = new Ajv(ajvOptions)
       ; (addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(this._ajv)
     CustomKeywords.registerAll(this._ajv)
@@ -353,6 +355,49 @@ export class Validator {
       }
     }
 
+    const allOfSchemas = schema.allOf
+    if (Array.isArray(allOfSchemas)) {
+      for (const childSchema of allOfSchemas) {
+        const err = await this._runCustomValidators(childSchema, data, path)
+        if (err) return err
+      }
+    }
+
+    const anyOfSchemas = schema.anyOf
+    if (Array.isArray(anyOfSchemas)) {
+      const err = await this._runCustomValidatorsForMatchingBranches(anyOfSchemas, data, path)
+      if (err) return err
+    }
+
+    const oneOfSchemas = schema.oneOf
+    if (Array.isArray(oneOfSchemas)) {
+      const err = await this._runCustomValidatorsForMatchingBranches(oneOfSchemas, data, path)
+      if (err) return err
+    }
+
+    if (schema.if) {
+      const ifSchema = this._stripCustomValidators(schema.if)
+      const branch = Validator.quickValidate(ifSchema, data) ? schema.then : schema.else
+      if (branch) {
+        const err = await this._runCustomValidators(branch, data, path)
+        if (err) return err
+      }
+    }
+
+    return null
+  }
+
+  private async _runCustomValidatorsForMatchingBranches(
+    schemas: JSONSchema[],
+    data: unknown,
+    path: string
+  ): Promise<ValidationErrorItem | null> {
+    for (const childSchema of schemas) {
+      const stripped = this._stripCustomValidators(childSchema)
+      if (!Validator.quickValidate(stripped, data)) continue
+      const err = await this._runCustomValidators(childSchema, data, path)
+      if (err) return err
+    }
     return null
   }
 
@@ -460,6 +505,10 @@ export class Validator {
 
     const internalSchema = schema as InternalSchema
 
+    if (this._smartCoerceEnabled && typeof schema !== 'function') {
+      data = this._smartCoerceTypes(data, internalSchema) as T
+    }
+
     // ConditionalBuilder (top-level)
     if (internalSchema._isConditional) {
       return this._conditionalValidator.validateConditional(internalSchema, data as Record<string, unknown>, null, data, options)
@@ -523,6 +572,55 @@ export class Validator {
 
   private _generateCacheKey(schema: object): string {
     return this._getSchemaCacheKey(schema as JSONSchema)
+  }
+
+  private _smartCoerceTypes(data: unknown, schema: JSONSchema): unknown {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return data
+    if (!schema.properties) return data
+
+    let result: Record<string, unknown> | null = null
+    const src = data as Record<string, unknown>
+
+    for (const [key, fieldSchema] of Object.entries(schema.properties)) {
+      const current = src[key]
+      let converted = current
+
+      if (fieldSchema.type === 'number' || fieldSchema.type === 'integer') {
+        converted = this._coerceNumber(current)
+      } else if (fieldSchema.type === 'boolean') {
+        converted = this._coerceBoolean(current)
+      } else if (fieldSchema.type === 'array' && Array.isArray(current) && !Array.isArray(fieldSchema.items)) {
+        const itemType = fieldSchema.items?.type
+        if (itemType === 'number' || itemType === 'integer' || itemType === 'boolean') {
+          converted = current.map(item => itemType === 'boolean' ? this._coerceBoolean(item) : this._coerceNumber(item))
+        }
+      } else if (fieldSchema.type === 'object' && fieldSchema.properties && current && typeof current === 'object' && !Array.isArray(current)) {
+        converted = this._smartCoerceTypes(current, fieldSchema)
+      }
+
+      if (converted !== current) {
+        if (!result) result = { ...src }
+        result[key] = converted
+      }
+    }
+
+    return result ?? data
+  }
+
+  private _coerceNumber(value: unknown): unknown {
+    if (typeof value !== 'string') return value
+    const trimmed = value.trim()
+    if (trimmed === '') return value
+    const num = Number(trimmed)
+    return Number.isFinite(num) ? num : value
+  }
+
+  private _coerceBoolean(value: unknown): unknown {
+    if (typeof value !== 'string') return value
+    const trimmed = value.trim().toLowerCase()
+    if (trimmed === 'true') return true
+    if (trimmed === 'false') return false
+    return value
   }
 
   private _getSchemaCacheKey(schema: JSONSchema): string {

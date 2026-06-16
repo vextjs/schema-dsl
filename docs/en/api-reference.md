@@ -266,16 +266,13 @@ Phone number validation. It automatically sets length and regular expression rul
 
 **Returns**: **DslBuilder**
 
-**Note**: The type is automatically corrected to `string`, even if the original DSL says `number`.
+**Note**: `phone()` only applies to `string` schemas. Use `dsl('string!').phone('cn')`; number schemas throw to avoid mixed numeric and string constraints.
 
 **Example**:
 
 ```javascript
 // Recommended
 dsl('string!').phone('cn')
-
-// Auto correction: number -> string
-dsl('number!').phone('cn')  // automatically corrected to string
 ```
 
 ---

@@ -118,11 +118,13 @@ const { dsl, Validator } = require('schema-dsl');
 const validator = new Validator({
   allErrors: true,      // 返回所有错误
   useDefaults: true,    // 使用默认值
-  coerceTypes: true     // ✨ 启用类型转换
+  coerceTypes: true     // ✨ 启用 AJV 原生类型转换
 });
 
 const result = validator.validate(schema, data);
 ```
+
+> **类型转换说明**: `new Validator()` 默认已启用 schema-dsl 的窄 smart coercion，用于对象字段上的字符串 → 数字 / 布尔值转换。需要 AJV 原生 coercion 行为时再使用 `coerceTypes: true`；如需关闭 schema-dsl smart coercion，请传 `coerceTypes: false` 或 `smartCoerce: false`。
 
 > **注意**: `new Validator()` 会创建一个新的 Ajv 实例，有一定的初始化开销。建议在应用启动时创建并复用，避免在每次请求中创建。
 

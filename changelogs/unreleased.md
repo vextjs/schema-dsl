@@ -7,3 +7,4 @@
 - Fixed `renderTemplate()` so placeholders only resolve own properties, preserving inherited names such as `{constructor}` and `{toString}` as literal placeholders.
 - Changed the default schema compile cache TTL to `0` so compiled schema reuse is governed by LRU capacity rather than time-based expiration, and synchronized `CacheManager.options` runtime updates with the underlying `cache-hub` cache.
 - Documented the process-global nature of custom type registration across ESM/CJS entrypoints and the startup/test cleanup boundary.
+- Fixed verified parser, validator, builder, utility, registry and exporter regressions covering conditional discriminator presence, typed enum parsing, invalid constraint diagnostics, async custom validators in combinators, schema-aware cloning, primitive type override protection, SQL/MongoDB export safety, and nested SchemaUtils documentation output.

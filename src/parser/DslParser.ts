@@ -63,7 +63,22 @@ function _toTypeResolveOptions(
  */
 function _isRawJsonSchema(obj: Record<string, unknown>): boolean {
   if (typeof obj['type'] === 'string' && JSON_SCHEMA_TYPES.has(obj['type'] as string)) return true
-  if ('anyOf' in obj || 'oneOf' in obj || 'allOf' in obj || '$ref' in obj) return true
+  if ('anyOf' in obj || 'oneOf' in obj || 'allOf' in obj || '$ref' in obj || '$defs' in obj || 'definitions' in obj) return true
+
+  const props = obj['properties']
+  if (props && typeof props === 'object' && !Array.isArray(props)) {
+    const values = Object.values(props as Record<string, unknown>)
+    if (values.length === 0) return true
+    if (values.every(value => value && typeof value === 'object' && !Array.isArray(value) && _isRawJsonSchema(value as Record<string, unknown>))) {
+      return true
+    }
+  }
+
+  const items = obj['items']
+  if (items && typeof items === 'object' && !Array.isArray(items)) {
+    return _isRawJsonSchema(items as Record<string, unknown>)
+  }
+
   return false
 }
 
@@ -105,7 +120,33 @@ function _schemaForTarget(targetField: string, dslValue: unknown, options?: DslP
   return result
 }
 
-function _buildMatchSchema(conditionField: string, targetField: string, map: Record<string, unknown>, options?: DslParseOptions): JSONSchema {
+function _coerceConditionConst(rawValue: string, conditionSchema?: JSONSchema): string | number | boolean {
+  const type = Array.isArray(conditionSchema?.type)
+    ? conditionSchema?.type.find(t => t !== 'null')
+    : conditionSchema?.type
+
+  if ((type === 'number' || type === 'integer') && /^-?\d+(?:\.\d+)?$/.test(rawValue)) {
+    const value = Number(rawValue)
+    if (!Number.isFinite(value)) return rawValue
+    if (type === 'integer' && !Number.isInteger(value)) return rawValue
+    return value
+  }
+
+  if (type === 'boolean') {
+    if (rawValue === 'true') return true
+    if (rawValue === 'false') return false
+  }
+
+  return rawValue
+}
+
+function _buildMatchSchema(
+  conditionField: string,
+  targetField: string,
+  map: Record<string, unknown>,
+  options?: DslParseOptions,
+  conditionSchema?: JSONSchema
+): JSONSchema {
   const entries = Object.entries(map).filter(([k]) => k !== '_default')
   const defaultDsl = map['_default']
 
@@ -136,7 +177,10 @@ function _buildMatchSchema(conditionField: string, targetField: string, map: Rec
     }
 
     return {
-      if: { properties: { [conditionField]: { const: val } } },
+      if: {
+        properties: { [conditionField]: { const: _coerceConditionConst(val, conditionSchema) } },
+        required: [conditionField],
+      },
       then: thenSchema,
       else: build(index + 1),
     }
@@ -170,7 +214,10 @@ function _buildIfSchema(conditionField: string, targetField: string, thenDsl: un
   }
 
   return {
-    if: { properties: { [conditionField]: { const: true } } },
+    if: {
+      properties: { [conditionField]: { const: true } },
+      required: [conditionField],
+    },
     then: thenResult,
     else: elseResult,
   }
@@ -228,7 +275,7 @@ export const DslParser = {
         }
       }
       const numericValues = rawValues.map(v => Number(v))
-      if (rawValues.every((v, i) => v !== '' && !isNaN(numericValues[i]))) {
+      if (rawValues.every((v, i) => /^-?\d+(?:\.\d+)?$/.test(v) && Number.isFinite(numericValues[i]))) {
         // Numeric enum — always use 'number' type for v1 compat
         return {
           type: 'number',
@@ -265,7 +312,12 @@ export const DslParser = {
     // 'array:1-5<string:1-20>'         → { type:'array', minItems:1, maxItems:5, items:{ type:'string', minLength:1, maxLength:20 } }
     const arrayAngleWithConstraintMatch = /^array:([^<]+)<(.+)>$/.exec(s)
     if (arrayAngleWithConstraintMatch) {
-      const arrayConstraint = ConstraintParser.parse(arrayAngleWithConstraintMatch[1], 'array')
+      const arrayConstraint = ConstraintParser.parse(arrayAngleWithConstraintMatch[1], 'array', {
+        diagnostics: options?.diagnostics,
+        path: options?.path ?? '',
+        input: s,
+        emitWarning: options?.emitWarning,
+      })
       const itemSchema = DslParser.parseString(arrayAngleWithConstraintMatch[2], _withPath(options, `${options?.path ?? ''}[]`))
       return {
         type: 'array',
@@ -323,7 +375,12 @@ export const DslParser = {
 
     // ConstraintParser parse — use resolved base type (e.g., 'string' for 'alphanum')
     const resolvedBaseType = (typeDef.baseSchema.type as string) ?? typeName
-    const constraints = ConstraintParser.parse(constraintStr, resolvedBaseType)
+    const constraints = ConstraintParser.parse(constraintStr, resolvedBaseType, {
+      diagnostics: options?.diagnostics,
+      path: options?.path ?? '',
+      input: dslStr,
+      emitWarning: options?.emitWarning,
+    })
 
     // SchemaCompiler assembly
     const schema = SchemaCompiler.compile(typeDef, constraints, {
@@ -342,6 +399,7 @@ export const DslParser = {
       properties: {},
       required: [],
     }
+    const pendingConditionalSchemas: Array<() => JSONSchema> = []
 
     for (const [rawKey, value] of Object.entries(dslObj)) {
       let fieldKey = rawKey
@@ -360,12 +418,17 @@ export const DslParser = {
       } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         const obj = value as Record<string, unknown>
         if (obj['_isMatch']) {
-          if (!schema.allOf) schema.allOf = []
-          schema.allOf.push(_buildMatchSchema(String(obj['field']), fieldKey, obj['map'] as Record<string, unknown>, options))
-          fieldSchema = { description: `Depends on ${String(obj['field'])}` }
+          const conditionField = String(obj['field'])
+          pendingConditionalSchemas.push(() => _buildMatchSchema(
+            conditionField,
+            fieldKey,
+            obj['map'] as Record<string, unknown>,
+            options,
+            (schema.properties as Record<string, JSONSchema>)[conditionField]
+          ))
+          fieldSchema = { description: `Depends on ${conditionField}` }
         } else if (obj['_isIf']) {
-          if (!schema.allOf) schema.allOf = []
-          schema.allOf.push(_buildIfSchema(String(obj['condition']), fieldKey, obj['then'], obj['else'], options))
+          pendingConditionalSchemas.push(() => _buildIfSchema(String(obj['condition']), fieldKey, obj['then'], obj['else'], options))
           fieldSchema = { description: `Conditional field based on ${String(obj['condition'])}` }
         } else if (typeof obj['toSchema'] === 'function') {
           // DslBuilder instance or ConditionalBuilder (has toSchema method)
@@ -396,6 +459,10 @@ export const DslParser = {
       _cleanRequiredMarks(cleanSchema)
 
         ; (schema.properties as Record<string, JSONSchema>)[fieldKey] = cleanSchema
+    }
+
+    if (pendingConditionalSchemas.length > 0) {
+      schema.allOf = pendingConditionalSchemas.map(build => build())
     }
 
     if ((schema.required as string[]).length === 0) {
@@ -441,8 +508,10 @@ export const DslParser = {
   ): (string | number | boolean)[] {
     if (type === 'number' || type === 'integer') {
       return values.map(v => {
-        const n = parseFloat(v)
-        if (isNaN(n)) throw new Error(`[schema-dsl] Invalid number enum value: "${v}"`)
+        if (!/^-?\d+(?:\.\d+)?$/.test(v)) throw new Error(`[schema-dsl] Invalid number enum value: "${v}"`)
+        const n = Number(v)
+        if (!Number.isFinite(n)) throw new Error(`[schema-dsl] Invalid number enum value: "${v}"`)
+        if (type === 'integer' && !Number.isInteger(n)) throw new Error(`[schema-dsl] Invalid integer enum value: "${v}"`)
         return n
       })
     }

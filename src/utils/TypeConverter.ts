@@ -25,6 +25,11 @@ const MYSQL_INTEGER_RANGES = [
 // ==================== TypeConverter ====================
 
 export class TypeConverter {
+  static primaryJSONType(jsonSchemaType: JSType): string | null {
+    if (!Array.isArray(jsonSchemaType)) return jsonSchemaType
+    return jsonSchemaType.find(type => String(type).toLowerCase() !== 'null') ?? jsonSchemaType[0] ?? null
+  }
+
   // ========== JSON Schema types ==========
 
   static toJSONSchemaType(nativeType: string): string {
@@ -49,7 +54,7 @@ export class TypeConverter {
   // ========== MongoDB types ==========
 
   static toMongoDBType(jsonSchemaType: JSType): string {
-    const t = Array.isArray(jsonSchemaType) ? jsonSchemaType[0] : jsonSchemaType
+    const t = TypeConverter.primaryJSONType(jsonSchemaType)
     const mapping: Record<string, string> = {
       string: 'string',
       number: 'double',
@@ -65,10 +70,10 @@ export class TypeConverter {
   // ========== MySQL types ==========
 
   static toMySQLType(jsonSchemaType: JSType, schema?: JSONSchema): string {
-    const t = Array.isArray(jsonSchemaType) ? jsonSchemaType[0] : jsonSchemaType
+    const t = TypeConverter.primaryJSONType(jsonSchemaType)
 
-    // Enum detection: if schema has enum values, use ENUM type
-    if (schema?.enum && Array.isArray(schema.enum)) {
+    // String enum detection: SQL ENUM is string-valued; numeric/boolean enums keep their native column type.
+    if (String(t).toLowerCase() === 'string' && schema?.enum && Array.isArray(schema.enum)) {
       const values = (schema.enum as unknown[]).map(v => `'${String(v).replace(/'/g, "''")}'`).join(', ')
       return `ENUM(${values})`
     }
@@ -114,7 +119,7 @@ export class TypeConverter {
   // ========== PostgreSQL types ==========
 
   static toPostgreSQLType(jsonSchemaType: JSType, schema?: JSONSchema): string {
-    const t = Array.isArray(jsonSchemaType) ? jsonSchemaType[0] : jsonSchemaType
+    const t = TypeConverter.primaryJSONType(jsonSchemaType)
 
     switch (String(t).toLowerCase()) {
       case 'string': {

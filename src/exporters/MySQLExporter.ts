@@ -143,8 +143,9 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
 
   private _resolveColumnType(name: string, schema: JSONSchema): { jsonType: string; sqlType: string } {
     if (schema.type) {
+      const jsonType = TypeConverter.primaryJSONType(schema.type as string | string[]) ?? String(schema.type)
       return {
-        jsonType: String(schema.type),
+        jsonType,
         sqlType: TypeConverter.toMySQLType(schema.type as string | string[], schema),
       }
     }
@@ -167,7 +168,7 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
     }
 
     return {
-      jsonType: String(variants[0]?.type ?? 'string'),
+      jsonType: TypeConverter.primaryJSONType((variants[0]?.type as string | string[] | undefined) ?? 'string') ?? 'string',
       sqlType: [...sqlTypes][0],
     }
   }

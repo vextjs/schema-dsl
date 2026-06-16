@@ -190,11 +190,8 @@ describe('DslBuilder - Complete Tests', () => {
       })
     })
 
-    it('should automatically correct number to string', () => {
-      const schema = dsl({ p: ('number!' as any).phone('cn') })
-      expect((schema as any).properties.p.type).toBe('string')
-      expect((schema as any).properties.p.minimum).toBeUndefined()
-      expect((schema as any).properties.p.maximum).toBeUndefined()
+    it('should reject number schemas', () => {
+      expect(() => ('number!' as any).phone('cn')).toThrow('phone() only applies to string type')
     })
 
     it('should add regex validation', () => {

@@ -7,6 +7,7 @@
 
 import type { JSONSchema } from '../types/schema.js'
 import { DslAdapter } from '../adapters/DslAdapter.js'
+import { cloneSchemaValue } from './schemaClone.js'
 
 // Internal: chainable schema wrapper type
 interface ChainableSchema extends JSONSchema {
@@ -218,14 +219,8 @@ export class SchemaUtils {
       md += '| Field | Type | Required | Constraints | Description |\n'
       md += '|-------|------|----------|-------------|-------------|\n'
 
-      for (const [key, prop] of Object.entries(schema.properties)) {
-        const required = schema.required?.includes(key) ? '✅' : '❌'
-        const type = SchemaUtils._escapeMdCell(SchemaUtils._formatExportType(prop))
-        const description = SchemaUtils._escapeMdCell(SchemaUtils._getDisplayDescription(prop))
-        const constraints = SchemaUtils._escapeMdCell(SchemaUtils._formatExportConstraints(prop))
-        const escapedKey = SchemaUtils._escapeMdCell(key)
-
-        md += `| ${escapedKey} | ${type} | ${required} | ${constraints} | ${description} |\n`
+      for (const row of SchemaUtils._collectMarkdownRows(schema)) {
+        md += `| ${row.field} | ${row.type} | ${row.required} | ${row.constraints} | ${row.description} |\n`
       }
     }
 
@@ -233,7 +228,7 @@ export class SchemaUtils {
   }
 
   static clone(schema: JSONSchema): JSONSchema {
-    return JSON.parse(JSON.stringify(schema)) as JSONSchema
+    return cloneSchemaValue(schema)
   }
 
   /**
@@ -277,6 +272,41 @@ export class SchemaUtils {
 
     if (description && label && label !== description) return `${label} - ${description}`
     return description ?? label ?? '-'
+  }
+
+  private static _collectMarkdownRows(schema: JSONSchema, prefix = ''): Array<{
+    field: string
+    type: string
+    required: string
+    constraints: string
+    description: string
+  }> {
+    const rows: Array<{
+      field: string
+      type: string
+      required: string
+      constraints: string
+      description: string
+    }> = []
+
+    if (!schema.properties) return rows
+
+    for (const [key, prop] of Object.entries(schema.properties)) {
+      const path = prefix ? `${prefix}.${key}` : key
+      rows.push({
+        field: SchemaUtils._escapeMdCell(path),
+        type: SchemaUtils._escapeMdCell(SchemaUtils._formatExportType(prop)),
+        required: schema.required?.includes(key) ? '✅' : '❌',
+        constraints: SchemaUtils._escapeMdCell(SchemaUtils._formatExportConstraints(prop)),
+        description: SchemaUtils._escapeMdCell(SchemaUtils._getDisplayDescription(prop)),
+      })
+
+      if (prop.properties) {
+        rows.push(...SchemaUtils._collectMarkdownRows(prop, path))
+      }
+    }
+
+    return rows
   }
 
   private static _formatExportType(prop: JSONSchema): string {
@@ -334,23 +364,45 @@ export class SchemaUtils {
     base: Record<string, unknown>,
     ext: Record<string, unknown>,
   ): Record<string, unknown> {
-    const result = { ...base }
+    const result = cloneSchemaValue(base)
     for (const [key, extVal] of Object.entries(ext)) {
       const baseVal = result[key]
-      if (
-        baseVal && extVal &&
-        typeof baseVal === 'object' && typeof extVal === 'object' &&
-        !Array.isArray(baseVal) && !Array.isArray(extVal)
-      ) {
+      result[key] = SchemaUtils._mergeSchemaValue(baseVal, extVal)
+    }
+    return result
+  }
+
+  private static _mergeSchemaValue(baseVal: unknown, extVal: unknown): unknown {
+    if (!SchemaUtils._isPlainRecord(baseVal) || !SchemaUtils._isPlainRecord(extVal)) {
+      return cloneSchemaValue(extVal)
+    }
+
+    const baseType = baseVal['type']
+    const extType = extVal['type']
+    if (baseType !== undefined && extType !== undefined && JSON.stringify(baseType) !== JSON.stringify(extType)) {
+      return cloneSchemaValue(extVal)
+    }
+
+    const result = cloneSchemaValue(baseVal)
+    for (const [key, value] of Object.entries(extVal)) {
+      if (key === 'properties' && SchemaUtils._isPlainRecord(result[key]) && SchemaUtils._isPlainRecord(value)) {
         result[key] = SchemaUtils._mergeProperties(
-          baseVal as Record<string, unknown>,
-          extVal as Record<string, unknown>,
+          result[key] as Record<string, unknown>,
+          value as Record<string, unknown>,
         )
+      } else if (key === 'required' && Array.isArray(result[key]) && Array.isArray(value)) {
+        result[key] = [...new Set([...(result[key] as unknown[]), ...value])]
       } else {
-        result[key] = extVal
+        result[key] = cloneSchemaValue(value)
       }
     }
     return result
+  }
+
+  private static _isPlainRecord(value: unknown): value is Record<string, unknown> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+    const proto = Object.getPrototypeOf(value)
+    return proto === Object.prototype || proto === null
   }
 
   private static _deleteRequired(obj: Record<string, unknown>): void {
@@ -367,7 +419,7 @@ export class SchemaUtils {
 
   private static _clone(schema: JSONSchema | ChainableSchema): Record<string, unknown> {
     const raw = '_isChainable' in schema ? this._extractSchema(schema as ChainableSchema) : schema
-    return JSON.parse(JSON.stringify(raw)) as Record<string, unknown>
+    return cloneSchemaValue(raw) as Record<string, unknown>
   }
 
   private static _makeChainable(schema: JSONSchema): ChainableSchema {

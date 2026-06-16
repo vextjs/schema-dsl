@@ -59,7 +59,7 @@ export class ConditionalBuilder implements IConditionalBuilder {
     // v1 compat: accept string field name and convert to function
     if (typeof conditionFn === 'string') {
       const fieldName = conditionFn
-      conditionFn = ((data: unknown) => Boolean((data as Record<string, unknown>)[fieldName])) as ConditionFn
+      conditionFn = ((data: unknown) => (data as Record<string, unknown>)[fieldName] === true) as ConditionFn
     }
     if (typeof conditionFn !== 'function') {
       throw new Error('[schema-dsl] Condition must be a function')

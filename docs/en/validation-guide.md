@@ -118,11 +118,13 @@ const { dsl, Validator } = require('schema-dsl');
 const validator = new Validator({
   allErrors: true, // Return all errors
   useDefaults: true, // use default values
-  coerceTypes: true // ✨ Enable type conversion
+  coerceTypes: true // ✨ Enable AJV native type coercion
 });
 
 const result = validator.validate(schema, data);
 ```
+
+> **Coercion note**: `new Validator()` already enables schema-dsl's narrow smart coercion for object fields such as string → number/boolean. Use `coerceTypes: true` when you also need AJV's native coercion behavior; use `coerceTypes: false` or `smartCoerce: false` to disable schema-dsl smart coercion.
 
 > **Note**: `new Validator()` will create a new Ajv instance, which has a certain initialization overhead. It is recommended to create and reuse when the application starts to avoid creating it in every request.
 

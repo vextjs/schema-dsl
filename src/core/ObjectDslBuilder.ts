@@ -15,6 +15,7 @@
 
 import type { JSONSchema } from '../types/schema.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
+import { cloneSchemaValue } from '../utils/schemaClone.js'
 
 export class ObjectDslBuilder {
   readonly _isDslBuilder = true as const
@@ -30,7 +31,7 @@ export class ObjectDslBuilder {
 
   /** Return internal JSONSchema (Validator.validate() duck-type entry point). */
   toSchema(): JSONSchema {
-    return this._schema
+    return cloneSchemaValue(this._schema)
   }
 
   /** Return clean JSON Schema (internal schema-dsl keywords stripped; safe for serialization or external tools). */

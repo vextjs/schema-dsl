@@ -1,4 +1,5 @@
 import type { JSONSchema } from '../types/schema.js'
+import { cloneSchemaValue } from '../utils/schemaClone.js'
 
 /**
  * Type definition (structure of each entry in TypeRegistry)
@@ -15,11 +16,12 @@ export interface TypeDefinition {
 export type SchemaDslUnknownTypeMode = 'warn' | 'error' | 'ignore'
 
 export interface SchemaDslDiagnostic {
-  code: 'UNKNOWN_TYPE'
+  code: 'UNKNOWN_TYPE' | 'INVALID_CONSTRAINT'
   severity: 'warning' | 'error'
   path: string
   input: string
   typeName?: string
+  constraint?: string
   message: string
 }
 
@@ -167,6 +169,19 @@ const BUILTIN_TYPES: Map<string, TypeDefinition> = new Map([
   ['decimal', { baseSchema: { type: 'number' } }],
 ])
 
+const PROTECTED_BUILTIN_TYPES = new Set([
+  'string',
+  'number',
+  'integer',
+  'int',
+  'boolean',
+  'object',
+  'array',
+  'null',
+  'any',
+  'mixed',
+])
+
 function getUnknownTypeMessage(typeName: string): string {
   return `[schema-dsl] Unknown type "${typeName}"`
 }
@@ -200,6 +215,9 @@ export const TypeRegistry = {
    * Built-in types take priority; custom types may override non-primitive built-ins.
    */
   resolve(typeName: string, options: TypeResolveOptions = {}): TypeDefinition {
+    const protectedBuiltin = PROTECTED_BUILTIN_TYPES.has(typeName) ? BUILTIN_TYPES.get(typeName) : undefined
+    if (protectedBuiltin) return protectedBuiltin
+
     // Dynamic types: call factory function each time
     const dynamicFn = DYNAMIC_TYPES.get(typeName)
     if (dynamicFn) {
@@ -238,6 +256,9 @@ export const TypeRegistry = {
     if (!name || typeof name !== 'string') {
       throw new Error('[schema-dsl] TypeRegistry.register: name must be a non-empty string')
     }
+    if (PROTECTED_BUILTIN_TYPES.has(name)) {
+      throw new Error(`[schema-dsl] Cannot override built-in primitive type "${name}"`)
+    }
     // Accept a raw Partial<JSONSchema> and wrap it automatically
     const normalized: TypeDefinition =
       'baseSchema' in def ? (def as TypeDefinition) : { baseSchema: def as Partial<JSONSchema> }
@@ -251,6 +272,9 @@ export const TypeRegistry = {
   registerDynamic(name: string, factory: () => JSONSchema): void {
     if (!name || typeof name !== 'string') {
       throw new Error('[schema-dsl] TypeRegistry.registerDynamic: name must be a non-empty string')
+    }
+    if (PROTECTED_BUILTIN_TYPES.has(name)) {
+      throw new Error(`[schema-dsl] Cannot override built-in primitive type "${name}"`)
     }
     DYNAMIC_TYPES.set(name, factory)
     CUSTOM_TYPES.delete(name)
@@ -316,16 +340,35 @@ export const TypeRegistry = {
    * code-point counting advantage internally (CK-Y04).
    */
   toJsonSchema(schema: JSONSchema): JSONSchema {
-    const result: JSONSchema = {}
-    for (const [k, v] of Object.entries(schema)) {
-      if (k === 'exactLength' && typeof v === 'number') {
-        // BC-compat: exactLength (AJV custom keyword) → standard JSON Schema minLength + maxLength
-        result.minLength = v
-        result.maxLength = v
-      } else if (!INTERNAL_KEYS.has(k)) {
-        result[k] = v
+    const strip = (value: unknown, seen: WeakMap<object, unknown>): unknown => {
+      if (Array.isArray(value)) {
+        const existing = seen.get(value)
+        if (existing) return existing
+        const result: unknown[] = []
+        seen.set(value, result)
+        for (const item of value) result.push(strip(item, seen))
+        return result
       }
+
+      if (!value || typeof value !== 'object') return value
+
+      const existing = seen.get(value)
+      if (existing) return existing
+
+      const result: JSONSchema = {}
+      seen.set(value, result)
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        if (k === 'exactLength' && typeof v === 'number') {
+          // BC-compat: exactLength (AJV custom keyword) → standard JSON Schema minLength + maxLength
+          result.minLength = v
+          result.maxLength = v
+        } else if (!INTERNAL_KEYS.has(k)) {
+          result[k] = strip(v, seen)
+        }
+      }
+      return result
     }
-    return result
+
+    return strip(cloneSchemaValue(schema), new WeakMap<object, unknown>()) as JSONSchema
   },
 } as const

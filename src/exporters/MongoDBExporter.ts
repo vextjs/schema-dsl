@@ -64,7 +64,7 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
    */
   generateCommand(collectionName: string, jsonSchema: JSONSchema): string {
     const command = this.generateCreateCommand(collectionName, jsonSchema)
-    return `db.createCollection("${command.collectionName}", ${JSON.stringify(command.options, null, 2)})`
+    return `db.createCollection(${JSON.stringify(command.collectionName)}, ${JSON.stringify(command.options, null, 2)})`
   }
 
   /**

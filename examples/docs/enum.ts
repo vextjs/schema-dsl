@@ -23,11 +23,11 @@ const prioritySchema = dsl({ priority: 'enum:number:1|2|3|4|5!' })
 
 console.log('enum.number.valid   =', validate(prioritySchema, { priority: 3 }).valid)      // true
 console.log('enum.number.invalid =', validate(prioritySchema, { priority: 6 }).valid)      // false
-// Coercion OFF by default — string is invalid without smartCoerce
-console.log('enum.number.string  =', validate(prioritySchema, { priority: '3' }).valid)   // false
-// With smartCoerce
-console.log('enum.number.coerced =',
-  validate(prioritySchema, { priority: '3' }, { smartCoerce: true }).valid)                // true
+// Top-level validate() smart-coerces numeric enum strings by default
+console.log('enum.number.string  =', validate(prioritySchema, { priority: '3' }).valid)   // true
+// Disable coercion when exact input types are required
+console.log('enum.number.strict  =',
+  validate(prioritySchema, { priority: '3' }, { coerce: false }).valid)                   // false
 
 // ============================================================
 // 3. Boolean enum — enum:boolean:true|false

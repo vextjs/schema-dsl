@@ -296,7 +296,8 @@ export class CustomKeywords {
     const requiredAll: ValidateFnWithErrors = (schema: unknown, data: unknown, parentSchema?: unknown): boolean => {
       if (!schema) return true
       const props = ((parentSchema as Record<string, unknown>)?.['properties'] as Record<string, unknown>) ?? {}
-      const missingKeys = Object.keys(props).filter(k => !(k in (data as Record<string, unknown>)))
+      const record = data as Record<string, unknown>
+      const missingKeys = Object.keys(props).filter(k => !Object.prototype.hasOwnProperty.call(record, k))
       if (missingKeys.length > 0) {
         requiredAll.errors = [{
           keyword: 'requiredAll',
@@ -330,20 +331,31 @@ export class CustomKeywords {
 
   // ─── Array validators ───────────────────────────────────────────────────
 
-  private static _deepEqual(a: unknown, b: unknown): boolean {
+  private static _deepEqual(a: unknown, b: unknown, seen = new WeakMap<object, WeakSet<object>>()): boolean {
     if (a === b) return true
     if (a === null || b === null || typeof a !== typeof b) return false
     if (typeof a !== 'object') return false
     if (Array.isArray(a) !== Array.isArray(b)) return false
+
+    const aObj = a as object
+    const bObj = b as object
+    const seenForA = seen.get(aObj)
+    if (seenForA?.has(bObj)) return true
+    if (seenForA) {
+      seenForA.add(bObj)
+    } else {
+      seen.set(aObj, new WeakSet([bObj]))
+    }
+
     if (Array.isArray(a)) {
       if ((a as unknown[]).length !== (b as unknown[]).length) return false
-      return (a as unknown[]).every((item, i) => CustomKeywords._deepEqual(item, (b as unknown[])[i]))
+      return (a as unknown[]).every((item, i) => CustomKeywords._deepEqual(item, (b as unknown[])[i], seen))
     }
     const aKeys = Object.keys(a as object).sort()
     const bKeys = Object.keys(b as object).sort()
     if (aKeys.length !== bKeys.length) return false
     return aKeys.every(k =>
-      CustomKeywords._deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])
+      CustomKeywords._deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], seen)
     )
   }
 
