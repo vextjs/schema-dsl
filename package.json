@@ -16,6 +16,56 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./pure": {
+      "import": {
+        "types": "./dist/pure.d.ts",
+        "default": "./dist/pure.js"
+      },
+      "require": {
+        "types": "./dist/pure.d.cts",
+        "default": "./dist/pure.cjs"
+      }
+    },
+    "./compat": {
+      "import": {
+        "types": "./dist/compat.d.ts",
+        "default": "./dist/compat.js"
+      },
+      "require": {
+        "types": "./dist/compat.d.cts",
+        "default": "./dist/compat.cjs"
+      }
+    },
+    "./register-string": {
+      "import": {
+        "types": "./dist/register-string.d.ts",
+        "default": "./dist/register-string.js"
+      },
+      "require": {
+        "types": "./dist/register-string.d.cts",
+        "default": "./dist/register-string.cjs"
+      }
+    },
+    "./transform": {
+      "import": {
+        "types": "./dist/transform.d.ts",
+        "default": "./dist/transform.js"
+      },
+      "require": {
+        "types": "./dist/transform.d.cts",
+        "default": "./dist/transform.cjs"
+      }
+    },
+    "./esbuild": {
+      "import": {
+        "types": "./dist/esbuild.d.ts",
+        "default": "./dist/esbuild.js"
+      },
+      "require": {
+        "types": "./dist/esbuild.d.cts",
+        "default": "./dist/esbuild.cjs"
+      }
+    },
     "./plugins/custom-format": {
       "import": {
         "types": "./dist/plugins/custom-format.d.ts",
@@ -104,17 +154,32 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@babel/generator": "^7.29.7",
+    "@babel/parser": "^7.29.7",
+    "@babel/traverse": "^7.29.7",
+    "@babel/types": "^7.29.7",
     "ajv": "8.18.0",
     "ajv-formats": "2.1.1",
     "cache-hub": "2.2.4",
     "json5": "2.2.3",
     "safe-regex": "2.1.1"
   },
+  "peerDependencies": {
+    "esbuild": "^0.28.1"
+  },
+  "peerDependenciesMeta": {
+    "esbuild": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@types/babel__generator": "^7.27.0",
+    "@types/babel__traverse": "^7.28.0",
     "@types/node": "25.6.0",
     "@typescript-eslint/eslint-plugin": "8.58.1",
     "@typescript-eslint/parser": "8.58.1",
     "@vitest/coverage-v8": "3.2.6",
+    "esbuild": "^0.28.1",
     "eslint": "9.39.4",
     "fastest-validator": "1.19.1",
     "joi": "18.1.2",

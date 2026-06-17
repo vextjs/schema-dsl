@@ -3,5 +3,4 @@ import dsl, { installStringExtensions } from './api.js'
 export * from './api.js'
 export { default } from './api.js'
 
-// v1 compatibility: root imports enable direct string chaining by default.
 installStringExtensions(dsl)
