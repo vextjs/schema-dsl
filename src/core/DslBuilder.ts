@@ -5,11 +5,10 @@
  *   - Constructor delegates to DslParser.parseString() (fixes DA-01/DA-02/DA-03)
  *   - Custom type registration delegates to TypeRegistry (fixes DB-01/DB-02: unifies three type lists)
  *   - _customMessages merges instead of overwriting (fixes v1 overwrite bug)
- *   - Implements IDslBuilder interface (error/optional/required/enum chain methods)
+ *   - Matches IDslBuilder structurally (error/optional/required/enum chain methods)
  */
 
 import type { JSONSchema } from '../types/schema.js'
-import type { IDslBuilder } from '../types/dsl.js'
 import { DslParser } from '../parser/DslParser.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
@@ -54,7 +53,7 @@ const PASSWORD_MIN_LENGTHS: Record<string, number> = {
 
 // ==================== DslBuilder ====================
 
-export class DslBuilder implements IDslBuilder {
+export class DslBuilder {
   // Required IDslBuilder field
   readonly _isDslBuilder = true as const
 

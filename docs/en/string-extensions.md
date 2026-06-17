@@ -69,6 +69,7 @@ The root `schema-dsl` entry still installs String extensions by default for v1 c
 | `schema-dsl/pure` | Core API only; does not install String extensions | Libraries, workers, tests, SSR, or isolated runtimes |
 | `schema-dsl/compat` | Compatibility entry with the same String-extension side effect as the root entry | Code that wants to make compatibility explicit |
 | `schema-dsl/register-string` | Explicit side-effect entry that installs String extensions | Application startup after importing from `schema-dsl/pure` |
+| `schema-dsl/string-types` | TypeScript declarations for String-chain authoring only; no runtime installation | TS projects that use compile-time transform and want IDE hints |
 | `schema-dsl/transform` | Compile-time transform for static String-chain DSL calls | Build tools and custom adapters |
 | `schema-dsl/esbuild` | Optional esbuild adapter around the transform | esbuild build/context flows |
 
@@ -81,7 +82,7 @@ const schema = dsl({
 });
 ```
 
-For builds that want String-chain authoring without runtime prototype mutation, use `transformSchemaDsl()` or `schemaDslEsbuildPlugin()` to rewrite supported static chains into `dsl('...')` calls that import from `schema-dsl/pure`.
+For builds that want String-chain authoring without runtime prototype mutation, use `transformSchemaDsl()` or `schemaDslEsbuildPlugin()` to rewrite static chains into `dsl('...')` calls that import from `schema-dsl/pure`. The default transform covers the full built-in String extension method set and naked pipe enums; add user-defined methods with `additionalMethods`.
 
 ---
 
@@ -491,7 +492,7 @@ const schema = dsl({
 
 ### Q3: Is TypeScript supported?
 
-**A**: Fully supported, via type definition file.
+**A**: Fully supported. Use `dsl('...')` for the default no-global-type path, or import `schema-dsl/string-types` when a TypeScript project intentionally wants String-chain IDE hints for code that is compiled through the transform.
 
 ### Q4: What is the correct error code?
 

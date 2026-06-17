@@ -571,15 +571,29 @@ const schema = dsl({
 
 ---
 
+### `schema-dsl/string-types`
+
+Opt-in TypeScript declaration entry for String-chain authoring. Importing this entry only augments TypeScript's `String` interface; it does not install runtime `String.prototype` extensions.
+
+```typescript
+import { dsl } from 'schema-dsl/pure';
+import 'schema-dsl/string-types';
+
+const field = 'email!'.label('Email').required();
+const schema = dsl({ email: field });
+```
+
+---
+
 ### `transformSchemaDsl(source, options?)`
 
-Rewrites static String-chain DSL calls at compile time and injects imports from `schema-dsl/pure`. By default, it transforms `.description()` chains on schema-dsl string literals such as `"email!".description("Login email")`; pass `methods` to opt in additional chain methods.
+Rewrites static String-chain DSL calls at compile time and injects imports from `schema-dsl/pure`. By default, it transforms the complete built-in String-chain API on schema-dsl literals, including methods such as `.label()`, `.pattern()`, `.required()`, `.toJsonSchema()`, and naked pipe enums such as `"admin|user|guest".label("Role")`. Use `additionalMethods` for user-defined chain methods; `methods` remains a legacy replacement set when you intentionally need to override the built-in default list.
 
 ```javascript
 import { transformSchemaDsl } from 'schema-dsl/transform';
 
 const result = transformSchemaDsl(
-  'export const field = "email!".description("Login email")',
+  'export const field = "admin|user|guest".label("Role")',
   { filename: 'schema.ts' }
 );
 
@@ -594,9 +608,11 @@ console.log(result.code);
 | `filename` | `string` | `'<unknown>'` | File name used for parser mode, source maps, and warnings |
 | `sourceMap` | `boolean | 'inline'` | `false` | Generates a source map when enabled |
 | `importFrom` | `string` | `'schema-dsl/pure'` | Import source used for the injected `dsl` helper |
-| `methods` | `readonly string[]` | `['description']` | Chain method names eligible for compile-time rewriting |
+| `methods` | `readonly string[]` | Full built-in String extension list | Legacy replacement set for chain method names eligible for compile-time rewriting |
+| `additionalMethods` | `readonly string[]` | `[]` | User-defined chain methods appended to the configured method set |
 | `include` | `(filename) => boolean` | - | Optional file filter |
-| `onWarning` | `(warning) => void` | - | Receives parse and skipped-literal warnings |
+| `strict` | `boolean | object` | `false` | Throws `TransformSchemaDslError` for parse errors, root-entry imports, or unconfigured DSL extension methods when enabled |
+| `onWarning` | `(warning) => void` | - | Receives parse, root-import, skipped-literal, and unconfigured-extension warnings |
 
 **Return value**:
 

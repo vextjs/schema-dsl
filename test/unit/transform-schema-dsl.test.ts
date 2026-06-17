@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { transformSchemaDsl } from '../../src/transform.js'
+import { TransformSchemaDslError, transformSchemaDsl } from '../../src/transform.js'
 
 describe('transformSchemaDsl', () => {
   it('transforms schema-dsl string literal method calls', () => {
@@ -11,6 +11,89 @@ describe('transformSchemaDsl', () => {
     expect(result.changed).toBe(true)
     expect(result.code).toContain('import { dsl as __schemaDslDsl } from "schema-dsl/pure";')
     expect(result.code).toContain('__schemaDslDsl("email!").description("Email")')
+  })
+
+  it('transforms the full built-in String extension method set by default', () => {
+    const result = transformSchemaDsl(
+      [
+        'const email = "email!".label("Email")',
+        'const name = "string!".pattern(/^[a-z]+$/).required()',
+        'const schema = "string!".toJsonSchema()',
+      ].join('\n'),
+      { filename: 'user.ts' },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('__schemaDslDsl("email!").label("Email")')
+    expect(result.code).toContain('__schemaDslDsl("string!").pattern(/^[a-z]+$/).required()')
+    expect(result.code).toContain('__schemaDslDsl("string!").toJsonSchema()')
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('transforms naked pipe enum string chains by default', () => {
+    const result = transformSchemaDsl('const role = "admin|user|guest".label("Role")', {
+      filename: 'user.ts',
+    })
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('__schemaDslDsl("admin|user|guest").label("Role")')
+  })
+
+  it('adds user-defined chain methods through additionalMethods', () => {
+    const result = transformSchemaDsl('const tenant = "string!".tenantId().label("Tenant")', {
+      filename: 'user.ts',
+      additionalMethods: ['tenantId'],
+    })
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('__schemaDslDsl("string!").tenantId().label("Tenant")')
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('warns when a schema-dsl string chain uses an unconfigured extension method', () => {
+    const result = transformSchemaDsl('const tenant = "string!".tenantId().label("Tenant")', {
+      filename: 'user.ts',
+    })
+
+    expect(result.changed).toBe(false)
+    expect(result.warnings).toEqual([
+      expect.objectContaining({
+        code: 'unconfigured-extension-method',
+        filename: 'user.ts',
+      }),
+    ])
+  })
+
+  it('preserves methods as a legacy replacement set and combines additionalMethods additively', () => {
+    const result = transformSchemaDsl(
+      [
+        'const tenant = "string!".tenantId()',
+        'const email = "email!".label("Email")',
+      ].join('\n'),
+      {
+        filename: 'user.ts',
+        methods: ['tenantId'],
+        additionalMethods: ['label'],
+      },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('__schemaDslDsl("string!").tenantId()')
+    expect(result.code).toContain('__schemaDslDsl("email!").label("Email")')
+  })
+
+  it('treats methods as a legacy replacement set when used without additionalMethods', () => {
+    const result = transformSchemaDsl('const email = "email!".label("Email")', {
+      filename: 'user.ts',
+      methods: ['tenantId'],
+    })
+
+    expect(result.changed).toBe(false)
+    expect(result.warnings).toEqual([
+      expect.objectContaining({
+        code: 'unconfigured-extension-method',
+      }),
+    ])
   })
 
   it('uses an existing dsl import from the configured import source', () => {
@@ -78,6 +161,128 @@ describe('transformSchemaDsl', () => {
 
     expect(result.changed).toBe(false)
     expect(result.code).toBe(source)
+  })
+
+  it('warns about root entry imports but does not rewrite them automatically', () => {
+    const source = [
+      'import { dsl } from "schema-dsl";',
+      'const field = "email!".label("Email")',
+    ].join('\n')
+    const result = transformSchemaDsl(source, { filename: 'user.ts' })
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('import { dsl } from "schema-dsl";')
+    expect(result.warnings).toEqual([
+      expect.objectContaining({
+        code: 'root-import',
+        filename: 'user.ts',
+      }),
+    ])
+  })
+
+  it('does not warn for type-only root entry imports', () => {
+    const result = transformSchemaDsl(
+      [
+        'import type { IDslBuilder } from "schema-dsl";',
+        'const field: IDslBuilder = "email!".label("Email")',
+      ].join('\n'),
+      { filename: 'user.ts' },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('does not warn for type-only root entry re-exports', () => {
+    const result = transformSchemaDsl(
+      [
+        'export { type IDslBuilder } from "schema-dsl";',
+        'const field = "email!".label("Email")',
+      ].join('\n'),
+      { filename: 'types.ts' },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('still warns for mixed type and runtime root entry re-exports', () => {
+    const result = transformSchemaDsl(
+      [
+        'export { type IDslBuilder, dsl } from "schema-dsl";',
+        'const field = "email!".label("Email")',
+      ].join('\n'),
+      { filename: 'mixed.ts' },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.warnings).toEqual([
+      expect.objectContaining({
+        code: 'root-import',
+        filename: 'mixed.ts',
+      }),
+    ])
+  })
+
+  it('throws in strict mode for root entry imports', () => {
+    expect(() => transformSchemaDsl('import "schema-dsl";\nconst field = "email!".label("Email")', {
+      filename: 'user.ts',
+      strict: true,
+    })).toThrow(TransformSchemaDslError)
+  })
+
+  it('throws in strict mode for parse errors', () => {
+    expect(() => transformSchemaDsl('const broken = ', {
+      filename: 'broken.ts',
+      strict: true,
+    })).toThrow(TransformSchemaDslError)
+  })
+
+  it('throws in strict mode for unconfigured schema-dsl extension methods', () => {
+    expect(() => transformSchemaDsl('const tenant = "string!".tenantId().label("Tenant")', {
+      filename: 'user.ts',
+      strict: true,
+    })).toThrow(TransformSchemaDslError)
+  })
+
+  it('parses modern TypeScript and JavaScript syntax while transforming string chains', () => {
+    const result = transformSchemaDsl(
+      [
+        'import data from "./data.json" with { type: "json" };',
+        '@sealed',
+        'class User {',
+        '  field = "email!".label("Email")',
+        '}',
+        'using cleanup = createCleanup(data);',
+      ].join('\n'),
+      { filename: 'user.ts' },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('__schemaDslDsl("email!").label("Email")')
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('parses TSX syntax while transforming string chains', () => {
+    const result = transformSchemaDsl(
+      'export const view = <input schema={"email!".label("Email")} />',
+      { filename: 'view.tsx' },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('__schemaDslDsl("email!").label("Email")')
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('preserves source map output when requested', () => {
+    const result = transformSchemaDsl('const field = "email!".label("Email")', {
+      filename: 'user.ts',
+      sourceMap: 'inline',
+    })
+
+    expect(result.changed).toBe(true)
+    expect(result.map).toBeDefined()
+    expect(result.code).toContain('sourceMappingURL=data:application/json;charset=utf-8;base64,')
   })
 
   it('is idempotent', () => {

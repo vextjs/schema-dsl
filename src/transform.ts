@@ -6,7 +6,13 @@ import * as traverseModule from '@babel/traverse'
 import type { NodePath, TraverseOptions } from '@babel/traverse'
 import * as t from '@babel/types'
 
-export type TransformSchemaDslWarningCode = 'parse-error' | 'non-dsl-literal'
+import { STRING_EXTENSION_METHODS } from './core/StringExtensions.js'
+
+export type TransformSchemaDslWarningCode =
+  | 'parse-error'
+  | 'non-dsl-literal'
+  | 'root-import'
+  | 'unconfigured-extension-method'
 
 export interface TransformSchemaDslWarning {
   code: TransformSchemaDslWarningCode
@@ -18,12 +24,21 @@ export interface TransformSchemaDslWarning {
   }
 }
 
+export interface TransformSchemaDslStrictOptions {
+  parseError?: boolean
+  rootImport?: boolean
+  unconfiguredExtensionMethod?: boolean
+  nonDslLiteral?: boolean
+}
+
 export interface TransformSchemaDslOptions {
   filename?: string
   sourceMap?: boolean | 'inline'
   importFrom?: string
   methods?: readonly string[]
+  additionalMethods?: readonly string[]
   include?: (filename: string) => boolean
+  strict?: boolean | TransformSchemaDslStrictOptions
   onWarning?: (warning: TransformSchemaDslWarning) => void
 }
 
@@ -34,8 +49,18 @@ export interface TransformSchemaDslResult {
   map?: object
 }
 
+export class TransformSchemaDslError extends Error {
+  readonly warning: TransformSchemaDslWarning
+
+  constructor(warning: TransformSchemaDslWarning) {
+    super(formatStrictErrorMessage(warning))
+    this.name = 'TransformSchemaDslError'
+    this.warning = warning
+  }
+}
+
 const DEFAULT_IMPORT_FROM = 'schema-dsl/pure'
-const DEFAULT_METHODS = ['description'] as const
+const DEFAULT_METHODS = STRING_EXTENSION_METHODS
 type GenerateFunction = (ast: t.Node, options?: GeneratorOptions, code?: string | Record<string, string>) => GeneratorResult
 type TraverseFunction = (parent: t.Node, options?: TraverseOptions) => void
 const generateCode = resolveCallableExport<GenerateFunction>(generatorModule, 'generate', '@babel/generator')
@@ -92,6 +117,9 @@ export function transformSchemaDsl(source: string, options: TransformSchemaDslOp
   const warn = (warning: TransformSchemaDslWarning): void => {
     warnings.push(warning)
     options.onWarning?.(warning)
+    if (shouldThrowForWarning(warning.code, options.strict)) {
+      throw new TransformSchemaDslError(warning)
+    }
   }
 
   let ast: t.File
@@ -104,14 +132,20 @@ export function transformSchemaDsl(source: string, options: TransformSchemaDslOp
   }
 
   const importFrom = options.importFrom ?? DEFAULT_IMPORT_FROM
-  const methods = new Set(options.methods ?? DEFAULT_METHODS)
+  const methods = createConfiguredMethodSet(options)
   const existingDslLocalName = findExistingDslImport(ast, importFrom)
   let injectedDslLocalName: string | undefined
   const reservedLocalNames = collectBindingNames(ast)
   let changed = false
 
+  for (const warning of findRootImportWarnings(ast, filename)) {
+    warn(warning)
+  }
+
   traverseAst(ast, {
     CallExpression(path: NodePath<t.CallExpression>) {
+      warnIfUnconfiguredExtensionMethod(path, methods, filename, warn)
+
       const dslLocalName = existingDslLocalName && isImportedBindingVisible(path, existingDslLocalName)
         ? existingDslLocalName
         : injectedDslLocalName
@@ -178,6 +212,10 @@ function createParserOptions(filename: string): ParserOptions {
   const isJsx = hasUnknownExtension || /\.[cm]?[jt]sx$/i.test(filename)
   const plugins: NonNullable<ParserOptions['plugins']> = []
 
+  plugins.push(['decorators', { decoratorsBeforeExport: false }])
+  plugins.push('importAttributes')
+  plugins.push('explicitResourceManagement')
+
   if (isTypeScript) {
     plugins.push('typescript')
   }
@@ -213,6 +251,181 @@ function resolveCallableExport<T>(moduleValue: unknown, namedExport: string, mod
 
 function toRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' ? value as Record<string, unknown> : undefined
+}
+
+function createConfiguredMethodSet(options: TransformSchemaDslOptions): ReadonlySet<string> {
+  return new Set([
+    ...(options.methods ?? DEFAULT_METHODS),
+    ...(options.additionalMethods ?? []),
+  ])
+}
+
+function shouldThrowForWarning(
+  code: TransformSchemaDslWarningCode,
+  strict: TransformSchemaDslOptions['strict'],
+): boolean {
+  if (!strict) {
+    return false
+  }
+
+  if (strict === true) {
+    return code === 'parse-error'
+      || code === 'root-import'
+      || code === 'unconfigured-extension-method'
+  }
+
+  switch (code) {
+    case 'parse-error':
+      return strict.parseError === true
+    case 'root-import':
+      return strict.rootImport === true
+    case 'unconfigured-extension-method':
+      return strict.unconfiguredExtensionMethod === true
+    case 'non-dsl-literal':
+      return strict.nonDslLiteral === true
+  }
+}
+
+function formatStrictErrorMessage(warning: TransformSchemaDslWarning): string {
+  const location = warning.loc
+    ? `${warning.filename ?? '<unknown>'}:${warning.loc.line}:${warning.loc.column + 1}`
+    : warning.filename ?? '<unknown>'
+  return `[schema-dsl] Transform strict mode failed (${warning.code}) at ${location}: ${warning.message}`
+}
+
+function findRootImportWarnings(ast: t.File, filename: string): TransformSchemaDslWarning[] {
+  const warnings: TransformSchemaDslWarning[] = []
+
+  for (const statement of ast.program.body) {
+    const source = 'source' in statement ? statement.source : undefined
+    if (!source || source.value !== 'schema-dsl') {
+      continue
+    }
+
+    if (t.isImportDeclaration(statement) && isTypeOnlyImportDeclaration(statement)) {
+      continue
+    }
+    if (t.isExportNamedDeclaration(statement) && isTypeOnlyExportNamedDeclaration(statement)) {
+      continue
+    }
+    if (t.isExportAllDeclaration(statement) && statement.exportKind === 'type') {
+      continue
+    }
+
+    warnings.push(createWarning(
+      'root-import',
+      'Root import "schema-dsl" keeps the compatibility String.prototype side effect; use "schema-dsl/pure" with the transform output or import "schema-dsl/register-string" explicitly when the side effect is intended.',
+      filename,
+      statement.loc,
+    ))
+  }
+
+  traverseAst(ast, {
+    CallExpression(path: NodePath<t.CallExpression>) {
+      const firstArg = path.node.arguments[0]
+      if (t.isIdentifier(path.node.callee, { name: 'require' })
+        && t.isStringLiteral(firstArg)
+        && firstArg.value === 'schema-dsl') {
+        warnings.push(createWarning(
+          'root-import',
+          'require("schema-dsl") keeps the compatibility String.prototype side effect; require "schema-dsl/pure" with the transform output or require "schema-dsl/register-string" explicitly when the side effect is intended.',
+          filename,
+          path.node.loc,
+        ))
+      }
+    },
+    Import(path: NodePath<t.Import>) {
+      const parent = path.parentPath.node
+      if (!t.isCallExpression(parent)) {
+        return
+      }
+
+      const firstArg = parent.arguments[0]
+      if (!t.isStringLiteral(firstArg) || firstArg.value !== 'schema-dsl') {
+        return
+      }
+
+      warnings.push(createWarning(
+        'root-import',
+        'import("schema-dsl") keeps the compatibility String.prototype side effect; import "schema-dsl/pure" with the transform output or import "schema-dsl/register-string" explicitly when the side effect is intended.',
+        filename,
+        parent.loc,
+      ))
+    },
+  })
+
+  return warnings
+}
+
+function isTypeOnlyImportDeclaration(statement: t.ImportDeclaration): boolean {
+  return statement.importKind === 'type'
+    || (
+      statement.specifiers.length > 0
+      && statement.specifiers.every(specifier => specifier.type === 'ImportSpecifier' && specifier.importKind === 'type')
+    )
+}
+
+function isTypeOnlyExportNamedDeclaration(statement: t.ExportNamedDeclaration): boolean {
+  return statement.exportKind === 'type'
+    || (
+      statement.specifiers.length > 0
+      && statement.specifiers.every(specifier => t.isExportSpecifier(specifier) && specifier.exportKind === 'type')
+    )
+}
+
+function warnIfUnconfiguredExtensionMethod(
+  path: NodePath<t.CallExpression>,
+  methods: ReadonlySet<string>,
+  filename: string,
+  warn: (warning: TransformSchemaDslWarning) => void,
+): void {
+  if (path.parentPath.isMemberExpression() && path.parentPath.node.object === path.node) {
+    return
+  }
+
+  const chain = getStaticStringCallChain(path.node)
+  if (!chain || !looksLikeSchemaDslLiteral(chain.literalValue)) {
+    return
+  }
+
+  const missingMethod = chain.methods.find(method => !methods.has(method))
+  if (!missingMethod) {
+    return
+  }
+
+  warn(createWarning(
+    'unconfigured-extension-method',
+    `Found schema-dsl string chain method "${missingMethod}" that is not configured for compile-time transformation. Add it with additionalMethods, or pass methods when intentionally replacing the full method set.`,
+    filename,
+    chain.loc,
+  ))
+}
+
+interface StaticStringCallChain {
+  literalValue: string
+  methods: string[]
+  loc: t.SourceLocation | null | undefined
+}
+
+function getStaticStringCallChain(node: t.CallExpression): StaticStringCallChain | undefined {
+  const methods: string[] = []
+  let current: t.Expression | t.Super = node
+
+  while (t.isCallExpression(current)) {
+    const currentCall: t.CallExpression = current
+    const callee = currentCall.callee
+    if (!t.isMemberExpression(callee) || callee.computed || !t.isIdentifier(callee.property)) {
+      return undefined
+    }
+
+    methods.unshift(callee.property.name)
+    current = callee.object
+  }
+
+  const literalValue = getStaticStringValue(current)
+  return literalValue === undefined
+    ? undefined
+    : { literalValue, methods, loc: current.loc }
 }
 
 function shouldTransformCall(
@@ -261,9 +474,22 @@ function looksLikeSchemaDslLiteral(value: string): boolean {
     return false
   }
 
+  if (looksLikePipeEnumLiteral(trimmed)) {
+    return true
+  }
+
   const firstPart = trimmed.split('|', 1)[0] ?? trimmed
   const typeName = firstPart.match(/^[A-Za-z][A-Za-z0-9_-]*/)?.[0]?.toLowerCase()
   return typeName !== undefined && BUILTIN_DSL_TYPES.has(typeName)
+}
+
+function looksLikePipeEnumLiteral(value: string): boolean {
+  if (!value.includes('|')) {
+    return false
+  }
+
+  const parts = value.split('|')
+  return parts.length > 1 && parts.every(part => part.length > 0 && !part.includes(','))
 }
 
 function findExistingDslImport(ast: t.File, importFrom: string): string | undefined {

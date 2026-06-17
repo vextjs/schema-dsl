@@ -57,6 +57,48 @@ describe('schemaDslEsbuildPlugin', () => {
     }
   })
 
+  it('passes transform options such as additionalMethods through to the core transformer', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'schema-dsl-esbuild-options-'))
+    try {
+      const entry = join(workspace, 'entry.ts')
+      await writeFile(entry, 'export const field = "string!".tenantId().label("Tenant")', 'utf8')
+
+      const result = await build({
+        entryPoints: [entry],
+        bundle: false,
+        format: 'esm',
+        platform: 'node',
+        write: false,
+        plugins: [schemaDslEsbuildPlugin({ additionalMethods: ['tenantId'] })],
+      })
+
+      const output = result.outputFiles[0]?.text ?? ''
+      expect(output).toContain('__schemaDslDsl("string!").tenantId().label("Tenant")')
+    } finally {
+      await rm(workspace, { recursive: true, force: true })
+    }
+  })
+
+  it('surfaces strict transformer failures as esbuild build failures', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'schema-dsl-esbuild-strict-'))
+    try {
+      const entry = join(workspace, 'entry.ts')
+      await writeFile(entry, 'import "schema-dsl";\nexport const field = "email!".label("Email")', 'utf8')
+
+      await expect(build({
+        entryPoints: [entry],
+        bundle: false,
+        format: 'esm',
+        platform: 'node',
+        write: false,
+        logLevel: 'silent',
+        plugins: [schemaDslEsbuildPlugin({ strict: true })],
+      })).rejects.toThrow('root-import')
+    } finally {
+      await rm(workspace, { recursive: true, force: true })
+    }
+  })
+
   it('does not intercept virtual modules owned by other plugins', async () => {
     const virtualPlugin: Plugin = {
       name: 'virtual-entry',

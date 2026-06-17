@@ -1,7 +1,7 @@
 # Custom extension guide
 
-> **Version**: 2.0.9
-> **Updated date**: 2026-06-10
+> **Version**: 2.0.11
+> **Updated date**: 2026-06-17
 > **Purpose**: Explain the runtime extension method recommended by the current version, and how to continue to extend it in depth when maintaining the source code of schema-dsl itself.
 
 ---
@@ -25,6 +25,7 @@ schema-dsl adopts modular design, you can easily extend:
 2. **`TypeRegistry.register()` / `DslBuilder.registerType()`** - Register a custom DSL type
 3. **`PluginManager` + `schema-dsl/plugins/*`** - Combination plug-in, hook and official plug-in entrance
 4. **`Locale.addLocale()` / `dsl.config({ i18n })`** - Extended multi-language messages
+5. **`transformSchemaDsl({ additionalMethods })` + `schema-dsl/string-types`** - Compile-time String-chain custom methods and opt-in TypeScript hints
 
 ## Recommended path for current version
 
@@ -35,6 +36,49 @@ schema-dsl adopts modular design, you can easily extend:
 - Custom type: priority is given to `TypeRegistry.register()` or `DslBuilder.registerType()`
 - Official plug-in: give priority to `PluginManager` with `schema-dsl/plugins/custom-format`, `schema-dsl/plugins/custom-validator`, `schema-dsl/plugins/custom-type-example`
 - Custom language: priority is given to `Locale.addLocale()` or `dsl.config({ i18n: { locales } })`
+- Custom String-chain authoring: configure `additionalMethods` in the transform, and augment `schema-dsl/string-types` for IDE hints. The transform only rewrites source code; the actual `dsl('...').yourMethod()` runtime method must still be provided by your extension.
+
+---
+
+## Compile-time String-chain custom methods
+
+When a project has its own builder method, add the method name to `additionalMethods` so static String chains are rewritten to `dsl(...)` calls:
+
+```typescript
+import { transformSchemaDsl } from 'schema-dsl/transform';
+
+const result = transformSchemaDsl(
+  'export const tenant = "string!".tenantId().label("Tenant")',
+  {
+    filename: 'schema.ts',
+    additionalMethods: ['tenantId']
+  }
+);
+```
+
+For TypeScript hints, import `schema-dsl/string-types` and augment its extension interface:
+
+```typescript
+import 'schema-dsl/string-types';
+import { dsl, type IDslBuilder } from 'schema-dsl/pure';
+
+declare module 'schema-dsl/pure' {
+  interface IDslBuilder {
+    tenantId(): this;
+  }
+}
+
+declare module 'schema-dsl/string-types' {
+  interface SchemaDslStringExtensions {
+    tenantId(): IDslBuilder;
+  }
+}
+
+const tenantFromString = 'string!'.tenantId().label('Tenant');
+const tenantFromDsl = dsl('string!').tenantId().label('Tenant');
+```
+
+Use `methods` only when intentionally replacing the full built-in transform method set; for normal user extensions, prefer `additionalMethods`.
 
 ---
 

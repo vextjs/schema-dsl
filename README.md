@@ -186,25 +186,27 @@ npm install schema-dsl
 | `schema-dsl/pure` | Same core API without installing `String.prototype` extensions. Use this in libraries, workers, tests, or isolation-sensitive runtimes. |
 | `schema-dsl/compat` | Explicit compatibility entry that installs String extensions on import. |
 | `schema-dsl/register-string` | Side-effect entry for explicitly registering String extensions during application startup. |
+| `schema-dsl/string-types` | Opt-in TypeScript declarations for String-chain authoring; no runtime prototype installation. |
 | `schema-dsl/transform` | Babel AST transform core that rewrites static string-chain calls into `dsl('...')` calls. |
 | `schema-dsl/esbuild` | Optional esbuild plugin adapter around the transform core. `esbuild` is an optional peer dependency. |
 
 ```typescript
 import { dsl, validate } from 'schema-dsl/pure';
+import 'schema-dsl/string-types';
 import { transformSchemaDsl } from 'schema-dsl/transform';
 import { schemaDslEsbuildPlugin } from 'schema-dsl/esbuild';
 
-const schema = dsl({ email: dsl('email!').description('Login email') });
+const schema = dsl({ email: dsl('email!').label('Email').required() });
 
 const transformed = transformSchemaDsl(
-  'export const field = "email!".description("Login email")',
+  'export const field = "admin|user|guest".label("Role")',
   { filename: 'schema.ts' }
 );
 
 const plugins = [schemaDslEsbuildPlugin()];
 ```
 
-The transform handles static DSL string literals and injects imports from `schema-dsl/pure`. By default it rewrites `.description()` chains such as `"email!".description("...")`; pass `methods` when additional chain methods should be transformed. Dynamic expressions are left unchanged.
+The transform handles static DSL string literals, including naked pipe enums such as `"admin|user|guest"`, and injects imports from `schema-dsl/pure`. By default it rewrites the complete built-in String-chain API (`.label()`, `.pattern()`, `.required()`, `.toJsonSchema()`, and the other methods installed by `schema-dsl`). Use `additionalMethods` for user-defined chain methods; `methods` remains a legacy replacement set when you intentionally want to override the built-in default list. Dynamic expressions, computed member calls, and already transformed `dsl(...)` calls are left unchanged.
 
 ---
 
@@ -553,6 +555,7 @@ const result = validator.validate(schema, { color: '#FF5733', mac: '00:1A:2B:3C:
 | `I18nError.throw()` | Throw an i18n error | never | [Error Handling](https://vextjs.github.io/schema-dsl/error-handling) |
 | `I18nError.assert()` | Assert then throw | void | [Error Handling](https://vextjs.github.io/schema-dsl/error-handling) |
 | `schema-dsl/pure` | Import the API without installing String extensions | API namespace | [API Reference](https://vextjs.github.io/schema-dsl/api-reference) |
+| `schema-dsl/string-types` | Opt into TypeScript hints for String-chain authoring | Type declarations | [TypeScript Usage](https://vextjs.github.io/schema-dsl/typescript-guide) |
 | `transformSchemaDsl()` | Rewrite static string-chain DSL calls at compile time | `{ code, changed, warnings }` | [API Reference](https://vextjs.github.io/schema-dsl/api-reference) |
 | `schemaDslEsbuildPlugin()` | Use the transform in esbuild build/context flows | esbuild plugin | [API Reference](https://vextjs.github.io/schema-dsl/api-reference) |
 

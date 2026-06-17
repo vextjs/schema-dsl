@@ -130,6 +130,8 @@ import { createRequire } from 'node:module'
 import { readdirSync, statSync, readFileSync } from 'node:fs'
 import { join, basename, extname } from 'node:path'
 
+type _DslBuilderPublic = _DslBuilder & _IDslBuilder
+
 export const CONSTANTS = _CONSTANTS
 export const exporters = _exporters
 
@@ -602,14 +604,14 @@ export async function validateAsync<T = unknown>(
 
 // ==================== dsl main function ====================
 
-// Core dsl function: string → DslBuilder (chain), object definition → JSONSchema
+// Core dsl function: string → DslBuilder & IDslBuilder (chain), object definition → JSONSchema
 // v1 BC: keep the optional 2nd SchemaIOOptions parameter even though v2 no longer
 // needs it during object compilation. Existing consumers such as vext still call
 // dsl(definition, options), so the overload remains source-compatible.
-function _dslFn(def: string, options?: _SchemaIOOptions): _DslBuilder
+function _dslFn(def: string, options?: _SchemaIOOptions): _DslBuilderPublic
 function _dslFn(def: _DslDefinition, options?: _SchemaIOOptions): _JSONSchema
-function _dslFn(def: unknown, _options?: _SchemaIOOptions): _DslBuilder | _JSONSchema {
-  if (typeof def === 'string') return new _DslBuilder(def)
+function _dslFn(def: unknown, _options?: _SchemaIOOptions): _DslBuilderPublic | _JSONSchema {
+  if (typeof def === 'string') return new _DslBuilder(def) as _DslBuilderPublic
   if (def === null || def === undefined || typeof def !== 'object' || Array.isArray(def)) {
     throw new Error('[schema-dsl] Invalid DSL definition: expected string or object')
   }
@@ -618,7 +620,7 @@ function _dslFn(def: unknown, _options?: _SchemaIOOptions): _DslBuilder | _JSONS
 
 // Namespace shape (mirrors DslFn interface in types/dsl.ts)
 const _dslWithNS = _dslFn as {
-  (def: string, options?: _SchemaIOOptions): _DslBuilder
+  (def: string, options?: _SchemaIOOptions): _DslBuilderPublic
   (def: _DslDefinition, options?: _SchemaIOOptions): _JSONSchema
   config: (options?: Partial<_DslConfigOptions>) => void
   if: {
@@ -671,7 +673,7 @@ _dslWithNS.error = {
  * dsl — main API entry point
  *
  * @example
- * // String DSL → DslBuilder (chainable)
+ * // String DSL → DslBuilder & IDslBuilder (chainable)
  * const builder = dsl('email!').label('Email address')
  *
  * @example

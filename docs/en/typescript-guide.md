@@ -1,7 +1,7 @@
 # TypeScript usage guide
 
-> **Version**: schema-dsl v2.0.9
-> **Updated date**: 2026-06-10
+> **Version**: schema-dsl v2.0.11
+> **Updated date**: 2026-06-17
 > **Important**: v1.0.6 removed the global String type extension to avoid type pollution
 
 ---
@@ -54,22 +54,19 @@ if (result.valid) {
 
 ## 2. Chained calls in TypeScript
 
-### 2.1 Important changes (v1.0.6)
+### 2.1 Default no-global String types
 
-**v1.0.6 removed the global `interface String` extension** for the following reasons:
-- ❌ Global type extension will pollute the native String type
-- ❌ Causes type inference errors for native methods such as `trim()` and `toLowerCase()`
-- ❌ Affects type safety of all projects using TypeScript
+By default, TypeScript does not receive global `interface String` chain declarations. This keeps native `String` methods such as `trim()` and `toLowerCase()` stable for projects that import `schema-dsl/pure`.
 
-**Result**: Directly calling string chain in TypeScript will report a type error:
+Direct string chaining therefore reports a type error unless you explicitly opt in to `schema-dsl/string-types`:
 
 ```typescript
-// ❌ An error will be reported in TypeScript (v1.0.6+)
+// ❌ TypeScript error by default
 const schema = dsl({
   email: 'email!'.label('email') // Type error: Property 'label' does not exist on type 'string'
 });
 
-// ✅ Use dsl() package in TypeScript, and string chaining can be done directly in JavaScript
+// ✅ Default TypeScript path: use dsl()
 const schema = dsl({
   email: dsl('email!').label('mailbox')
 });
@@ -77,10 +74,10 @@ const schema = dsl({
 
 ### 2.2 Correct usage ⭐⭐⭐
 
-**In TypeScript, the `dsl()` function must be used to wrap the string** in order to obtain type hints and chained calls:
+**Default recommendation: use `dsl()` to wrap the string** in order to obtain type hints and chained calls without global type augmentation:
 
 ```typescript
-// ✅ Correct: Use dsl() wrapper (required for v1.0.6+)
+// ✅ Correct default path
 const schema = dsl({
   email: dsl('email!').label('mailbox').pattern(/custom/)
 });
@@ -90,26 +87,36 @@ const emailField = dsl('email!').label('mailbox');
 const schema = dsl({ email: emailField });
 ```
 
+If the project uses `transformSchemaDsl()` or `schemaDslEsbuildPlugin()` to compile static String chains into `dsl(...)` calls, add the opt-in type entry:
+
+```typescript
+import { dsl } from 'schema-dsl/pure';
+import 'schema-dsl/string-types';
+
+const schema = dsl({
+  role: 'admin|user|guest'.label('Role'),
+  email: 'email!'.label('Email').required()
+});
+```
+
 **benefit**:
 - ✅ Get complete type inference and IDE auto-tips
-- ✅ Does not pollute the native String type (`trim()` correctly returns `string`)
+- ✅ The default `dsl()` path does not pollute the native String type (`trim()` correctly returns `string`)
+- ✅ The transform + `schema-dsl/string-types` path gives String-chain hints only when explicitly requested
 - ✅ Better type safety and development experience
 
 ### 2.3 Working principle
 
 ```typescript
-// dsl(string) returns DslBuilder instance
+// dsl(string) returns a DslBuilder instance typed with the public IDslBuilder chain contract
 const emailBuilder = dsl('email!');
-// ^? DslBuilder - complete type definition
+// ^? DslBuilder & IDslBuilder - complete public chain type
 
 // DslBuilder supports all chained methods and has complete type hints
 emailBuilder.label('mailbox')
 // ^? IDE automatically prompts all available methods
   .pattern(/^[a-z]+@[a-z]+\.[a-z]+$/)
   .error({ required: 'Email required' });
-
-> ℹ️ The current type declaration gives priority to covering stable chain APIs, such as `label()`, `pattern()`, `error()`, `default()`.
-> Some runtime extension methods are still available, but if the type declaration is not exposed, it is recommended to rewrite the above stable combination in TypeScript code first.
 ```
 
 ---
@@ -120,7 +127,8 @@ emailBuilder.label('mailbox')
 
 | Way | JavaScript | TypeScript | type inference | Recommendation |
 |------|-----------|-----------|---------|--------|
-| direct string | ✅ Perfect | ⚠️ There may be no prompt | ❌ weak | ⭐⭐ |
+| direct string without `string-types` | ✅ Perfect | ❌ Type error | ❌ weak | ⭐ |
+| transform + `schema-dsl/string-types` | ✅ Perfect after build transform | ✅ Opt-in global hints | ✅ Strong | ⭐⭐⭐⭐ |
 | dsl() package | ✅ Perfect | ✅ Perfect | ✅ Strong | ⭐⭐⭐⭐⭐ |
 | Define before using | ✅ Perfect | ✅ Perfect | ✅ Strong | ⭐⭐⭐⭐ |
 
@@ -589,5 +597,5 @@ dsl.config({
 
 ---
 
-**Updated date**: 2026-06-10
-**Document version**: v2.0.9
+**Updated date**: 2026-06-17
+**Document version**: v2.0.11

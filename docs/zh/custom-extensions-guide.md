@@ -1,7 +1,7 @@
 # 自定义扩展指南
 
-> **版本**: 2.0.9
-> **更新日期**: 2026-06-10
+> **版本**: 2.0.11
+> **更新日期**: 2026-06-17
 > **用途**: 说明当前版本推荐的运行时扩展方式，以及在维护 schema-dsl 自身源码时如何继续深入扩展
 
 ---
@@ -25,6 +25,7 @@ schema-dsl采用模块化设计，你可以轻松扩展：
 2. **`TypeRegistry.register()` / `DslBuilder.registerType()`** - 注册自定义 DSL 类型
 3. **`PluginManager` + `schema-dsl/plugins/*`** - 组合插件、hook 与官方插件入口
 4. **`Locale.addLocale()` / `dsl.config({ i18n })`** - 扩展多语言消息
+5. **`transformSchemaDsl({ additionalMethods })` + `schema-dsl/string-types`** - 编译期 String 链式自定义方法与显式 TypeScript 提示
 
 ## 当前版本推荐路径
 
@@ -35,6 +36,49 @@ schema-dsl采用模块化设计，你可以轻松扩展：
 - 自定义类型：优先用 `TypeRegistry.register()` 或 `DslBuilder.registerType()`
 - 官方插件：优先用 `PluginManager` 配合 `schema-dsl/plugins/custom-format`、`schema-dsl/plugins/custom-validator`、`schema-dsl/plugins/custom-type-example`
 - 自定义语言：优先用 `Locale.addLocale()` 或 `dsl.config({ i18n: { locales } })`
+- 自定义 String 链式写法：在 transform 中配置 `additionalMethods`，并通过 `schema-dsl/string-types` 做 IDE 提示扩展。transform 只负责改写源码；实际的 `dsl('...').yourMethod()` 运行时方法仍需由你的扩展提供。
+
+---
+
+## 编译期 String 链式自定义方法
+
+当项目已有自己的 builder 方法时，把方法名加入 `additionalMethods`，静态 String 链式调用就会被改写为 `dsl(...)` 链：
+
+```typescript
+import { transformSchemaDsl } from 'schema-dsl/transform';
+
+const result = transformSchemaDsl(
+  'export const tenant = "string!".tenantId().label("租户")',
+  {
+    filename: 'schema.ts',
+    additionalMethods: ['tenantId']
+  }
+);
+```
+
+TypeScript 提示通过 `schema-dsl/string-types` 显式导入和接口增强完成：
+
+```typescript
+import 'schema-dsl/string-types';
+import { dsl, type IDslBuilder } from 'schema-dsl/pure';
+
+declare module 'schema-dsl/pure' {
+  interface IDslBuilder {
+    tenantId(): this;
+  }
+}
+
+declare module 'schema-dsl/string-types' {
+  interface SchemaDslStringExtensions {
+    tenantId(): IDslBuilder;
+  }
+}
+
+const tenantFromString = 'string!'.tenantId().label('租户');
+const tenantFromDsl = dsl('string!').tenantId().label('租户');
+```
+
+只有在你明确要替换完整内建 transform 方法集合时才使用 `methods`；普通用户扩展优先使用 `additionalMethods`。
 
 ---
 

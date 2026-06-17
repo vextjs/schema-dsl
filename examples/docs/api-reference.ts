@@ -42,6 +42,8 @@ import { schemaDslEsbuildPlugin } from '../../dist/esbuild.js'
 import { dsl as pureDsl } from '../../dist/pure.js'
 import { transformSchemaDsl } from '../../dist/transform.js'
 
+const stringTypesEntry = await import('../../dist/string-types.js')
+
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`api-reference expectation failed: ${label}`)
 }
@@ -250,8 +252,15 @@ const afterUninstall = typeof ('email!' as any).label
 const pureEntryAfterImport = typeof ('email!' as any).description
 const pureEntrySchema = pureDsl('email!').description('Login email').toSchema()
 const transformedDsl = transformSchemaDsl(
-  'export const field = "email!".description("Login email")',
-  { filename: 'api-reference.ts' },
+  [
+    'export const role = "admin|user|guest".label("Role")',
+    'export const tenant = "string!".tenantId().label("Tenant")',
+  ].join('\n'),
+  {
+    filename: 'api-reference.ts',
+    additionalMethods: ['tenantId'],
+    strict: true,
+  },
 )
 const esbuildPlugin = schemaDslEsbuildPlugin()
 const registerStringEntry = await import('../../dist/register-string.js')
@@ -331,7 +340,8 @@ expect('I18nError.assert should throw I18nError', assertedI18nError?.statusCode 
 expect('PluginManager should install and run hooks', installedMode === 'demo' && pluginHookResults[0] === 'hook:ok' && pluginList[0]?.name === 'api-reference-plugin')
 expect('string extensions uninstall removes methods', afterUninstall === 'undefined')
 expect('pure entry should not install string extensions', pureEntryAfterImport === 'undefined' && pureEntrySchema.format === 'email')
-expect('transformSchemaDsl should rewrite static string chains', transformedDsl.changed === true && transformedDsl.code.includes('schema-dsl/pure'))
+expect('string-types entry should be a side-effect-free runtime module', typeof stringTypesEntry === 'object')
+expect('transformSchemaDsl should rewrite built-in, custom, and pipe enum string chains', transformedDsl.changed === true && transformedDsl.code.includes('schema-dsl/pure') && transformedDsl.code.includes('tenantId') && transformedDsl.code.includes('admin|user|guest'))
 expect('esbuild plugin should expose schema-dsl name', esbuildPlugin.name === 'schema-dsl')
 expect('register-string entry should install extensions', afterRegisterStringEntry === 'function' && typeof registerStringEntry.installStringExtensions === 'function' && registerEntrySchema.description === 'Login email')
 expect('string extensions can be reinstalled', afterInstall === 'function')

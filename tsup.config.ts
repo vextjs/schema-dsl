@@ -6,6 +6,7 @@ export default defineConfig({
     pure: 'src/pure.ts',
     compat: 'src/compat.ts',
     'register-string': 'src/register-string.ts',
+    'string-types': 'src/string-types.ts',
     transform: 'src/transform.ts',
     esbuild: 'src/esbuild.ts',
     'plugins/custom-format': 'src/plugins/custom-format.ts',

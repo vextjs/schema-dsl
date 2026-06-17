@@ -2,8 +2,10 @@
 
 ## 2026-06-17
 
-- Added side-effect-controlled package entries for `schema-dsl/pure`, `schema-dsl/compat`, `schema-dsl/register-string`, `schema-dsl/transform`, and `schema-dsl/esbuild`.
+- Added side-effect-controlled package entries for `schema-dsl/pure`, `schema-dsl/compat`, `schema-dsl/register-string`, `schema-dsl/string-types`, `schema-dsl/transform`, and `schema-dsl/esbuild`.
 - Added compile-time String-chain DSL transform documentation and runnable API reference examples covering pure import, explicit String registration, transform output, and the optional esbuild adapter.
+- Expanded the compile-time String-chain transform to cover the full built-in String extension method set by default, naked pipe enums, `additionalMethods` for user-defined chains, strict diagnostics for root imports / parse failures / unconfigured extension methods, and the opt-in `schema-dsl/string-types` TypeScript declaration entry.
+- Added a `test:types` route for the opt-in String-chain TypeScript fixtures, covering source imports, package exports, no-opt-in errors, and user extension augmentation.
 
 ## 2026-06-16
 

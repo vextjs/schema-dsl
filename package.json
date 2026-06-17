@@ -46,6 +46,16 @@
         "default": "./dist/register-string.cjs"
       }
     },
+    "./string-types": {
+      "import": {
+        "types": "./dist/string-types.d.ts",
+        "default": "./dist/string-types.js"
+      },
+      "require": {
+        "types": "./dist/string-types.d.cts",
+        "default": "./dist/string-types.cjs"
+      }
+    },
     "./transform": {
       "import": {
         "types": "./dist/transform.d.ts",
@@ -103,6 +113,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:types": "tsc -p tsconfig.test-types.source-no-opt-in.json --noEmit && tsc -p tsconfig.test-types.source-opt-in.json --noEmit && tsc -p tsconfig.test-types.package-no-opt-in.json --noEmit && tsc -p tsconfig.test-types.package-opt-in.json --noEmit",
     "typecheck": "tsc --noEmit",
     "examples:typecheck": "tsc -p tsconfig.examples.json --noEmit",
     "examples:build": "tsc -p tsconfig.examples.json",
@@ -111,7 +122,7 @@
     "test:audit": "npm audit --omit=dev --audit-level=moderate",
     "test:interop": "node scripts/verify-esm-cjs-type-registry.mjs",
     "test:version": "node -e \"const p=require('./package.json');const {VERSION}=require('./dist/index.cjs');if(p.version!==VERSION)throw new Error('Version mismatch: '+p.version+' vs '+VERSION);console.log('Version OK:',p.version)\"",
-    "test:all:with-audit": "npm run lint && npm run build && npm run test:interop && npm run typecheck && npm test && npm run test:version && npm run test:audit",
+    "test:all:with-audit": "npm run lint && npm run build && npm run test:interop && npm run typecheck && npm run test:types && npm test && npm run test:version && npm run test:audit",
     "bench": "node test/benchmarks/library-comparison.js",
     "prepublishOnly": "npm run test:all:with-audit && npm pack --dry-run"
   },

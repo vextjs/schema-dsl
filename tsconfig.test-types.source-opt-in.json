@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": [
+    "src/types/safe-regex.d.ts",
+    "test/types/string-types-opt-in.ts",
+    "test/types/string-types-augmentation.ts"
+  ],
+  "exclude": ["node_modules"]
+}

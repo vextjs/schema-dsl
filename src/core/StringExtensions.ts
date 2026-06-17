@@ -3,7 +3,7 @@
  *
  * v2 fixes:
  *   S-01/S-02: array-driven symmetric install/uninstall (v1 uninstall was missing `format` and
- *              `phoneNumber`). All method names are now maintained in the EXTENSION_METHODS
+ *              `phoneNumber`). All method names are now maintained in the STRING_EXTENSION_METHODS
  *              array so both operations are guaranteed to be in sync.
  *   V1-BC: the root entry installs these extensions by default, but the install itself keeps
  *          prototype impact lower by using non-enumerable descriptors and conflict detection.
@@ -14,10 +14,10 @@
  * 'string:3-32!'.username('medium')
  */
 
-import type { DslBuilder } from './DslBuilder.js'
+import type { IDslBuilder } from '../types/dsl.js'
 
 // S-01/S-02 fix: all extension method names are managed here so install/uninstall stay symmetric
-const EXTENSION_METHODS = [
+export const STRING_EXTENSION_METHODS = [
   'pattern',
   'label',
   'messages',
@@ -65,8 +65,10 @@ const EXTENSION_METHODS = [
   'enum',
 ] as const
 
-type DslFn = (dslStr: string) => DslBuilder
-type ExtensionMethodName = typeof EXTENSION_METHODS[number]
+export type StringExtensionMethodName = typeof STRING_EXTENSION_METHODS[number]
+
+type DslFn = (dslStr: string) => IDslBuilder
+type ExtensionMethodName = StringExtensionMethodName
 type ExtensionFunction = (this: string, ...args: unknown[]) => unknown
 type InstalledState = {
   dslFunction: DslFn
@@ -210,7 +212,7 @@ function defineExtension(
 
 /**
  * Install String.prototype extensions.
- * @param dslFunction - dsl() function (converts a string to a DslBuilder instance)
+ * @param dslFunction - dsl() function (converts a string to an IDslBuilder instance)
  */
 export function installStringExtensions(dslFunction: DslFn): void {
   const proto = String.prototype
@@ -227,7 +229,7 @@ export function installStringExtensions(dslFunction: DslFn): void {
     uninstallStringExtensions()
   }
 
-  assertNoExternalConflicts(proto, EXTENSION_METHODS)
+  assertNoExternalConflicts(proto, STRING_EXTENSION_METHODS)
 
   const state: InstalledState = {
     dslFunction,
@@ -242,7 +244,7 @@ export function installStringExtensions(dslFunction: DslFn): void {
     writable: false,
   })
 
-  // Proxy all listed methods transparently to the DslBuilder instance
+  // Proxy all listed methods transparently to the IDslBuilder instance
   const delegatedMethods: ExtensionMethodName[] = [
     'pattern', 'label', 'messages', 'error', 'description', 'format', 'custom',
     'default', 'username', 'password', 'phone', 'phoneNumber', 'idCard', 'creditCard',
@@ -254,14 +256,14 @@ export function installStringExtensions(dslFunction: DslFn): void {
   ]
 
   for (const method of delegatedMethods) {
-    defineExtension(state, proto, method, function (this: string, ...args: unknown[]): DslBuilder {
+    defineExtension(state, proto, method, function (this: string, ...args: unknown[]): IDslBuilder {
       const builder = dslFunction(String(this))
-      return (builder as unknown as Record<string, (...args: unknown[]) => DslBuilder>)[method](...args)
+      return (builder as unknown as Record<string, (...args: unknown[]) => IDslBuilder>)[method](...args)
     })
   }
 
   // enum method accepts rest parameters
-  defineExtension(state, proto, 'enum', function (this: string, ...values: unknown[]): DslBuilder {
+  defineExtension(state, proto, 'enum', function (this: string, ...values: unknown[]): IDslBuilder {
     return dslFunction(String(this)).enum(...values)
   })
 
@@ -293,14 +295,14 @@ export function installStringExtensions(dslFunction: DslFn): void {
 
 /**
  * Uninstall String.prototype extensions (useful for tests or clean-up).
- * S-01/S-02 fix: uses EXTENSION_METHODS array to guarantee perfect symmetry with install.
+ * S-01/S-02 fix: uses STRING_EXTENSION_METHODS array to guarantee perfect symmetry with install.
  */
 export function uninstallStringExtensions(): void {
   const proto = String.prototype
   const state = getInstalledState(proto)
 
   if (state) {
-    for (const method of EXTENSION_METHODS) {
+    for (const method of STRING_EXTENSION_METHODS) {
       const descriptor = Object.getOwnPropertyDescriptor(proto, method)
       if (isSchemaDslOwnedDescriptor(descriptor)) {
         restoreOriginal(proto, method, state.originals.get(method))
@@ -315,7 +317,7 @@ export function uninstallStringExtensions(): void {
 
   // Legacy cleanup path for descriptors installed by older schema-dsl builds.
   if (!hasLegacyInstallMarker(proto)) return
-  for (const method of EXTENSION_METHODS) {
+  for (const method of STRING_EXTENSION_METHODS) {
     const descriptor = Object.getOwnPropertyDescriptor(proto, method)
     if (isLikelyLegacySchemaDslDescriptor(method, descriptor)) {
       delete (proto as unknown as Record<PropertyKey, unknown>)[method]

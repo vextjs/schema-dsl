@@ -543,15 +543,29 @@ const schema = dsl({
 
 ---
 
+### `schema-dsl/string-types`
+
+String 链式写法的 TypeScript 类型声明入口。导入该入口只扩展 TypeScript 的 `String` 接口，不会安装运行时 `String.prototype` 扩展。
+
+```typescript
+import { dsl } from 'schema-dsl/pure';
+import 'schema-dsl/string-types';
+
+const field = 'email!'.label('邮箱').required();
+const schema = dsl({ email: field });
+```
+
+---
+
 ### `transformSchemaDsl(source, options?)`
 
-在编译期改写静态 String 链式 DSL 调用，并注入来自 `schema-dsl/pure` 的 `dsl` 导入。默认只改写 schema-dsl 字符串字面量上的 `.description()` 链，例如 `"email!".description("登录邮箱")`；如需更多链式方法，可通过 `methods` 显式开启。
+在编译期改写静态 String 链式 DSL 调用，并注入来自 `schema-dsl/pure` 的 `dsl` 导入。默认覆盖完整内建 String 链式 API，包括 `.label()`、`.pattern()`、`.required()`、`.toJsonSchema()` 等方法，也支持 `"admin|user|guest".label("角色")` 这类裸 pipe 枚举。用户自定义链式方法通过 `additionalMethods` 追加；`methods` 保持为旧版替换集合，只在你明确要覆盖默认内建方法列表时使用。
 
 ```javascript
 import { transformSchemaDsl } from 'schema-dsl/transform';
 
 const result = transformSchemaDsl(
-  'export const field = "email!".description("登录邮箱")',
+  'export const field = "admin|user|guest".label("角色")',
   { filename: 'schema.ts' }
 );
 
@@ -566,9 +580,11 @@ console.log(result.code);
 | `filename` | `string` | `'<unknown>'` | 用于解析模式、source map 和 warning 的文件名 |
 | `sourceMap` | `boolean | 'inline'` | `false` | 启用后生成 source map |
 | `importFrom` | `string` | `'schema-dsl/pure'` | 注入 `dsl` helper 时使用的导入来源 |
-| `methods` | `readonly string[]` | `['description']` | 允许被编译期改写的链式方法名 |
+| `methods` | `readonly string[]` | 完整内建 String 扩展方法列表 | 允许被编译期改写的链式方法名替换集合 |
+| `additionalMethods` | `readonly string[]` | `[]` | 追加用户自定义链式方法 |
 | `include` | `(filename) => boolean` | - | 可选文件过滤器 |
-| `onWarning` | `(warning) => void` | - | 接收解析失败和跳过字面量的 warning |
+| `strict` | `boolean | object` | `false` | 启用后对解析失败、root 入口残留、未配置 DSL 扩展方法抛出 `TransformSchemaDslError` |
+| `onWarning` | `(warning) => void` | - | 接收解析失败、root 入口残留、跳过字面量和未配置扩展方法 warning |
 
 **返回值**:
 

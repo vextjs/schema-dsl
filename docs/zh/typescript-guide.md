@@ -1,7 +1,7 @@
 # TypeScript 使用指南
 
-> **版本**: schema-dsl v2.0.9
-> **更新日期**: 2026-06-10
+> **版本**: schema-dsl v2.0.11
+> **更新日期**: 2026-06-17
 > **重要**: v1.0.6 移除了全局 String 类型扩展以避免类型污染
 
 ---
@@ -54,22 +54,19 @@ if (result.valid) {
 
 ## 2. TypeScript 中的链式调用
 
-### 2.1 重要变更（v1.0.6）
+### 2.1 默认不扩展全局 String 类型
 
-**v1.0.6 移除了全局 `interface String` 扩展**，原因：
-- ❌ 全局类型扩展会污染原生 String 类型
-- ❌ 导致 `trim()`、`toLowerCase()` 等原生方法的类型推断错误
-- ❌ 影响所有使用 TypeScript 的项目的类型安全
+默认情况下，TypeScript 不会获得全局 `interface String` 链式声明。这样可以让导入 `schema-dsl/pure` 的项目保持原生 `trim()`、`toLowerCase()` 等方法的类型稳定。
 
-**结果**：在 TypeScript 中直接对字符串链式调用会报类型错误：
+因此，直接字符串链式调用默认会报类型错误；只有显式导入 `schema-dsl/string-types` 时才会获得 String 链式提示：
 
 ```typescript
-// ❌ TypeScript 中会报错（v1.0.6+）
+// ❌ 默认 TypeScript 中会报错
 const schema = dsl({
   email: 'email!'.label('邮箱')  // 类型错误：Property 'label' does not exist on type 'string'
 });
 
-// ✅ TypeScript 中使用 dsl() 包裹，JavaScript 中可直接字符串链式
+// ✅ 默认 TypeScript 路径：使用 dsl() 包裹
 const schema = dsl({
   email: dsl('email!').label('邮箱')
 });
@@ -77,10 +74,10 @@ const schema = dsl({
 
 ### 2.2 正确用法 ⭐⭐⭐
 
-**TypeScript 中必须使用 `dsl()` 函数包裹字符串**，才能获得类型提示和链式调用：
+**默认推荐使用 `dsl()` 函数包裹字符串**，这样可以获得类型提示和链式调用，同时不扩展全局 String 类型：
 
 ```typescript
-// ✅ 正确：使用 dsl() 包裹（v1.0.6+ 必须）
+// ✅ 默认正确路径：使用 dsl() 包裹
 const schema = dsl({
   email: dsl('email!').label('邮箱').pattern(/custom/)
 });
@@ -90,26 +87,36 @@ const emailField = dsl('email!').label('邮箱');
 const schema = dsl({ email: emailField });
 ```
 
+如果项目会通过 `transformSchemaDsl()` 或 `schemaDslEsbuildPlugin()` 把静态 String 链式调用编译成 `dsl(...)` 调用，可以显式导入类型入口：
+
+```typescript
+import { dsl } from 'schema-dsl/pure';
+import 'schema-dsl/string-types';
+
+const schema = dsl({
+  role: 'admin|user|guest'.label('角色'),
+  email: 'email!'.label('邮箱').required()
+});
+```
+
 **好处**：
 - ✅ 获得完整的类型推导和 IDE 自动提示
-- ✅ 不污染原生 String 类型（`trim()` 正确返回 `string`）
+- ✅ 默认 `dsl()` 路径不污染原生 String 类型（`trim()` 正确返回 `string`）
+- ✅ transform + `schema-dsl/string-types` 路径只在显式导入时提供 String 链式提示
 - ✅ 更好的类型安全和开发体验
 
 ### 2.3 工作原理
 
 ```typescript
-// dsl(string) 返回 DslBuilder 实例
+// dsl(string) 返回 DslBuilder 实例，并按公开 IDslBuilder 链式契约提供类型
 const emailBuilder = dsl('email!');
-//    ^? DslBuilder - 完整的类型定义
+//    ^? DslBuilder & IDslBuilder - 完整公开链式类型
 
 // DslBuilder 支持所有链式方法，并有完整类型提示
 emailBuilder.label('邮箱')
 //          ^? IDE 自动提示所有可用方法
   .pattern(/^[a-z]+@[a-z]+\.[a-z]+$/)
   .error({ required: '邮箱必填' });
-
-> ℹ️ 当前类型声明优先覆盖稳定链式 API，例如 `label()`、`pattern()`、`error()`、`default()`。  
-> 某些运行时扩展方法依然可用，但如果类型声明未暴露，建议在 TypeScript 代码里优先改写为上述稳定组合。
 ```
 
 ---
@@ -120,7 +127,8 @@ emailBuilder.label('邮箱')
 
 | 方式 | JavaScript | TypeScript | 类型推导 | 推荐度 |
 |------|-----------|-----------|---------|--------|
-| 直接字符串 | ✅ 完美 | ⚠️ 可能无提示 | ❌ 弱 | ⭐⭐ |
+| 未导入 `string-types` 的直接字符串 | ✅ 完美 | ❌ 类型错误 | ❌ 弱 | ⭐ |
+| transform + `schema-dsl/string-types` | ✅ transform 后可用 | ✅ 显式 opt-in 提示 | ✅ 强 | ⭐⭐⭐⭐ |
 | dsl() 包裹 | ✅ 完美 | ✅ 完美 | ✅ 强 | ⭐⭐⭐⭐⭐ |
 | 先定义再使用 | ✅ 完美 | ✅ 完美 | ✅ 强 | ⭐⭐⭐⭐ |
 
@@ -589,6 +597,6 @@ dsl.config({
 
 ---
 
-**更新日期**: 2026-06-10
-**文档版本**: v2.0.9
+**更新日期**: 2026-06-17
+**文档版本**: v2.0.11
 
