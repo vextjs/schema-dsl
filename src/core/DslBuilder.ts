@@ -9,18 +9,27 @@
  */
 
 import type { JSONSchema } from '../types/schema.js'
-import { DslParser } from '../parser/DslParser.js'
+import { DslParser, type DslParseOptions } from '../parser/DslParser.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
 import { cloneSchemaValue } from '../utils/schemaClone.js'
 import safeRegex from 'safe-regex'
 import type { Validator as ValidatorInstance } from './Validator.js'
 import type { ValidationResult } from '../types/validate.js'
+import type { SchemaDslPatternRegistry } from '../types/runtime.js'
 
 // ==================== Internal Utilities ====================
 
 type CustomValidatorFn = (value: unknown) => unknown
 type CustomTypeSchema = JSONSchema | (() => JSONSchema)
+
+export interface DslBuilderOptions {
+  parseOptions?: DslParseOptions
+  patterns?: SchemaDslPatternRegistry
+  validatorFactory?: () => ValidatorInstance | Promise<ValidatorInstance>
+  validatorGuard?: () => void
+  cacheValidator?: boolean
+}
 
 interface DslBuilderRuntimeState {
   customTypes: Map<string, CustomTypeSchema>
@@ -73,10 +82,15 @@ export class DslBuilder {
   private _description: string | null
   private _customValidators: CustomValidatorFn[]
   private _whenConditions: unknown[]
+  private readonly _parseOptions: DslParseOptions | undefined
+  private readonly _patterns: SchemaDslPatternRegistry
+  private readonly _validatorFactory: (() => ValidatorInstance | Promise<ValidatorInstance>) | undefined
+  private readonly _validatorGuard: (() => void) | undefined
+  private readonly _cacheValidator: boolean
 
   // ==================== Constructor ====================
 
-  constructor(dslString: string) {
+  constructor(dslString: string, options: DslBuilderOptions = {}) {
     if (!dslString || typeof dslString !== 'string') {
       throw new Error('[schema-dsl] DSL string is required')
     }
@@ -100,8 +114,13 @@ export class DslBuilder {
     this._description = null
     this._customValidators = []
     this._whenConditions = []
+    this._parseOptions = options.parseOptions
+    this._patterns = options.patterns ?? (PATTERNS as SchemaDslPatternRegistry)
+    this._validatorFactory = options.validatorFactory
+    this._validatorGuard = options.validatorGuard
+    this._cacheValidator = options.cacheValidator ?? true
 
-    this._baseSchema = DslBuilder._parseBody(s)
+    this._baseSchema = DslBuilder._parseBody(s, this._parseOptions)
   }
 
   // ==================== Internal Parsing ====================
@@ -110,8 +129,8 @@ export class DslBuilder {
    * Parse DSL body (without ! or ?).
    * Delegates to the unified parser so string and builder DSL parsing stay in lockstep.
    */
-  private static _parseBody(dsl: string): JSONSchema {
-    return DslParser.parseString(dsl)
+  private static _parseBody(dsl: string, options?: DslParseOptions): JSONSchema {
+    return DslParser.parseString(dsl, options)
   }
 
   // ==================== Static Methods (BC with v1) ====================
@@ -483,28 +502,32 @@ export class DslBuilder {
   /** String domain validation. */
   domain(): this {
     this._assertStringType('domain')
-    const cfg = PATTERNS.common.domain
+    const cfg = this._patterns.common?.domain
+    if (!cfg) throw new Error('[schema-dsl] Unsupported common pattern: domain')
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** String IP address validation (IPv4 or IPv6). */
   ip(): this {
     this._assertStringType('ip')
-    const cfg = PATTERNS.common.ip
+    const cfg = this._patterns.common?.ip
+    if (!cfg) throw new Error('[schema-dsl] Unsupported common pattern: ip')
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** String Base64 encoding validation. */
   base64(): this {
     this._assertStringType('base64')
-    const cfg = PATTERNS.common.base64
+    const cfg = this._patterns.common?.base64
+    if (!cfg) throw new Error('[schema-dsl] Unsupported common pattern: base64')
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
   /** String JWT token validation. */
   jwt(): this {
     this._assertStringType('jwt')
-    const cfg = PATTERNS.common.jwt
+    const cfg = this._patterns.common?.jwt
+    if (!cfg) throw new Error('[schema-dsl] Unsupported common pattern: jwt')
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
 
@@ -513,7 +536,7 @@ export class DslBuilder {
   /** Phone number validation. */
   phone(country = 'cn'): this {
     this._assertStringType('phone')
-    const cfg = PATTERNS.phone[country]
+    const cfg = this._patterns.phone?.[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country: ${country}`)
     if (cfg.min !== undefined && !this._baseSchema.minLength) this._baseSchema.minLength = cfg.min
     if (cfg.max !== undefined && !this._baseSchema.maxLength) this._baseSchema.maxLength = cfg.max
@@ -529,7 +552,7 @@ export class DslBuilder {
   idCard(country = 'cn'): this {
     this._assertStringType('idCard')
     const lower = country.toLowerCase()
-    const cfg = PATTERNS.idCard[lower]
+    const cfg = this._patterns.idCard?.[lower]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for idCard: ${country}`)
     if (cfg.min !== undefined && !this._baseSchema.minLength) this._baseSchema.minLength = cfg.min
     if (cfg.max !== undefined && !this._baseSchema.maxLength) this._baseSchema.maxLength = cfg.max
@@ -545,7 +568,7 @@ export class DslBuilder {
   /** Credit card number validation. */
   creditCard(type = 'visa'): this {
     this._assertStringType('creditCard')
-    const cfg = PATTERNS.creditCard[type.toLowerCase()]
+    const cfg = this._patterns.creditCard?.[type.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported credit card type: ${type}`)
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
@@ -553,7 +576,7 @@ export class DslBuilder {
   /** Vehicle license plate validation. */
   licensePlate(country = 'cn'): this {
     this._assertStringType('licensePlate')
-    const cfg = PATTERNS.licensePlate[country.toLowerCase()]
+    const cfg = this._patterns.licensePlate?.[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for licensePlate: ${country}`)
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
@@ -561,7 +584,7 @@ export class DslBuilder {
   /** Postal code validation. */
   postalCode(country = 'cn'): this {
     this._assertStringType('postalCode')
-    const cfg = PATTERNS.postalCode[country.toLowerCase()]
+    const cfg = this._patterns.postalCode?.[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for postalCode: ${country}`)
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
@@ -569,7 +592,7 @@ export class DslBuilder {
   /** Passport number validation. */
   passport(country = 'cn'): this {
     this._assertStringType('passport')
-    const cfg = PATTERNS.passport[country.toLowerCase()]
+    const cfg = this._patterns.passport?.[country.toLowerCase()]
     if (!cfg) throw new Error(`[schema-dsl] Unsupported country for passport: ${country}`)
     return this._setPattern(cfg.pattern.source).messages({ pattern: cfg.key })
   }
@@ -754,11 +777,18 @@ export class DslBuilder {
   private _validator: ValidatorInstance | null = null
 
   async validate(data: unknown): Promise<ValidationResult<unknown>> {
-    if (!this._validator) {
-      const { Validator } = await import('./Validator.js')
-      this._validator = new Validator()
+    this._validatorGuard?.()
+    let validator = this._validator
+    if (!validator || !this._cacheValidator) {
+      if (this._validatorFactory) {
+        validator = await this._validatorFactory()
+      } else {
+        const { Validator } = await import('./Validator.js')
+        validator = new Validator()
+      }
+      if (this._cacheValidator) this._validator = validator
     }
     const schema = this.toSchema()
-    return this._validator.validate(schema, data)
+    return validator.validate(schema, data)
   }
 }

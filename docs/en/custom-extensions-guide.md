@@ -26,6 +26,7 @@ schema-dsl adopts modular design, you can easily extend:
 3. **`PluginManager` + `schema-dsl/plugins/*`** - Combination plug-in, hook and official plug-in entrance
 4. **`Locale.addLocale()` / `dsl.config({ i18n })`** - Extended multi-language messages
 5. **`transformSchemaDsl({ additionalMethods })` + `schema-dsl/string-types`** - Compile-time String-chain custom methods and opt-in TypeScript hints
+6. **`createRuntime()` from `schema-dsl/runtime`** - Isolated custom types, patterns and messages for frameworks or tenants
 
 ## Recommended path for current version
 
@@ -36,7 +37,45 @@ schema-dsl adopts modular design, you can easily extend:
 - Custom type: priority is given to `TypeRegistry.register()` or `DslBuilder.registerType()`
 - Official plug-in: give priority to `PluginManager` with `schema-dsl/plugins/custom-format`, `schema-dsl/plugins/custom-validator`, `schema-dsl/plugins/custom-type-example`
 - Custom language: priority is given to `Locale.addLocale()` or `dsl.config({ i18n: { locales } })`
-- Custom String-chain authoring: configure `additionalMethods` in the transform, and augment `schema-dsl/string-types` for IDE hints. The transform only rewrites source code; the actual `dsl('...').yourMethod()` runtime method must still be provided by your extension.
+- Custom String-chain authoring: configure `additionalMethods` in the transform, configure `additionalTypes` or `additionalTypePatterns` when chaining from registered custom DSL type literals, and augment `schema-dsl/string-types` for IDE hints. The transform only rewrites source code; the actual `dsl('...').yourMethod()` runtime method must still be provided by your extension.
+- Framework or tenant isolation: prefer `createRuntime()` from `schema-dsl/runtime` so custom types, pattern overrides, messages, message providers and Validator/AJV caches stay inside one runtime instance.
+- Register runtime custom types and dynamic type factories at app/plugin startup. Avoid request-scoped factories that capture request objects or large app containers; pass request-level locale/messages via `validate(..., options)` instead.
+
+---
+
+## Runtime-isolated extensions
+
+Use `schema-dsl/runtime` when an extension must not write into the global `TypeRegistry`, `Locale` or `PATTERNS` objects:
+
+```typescript
+import { createRuntime } from 'schema-dsl/runtime';
+
+const runtime = createRuntime({
+  types: {
+    tenantId: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
+  },
+  patterns: {
+    phone: {
+      zz: { pattern: /^ZZ-\d{2}$/, min: 5, max: 5, key: 'pattern.phone.zz' }
+    }
+  },
+  messages: {
+    'pattern.phone.zz': 'Tenant phone format is invalid'
+  },
+  messageProvider: ({ key, locale, fallback }) =>
+    key === 'number.min' ? `[${locale}] {{#label}} must be >= {{#limit}}` : fallback
+});
+
+const schema = runtime.dsl({
+  id: 'tenantId!',
+  phone: 'phone:zz',
+  age: 'number:18-120'
+});
+```
+
+For hot reload, prefer `runtime.configure(nextOptions, { mode: 'replace' })` or `runtime.configure({}, { mode: 'reset' })` before loading the next extension set. Use `runtime.dispose()` when an app/plugin instance is unloaded.
+
+Built-in chain methods keep their TypeScript hints through `runtime.dsl('string')` / `runtime.compileField('string')`. Custom chain methods still need normal builder interface augmentation plus a runtime method implementation in your extension code.
 
 ---
 
@@ -79,6 +118,21 @@ const tenantFromDsl = dsl('string!').tenantId().label('Tenant');
 ```
 
 Use `methods` only when intentionally replacing the full built-in transform method set; for normal user extensions, prefer `additionalMethods`.
+
+When the string literal itself is a registered custom DSL type, also add the type name or a matching pattern:
+
+```typescript
+const result = transformSchemaDsl(
+  'export const tenant = "tenant-id!".tenantId().label("Tenant")',
+  {
+    filename: 'schema.ts',
+    additionalMethods: ['tenantId'],
+    additionalTypes: ['tenant-id']
+  }
+);
+```
+
+For generated type names, use `additionalTypePatterns`, for example `{ additionalTypePatterns: ['^tenant-[0-9]+!?$'] }`.
 
 ---
 

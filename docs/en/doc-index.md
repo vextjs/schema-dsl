@@ -234,6 +234,7 @@
 | [performance-guide.md](performance-guide.md) | Performance Optimization Guide |
 | [plugin-type-registration.md](plugin-type-registration.md) | Custom type registration |
 | [runtime-locale-support.md](runtime-locale-support.md) | Runtime multi-language support - schema-dsl |
+| [runtime-isolation.md](runtime-isolation.md) | Runtime state isolation with `schema-dsl/runtime` |
 | [schema-utils.md](schema-utils.md) | Schema tool function documentation |
 | [security-checklist.md](security-checklist.md) | Safety Checklist |
 | [troubleshooting.md](troubleshooting.md) | FAQ troubleshooting guide |
@@ -256,6 +257,7 @@
 | [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/quick-start.ts) | Quick start example |
 | [dsl-syntax.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/dsl-syntax.ts) | DSL style complete example |
 | [string-extensions.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/string-extensions.ts) | String extension example |
+| [runtime-isolation.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/runtime-isolation.ts) | Runtime adapter isolation example |
 | [troubleshooting.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/troubleshooting.ts) | Troubleshooting and error location examples |
 
 ---

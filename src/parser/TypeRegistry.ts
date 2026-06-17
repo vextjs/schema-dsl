@@ -32,6 +32,14 @@ export interface TypeResolveOptions {
   input?: string
   emitWarning?: boolean
   throwOnError?: boolean
+  registryScope?: TypeRegistryScope
+}
+
+export interface TypeRegistryScope {
+  customTypes?: Map<string, TypeDefinition>
+  dynamicTypes?: Map<string, () => JSONSchema>
+  strictMode?: boolean
+  includeGlobalCustomTypes?: boolean
 }
 
 interface TypeRegistryRuntimeState {
@@ -218,19 +226,24 @@ export const TypeRegistry = {
     const protectedBuiltin = PROTECTED_BUILTIN_TYPES.has(typeName) ? BUILTIN_TYPES.get(typeName) : undefined
     if (protectedBuiltin) return protectedBuiltin
 
+    const scope = options.registryScope
+    const scopedDynamicTypes = scope?.dynamicTypes
+    const scopedCustomTypes = scope?.customTypes
+    const includeGlobalCustomTypes = scope?.includeGlobalCustomTypes !== false
+
     // Dynamic types: call factory function each time
-    const dynamicFn = DYNAMIC_TYPES.get(typeName)
+    const dynamicFn = scopedDynamicTypes?.get(typeName) ?? (includeGlobalCustomTypes ? DYNAMIC_TYPES.get(typeName) : undefined)
     if (dynamicFn) {
       return { baseSchema: dynamicFn() as Partial<JSONSchema> }
     }
 
-    const custom = CUSTOM_TYPES.get(typeName)
+    const custom = scopedCustomTypes?.get(typeName) ?? (includeGlobalCustomTypes ? CUSTOM_TYPES.get(typeName) : undefined)
     if (custom) return custom
 
     const builtin = BUILTIN_TYPES.get(typeName)
     if (builtin) return builtin
 
-    const unknownType = options.unknownType ?? (RUNTIME_STATE.strictMode ? 'error' : 'warn')
+    const unknownType = options.unknownType ?? ((scope?.strictMode ?? RUNTIME_STATE.strictMode) ? 'error' : 'warn')
 
     if (unknownType === 'error') {
       recordUnknownType(typeName, options, 'error')

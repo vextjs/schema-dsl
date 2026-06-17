@@ -2,6 +2,7 @@ import type { JSONSchema } from '../types/schema.js'
 import type { ValidateOptions, ValidationErrorItem, ValidationResult } from '../types/validate.js'
 import type { DslDefinition } from '../types/dsl.js'
 import { DslParser } from '../parser/DslParser.js'
+import type { DslParseOptions } from '../parser/DslParser.js'
 import { Locale } from './Locale.js'
 import { CONDITIONAL_RUNTIME_STATE, type ConditionalRuntimeState } from './ConditionalRuntime.js'
 
@@ -22,6 +23,10 @@ export type ConditionalInternalSchema = JSONSchema & {
 interface ConditionalValidatorHooks {
     validateSchema<T>(schema: JSONSchema, data: T, options: ValidateOptions): ValidationResult<T>
     internalError<T>(error: unknown, data: T): ValidationResult<T>
+    getMessageText?(key: string, params: Record<string, unknown>, options: ValidateOptions): string
+    parseString?(dsl: string, options?: DslParseOptions): JSONSchema
+    parseObject?(dsl: DslDefinition, options?: DslParseOptions): JSONSchema
+    parseOptions?: DslParseOptions
 }
 
 export class ConditionalValidator {
@@ -116,7 +121,6 @@ export class ConditionalValidator {
         fieldValue: T,
         options: ValidateOptions
     ): ValidationResult<T> {
-        const locale = options.locale ?? Locale.getLocale()
         const runtimeState = conditionalSchema[CONDITIONAL_RUNTIME_STATE]
         const conditions = (runtimeState?.conditions ?? conditionalSchema.conditions ?? []) as Array<{ action?: string; message?: string; then?: unknown; type?: string }>
 
@@ -144,7 +148,7 @@ export class ConditionalValidator {
                 if (cond.action === 'throw') {
                     if (matched) {
                         const errorMsg = evaluation.failedMessage ?? cond.message ?? 'Conditional validation failed'
-                        const message = Locale.getMessageText(errorMsg, (options.messages ?? {}) as Record<string, string>, locale)
+                        const message = this.getMessageText(errorMsg, options, { condition: (cond as Record<string, unknown>)['type'] })
                         return {
                             valid: false,
                             data: fieldValue,
@@ -165,7 +169,7 @@ export class ConditionalValidator {
 
                 if (evaluation.requirementFailed) {
                     const errorMsg = cond.message ?? 'Condition not met'
-                    const message = Locale.getMessageText(errorMsg, (options.messages ?? {}) as Record<string, string>, locale)
+                    const message = this.getMessageText(errorMsg, options)
                     return {
                         valid: false,
                         data: fieldValue,
@@ -197,7 +201,7 @@ export class ConditionalValidator {
         let resolved = thenSchema
 
         if (typeof resolved === 'string') {
-            resolved = DslParser.parseString(resolved)
+            resolved = (this.hooks.parseString ?? DslParser.parseString)(resolved, this.hooks.parseOptions)
         }
 
         if (resolved !== null && typeof resolved === 'object') {
@@ -215,7 +219,7 @@ export class ConditionalValidator {
         if (resolved !== null && typeof resolved === 'object' && !Array.isArray(resolved)) {
             const obj = resolved as Record<string, unknown>
             if (obj['type'] === undefined && obj['oneOf'] === undefined && obj['anyOf'] === undefined && obj['allOf'] === undefined) {
-                resolved = DslParser.parseObject(resolved as DslDefinition)
+                resolved = (this.hooks.parseObject ?? DslParser.parseObject)(resolved as DslDefinition, this.hooks.parseOptions)
             }
         }
 
@@ -231,15 +235,14 @@ export class ConditionalValidator {
         }
 
         if (isRequired && fieldValue === undefined) {
-            const locale = options.locale ?? Locale.getLocale()
             const label = internalSchema._label ?? ''
             const customMsgs = internalSchema._customMessages ?? {}
             const allMsgs = { ...(options.messages ?? {}), ...customMsgs } as Record<string, string>
             let message: string
             if (allMsgs['required']) {
-                message = Locale.getMessageText(allMsgs['required'], allMsgs, locale)
+                message = this.getMessageText(allMsgs['required'], { ...options, messages: allMsgs }, { label })
             } else {
-                message = Locale.getMessageText('required', allMsgs, locale)
+                message = this.getMessageText('required', { ...options, messages: allMsgs }, { label })
                 if (label) message = `${label} ${message}`
             }
             return {
@@ -251,5 +254,13 @@ export class ConditionalValidator {
         }
 
         return this.hooks.validateSchema(schema, fieldValue, options)
+    }
+
+    private getMessageText(key: string, options: ValidateOptions, params: Record<string, unknown> = {}): string {
+        if (this.hooks.getMessageText) {
+            return this.hooks.getMessageText(key, params, options)
+        }
+        const locale = options.locale ?? Locale.getLocale()
+        return Locale.getMessageText(key, (options.messages ?? {}) as Record<string, string>, locale)
     }
 }

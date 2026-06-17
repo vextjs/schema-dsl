@@ -8,6 +8,15 @@ type ValidateFnWithErrors = ((schema: unknown, data: unknown, parentSchema?: unk
   errors?: Partial<ErrorObject>[]
 }
 
+export type CustomKeywordMessageResolver = (
+  key: string,
+  params?: Record<string, unknown>
+) => string
+
+export interface CustomKeywordOptions {
+  getMessageText?: CustomKeywordMessageResolver
+}
+
 /**
  * CustomKeywords — AJV custom keyword registrar
  *
@@ -19,19 +28,23 @@ type ValidateFnWithErrors = ((schema: unknown, data: unknown, parentSchema?: unk
  *           str.length, correctly handling emoji and multi-byte characters
  */
 export class CustomKeywords {
+  private static _message(options: CustomKeywordOptions, key: string, params: Record<string, unknown> = {}): string {
+    return options.getMessageText?.(key, params) ?? Locale.getMessageText(key)
+  }
+
   /**
    * Register all custom keywords on an AJV instance
    */
-  static registerAll(ajv: Ajv): void {
-    CustomKeywords.registerRegexKeyword(ajv)
-    CustomKeywords.registerFunctionKeyword(ajv)
-    CustomKeywords.registerCustomValidatorsKeyword(ajv)
+  static registerAll(ajv: Ajv, options: CustomKeywordOptions = {}): void {
+    CustomKeywords.registerRegexKeyword(ajv, options)
+    CustomKeywords.registerFunctionKeyword(ajv, options)
+    CustomKeywords.registerCustomValidatorsKeyword(ajv, options)
     CustomKeywords.registerMetadataKeywords(ajv)
-    CustomKeywords.registerStringValidators(ajv)
-    CustomKeywords.registerNumberValidators(ajv)
-    CustomKeywords.registerObjectValidators(ajv)
-    CustomKeywords.registerArrayValidators(ajv)
-    CustomKeywords.registerDateValidators(ajv)
+    CustomKeywords.registerStringValidators(ajv, options)
+    CustomKeywords.registerNumberValidators(ajv, options)
+    CustomKeywords.registerObjectValidators(ajv, options)
+    CustomKeywords.registerArrayValidators(ajv, options)
+    CustomKeywords.registerDateValidators(ajv, options)
   }
 
   // ─── Metadata keywords ──────────────────────────────────────────────────
@@ -51,7 +64,7 @@ export class CustomKeywords {
 
   // ─── _customValidators ──────────────────────────────────────────────────
 
-  static registerCustomValidatorsKeyword(ajv: Ajv): void {
+  static registerCustomValidatorsKeyword(ajv: Ajv, options: CustomKeywordOptions = {}): void {
     const validate: ValidateFnWithErrors = (validators: unknown, data: unknown): boolean => {
       if (!Array.isArray(validators)) return true
 
@@ -72,7 +85,7 @@ export class CustomKeywords {
           }
 
           if (result === false) {
-            const msg = Locale.getMessageText('CUSTOM_VALIDATION_FAILED')
+            const msg = CustomKeywords._message(options, 'CUSTOM_VALIDATION_FAILED')
             validate.errors = [{ keyword: '_customValidators', message: msg, params: {} }]
             return false
           }
@@ -81,7 +94,7 @@ export class CustomKeywords {
             return false
           }
           if (result !== null && typeof result === 'object' && (result as Record<string, unknown>)['error']) {
-            const msg = String((result as Record<string, unknown>)['message'] ?? Locale.getMessageText('CUSTOM_VALIDATION_FAILED'))
+            const msg = String((result as Record<string, unknown>)['message'] ?? CustomKeywords._message(options, 'CUSTOM_VALIDATION_FAILED'))
             validate.errors = [{ keyword: '_customValidators', message: msg, params: {} }]
             return false
           }
@@ -104,7 +117,7 @@ export class CustomKeywords {
     return !safeRegex(pattern)
   }
 
-  static registerRegexKeyword(ajv: Ajv): void {
+  static registerRegexKeyword(ajv: Ajv, options: CustomKeywordOptions = {}): void {
     const validate: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const patternStr = String(schema)
       try {
@@ -112,7 +125,7 @@ export class CustomKeywords {
         if (CustomKeywords._isUnsafePattern(regex)) {
           validate.errors = [{
             keyword: 'regex',
-            message: Locale.getMessageText('string.pattern'),
+            message: CustomKeywords._message(options, 'string.pattern', { pattern: patternStr, reason: 'unsafe regex pattern' }),
             params: { pattern: patternStr, reason: 'unsafe regex pattern' },
           }]
           return false
@@ -121,7 +134,7 @@ export class CustomKeywords {
         // CK-02 fix: use locale key instead of concatenating raw error message
         validate.errors = [{
           keyword: 'regex',
-          message: Locale.getMessageText('string.pattern'),
+          message: CustomKeywords._message(options, 'string.pattern', { pattern: schema }),
           params: { pattern: schema },
         }]
         return false
@@ -129,7 +142,7 @@ export class CustomKeywords {
         // CK-02 fix: invalid regex also uses locale key
         validate.errors = [{
           keyword: 'regex',
-          message: Locale.getMessageText('string.pattern'),
+          message: CustomKeywords._message(options, 'string.pattern', { error: error instanceof Error ? error.message : String(error) }),
           params: { error: error instanceof Error ? error.message : String(error) },
         }]
         return false
@@ -141,12 +154,12 @@ export class CustomKeywords {
 
   // ─── validate (function validator) ──────────────────────────────────────
 
-  static registerFunctionKeyword(ajv: Ajv): void {
+  static registerFunctionKeyword(ajv: Ajv, options: CustomKeywordOptions = {}): void {
     const validate: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       if (typeof schema !== 'function') {
         validate.errors = [{
           keyword: 'validate',
-          message: Locale.getMessageText('VALIDATE_MUST_BE_FUNCTION'),
+          message: CustomKeywords._message(options, 'VALIDATE_MUST_BE_FUNCTION'),
           params: {},
         }]
         return false
@@ -184,7 +197,7 @@ export class CustomKeywords {
 
   // ─── String validators ───────────────────────────────────────────────────
 
-  static registerStringValidators(ajv: Ajv): void {
+  static registerStringValidators(ajv: Ajv, options: CustomKeywordOptions = {}): void {
     // exactLength — exact string length (CK-Y04 fix: Unicode code-point counting)
     const exactLength: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       // CK-Y04: use spread iterator for counting — correctly handles emoji / multi-byte Unicode
@@ -192,7 +205,7 @@ export class CustomKeywords {
       if (codePointLength !== Number(schema)) {
         exactLength.errors = [{
           keyword: 'exactLength',
-          message: Locale.getMessageText('string.length'),
+          message: CustomKeywords._message(options, 'string.length', { limit: schema }),
           params: { limit: schema },
         }]
         return false
@@ -204,7 +217,7 @@ export class CustomKeywords {
     // alphanum
     const alphanum: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       if (schema && !/^[a-zA-Z0-9]*$/.test(String(data))) {
-        alphanum.errors = [{ keyword: 'alphanum', message: Locale.getMessageText('string.alphanum'), params: {} }]
+        alphanum.errors = [{ keyword: 'alphanum', message: CustomKeywords._message(options, 'string.alphanum'), params: {} }]
         return false
       }
       return true
@@ -215,7 +228,7 @@ export class CustomKeywords {
     const trim: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const str = String(data)
       if (schema && str !== str.trim()) {
-        trim.errors = [{ keyword: 'trim', message: Locale.getMessageText('string.trim'), params: {} }]
+        trim.errors = [{ keyword: 'trim', message: CustomKeywords._message(options, 'string.trim'), params: {} }]
         return false
       }
       return true
@@ -226,7 +239,7 @@ export class CustomKeywords {
     const lowercase: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const str = String(data)
       if (schema && str !== str.toLowerCase()) {
-        lowercase.errors = [{ keyword: 'lowercase', message: Locale.getMessageText('string.lowercase'), params: {} }]
+        lowercase.errors = [{ keyword: 'lowercase', message: CustomKeywords._message(options, 'string.lowercase'), params: {} }]
         return false
       }
       return true
@@ -237,7 +250,7 @@ export class CustomKeywords {
     const uppercase: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const str = String(data)
       if (schema && str !== str.toUpperCase()) {
-        uppercase.errors = [{ keyword: 'uppercase', message: Locale.getMessageText('string.uppercase'), params: {} }]
+        uppercase.errors = [{ keyword: 'uppercase', message: CustomKeywords._message(options, 'string.uppercase'), params: {} }]
         return false
       }
       return true
@@ -250,7 +263,7 @@ export class CustomKeywords {
         try {
           JSON.parse(String(data))
         } catch {
-          jsonString.errors = [{ keyword: 'jsonString', message: Locale.getMessageText('pattern.json'), params: {} }]
+          jsonString.errors = [{ keyword: 'jsonString', message: CustomKeywords._message(options, 'pattern.json'), params: {} }]
           return false
         }
       }
@@ -261,7 +274,7 @@ export class CustomKeywords {
 
   // ─── Number validators ───────────────────────────────────────────────────
 
-  static registerNumberValidators(ajv: Ajv): void {
+  static registerNumberValidators(ajv: Ajv, options: CustomKeywordOptions = {}): void {
     // precision — decimal place limit
     const precision: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const n = data as number
@@ -270,7 +283,7 @@ export class CustomKeywords {
       const shifted = n * factor
       // Epsilon-based check handles floating-point artifacts (e.g. 0.1+0.2 = 0.30000000000000004)
       if (Math.abs(shifted - Math.round(shifted)) > 1e-10) {
-        precision.errors = [{ keyword: 'precision', message: Locale.getMessageText('number.precision'), params: { limit: schema } }]
+        precision.errors = [{ keyword: 'precision', message: CustomKeywords._message(options, 'number.precision', { limit: schema }), params: { limit: schema } }]
         return false
       }
       return true
@@ -281,7 +294,7 @@ export class CustomKeywords {
     const port: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const num = data as number
       if (schema && (!Number.isInteger(num) || num < 1 || num > 65535)) {
-        port.errors = [{ keyword: 'port', message: Locale.getMessageText('number.port'), params: {} }]
+        port.errors = [{ keyword: 'port', message: CustomKeywords._message(options, 'number.port'), params: {} }]
         return false
       }
       return true
@@ -291,7 +304,7 @@ export class CustomKeywords {
 
   // ─── Object validators ──────────────────────────────────────────────────
 
-  static registerObjectValidators(ajv: Ajv): void {
+  static registerObjectValidators(ajv: Ajv, options: CustomKeywordOptions = {}): void {
     // requiredAll — require all defined properties to be present
     const requiredAll: ValidateFnWithErrors = (schema: unknown, data: unknown, parentSchema?: unknown): boolean => {
       if (!schema) return true
@@ -301,7 +314,7 @@ export class CustomKeywords {
       if (missingKeys.length > 0) {
         requiredAll.errors = [{
           keyword: 'requiredAll',
-          message: Locale.getMessageText('object.missing'),
+          message: CustomKeywords._message(options, 'object.missing', { missing: missingKeys }),
           params: { missing: missingKeys },
         }]
         return false
@@ -319,7 +332,7 @@ export class CustomKeywords {
       if (extraKeys.length > 0) {
         strictSchema.errors = [{
           keyword: 'strictSchema',
-          message: Locale.getMessageText('object.schema'),
+          message: CustomKeywords._message(options, 'object.schema', { extra: extraKeys }),
           params: { extra: extraKeys },
         }]
         return false
@@ -359,7 +372,7 @@ export class CustomKeywords {
     )
   }
 
-  static registerArrayValidators(ajv: Ajv): void {
+  static registerArrayValidators(ajv: Ajv, options: CustomKeywordOptions = {}): void {
     // noSparse — disallow sparse arrays
     const noSparse: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
       const arr = data as unknown[]
@@ -368,7 +381,7 @@ export class CustomKeywords {
           if (!(i in arr)) {
             noSparse.errors = [{
               keyword: 'noSparse',
-              message: Locale.getMessageText('array.sparse'),
+              message: CustomKeywords._message(options, 'array.sparse', { index: i }),
               params: { index: i },
             }]
             return false
@@ -394,7 +407,7 @@ export class CustomKeywords {
       if (missing.length > 0) {
         includesRequired.errors = [{
           keyword: 'includesRequired',
-          message: Locale.getMessageText('array.includesRequired'),
+          message: CustomKeywords._message(options, 'array.includesRequired', { missing }),
           params: { missing },
         }]
         return false
@@ -406,7 +419,7 @@ export class CustomKeywords {
 
   // ─── Date validators ────────────────────────────────────────────────────
 
-  static registerDateValidators(ajv: Ajv): void {
+  static registerDateValidators(ajv: Ajv, options: CustomKeywordOptions = {}): void {
     const DATE_FORMATS: Record<string, RegExp> = {
       'YYYY-MM-DD': /^\d{4}-\d{2}-\d{2}$/,
       'YYYY/MM/DD': /^\d{4}\/\d{2}\/\d{2}$/,
@@ -423,7 +436,7 @@ export class CustomKeywords {
       if (!pattern || !pattern.test(str)) {
         dateFormat.errors = [{
           keyword: 'dateFormat',
-          message: Locale.getMessageText('date.format'),
+          message: CustomKeywords._message(options, 'date.format', { format: schema }),
           params: { format: schema },
         }]
         return false
@@ -437,7 +450,7 @@ export class CustomKeywords {
       } else if (fmt === 'ISO8601') {
         const d2 = new Date(str)
         if (isNaN(d2.getTime())) {
-          dateFormat.errors = [{ keyword: 'dateFormat', message: Locale.getMessageText('date.format'), params: { format: schema } }]
+          dateFormat.errors = [{ keyword: 'dateFormat', message: CustomKeywords._message(options, 'date.format', { format: schema }), params: { format: schema } }]
           return false
         }
         return true
@@ -447,7 +460,7 @@ export class CustomKeywords {
       // Verify the date exists (e.g., reject 2024-13-99, 2024-02-31)
       const probe = new Date(y, m - 1, dd)
       if (probe.getFullYear() !== y || probe.getMonth() !== m - 1 || probe.getDate() !== dd) {
-        dateFormat.errors = [{ keyword: 'dateFormat', message: Locale.getMessageText('date.format'), params: { format: schema } }]
+        dateFormat.errors = [{ keyword: 'dateFormat', message: CustomKeywords._message(options, 'date.format', { format: schema }), params: { format: schema } }]
         return false
       }
       return true
@@ -461,7 +474,7 @@ export class CustomKeywords {
       if (isNaN(dataDate.getTime()) || isNaN(compareDate.getTime()) || dataDate <= compareDate) {
         dateGreater.errors = [{
           keyword: 'dateGreater',
-          message: Locale.getMessageText('date.greater'),
+          message: CustomKeywords._message(options, 'date.greater', { limit: schema }),
           params: { limit: schema },
         }]
         return false
@@ -477,7 +490,7 @@ export class CustomKeywords {
       if (isNaN(dataDate.getTime()) || isNaN(compareDate.getTime()) || dataDate >= compareDate) {
         dateLess.errors = [{
           keyword: 'dateLess',
-          message: Locale.getMessageText('date.less'),
+          message: CustomKeywords._message(options, 'date.less', { limit: schema }),
           params: { limit: schema },
         }]
         return false

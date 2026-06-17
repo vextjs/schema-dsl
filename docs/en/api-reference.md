@@ -10,6 +10,7 @@
 - [DslBuilder Class](#dslbuilder-class)
 - [String Extensions](#string-extensions)
 - [Package Entry Points and Compile-Time Transform](#package-entry-points-and-compile-time-transform)
+- [Runtime Adapter](#runtime-adapter)
 - [Validator Class](#validator-class)
 - [Exporters](#exporters)
 - [Utility Functions](#utility-functions)
@@ -540,7 +541,7 @@ uninstallStringExtensions();
 
 ### `schema-dsl/pure`
 
-Imports the same core API without installing `String.prototype` extensions. Use this entry in libraries, workers, tests, or isolation-sensitive runtimes where package import must not mutate global prototypes.
+Imports the same core API without installing `String.prototype` extensions. Use this entry when package import must not mutate global prototypes. It does not isolate Locale, TypeRegistry, PATTERNS or Validator/AJV state; use `schema-dsl/runtime` for runtime-state isolation.
 
 ```javascript
 import { dsl, validate, uninstallStringExtensions } from 'schema-dsl/pure';
@@ -587,7 +588,7 @@ const schema = dsl({ email: field });
 
 ### `transformSchemaDsl(source, options?)`
 
-Rewrites static String-chain DSL calls at compile time and injects imports from `schema-dsl/pure`. By default, it transforms the complete built-in String-chain API on schema-dsl literals, including methods such as `.label()`, `.pattern()`, `.required()`, `.toJsonSchema()`, and naked pipe enums such as `"admin|user|guest".label("Role")`. Use `additionalMethods` for user-defined chain methods; `methods` remains a legacy replacement set when you intentionally need to override the built-in default list.
+Rewrites static String-chain DSL calls at compile time and injects imports from `schema-dsl/pure`. By default, it transforms the complete built-in String-chain API on schema-dsl literals, including methods such as `.label()`, `.pattern()`, `.required()`, `.toJsonSchema()`, and naked pipe enums such as `"admin|user|guest".label("Role")`. Use `additionalMethods` for user-defined chain methods, and `additionalTypes` / `additionalTypePatterns` for registered custom DSL type literals such as `"tenant-id!".label("Tenant")`; `methods` remains a legacy replacement set when you intentionally need to override the built-in default list.
 
 ```javascript
 import { transformSchemaDsl } from 'schema-dsl/transform';
@@ -610,6 +611,8 @@ console.log(result.code);
 | `importFrom` | `string` | `'schema-dsl/pure'` | Import source used for the injected `dsl` helper |
 | `methods` | `readonly string[]` | Full built-in String extension list | Legacy replacement set for chain method names eligible for compile-time rewriting |
 | `additionalMethods` | `readonly string[]` | `[]` | User-defined chain methods appended to the configured method set |
+| `additionalTypes` | `readonly string[]` | `[]` | Registered custom DSL type names eligible for literal rewriting |
+| `additionalTypePatterns` | `readonly (RegExp \| string)[]` | `[]` | Patterns for custom DSL type literals when names are generated or follow a convention |
 | `include` | `(filename) => boolean` | - | Optional file filter |
 | `strict` | `boolean | object` | `false` | Throws `TransformSchemaDslError` for parse errors, root-entry imports, or unconfigured DSL extension methods when enabled |
 | `onWarning` | `(warning) => void` | - | Receives parse, root-import, skipped-literal, and unconfigured-extension warnings |
@@ -644,6 +647,77 @@ await build({
 ```
 
 The adapter transforms only `file` namespace JavaScript and TypeScript source files, skips `node_modules`, and leaves virtual modules to their owning plugins.
+
+---
+
+## Runtime Adapter
+
+`schema-dsl/runtime` provides an explicit adapter for frameworks and multi-tenant applications that need isolated runtime state. It does not install `String.prototype` extensions and it does not mutate the root `Locale`, `TypeRegistry`, `PATTERNS`, default `Validator`, or default AJV instances.
+
+The entry exports `createRuntime()` as the primary factory. `createSchemaDslRuntime()` and `createSchemaDslAdapter()` are equivalent aliases for integrations that prefer an explicit adapter name.
+
+```typescript
+import { createRuntime } from 'schema-dsl/runtime';
+
+const runtime = createRuntime({
+  locale: 'tenant-a',
+  messages: {
+    'tenant.user.missing': {
+      code: 'TENANT_USER_MISSING',
+      message: 'Tenant user {{#id}} is missing'
+    }
+  },
+  types: {
+    tenantId: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
+  },
+  patterns: {
+    phone: {
+      zz: { pattern: /^ZZ-\d{2}$/, min: 5, max: 5, key: 'pattern.phone.zz' }
+    }
+  },
+  messageProvider: ({ key, locale, fallback }) =>
+    key === 'number.min' ? `[${locale}] {{#label}} must be >= {{#limit}}` : fallback
+});
+
+const schema = runtime.dsl({
+  id: 'tenantId!',
+  phone: 'phone:zz',
+  age: 'number:18-120'
+});
+
+const result = runtime.validate(schema, {
+  id: 'tenant_demo',
+  phone: 'ZZ-12',
+  age: 16
+});
+```
+
+| Method | Description |
+|--------|-------------|
+| `runtime.dsl(string)` | Returns an isolated `DslBuilder` with normal chain-method TypeScript hints. |
+| `runtime.dsl(object)` | Compiles an object DSL definition using the runtime's type and pattern scope. |
+| `runtime.compile(definition)` | Compiles a string or object DSL definition using the runtime scope. |
+| `runtime.compileField(string)` | Returns an isolated chainable field builder. |
+| `runtime.configure(options, control?)` | Updates runtime messages, type scope, patterns, strict mode or validator options. `merge` is incremental; `replace` swaps the full runtime-local profile; `reset` clears it before applying `options`. |
+| `runtime.registerType(name, schema)` | Adds or replaces a runtime-local custom type. |
+| `runtime.registerDynamicType(name, factory)` | Adds or replaces a runtime-local dynamic type factory. |
+| `runtime.unregisterType(name)` | Removes a runtime-local custom or dynamic type. |
+| `runtime.clearCache()` | Clears runtime-owned Validator/AJV caches. |
+| `runtime.getStats()` | Returns lifecycle, message, type, pattern and validator cache counts. |
+| `runtime.dispose()` | Idempotently releases runtime-owned maps and caches; use-after-dispose throws a clear error. |
+| `runtime.validate(schema, data, options?)` | Validates with runtime-local messages, `messageProvider`, Validator/AJV instances and custom keyword messages. |
+| `runtime.validateAsync(schema, data, options?)` | Async validation with the same runtime-local state. |
+| `runtime.createI18nError(key, params?, statusCode?, localeOrOptions?)` | Creates an `I18nError` without reading global `Locale` state. |
+
+`messageProvider` receives `{ key, params, locale, source, fallback }`, where `source` is one of `ajv`, `customKeyword`, `conditional`, `customValidator`, `i18nError` or `runtime`. It covers standard AJV messages, custom keyword messages, conditional validation messages, async custom validator fallback messages and runtime-created `I18nError` instances. Explicit `messages` still have priority over provider fallbacks.
+
+`runtime.validate()` and `runtime.validateAsync()` accept the same per-call error options as the root helpers. Pass `{ coerce: false }`, `{ smartCoerce: false }`, or `{ coerceTypes: false }` when a runtime call must reject numeric or boolean strings instead of using schema-dsl smart coercion.
+
+Create runtimes at app, plugin or worker lifecycle boundaries. Request-level differences should use `validate(..., { locale, messages, messageProvider })`; do not create a new runtime per request.
+
+### Boundary with `schema-dsl/pure`
+
+`schema-dsl/pure` only avoids automatic `String.prototype` installation. It keeps the same global runtime state as the root API. For isolated Locale, TypeRegistry, PATTERNS and Validator/AJV state, use `schema-dsl/runtime`.
 
 ---
 

@@ -82,7 +82,7 @@ const schema = dsl({
 });
 ```
 
-如果希望保留 String 链式作者体验，但不在运行时修改原型，可使用 `transformSchemaDsl()` 或 `schemaDslEsbuildPlugin()`，把静态链式调用改写为从 `schema-dsl/pure` 导入的 `dsl('...')` 调用。默认 transform 覆盖完整内建 String 扩展方法集合和裸 pipe 枚举；用户自定义方法通过 `additionalMethods` 追加。
+如果希望保留 String 链式作者体验，但不在运行时修改原型，可使用 `transformSchemaDsl()` 或 `schemaDslEsbuildPlugin()`，把静态链式调用改写为从 `schema-dsl/pure` 导入的 `dsl('...')` 调用。默认 transform 覆盖完整内建 String 扩展方法集合和裸 pipe 枚举；用户自定义方法通过 `additionalMethods` 追加，已注册的自定义 DSL 类型字面量通过 `additionalTypes` 或 `additionalTypePatterns` 追加。
 
 ---
 

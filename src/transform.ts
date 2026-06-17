@@ -37,6 +37,8 @@ export interface TransformSchemaDslOptions {
   importFrom?: string
   methods?: readonly string[]
   additionalMethods?: readonly string[]
+  additionalTypes?: readonly string[]
+  additionalTypePatterns?: readonly (RegExp | string)[]
   include?: (filename: string) => boolean
   strict?: boolean | TransformSchemaDslStrictOptions
   onWarning?: (warning: TransformSchemaDslWarning) => void
@@ -133,6 +135,7 @@ export function transformSchemaDsl(source: string, options: TransformSchemaDslOp
 
   const importFrom = options.importFrom ?? DEFAULT_IMPORT_FROM
   const methods = createConfiguredMethodSet(options)
+  const literalMatcher = createDslLiteralMatcher(options)
   const existingDslLocalName = findExistingDslImport(ast, importFrom)
   let injectedDslLocalName: string | undefined
   const reservedLocalNames = collectBindingNames(ast)
@@ -164,7 +167,7 @@ export function transformSchemaDsl(source: string, options: TransformSchemaDslOp
         return
       }
 
-      if (!looksLikeSchemaDslLiteral(literalValue)) {
+      if (!literalMatcher(literalValue)) {
         warn(createWarning('non-dsl-literal', `Skipped non schema-dsl string literal "${literalValue}"`, filename, callee.object.loc))
         return
       }
@@ -258,6 +261,29 @@ function createConfiguredMethodSet(options: TransformSchemaDslOptions): Readonly
     ...(options.methods ?? DEFAULT_METHODS),
     ...(options.additionalMethods ?? []),
   ])
+}
+
+function createDslLiteralMatcher(options: TransformSchemaDslOptions): (value: string) => boolean {
+  const additionalTypes = new Set((options.additionalTypes ?? []).map(type => type.toLowerCase()))
+  const additionalTypePatterns = (options.additionalTypePatterns ?? []).map(pattern =>
+    typeof pattern === 'string' ? new RegExp(pattern) : pattern
+  )
+
+  return (value: string): boolean => {
+    if (looksLikeSchemaDslLiteral(value)) {
+      return true
+    }
+
+    const typeName = getDslLiteralTypeName(value)
+    if (typeName && additionalTypes.has(typeName.toLowerCase())) {
+      return true
+    }
+
+    return additionalTypePatterns.some(pattern => {
+      pattern.lastIndex = 0
+      return pattern.test(value)
+    })
+  }
 }
 
 function shouldThrowForWarning(
@@ -384,7 +410,7 @@ function warnIfUnconfiguredExtensionMethod(
   }
 
   const chain = getStaticStringCallChain(path.node)
-  if (!chain || !looksLikeSchemaDslLiteral(chain.literalValue)) {
+  if (!chain) {
     return
   }
 
@@ -478,9 +504,18 @@ function looksLikeSchemaDslLiteral(value: string): boolean {
     return true
   }
 
-  const firstPart = trimmed.split('|', 1)[0] ?? trimmed
-  const typeName = firstPart.match(/^[A-Za-z][A-Za-z0-9_-]*/)?.[0]?.toLowerCase()
+  const typeName = getDslLiteralTypeName(trimmed)?.toLowerCase()
   return typeName !== undefined && BUILTIN_DSL_TYPES.has(typeName)
+}
+
+function getDslLiteralTypeName(value: string): string | undefined {
+  const trimmed = value.trim()
+  if (!trimmed || /\s/.test(trimmed) || looksLikePipeEnumLiteral(trimmed)) {
+    return undefined
+  }
+
+  const firstPart = trimmed.split('|', 1)[0] ?? trimmed
+  return firstPart.match(/^[A-Za-z][A-Za-z0-9_-]*/)?.[0]
 }
 
 function looksLikePipeEnumLiteral(value: string): boolean {

@@ -8,6 +8,7 @@ export default defineConfig({
     'register-string': 'src/register-string.ts',
     'string-types': 'src/string-types.ts',
     transform: 'src/transform.ts',
+    runtime: 'src/runtime.ts',
     esbuild: 'src/esbuild.ts',
     'plugins/custom-format': 'src/plugins/custom-format.ts',
     'plugins/custom-validator': 'src/plugins/custom-validator.ts',

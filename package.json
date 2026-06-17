@@ -66,6 +66,16 @@
         "default": "./dist/transform.cjs"
       }
     },
+    "./runtime": {
+      "import": {
+        "types": "./dist/runtime.d.ts",
+        "default": "./dist/runtime.js"
+      },
+      "require": {
+        "types": "./dist/runtime.d.cts",
+        "default": "./dist/runtime.cjs"
+      }
+    },
     "./esbuild": {
       "import": {
         "types": "./dist/esbuild.d.ts",

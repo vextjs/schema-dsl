@@ -82,7 +82,7 @@ const schema = dsl({
 });
 ```
 
-For builds that want String-chain authoring without runtime prototype mutation, use `transformSchemaDsl()` or `schemaDslEsbuildPlugin()` to rewrite static chains into `dsl('...')` calls that import from `schema-dsl/pure`. The default transform covers the full built-in String extension method set and naked pipe enums; add user-defined methods with `additionalMethods`.
+For builds that want String-chain authoring without runtime prototype mutation, use `transformSchemaDsl()` or `schemaDslEsbuildPlugin()` to rewrite static chains into `dsl('...')` calls that import from `schema-dsl/pure`. The default transform covers the full built-in String extension method set and naked pipe enums; add user-defined methods with `additionalMethods`, and add registered custom DSL type literals with `additionalTypes` or `additionalTypePatterns`.
 
 ---
 

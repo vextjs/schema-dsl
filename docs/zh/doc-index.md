@@ -232,6 +232,7 @@
 | [performance-guide.md](performance-guide.md) | 性能优化指南 |
 | [plugin-type-registration.md](plugin-type-registration.md) | 自定义类型注册 |
 | [runtime-locale-support.md](runtime-locale-support.md) | 运行时多语言支持 - schema-dsl |
+| [runtime-isolation.md](runtime-isolation.md) | 使用 `schema-dsl/runtime` 隔离运行时状态 |
 | [schema-utils.md](schema-utils.md) | Schema 工具函数文档 |
 | [security-checklist.md](security-checklist.md) | 安全检查清单 |
 | [troubleshooting.md](troubleshooting.md) | 常见问题排查指南 |
@@ -254,6 +255,7 @@
 | [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/quick-start.ts) | 快速开始示例 |
 | [dsl-syntax.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/dsl-syntax.ts) | DSL 风格完整示例 |
 | [string-extensions.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/string-extensions.ts) | String 扩展示例 |
+| [runtime-isolation.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/runtime-isolation.ts) | runtime 适配器隔离示例 |
 | [troubleshooting.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/troubleshooting.ts) | 排障与错误定位示例 |
 
 ---

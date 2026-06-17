@@ -48,7 +48,8 @@ const englishSidebar = [
       { text: 'Frontend i18n Guide', link: '/frontend-i18n-guide' },
       { text: 'Add Custom Locale', link: '/add-custom-locale' },
       { text: 'Dynamic Locale', link: '/dynamic-locale' },
-      { text: 'Runtime Locale Support', link: '/runtime-locale-support' }
+      { text: 'Runtime Locale Support', link: '/runtime-locale-support' },
+      { text: 'Runtime Isolation', link: '/runtime-isolation' }
     ]
   },
   {
@@ -153,7 +154,8 @@ const chineseSidebar = [
       { text: '前端 i18n 指南', link: '/zh/frontend-i18n-guide' },
       { text: '添加自定义语言包', link: '/zh/add-custom-locale' },
       { text: '动态语言切换', link: '/zh/dynamic-locale' },
-      { text: '运行时 locale 支持', link: '/zh/runtime-locale-support' }
+      { text: '运行时 locale 支持', link: '/zh/runtime-locale-support' },
+      { text: '运行时隔离', link: '/zh/runtime-isolation' }
     ]
   },
   {

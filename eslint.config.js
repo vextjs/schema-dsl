@@ -23,6 +23,19 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', 'test/**', '*.config.*'],
+    ignores: [
+      'node_modules/**',
+      'coverage/**',
+      '.nyc_output/**',
+      'dist/**',
+      'build/**',
+      '*.log',
+      '.DS_Store',
+      '.temp/**',
+      'reports/**',
+      '*.d.ts',
+      'test/**',
+      '*.config.*',
+    ],
   },
 ]

@@ -131,7 +131,7 @@ const schema = dsl({
 | **TypeScript** | ✅ | Written in native TypeScript with full type inference |
 | **Plugin system** | ✅ | Custom types / formats / validators |
 | **Schema reuse** | ✅ | pick / omit / partial / extend |
-| **Side-effect-controlled entries** | ✅ | root compatibility plus `schema-dsl/pure` for no `String.prototype` installation |
+| **Side-effect-controlled entries** | ✅ | root compatibility, `schema-dsl/pure` for no `String.prototype` installation, and `schema-dsl/runtime` for isolated runtime state |
 | **Compile-time transform** | ✅ | `schema-dsl/transform` core and optional `schema-dsl/esbuild` adapter |
 
 ### 🎨 One schema, many uses (unique capability)
@@ -183,11 +183,12 @@ npm install schema-dsl
 | Entry | Purpose |
 |-------|---------|
 | `schema-dsl` | Root compatibility entry; imports install the non-enumerable String chain API by default. |
-| `schema-dsl/pure` | Same core API without installing `String.prototype` extensions. Use this in libraries, workers, tests, or isolation-sensitive runtimes. |
+| `schema-dsl/pure` | Same core API without installing `String.prototype` extensions. This controls prototype side effects only; it does not isolate Locale, TypeRegistry, PATTERNS or validator instances. |
 | `schema-dsl/compat` | Explicit compatibility entry that installs String extensions on import. |
 | `schema-dsl/register-string` | Side-effect entry for explicitly registering String extensions during application startup. |
 | `schema-dsl/string-types` | Opt-in TypeScript declarations for String-chain authoring; no runtime prototype installation. |
 | `schema-dsl/transform` | Babel AST transform core that rewrites static string-chain calls into `dsl('...')` calls. |
+| `schema-dsl/runtime` | Runtime adapter factory for per-tenant/per-app isolated Locale messages, messageProvider, TypeRegistry scope, PATTERNS, Validator/AJV instances and `I18nError` creation. |
 | `schema-dsl/esbuild` | Optional esbuild plugin adapter around the transform core. `esbuild` is an optional peer dependency. |
 
 ```typescript
@@ -195,6 +196,7 @@ import { dsl, validate } from 'schema-dsl/pure';
 import 'schema-dsl/string-types';
 import { transformSchemaDsl } from 'schema-dsl/transform';
 import { schemaDslEsbuildPlugin } from 'schema-dsl/esbuild';
+import { createRuntime } from 'schema-dsl/runtime';
 
 const schema = dsl({ email: dsl('email!').label('Email').required() });
 
@@ -204,9 +206,32 @@ const transformed = transformSchemaDsl(
 );
 
 const plugins = [schemaDslEsbuildPlugin()];
+
+const tenantRuntime = createRuntime({
+  locale: 'tenant-a',
+  messages: {
+    'tenant.user.missing': { code: 'TENANT_USER_MISSING', message: 'Tenant user {{#id}} is missing' }
+  },
+  types: {
+    tenantId: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
+  },
+  messageProvider: ({ key, locale, fallback }) =>
+    key === 'number.min' ? `[${locale}] {{#label}} must be >= {{#limit}}` : fallback
+});
+
+const tenantSchema = tenantRuntime.dsl({
+  id: 'tenantId!',
+  age: 'number:18-120'
+});
+
+const tenantResult = tenantRuntime.validate(tenantSchema, { id: 'tenant_demo', age: 16 });
 ```
 
-The transform handles static DSL string literals, including naked pipe enums such as `"admin|user|guest"`, and injects imports from `schema-dsl/pure`. By default it rewrites the complete built-in String-chain API (`.label()`, `.pattern()`, `.required()`, `.toJsonSchema()`, and the other methods installed by `schema-dsl`). Use `additionalMethods` for user-defined chain methods; `methods` remains a legacy replacement set when you intentionally want to override the built-in default list. Dynamic expressions, computed member calls, and already transformed `dsl(...)` calls are left unchanged.
+The transform handles static DSL string literals, including naked pipe enums such as `"admin|user|guest"`, and injects imports from `schema-dsl/pure`. By default it rewrites the complete built-in String-chain API (`.label()`, `.pattern()`, `.required()`, `.toJsonSchema()`, and the other methods installed by `schema-dsl`). Use `additionalMethods` for user-defined chain methods, and `additionalTypes` / `additionalTypePatterns` for registered custom DSL type literals such as `"tenant-id!".label("Tenant")`; `methods` remains a legacy replacement set when you intentionally want to override the built-in default list. Dynamic expressions, computed member calls, and already transformed `dsl(...)` calls are left unchanged.
+
+Use `schema-dsl/runtime` when a framework needs independent runtime state per app, tenant, worker, or plugin host. `createRuntime()` keeps message lookup, per-call `messageProvider`, runtime custom types, pattern overrides, Validator/AJV caches, custom keyword messages, conditional branches, async custom validators, and `createI18nError()` inside that runtime instance. Use one runtime for the app/plugin lifecycle, pass request-level locale, messages, `messageProvider` or `{ coerce: false }` via per-call options, and call `configure(..., { mode: 'replace' | 'reset' })`, `clearCache()`, `getStats()` or `dispose()` for hot reload and shutdown. The default root import and `schema-dsl/pure` remain compatible global APIs.
+
+`createSchemaDslRuntime()` and `createSchemaDslAdapter()` are equivalent aliases of `createRuntime()` for adapter-oriented integrations.
 
 ---
 

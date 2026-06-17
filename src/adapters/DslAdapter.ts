@@ -12,7 +12,7 @@
 
 import type { JSONSchema } from '../types/schema.js'
 import type { DslDefinition } from '../types/dsl.js'
-import { DslParser } from '../parser/DslParser.js'
+import { DslParser, type DslParseOptions } from '../parser/DslParser.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { ObjectDslBuilder } from '../core/ObjectDslBuilder.js'
 
@@ -23,21 +23,21 @@ export const DslAdapter = {
    * Parse a DSL string into a JSON Schema.
    * Equivalent to v1 DslAdapter.parseString(), but delegates to the unified DslParser.
    */
-  parseString(dslString: string): JSONSchema {
+  parseString(dslString: string, options?: DslParseOptions): JSONSchema {
     if (!dslString || typeof dslString !== 'string') {
       throw new Error('[schema-dsl] DslAdapter.parseString: DSL must be a string')
     }
-    return DslParser.parseString(dslString)
+    return DslParser.parseString(dslString, options)
   },
 
   /**
    * parse() — alias for parseString() (backwards compat with v1).
    */
-  parse(dslString: string): JSONSchema {
+  parse(dslString: string, options?: DslParseOptions): JSONSchema {
     if (!dslString || typeof dslString !== 'string') {
       throw new Error('[schema-dsl] DslAdapter.parse: DSL must be a string')
     }
-    const schema = DslParser.parseString(dslString)
+    const schema = DslParser.parseString(dslString, options)
     // v1 compat: always set _required (false if not set)
     if ((schema as Record<string, unknown>)['_required'] === undefined) {
       (schema as Record<string, unknown>)['_required'] = false
@@ -50,8 +50,8 @@ export const DslAdapter = {
    * v1: parseObject() returned a chainable builder (.strict()/.requireAll()).
    * v2 fix: returns ObjectDslBuilder wrapping the compiled JSONSchema.
    */
-  parseObject(dslObj: DslDefinition): ObjectDslBuilder {
-    const schema = DslParser.parseObject(dslObj)
+  parseObject(dslObj: DslDefinition, options?: DslParseOptions): ObjectDslBuilder {
+    const schema = DslParser.parseObject(dslObj, options)
     return new ObjectDslBuilder(schema)
   },
 

@@ -6,7 +6,8 @@
   },
   "include": [
     "test/types/package-string-types-smoke.ts",
-    "test/types/package-string-types-augmentation.ts"
+    "test/types/package-string-types-augmentation.ts",
+    "test/types/package-runtime-smoke.ts"
   ],
   "exclude": ["node_modules"]
 }

@@ -15,6 +15,8 @@ export interface ValidateOptions {
   messages?: ErrorMessages
   /** Whether to enable smart type coercion (auto-converts string → number etc.). */
   smartCoerce?: boolean
+  /** Top-level convenience alias for disabling smart coercion. */
+  coerce?: boolean
   /** Whether to remove additional properties. */
   removeAdditional?: boolean | 'all' | 'failing'
   /** Whether to enable caching. */

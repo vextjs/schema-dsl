@@ -11,6 +11,7 @@
 - [DslBuilder 类](#dslbuilder-类)
 - [String 扩展](#string-扩展)
 - [包入口与编译期转换](#包入口与编译期转换)
+- [Runtime 适配器](#runtime-适配器)
 - [Validator 类](#validator-类)
 - [导出器](#导出器)
 - [工具函数](#工具函数)
@@ -512,7 +513,7 @@ uninstallStringExtensions();
 
 ### `schema-dsl/pure`
 
-导入同一套核心 API，但不会安装 `String.prototype` 扩展。适合库、worker、测试或对全局原型副作用敏感的隔离运行时。
+导入同一套核心 API，但不会安装 `String.prototype` 扩展。它只控制原型副作用，不会隔离 Locale、TypeRegistry、PATTERNS 或 Validator/AJV 状态；需要运行时状态隔离时请使用 `schema-dsl/runtime`。
 
 ```javascript
 import { dsl, validate, uninstallStringExtensions } from 'schema-dsl/pure';
@@ -559,7 +560,7 @@ const schema = dsl({ email: field });
 
 ### `transformSchemaDsl(source, options?)`
 
-在编译期改写静态 String 链式 DSL 调用，并注入来自 `schema-dsl/pure` 的 `dsl` 导入。默认覆盖完整内建 String 链式 API，包括 `.label()`、`.pattern()`、`.required()`、`.toJsonSchema()` 等方法，也支持 `"admin|user|guest".label("角色")` 这类裸 pipe 枚举。用户自定义链式方法通过 `additionalMethods` 追加；`methods` 保持为旧版替换集合，只在你明确要覆盖默认内建方法列表时使用。
+在编译期改写静态 String 链式 DSL 调用，并注入来自 `schema-dsl/pure` 的 `dsl` 导入。默认覆盖完整内建 String 链式 API，包括 `.label()`、`.pattern()`、`.required()`、`.toJsonSchema()` 等方法，也支持 `"admin|user|guest".label("角色")` 这类裸 pipe 枚举。用户自定义链式方法通过 `additionalMethods` 追加；已注册的自定义 DSL 类型字面量可通过 `additionalTypes` / `additionalTypePatterns` 显式加入转换范围，例如 `"tenant-id!".label("租户")`；`methods` 保持为旧版替换集合，只在你明确要覆盖默认内建方法列表时使用。
 
 ```javascript
 import { transformSchemaDsl } from 'schema-dsl/transform';
@@ -582,6 +583,8 @@ console.log(result.code);
 | `importFrom` | `string` | `'schema-dsl/pure'` | 注入 `dsl` helper 时使用的导入来源 |
 | `methods` | `readonly string[]` | 完整内建 String 扩展方法列表 | 允许被编译期改写的链式方法名替换集合 |
 | `additionalMethods` | `readonly string[]` | `[]` | 追加用户自定义链式方法 |
+| `additionalTypes` | `readonly string[]` | `[]` | 追加允许被改写的已注册自定义 DSL 类型名 |
+| `additionalTypePatterns` | `readonly (RegExp \| string)[]` | `[]` | 当自定义类型名由约定或生成规则决定时，用模式匹配允许改写的 DSL 类型字面量 |
 | `include` | `(filename) => boolean` | - | 可选文件过滤器 |
 | `strict` | `boolean | object` | `false` | 启用后对解析失败、root 入口残留、未配置 DSL 扩展方法抛出 `TransformSchemaDslError` |
 | `onWarning` | `(warning) => void` | - | 接收解析失败、root 入口残留、跳过字面量和未配置扩展方法 warning |
@@ -616,6 +619,77 @@ await build({
 ```
 
 该适配器只转换 `file` namespace 下的 JavaScript/TypeScript 源文件，跳过 `node_modules`，并把虚拟模块交给其所属插件处理。
+
+---
+
+## Runtime 适配器
+
+`schema-dsl/runtime` 为框架、多应用和多租户场景提供显式适配器。它不会安装 `String.prototype` 扩展，也不会修改 root 入口的 `Locale`、`TypeRegistry`、`PATTERNS`、默认 `Validator` 或默认 AJV 实例。
+
+该入口主工厂为 `createRuntime()`。`createSchemaDslRuntime()` 与 `createSchemaDslAdapter()` 是等价别名，适合偏 adapter 命名的集成场景。
+
+```typescript
+import { createRuntime } from 'schema-dsl/runtime';
+
+const runtime = createRuntime({
+  locale: 'tenant-a',
+  messages: {
+    'tenant.user.missing': {
+      code: 'TENANT_USER_MISSING',
+      message: 'Tenant user {{#id}} is missing'
+    }
+  },
+  types: {
+    tenantId: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
+  },
+  patterns: {
+    phone: {
+      zz: { pattern: /^ZZ-\d{2}$/, min: 5, max: 5, key: 'pattern.phone.zz' }
+    }
+  },
+  messageProvider: ({ key, locale, fallback }) =>
+    key === 'number.min' ? `[${locale}] {{#label}} must be >= {{#limit}}` : fallback
+});
+
+const schema = runtime.dsl({
+  id: 'tenantId!',
+  phone: 'phone:zz',
+  age: 'number:18-120'
+});
+
+const result = runtime.validate(schema, {
+  id: 'tenant_demo',
+  phone: 'ZZ-12',
+  age: 16
+});
+```
+
+| 方法 | 说明 |
+|------|------|
+| `runtime.dsl(string)` | 返回隔离的 `DslBuilder`，保留链式方法 TypeScript 提示。 |
+| `runtime.dsl(object)` | 使用当前 runtime 的类型与 pattern 作用域编译对象 DSL。 |
+| `runtime.compile(definition)` | 使用当前 runtime 作用域编译字符串或对象 DSL。 |
+| `runtime.compileField(string)` | 返回隔离的链式字段 builder。 |
+| `runtime.configure(options, control?)` | 更新 runtime messages、类型作用域、patterns、strict mode 或 validator 选项。`merge` 是增量合并，`replace` 替换完整 runtime 本地 profile，`reset` 清空后再应用 `options`。 |
+| `runtime.registerType(name, schema)` | 添加或替换 runtime 内部 custom type。 |
+| `runtime.registerDynamicType(name, factory)` | 添加或替换 runtime 内部 dynamic type factory。 |
+| `runtime.unregisterType(name)` | 移除 runtime 内部 custom/dynamic type。 |
+| `runtime.clearCache()` | 清理 runtime 持有的 Validator/AJV 缓存。 |
+| `runtime.getStats()` | 返回生命周期、messages、type、pattern 和 validator cache 统计。 |
+| `runtime.dispose()` | 幂等释放 runtime 内部 maps 与 caches；dispose 后继续使用会抛出清晰错误。 |
+| `runtime.validate(schema, data, options?)` | 使用 runtime 内部 messages、`messageProvider`、Validator/AJV 实例和 custom keyword 消息进行验证。 |
+| `runtime.validateAsync(schema, data, options?)` | 使用同一套隔离状态进行异步验证。 |
+| `runtime.createI18nError(key, params?, statusCode?, localeOrOptions?)` | 创建不读取全局 `Locale` 状态的 `I18nError`。 |
+
+`messageProvider` 接收 `{ key, params, locale, source, fallback }`，其中 `source` 可能是 `ajv`、`customKeyword`、`conditional`、`customValidator`、`i18nError` 或 `runtime`。它覆盖标准 AJV 错误表、custom keyword 消息、条件校验消息、异步 custom validator fallback 消息和 runtime 创建的 `I18nError`。显式传入的 `messages` 优先级仍高于 provider fallback。
+
+`runtime.validate()` 和 `runtime.validateAsync()` 支持与 root helper 相同的单次调用错误选项。当 runtime 调用需要拒绝数字或布尔字符串、不要使用 schema-dsl smart coercion 时，可传 `{ coerce: false }`、`{ smartCoerce: false }` 或 `{ coerceTypes: false }`。
+
+runtime 应在 app、plugin 或 worker 生命周期边界创建。请求级 locale/messages/messageProvider 应通过 `validate(..., { locale, messages, messageProvider })` 传入，不要每个请求新建 runtime。
+
+### 与 `schema-dsl/pure` 的边界
+
+`schema-dsl/pure` 只避免自动安装 `String.prototype` 扩展，仍沿用 root API 的全局运行时状态。要隔离 Locale、TypeRegistry、PATTERNS 和 Validator/AJV 状态，请使用 `schema-dsl/runtime`。
 
 ---
 

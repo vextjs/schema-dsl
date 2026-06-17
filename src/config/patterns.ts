@@ -9,6 +9,28 @@ export interface PatternConfig {
   key: string
 }
 
+export type PatternRegistry = Record<string, Record<string, PatternConfig>>
+
+function clonePatternConfig(config: PatternConfig): PatternConfig {
+  return {
+    pattern: new RegExp(config.pattern.source, config.pattern.flags),
+    ...(config.min !== undefined ? { min: config.min } : {}),
+    ...(config.max !== undefined ? { max: config.max } : {}),
+    key: config.key,
+  }
+}
+
+function clonePatternRegistry<T extends PatternRegistry>(patterns: T): T {
+  return Object.fromEntries(
+    Object.entries(patterns).map(([name, group]) => [
+      name,
+      Object.fromEntries(
+        Object.entries(group).map(([key, value]) => [key, clonePatternConfig(value)])
+      ),
+    ])
+  ) as T
+}
+
 const phone: Record<string, PatternConfig> = {
   cn: { pattern: /^1[3-9]\d{9}$/, min: 11, max: 11, key: 'pattern.phone.cn' },
   us: { pattern: /^\d{10}$/, min: 10, max: 10, key: 'pattern.phone.us' },
@@ -74,4 +96,18 @@ const common: Record<string, PatternConfig> = {
   },
 }
 
-export const PATTERNS = { phone, idCard, creditCard, licensePlate, postalCode, passport, common }
+const DEFAULT_PATTERNS = clonePatternRegistry({
+  phone,
+  idCard,
+  creditCard,
+  licensePlate,
+  postalCode,
+  passport,
+  common,
+})
+
+export function createDefaultPatterns(): typeof DEFAULT_PATTERNS {
+  return clonePatternRegistry(DEFAULT_PATTERNS)
+}
+
+export const PATTERNS = createDefaultPatterns()

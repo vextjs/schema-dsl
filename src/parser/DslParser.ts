@@ -1,10 +1,11 @@
 import type { JSONSchema } from '../types/schema.js'
 import type { DslDefinition } from '../types/dsl.js'
 import { TypeRegistry } from './TypeRegistry.js'
-import type { SchemaDslDiagnostic, SchemaDslUnknownTypeMode, TypeResolveOptions } from './TypeRegistry.js'
+import type { SchemaDslDiagnostic, SchemaDslUnknownTypeMode, TypeDefinition, TypeRegistryScope, TypeResolveOptions } from './TypeRegistry.js'
 import { ConstraintParser } from './ConstraintParser.js'
 import { SchemaCompiler } from './SchemaCompiler.js'
 import { PATTERNS } from '../config/patterns.js'
+import type { SchemaDslPatternRegistry, SchemaDslTypeResolver } from '../types/runtime.js'
 
 /**
  * DslParser — unified entry point for parsing DSL strings and object definitions
@@ -23,6 +24,9 @@ export interface DslParseOptions {
   path?: string
   emitWarning?: boolean
   throwOnError?: boolean
+  patterns?: SchemaDslPatternRegistry
+  registryScope?: TypeRegistryScope
+  typeResolver?: SchemaDslTypeResolver
 }
 
 function _childPath(parent: string | undefined, key: string): string {
@@ -47,7 +51,23 @@ function _toTypeResolveOptions(
   if (options?.diagnostics !== undefined) resolveOptions.diagnostics = options.diagnostics
   if (options?.emitWarning !== undefined) resolveOptions.emitWarning = options.emitWarning
   if (options?.throwOnError !== undefined) resolveOptions.throwOnError = options.throwOnError
+  if (options?.registryScope !== undefined) resolveOptions.registryScope = options.registryScope
   return resolveOptions
+}
+
+function _getPatternRegistry(options: DslParseOptions | undefined): SchemaDslPatternRegistry {
+  return options?.patterns ?? (PATTERNS as SchemaDslPatternRegistry)
+}
+
+function _normalizeResolvedType(
+  resolved: ReturnType<NonNullable<DslParseOptions['typeResolver']>>
+): TypeDefinition | null {
+  if (!resolved) return null
+  if (typeof resolved === 'function') {
+    return { baseSchema: resolved() as Partial<JSONSchema> }
+  }
+  if ('baseSchema' in resolved) return resolved as TypeDefinition
+  return { baseSchema: resolved as Partial<JSONSchema> }
 }
 
 /**
@@ -352,7 +372,7 @@ export const DslParser = {
     // ========== Special case: pattern types (phone/idCard/creditCard/licensePlate/postalCode/passport) ==========
     const PATTERN_TYPES = ['phone', 'idCard', 'creditCard', 'licensePlate', 'postalCode', 'passport'] as const
     if (PATTERN_TYPES.includes(typeName as typeof PATTERN_TYPES[number])) {
-      const patternGroup = PATTERNS[typeName as keyof typeof PATTERNS] as Record<string, { pattern: RegExp; min?: number; max?: number; key: string }>
+      const patternGroup = _getPatternRegistry(options)[typeName] as Record<string, { pattern: RegExp; min?: number; max?: number; key: string }> | undefined
       if (patternGroup) {
         const arg = constraintStr || (typeName === 'creditCard' ? 'visa' : 'cn')
         const cfg = patternGroup[arg.toLowerCase()]
@@ -371,7 +391,15 @@ export const DslParser = {
     }
 
     // TypeRegistry resolution
-    const typeDef = TypeRegistry.resolve(typeName, _toTypeResolveOptions(dslStr, typeName, options))
+    const resolvedByCustomResolver = options?.typeResolver?.(typeName, {
+      path: options?.path ?? '',
+      input: dslStr || typeName,
+      unknownType: options?.unknownType ?? (options?.registryScope?.strictMode ? 'error' : 'warn'),
+    })
+    const normalizedCustomType = _normalizeResolvedType(resolvedByCustomResolver)
+    const typeDef = normalizedCustomType
+      ? normalizedCustomType
+      : TypeRegistry.resolve(typeName, _toTypeResolveOptions(dslStr, typeName, options))
 
     // ConstraintParser parse — use resolved base type (e.g., 'string' for 'alphanum')
     const resolvedBaseType = (typeDef.baseSchema.type as string) ?? typeName

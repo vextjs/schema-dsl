@@ -1,6 +1,7 @@
 import * as schemaDsl from '../../dist/index.js'
 import { DslBuilder, Locale, PluginManager, Validator, dsl, validate } from '../../dist/index.js'
 import customTypeExamplePlugin from '../../dist/plugins/custom-type-example.js'
+import { transformSchemaDsl } from '../../dist/transform.js'
 
 // ============================================================
 // Custom extensions guide — addKeyword, registerType, plugins
@@ -58,6 +59,13 @@ DslBuilder.registerType('currency-code', {
 } as any)
 
 const invoiceSchema  = dsl({ id: 'invoice-id!', currency: 'currency-code' })
+const invoiceTransform = transformSchemaDsl(
+  'export const id = "invoice-id!".label("Invoice")',
+  {
+    filename: 'schema.ts',
+    additionalTypes: ['invoice-id'],
+  },
+)
 
 console.log('custom-extensions.invoice.valid     =',
   validate(invoiceSchema, { id: 'INV-2026', currency: 'USD' }).valid)   // true
@@ -65,6 +73,7 @@ console.log('custom-extensions.invoice.badId     =',
   validate(invoiceSchema, { id: 'BAD' }).valid)                          // false
 console.log('custom-extensions.hasType.invoice   =', DslBuilder.hasType('invoice-id'))     // true
 console.log('custom-extensions.hasType.currency  =', DslBuilder.hasType('currency-code'))  // true
+console.log('custom-extensions.transform.custom  =', invoiceTransform.changed)             // true
 
 // ============================================================
 // 3. Custom locale message for a custom type

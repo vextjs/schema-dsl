@@ -2,6 +2,10 @@
 
 ## 2026-06-17
 
+- Added `schema-dsl/runtime` with `createRuntime()` plus `createSchemaDslRuntime()` / `createSchemaDslAdapter()` aliases for instance-scoped Locale messages, per-call `messageProvider`, TypeRegistry scope, PATTERNS overrides, Validator/AJV instances, custom keyword messages, conditional branch parsing, async custom validator fallback messages, `I18nError` creation, runtime lifecycle configuration, cache clearing, stats and disposal.
+- Aligned `schema-dsl/runtime` validation calls with the root helper's `{ coerce: false }` alias so runtime users can disable schema-dsl smart coercion per call.
+- Tightened runtime-created builder lifecycle handling so builder validation uses the live runtime validator without retaining it, and rejects validation after the runtime is disposed.
+- Added runtime isolation tests, docs, and runnable examples; clarified that `schema-dsl/pure` only avoids `String.prototype` installation and does not isolate runtime state.
 - Added side-effect-controlled package entries for `schema-dsl/pure`, `schema-dsl/compat`, `schema-dsl/register-string`, `schema-dsl/string-types`, `schema-dsl/transform`, and `schema-dsl/esbuild`.
 - Added compile-time String-chain DSL transform documentation and runnable API reference examples covering pure import, explicit String registration, transform output, and the optional esbuild adapter.
 - Expanded the compile-time String-chain transform to cover the full built-in String extension method set by default, naked pipe enums, `additionalMethods` for user-defined chains, strict diagnostics for root imports / parse failures / unconfigured extension methods, and the opt-in `schema-dsl/string-types` TypeScript declaration entry.

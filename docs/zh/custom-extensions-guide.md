@@ -26,6 +26,7 @@ schema-dsl采用模块化设计，你可以轻松扩展：
 3. **`PluginManager` + `schema-dsl/plugins/*`** - 组合插件、hook 与官方插件入口
 4. **`Locale.addLocale()` / `dsl.config({ i18n })`** - 扩展多语言消息
 5. **`transformSchemaDsl({ additionalMethods })` + `schema-dsl/string-types`** - 编译期 String 链式自定义方法与显式 TypeScript 提示
+6. **`schema-dsl/runtime` 的 `createRuntime()`** - 为框架或租户隔离自定义类型、pattern 和消息
 
 ## 当前版本推荐路径
 
@@ -36,7 +37,45 @@ schema-dsl采用模块化设计，你可以轻松扩展：
 - 自定义类型：优先用 `TypeRegistry.register()` 或 `DslBuilder.registerType()`
 - 官方插件：优先用 `PluginManager` 配合 `schema-dsl/plugins/custom-format`、`schema-dsl/plugins/custom-validator`、`schema-dsl/plugins/custom-type-example`
 - 自定义语言：优先用 `Locale.addLocale()` 或 `dsl.config({ i18n: { locales } })`
-- 自定义 String 链式写法：在 transform 中配置 `additionalMethods`，并通过 `schema-dsl/string-types` 做 IDE 提示扩展。transform 只负责改写源码；实际的 `dsl('...').yourMethod()` 运行时方法仍需由你的扩展提供。
+- 自定义 String 链式写法：在 transform 中配置 `additionalMethods`；如果链式调用起点是已注册的自定义 DSL 类型字面量，还需要配置 `additionalTypes` 或 `additionalTypePatterns`；同时通过 `schema-dsl/string-types` 做 IDE 提示扩展。transform 只负责改写源码；实际的 `dsl('...').yourMethod()` 运行时方法仍需由你的扩展提供。
+- 框架或租户隔离：优先使用 `schema-dsl/runtime` 的 `createRuntime()`，让自定义类型、pattern 覆盖、messages、messageProvider 和 Validator/AJV 缓存都保留在单个 runtime 实例中。
+- runtime custom type 与 dynamic type factory 应在 app/plugin 启动期注册。避免 request 级 factory 捕获 request 对象或大型 app 容器；请求级 locale/messages 应通过 `validate(..., options)` 传入。
+
+---
+
+## 运行时隔离扩展
+
+当扩展不能写入全局 `TypeRegistry`、`Locale` 或 `PATTERNS` 对象时，使用 `schema-dsl/runtime`：
+
+```typescript
+import { createRuntime } from 'schema-dsl/runtime';
+
+const runtime = createRuntime({
+  types: {
+    tenantId: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
+  },
+  patterns: {
+    phone: {
+      zz: { pattern: /^ZZ-\d{2}$/, min: 5, max: 5, key: 'pattern.phone.zz' }
+    }
+  },
+  messages: {
+    'pattern.phone.zz': 'Tenant phone format is invalid'
+  },
+  messageProvider: ({ key, locale, fallback }) =>
+    key === 'number.min' ? `[${locale}] {{#label}} must be >= {{#limit}}` : fallback
+});
+
+const schema = runtime.dsl({
+  id: 'tenantId!',
+  phone: 'phone:zz',
+  age: 'number:18-120'
+});
+```
+
+热重载时优先使用 `runtime.configure(nextOptions, { mode: 'replace' })`，或先 `runtime.configure({}, { mode: 'reset' })` 后加载下一组扩展。app/plugin 实例卸载时调用 `runtime.dispose()`。
+
+`runtime.dsl('string')` / `runtime.compileField('string')` 会保留内建链式方法 TypeScript 提示。自定义链式方法仍需要正常增强 builder 接口，并在扩展代码中提供对应运行时方法。
 
 ---
 
@@ -79,6 +118,21 @@ const tenantFromDsl = dsl('string!').tenantId().label('租户');
 ```
 
 只有在你明确要替换完整内建 transform 方法集合时才使用 `methods`；普通用户扩展优先使用 `additionalMethods`。
+
+当字符串字面量本身是已注册的自定义 DSL 类型时，还需要追加类型名或匹配规则：
+
+```typescript
+const result = transformSchemaDsl(
+  'export const tenant = "tenant-id!".tenantId().label("租户")',
+  {
+    filename: 'schema.ts',
+    additionalMethods: ['tenantId'],
+    additionalTypes: ['tenant-id']
+  }
+);
+```
+
+如果类型名由约定或生成规则决定，可使用 `additionalTypePatterns`，例如 `{ additionalTypePatterns: ['^tenant-[0-9]+!?$'] }`。
 
 ---
 

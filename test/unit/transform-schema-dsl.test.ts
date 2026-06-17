@@ -50,6 +50,57 @@ describe('transformSchemaDsl', () => {
     expect(result.warnings).toHaveLength(0)
   })
 
+  it('transforms configured custom DSL type literals through additionalTypes', () => {
+    const result = transformSchemaDsl('const tenant = "tenant-id!".label("Tenant")', {
+      filename: 'user.ts',
+      additionalTypes: ['tenant-id'],
+    })
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('__schemaDslDsl("tenant-id!").label("Tenant")')
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('combines configured custom DSL type literals with user-defined chain methods', () => {
+    const result = transformSchemaDsl('const tenant = "invoice-id!".tenantId().label("Tenant")', {
+      filename: 'user.ts',
+      additionalMethods: ['tenantId'],
+      additionalTypes: ['invoice-id'],
+    })
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('__schemaDslDsl("invoice-id!").tenantId().label("Tenant")')
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('transforms custom DSL type literals matched by additionalTypePatterns', () => {
+    const result = transformSchemaDsl('const tenant = "tenant-42!".label("Tenant")', {
+      filename: 'user.ts',
+      additionalTypePatterns: ['^tenant-[0-9]+!?$'],
+    })
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('__schemaDslDsl("tenant-42!").label("Tenant")')
+  })
+
+  it('resets stateful custom DSL type regex patterns between literals', () => {
+    const result = transformSchemaDsl(
+      [
+        'const first = "tenant-42!".label("Tenant")',
+        'const second = "tenant-43!".label("Tenant")',
+      ].join('\n'),
+      {
+        filename: 'user.ts',
+        additionalTypePatterns: [/^tenant-[0-9]+!?$/g],
+      },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('__schemaDslDsl("tenant-42!").label("Tenant")')
+    expect(result.code).toContain('__schemaDslDsl("tenant-43!").label("Tenant")')
+    expect(result.warnings).toHaveLength(0)
+  })
+
   it('warns when a schema-dsl string chain uses an unconfigured extension method', () => {
     const result = transformSchemaDsl('const tenant = "string!".tenantId().label("Tenant")', {
       filename: 'user.ts',
@@ -59,6 +110,20 @@ describe('transformSchemaDsl', () => {
     expect(result.warnings).toEqual([
       expect.objectContaining({
         code: 'unconfigured-extension-method',
+        filename: 'user.ts',
+      }),
+    ])
+  })
+
+  it('still skips unconfigured custom DSL type literals by default', () => {
+    const result = transformSchemaDsl('const tenant = "tenant-id!".label("Tenant")', {
+      filename: 'user.ts',
+    })
+
+    expect(result.changed).toBe(false)
+    expect(result.warnings).toEqual([
+      expect.objectContaining({
+        code: 'non-dsl-literal',
         filename: 'user.ts',
       }),
     ])

@@ -4,16 +4,20 @@ import addFormats from 'ajv-formats'
 import type { JSONSchema } from '../types/schema.js'
 import type { ValidateOptions, ValidationResult, ValidationErrorItem } from '../types/validate.js'
 import type { ErrorMessages } from '../types/error.js'
+import type { DslDefinition } from '../types/dsl.js'
 import { CacheManager } from './CacheManager.js'
 import type { CacheStats } from './CacheManager.js'
 import { ErrorFormatter } from './ErrorFormatter.js'
 import { CustomKeywords } from '../validators/CustomKeywords.js'
 import { Locale, DEFAULT_LOCALE } from './Locale.js'
 import { ConditionalValidator, type ConditionalInternalSchema } from './ConditionalValidator.js'
+import { DslParser, type DslParseOptions } from '../parser/DslParser.js'
+import type { RuntimeIssueSource } from './RuntimeIssueFormatter.js'
 
 // Non-AJV custom option keys (V-Y01 fix: filter before passing to new Ajv())
 const NON_AJV_KEYS = new Set([
-  'cache', 'smartCoerce', 'locale', 'messages', 'format',
+  'cache', 'smartCoerce', 'locale', 'messages', 'format', 'messageProvider',
+  'messageResolver', 'messageTableProvider', 'parseOptions', 'quickValidate',
   'strict',  // v2 redefines this as strictSchema; do not forward to AJV
 ])
 
@@ -101,8 +105,24 @@ export interface ValidatorOptions {
     enabled?: boolean
     statsEnabled?: boolean
   }
+  messageResolver?: ValidatorMessageResolver
+  messageTableProvider?: ValidatorMessageTableProvider
+  parseOptions?: DslParseOptions
+  quickValidate?: (schema: JSONSchema, data: unknown) => boolean
   [key: string]: unknown
 }
+
+export type ValidatorMessageResolver = (
+  key: string,
+  params: Record<string, unknown>,
+  options: ValidateOptions,
+  source: RuntimeIssueSource
+) => string
+
+export type ValidatorMessageTableProvider = (
+  options: ValidateOptions,
+  locale: string
+) => ErrorMessages
 
 /**
  * Validator — AJV-backed validator (v2).
@@ -119,6 +139,11 @@ export class Validator {
   private readonly _cache: CacheManager
   private readonly _errorFormatter: ErrorFormatter
   private readonly _smartCoerceEnabled: boolean
+  private readonly _messageResolver: ValidatorMessageResolver | undefined
+  private readonly _messageTableProvider: ValidatorMessageTableProvider | undefined
+  private readonly _parseOptions: DslParseOptions | undefined
+  private readonly _quickValidate: (schema: JSONSchema, data: unknown) => boolean
+  private _activeValidateOptions: ValidateOptions | null = null
 
   // WeakMap: schema object → unique cacheKey (avoids JSON.stringify)
   private readonly _schemaMap = new WeakMap<object, string>()
@@ -134,6 +159,10 @@ export class Validator {
   private readonly _conditionalValidator = new ConditionalValidator({
     validateSchema: <T>(schema: JSONSchema, data: T, options: ValidateOptions): ValidationResult<T> => this._validateInternal(schema, data, options),
     internalError: <T>(error: unknown, data: T): ValidationResult<T> => this._internalError(error, data),
+    getMessageText: (key: string, params: Record<string, unknown>, options: ValidateOptions): string =>
+      this._getMessageText(key, params, options, 'conditional'),
+    parseString: (dsl: string): JSONSchema => DslParser.parseString(dsl, this._parseOptions),
+    parseObject: (dsl: DslDefinition): JSONSchema => DslParser.parseObject(dsl, this._parseOptions),
   })
 
   // V-Y03 fix: cached removeAdditional Ajv instance (no longer new Validator each time)
@@ -161,9 +190,16 @@ export class Validator {
 
     this._ajvOptions = ajvOptions
     this._smartCoerceEnabled = options.coerceTypes !== false && options.smartCoerce !== false
+    this._messageResolver = options.messageResolver
+    this._messageTableProvider = options.messageTableProvider
+    this._parseOptions = options.parseOptions
+    this._quickValidate = options.quickValidate ?? Validator.quickValidate
     this._ajv = new Ajv(ajvOptions)
       ; (addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(this._ajv)
-    CustomKeywords.registerAll(this._ajv)
+    CustomKeywords.registerAll(this._ajv, {
+      getMessageText: (key, params) =>
+        this._getMessageText(key, params ?? {}, this._activeValidateOptions ?? {}, 'customKeyword'),
+    })
 
     const cacheOpts = options.cache === false
       ? { enabled: false }
@@ -235,7 +271,7 @@ export class Validator {
     const customErr =
       typeof resolvedSchema === 'function'
         ? null
-        : await this._runCustomValidators(resolvedSchema, result.data)
+        : await this._runCustomValidators(resolvedSchema, result.data, '', options)
     if (customErr) {
       const { ValidationError } = await import('../errors/ValidationError.js')
       throw new ValidationError([customErr], data)
@@ -284,7 +320,12 @@ export class Validator {
     return strip(schema) as JSONSchema
   }
 
-  private async _runCustomValidators(schema: JSONSchema, data: unknown, path = ''): Promise<ValidationErrorItem | null> {
+  private async _runCustomValidators(
+    schema: JSONSchema,
+    data: unknown,
+    path = '',
+    options: ValidateOptions = {}
+  ): Promise<ValidationErrorItem | null> {
     const validators = (schema as Record<string, unknown>)['_customValidators'] as Array<(v: unknown) => unknown> | undefined
     if (validators?.length) {
       for (const fn of validators) {
@@ -292,7 +333,7 @@ export class Validator {
           const result = await Promise.resolve(fn(data))
           if (result === false) {
             return {
-              message: Locale.getMessageText('CUSTOM_VALIDATION_FAILED'),
+              message: this._getMessageText('CUSTOM_VALIDATION_FAILED', {}, options, 'customValidator'),
               path,
               keyword: '_customValidators',
               params: {},
@@ -313,7 +354,7 @@ export class Validator {
           if (result !== null && typeof result === 'object' && (result as Record<string, unknown>)['error']) {
             const r = result as { error: unknown; message?: string }
             return {
-              message: r.message ?? Locale.getMessageText('CUSTOM_VALIDATION_FAILED'),
+              message: r.message ?? this._getMessageText('CUSTOM_VALIDATION_FAILED', {}, options, 'customValidator'),
               path,
               keyword: '_customValidators',
               params: {},
@@ -339,7 +380,7 @@ export class Validator {
       for (const [key, childSchema] of Object.entries(schema.properties)) {
         if (!Object.prototype.hasOwnProperty.call(record, key)) continue
         const childPath = path ? `${path}/${key}` : key
-        const err = await this._runCustomValidators(childSchema, record[key], childPath)
+        const err = await this._runCustomValidators(childSchema, record[key], childPath, options)
         if (err) return err
       }
     }
@@ -350,7 +391,7 @@ export class Validator {
         const childSchema = itemSchemas ? itemSchemas[i] : schema.items
         if (!childSchema || Array.isArray(childSchema)) continue
         const childPath = `${path}/${i}`.replace(/^\//, '')
-        const err = await this._runCustomValidators(childSchema, data[i], childPath)
+        const err = await this._runCustomValidators(childSchema, data[i], childPath, options)
         if (err) return err
       }
     }
@@ -358,28 +399,28 @@ export class Validator {
     const allOfSchemas = schema.allOf
     if (Array.isArray(allOfSchemas)) {
       for (const childSchema of allOfSchemas) {
-        const err = await this._runCustomValidators(childSchema, data, path)
+        const err = await this._runCustomValidators(childSchema, data, path, options)
         if (err) return err
       }
     }
 
     const anyOfSchemas = schema.anyOf
     if (Array.isArray(anyOfSchemas)) {
-      const err = await this._runCustomValidatorsForMatchingBranches(anyOfSchemas, data, path)
+      const err = await this._runCustomValidatorsForMatchingBranches(anyOfSchemas, data, path, options)
       if (err) return err
     }
 
     const oneOfSchemas = schema.oneOf
     if (Array.isArray(oneOfSchemas)) {
-      const err = await this._runCustomValidatorsForMatchingBranches(oneOfSchemas, data, path)
+      const err = await this._runCustomValidatorsForMatchingBranches(oneOfSchemas, data, path, options)
       if (err) return err
     }
 
     if (schema.if) {
       const ifSchema = this._stripCustomValidators(schema.if)
-      const branch = Validator.quickValidate(ifSchema, data) ? schema.then : schema.else
+      const branch = this._quickValidate(ifSchema, data) ? schema.then : schema.else
       if (branch) {
-        const err = await this._runCustomValidators(branch, data, path)
+        const err = await this._runCustomValidators(branch, data, path, options)
         if (err) return err
       }
     }
@@ -390,12 +431,13 @@ export class Validator {
   private async _runCustomValidatorsForMatchingBranches(
     schemas: JSONSchema[],
     data: unknown,
-    path: string
+    path: string,
+    options: ValidateOptions
   ): Promise<ValidationErrorItem | null> {
     for (const childSchema of schemas) {
       const stripped = this._stripCustomValidators(childSchema)
-      if (!Validator.quickValidate(stripped, data)) continue
-      const err = await this._runCustomValidators(childSchema, data, path)
+      if (!this._quickValidate(stripped, data)) continue
+      const err = await this._runCustomValidators(childSchema, data, path, options)
       if (err) return err
     }
     return null
@@ -494,7 +536,7 @@ export class Validator {
   ): ValidationResult<T> {
     const shouldFormat = options.format !== false
     const locale = options.locale ?? Locale.getLocale()
-    const messages = (options.messages ?? {}) as ErrorMessages
+    const messages = this._normalizeErrorMessages(options.messages ?? {})
 
     // DslBuilder/ObjectDslBuilder/ConditionalBuilder duck type.
     // Builders are mutable, so their toSchema() result must be re-materialized on every call.
@@ -532,7 +574,10 @@ export class Validator {
       if (!this._removeAdditionalAjv) {
         this._removeAdditionalAjv = new Ajv({ ...this._ajvOptions, removeAdditional: true })
           ; (addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(this._removeAdditionalAjv)
-        CustomKeywords.registerAll(this._removeAdditionalAjv)
+        CustomKeywords.registerAll(this._removeAdditionalAjv, {
+          getMessageText: (key, params) =>
+            this._getMessageText(key, params ?? {}, this._activeValidateOptions ?? {}, 'customKeyword'),
+        })
       }
 
       const cleanSchema: JSONSchema = JSON.parse(JSON.stringify(schema)) as JSONSchema
@@ -541,9 +586,9 @@ export class Validator {
       try {
         const cacheKey = this._getRemoveAdditionalCacheKey(cleanSchema)
         const validate = this._compileRemoveAdditionalSchema(cleanSchema, cacheKey)
-        const valid = validate(data) as boolean
+        const valid = this._runWithActiveOptions(options, () => validate(data) as boolean)
         if (valid) return { valid: true, data, errors: EMPTY_ERRORS }
-        const fmtErrors = this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat)
+        const fmtErrors = this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat, options)
         return { valid: false, data, errors: fmtErrors, errorMessage: fmtErrors[0]?.message }
       } catch (error) {
         return this._internalError(error, data)
@@ -559,9 +604,9 @@ export class Validator {
         validate = this._compileWithManagedCache(schema, cacheKey)
       }
 
-      const valid = validate(data) as boolean
+      const valid = this._runWithActiveOptions(options, () => validate(data) as boolean)
       if (valid) return { valid: true, data, errors: EMPTY_ERRORS }
-      const fmtErrors2 = this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat)
+      const fmtErrors2 = this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat, options)
       return { valid: false, data, errors: fmtErrors2, errorMessage: fmtErrors2[0]?.message }
     } catch (error) {
       return this._internalError(error, data)
@@ -823,10 +868,11 @@ export class Validator {
     rawErrors: unknown[],
     messages: ErrorMessages,
     locale: string,
-    shouldFormat: boolean
+    shouldFormat: boolean,
+    options: ValidateOptions = {}
   ): ValidationErrorItem[] {
     if (!shouldFormat) return rawErrors as ValidationErrorItem[]
-    const localeMessages = this._getFlatLocaleMessages(locale)
+    const localeMessages = this._getMessageTable(locale, options)
     // Only merge when there are custom messages (avoid unnecessary object spread)
     const mergedMessages: ErrorMessages =
       Object.keys(messages).length === 0
@@ -834,6 +880,56 @@ export class Validator {
         : { ...localeMessages, ...messages }
     // alreadyMerged=true: mergedMessages already contains locale+custom, skip re-expansion inside formatDetailed
     return this._errorFormatter.formatDetailed(rawErrors as Parameters<ErrorFormatter['formatDetailed']>[0], locale, mergedMessages, true)
+  }
+
+  private _getMessageTable(locale: string, options: ValidateOptions): ErrorMessages {
+    if (this._messageTableProvider) {
+      return this._messageTableProvider(options, locale)
+    }
+    return this._getFlatLocaleMessages(locale)
+  }
+
+  private _normalizeErrorMessages(messages: unknown): ErrorMessages {
+    if (!messages || typeof messages !== 'object' || Array.isArray(messages)) return {}
+    return Object.fromEntries(
+      Object.entries(messages as Record<string, unknown>).map(([key, value]) => [
+        key,
+        value == null
+          ? undefined
+          : typeof value === 'string'
+            ? value
+            : typeof value === 'object' && 'message' in value
+              ? String((value as { message: unknown }).message)
+              : String(value),
+      ])
+    ) as ErrorMessages
+  }
+
+  private _getMessageText(
+    key: string,
+    params: Record<string, unknown>,
+    options: ValidateOptions,
+    source: RuntimeIssueSource
+  ): string {
+    if (this._messageResolver) {
+      return this._messageResolver(key, params, options, source)
+    }
+    const locale = options.locale ?? Locale.getLocale()
+    const normalizedMessages = Object.fromEntries(
+      Object.entries(this._normalizeErrorMessages(options.messages ?? {}))
+        .filter((entry): entry is [string, string] => entry[1] !== undefined)
+    )
+    return Locale.getMessageText(key, normalizedMessages, locale)
+  }
+
+  private _runWithActiveOptions<T>(options: ValidateOptions, fn: () => T): T {
+    const previous = this._activeValidateOptions
+    this._activeValidateOptions = options
+    try {
+      return fn()
+    } finally {
+      this._activeValidateOptions = previous
+    }
   }
 
   private _internalError<T>(error: unknown, data: T): ValidationResult<T> {
