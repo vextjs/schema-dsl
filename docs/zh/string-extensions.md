@@ -1,12 +1,13 @@
 # String 扩展文档
 
-> **更新时间**: 2026-06-10
+> **更新时间**: 2026-06-17
 
 ---
 
 ## 📑 目录
 
 - [核心特性](#核心特性)
+- [副作用可控入口](#副作用可控入口)
 - [可用方法](#可用方法)
 - [快速开始](#快速开始)
 - [详细示例](#详细示例)
@@ -55,6 +56,32 @@ const schema = dsl({
   age: 'number:18-120'
 });
 ```
+
+---
+
+## 副作用可控入口
+
+root `schema-dsl` 入口仍然为了兼容 v1 默认安装 String 扩展。需要控制这个全局副作用时，请使用下面的显式入口。
+
+| 入口 | 行为 | 推荐场景 |
+|------|------|------|
+| `schema-dsl` | v1 兼容 root 入口；导入时安装 String 扩展 | 已经依赖 `'email!'.description(...)` 直接链式写法的应用 |
+| `schema-dsl/pure` | 只导入核心 API；不安装 String 扩展 | 库、worker、测试、SSR 或隔离运行时 |
+| `schema-dsl/compat` | 与 root 入口相同的兼容副作用，但语义更显式 | 希望明确表达兼容模式的代码 |
+| `schema-dsl/register-string` | 显式副作用入口，导入后安装 String 扩展 | 应用启动阶段主动注册 String 链式 API |
+| `schema-dsl/transform` | 静态 String 链式 DSL 的编译期转换核心 | 构建工具或自定义适配器 |
+| `schema-dsl/esbuild` | transform 的可选 esbuild 适配器 | esbuild build/context 流程 |
+
+```javascript
+import { dsl } from 'schema-dsl/pure';
+import 'schema-dsl/register-string';
+
+const schema = dsl({
+  email: 'email!'.description('登录邮箱')
+});
+```
+
+如果希望保留 String 链式作者体验，但不在运行时修改原型，可使用 `transformSchemaDsl()` 或 `schemaDslEsbuildPlugin()`，把受支持的静态链式调用改写为从 `schema-dsl/pure` 导入的 `dsl('...')` 调用。
 
 ---
 
@@ -456,7 +483,7 @@ const schema = dsl({
 
 ### Q1: String扩展会污染全局吗？
 
-**A**: 会扩展 `String.prototype`，root entry 默认安装以兼容 v1.1.x。副作用已降到较低：扩展方法不可枚举、安装前检测同名冲突、可通过 `uninstallStringExtensions()` 卸载；如果你需要完全非侵入式写法，卸载后使用 `dsl('...')` 包裹字符串。
+**A**: root `schema-dsl` 入口为了兼容 v1.1.x 默认扩展 `String.prototype`。副作用已降到较低：扩展方法不可枚举、安装前检测同名冲突、可通过 `uninstallStringExtensions()` 卸载。如果不希望导入时修改全局原型，请改用 `schema-dsl/pure`；如果希望显式启用副作用，请在应用启动阶段导入 `schema-dsl/register-string`。
 
 ### Q2: 性能如何？
 
@@ -497,6 +524,6 @@ const schema = dsl({
 
 ---
 
-**最后更新**: 2026-06-10
+**最后更新**: 2026-06-17
 
 

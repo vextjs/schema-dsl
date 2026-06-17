@@ -1,5 +1,10 @@
 # Unreleased
 
+## 2026-06-17
+
+- Added side-effect-controlled package entries for `schema-dsl/pure`, `schema-dsl/compat`, `schema-dsl/register-string`, `schema-dsl/transform`, and `schema-dsl/esbuild`.
+- Added compile-time String-chain DSL transform documentation and runnable API reference examples covering pure import, explicit String registration, transform output, and the optional esbuild adapter.
+
 ## 2026-06-16
 
 - Fixed SQL exporter hardening gaps: MySQL string comments now escape backslashes/control characters, MySQL table options are validated, PostgreSQL identifiers are quoted by default with guarded raw mode, and PostgreSQL numeric defaults/check constraints reject non-finite values.

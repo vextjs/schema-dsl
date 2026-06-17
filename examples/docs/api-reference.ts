@@ -38,6 +38,9 @@ import {
   validate,
   validateAsync,
 } from '../../dist/index.js'
+import { schemaDslEsbuildPlugin } from '../../dist/esbuild.js'
+import { dsl as pureDsl } from '../../dist/pure.js'
+import { transformSchemaDsl } from '../../dist/transform.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`api-reference expectation failed: ${label}`)
@@ -244,6 +247,16 @@ const configuredStats = getDefaultValidator().getCacheStats()
 
 uninstallStringExtensions()
 const afterUninstall = typeof ('email!' as any).label
+const pureEntryAfterImport = typeof ('email!' as any).description
+const pureEntrySchema = pureDsl('email!').description('Login email').toSchema()
+const transformedDsl = transformSchemaDsl(
+  'export const field = "email!".description("Login email")',
+  { filename: 'api-reference.ts' },
+)
+const esbuildPlugin = schemaDslEsbuildPlugin()
+const registerStringEntry = await import('../../dist/register-string.js')
+const afterRegisterStringEntry = typeof ('email!' as any).description
+const registerEntrySchema = ('email!' as any).description('Login email').toSchema()
 installStringExtensions()
 const afterInstall = typeof ('email!' as any).label
 const extensionSchema = ('string:2-8!' as any).toJsonSchema()
@@ -292,6 +305,12 @@ console.log('api-reference.exporters.base =', exporterBaseSurface)
 console.log('api-reference.errorFormatter =', formattedErrors)
 console.log('api-reference.config.cache =', configuredStats.enabled)
 console.log('api-reference.stringExtensions.uninstall =', afterUninstall)
+console.log('api-reference.entries.pure.noSideEffect =', pureEntryAfterImport)
+console.log('api-reference.entries.pure.schema =', pureEntrySchema.format)
+console.log('api-reference.transform.changed =', transformedDsl.changed)
+console.log('api-reference.esbuildPlugin.name =', esbuildPlugin.name)
+console.log('api-reference.entries.registerString.install =', afterRegisterStringEntry)
+console.log('api-reference.entries.registerString.schema =', registerEntrySchema.description)
 console.log('api-reference.stringExtensions.install =', afterInstall)
 console.log('api-reference.stringExtensions.schema =', extensionSchema.minLength, extensionSchema.maxLength)
 
@@ -311,6 +330,10 @@ expect('I18nError.create should preserve status', i18nError.statusCode === 422)
 expect('I18nError.assert should throw I18nError', assertedI18nError?.statusCode === 409)
 expect('PluginManager should install and run hooks', installedMode === 'demo' && pluginHookResults[0] === 'hook:ok' && pluginList[0]?.name === 'api-reference-plugin')
 expect('string extensions uninstall removes methods', afterUninstall === 'undefined')
+expect('pure entry should not install string extensions', pureEntryAfterImport === 'undefined' && pureEntrySchema.format === 'email')
+expect('transformSchemaDsl should rewrite static string chains', transformedDsl.changed === true && transformedDsl.code.includes('schema-dsl/pure'))
+expect('esbuild plugin should expose schema-dsl name', esbuildPlugin.name === 'schema-dsl')
+expect('register-string entry should install extensions', afterRegisterStringEntry === 'function' && typeof registerStringEntry.installStringExtensions === 'function' && registerEntrySchema.description === 'Login email')
 expect('string extensions can be reinstalled', afterInstall === 'function')
 expect('string extensions produce schema constraints', extensionSchema.minLength === 2 && extensionSchema.maxLength === 8)
 

@@ -1,6 +1,6 @@
 # schema-dsl API Reference
 
-> **Updated**: 2026-06-10
+> **Updated**: 2026-06-17
 
 ---
 
@@ -9,6 +9,7 @@
 - [dsl() Function](#dsl-function)
 - [DslBuilder Class](#dslbuilder-class)
 - [String Extensions](#string-extensions)
+- [Package Entry Points and Compile-Time Transform](#package-entry-points-and-compile-time-transform)
 - [Validator Class](#validator-class)
 - [Exporters](#exporters)
 - [Utility Functions](#utility-functions)
@@ -532,6 +533,101 @@ const { uninstallStringExtensions } = require('schema-dsl');
 
 uninstallStringExtensions();
 ```
+
+---
+
+## Package Entry Points and Compile-Time Transform
+
+### `schema-dsl/pure`
+
+Imports the same core API without installing `String.prototype` extensions. Use this entry in libraries, workers, tests, or isolation-sensitive runtimes where package import must not mutate global prototypes.
+
+```javascript
+import { dsl, validate, uninstallStringExtensions } from 'schema-dsl/pure';
+
+uninstallStringExtensions();
+
+const schema = dsl({
+  email: dsl('email!').description('Login email')
+});
+
+const result = validate(schema, { email: 'user@example.com' });
+```
+
+---
+
+### `schema-dsl/compat` and `schema-dsl/register-string`
+
+`schema-dsl/compat` keeps the v1-compatible root behavior and installs String extensions on import. `schema-dsl/register-string` is a side-effect entry for explicitly registering the String chain API during application startup.
+
+```javascript
+import 'schema-dsl/register-string';
+import { dsl } from 'schema-dsl/pure';
+
+const schema = dsl({
+  email: 'email!'.description('Login email')
+});
+```
+
+---
+
+### `transformSchemaDsl(source, options?)`
+
+Rewrites static String-chain DSL calls at compile time and injects imports from `schema-dsl/pure`. By default, it transforms `.description()` chains on schema-dsl string literals such as `"email!".description("Login email")`; pass `methods` to opt in additional chain methods.
+
+```javascript
+import { transformSchemaDsl } from 'schema-dsl/transform';
+
+const result = transformSchemaDsl(
+  'export const field = "email!".description("Login email")',
+  { filename: 'schema.ts' }
+);
+
+console.log(result.changed);
+console.log(result.code);
+```
+
+**Options**:
+
+| Field | Type | Default | Description |
+|------|------|------|------|
+| `filename` | `string` | `'<unknown>'` | File name used for parser mode, source maps, and warnings |
+| `sourceMap` | `boolean | 'inline'` | `false` | Generates a source map when enabled |
+| `importFrom` | `string` | `'schema-dsl/pure'` | Import source used for the injected `dsl` helper |
+| `methods` | `readonly string[]` | `['description']` | Chain method names eligible for compile-time rewriting |
+| `include` | `(filename) => boolean` | - | Optional file filter |
+| `onWarning` | `(warning) => void` | - | Receives parse and skipped-literal warnings |
+
+**Return value**:
+
+```javascript
+{
+  code: string,
+  changed: boolean,
+  warnings: Array<{ code: string, message: string, filename?: string, loc?: object }>,
+  map?: object
+}
+```
+
+---
+
+### `schemaDslEsbuildPlugin(options?)`
+
+Applies `transformSchemaDsl()` from an esbuild plugin. `esbuild` is an optional peer dependency, so install it only in projects that use the adapter.
+
+```javascript
+import { build } from 'esbuild';
+import { schemaDslEsbuildPlugin } from 'schema-dsl/esbuild';
+
+await build({
+  entryPoints: ['src/schema.ts'],
+  bundle: true,
+  outfile: 'dist/schema.js',
+  plugins: [schemaDslEsbuildPlugin()]
+});
+```
+
+The adapter transforms only `file` namespace JavaScript and TypeScript source files, skips `node_modules`, and leaves virtual modules to their owning plugins.
 
 ---
 
@@ -1201,4 +1297,4 @@ console.log(result.valid); // true
 
 ---
 
-**Last updated**: 2026-06-10
+**Last updated**: 2026-06-17

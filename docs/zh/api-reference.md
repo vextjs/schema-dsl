@@ -1,7 +1,7 @@
 # schema-dsl API 参考文档
 
 
-> **更新时间**: 2026-06-10
+> **更新时间**: 2026-06-17
 
 ---
 
@@ -10,6 +10,7 @@
 - [dsl() 函数](#dsl-函数)
 - [DslBuilder 类](#dslbuilder-类)
 - [String 扩展](#string-扩展)
+- [包入口与编译期转换](#包入口与编译期转换)
 - [Validator 类](#validator-类)
 - [导出器](#导出器)
 - [工具函数](#工具函数)
@@ -504,6 +505,101 @@ const { uninstallStringExtensions } = require('schema-dsl');
 
 uninstallStringExtensions();
 ```
+
+---
+
+## 包入口与编译期转换
+
+### `schema-dsl/pure`
+
+导入同一套核心 API，但不会安装 `String.prototype` 扩展。适合库、worker、测试或对全局原型副作用敏感的隔离运行时。
+
+```javascript
+import { dsl, validate, uninstallStringExtensions } from 'schema-dsl/pure';
+
+uninstallStringExtensions();
+
+const schema = dsl({
+  email: dsl('email!').description('登录邮箱')
+});
+
+const result = validate(schema, { email: 'user@example.com' });
+```
+
+---
+
+### `schema-dsl/compat` 与 `schema-dsl/register-string`
+
+`schema-dsl/compat` 保留 v1 兼容 root 行为，导入时会安装 String 扩展。`schema-dsl/register-string` 是显式副作用入口，用于在应用启动阶段主动注册 String 链式 API。
+
+```javascript
+import 'schema-dsl/register-string';
+import { dsl } from 'schema-dsl/pure';
+
+const schema = dsl({
+  email: 'email!'.description('登录邮箱')
+});
+```
+
+---
+
+### `transformSchemaDsl(source, options?)`
+
+在编译期改写静态 String 链式 DSL 调用，并注入来自 `schema-dsl/pure` 的 `dsl` 导入。默认只改写 schema-dsl 字符串字面量上的 `.description()` 链，例如 `"email!".description("登录邮箱")`；如需更多链式方法，可通过 `methods` 显式开启。
+
+```javascript
+import { transformSchemaDsl } from 'schema-dsl/transform';
+
+const result = transformSchemaDsl(
+  'export const field = "email!".description("登录邮箱")',
+  { filename: 'schema.ts' }
+);
+
+console.log(result.changed);
+console.log(result.code);
+```
+
+**选项**:
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|------|------|
+| `filename` | `string` | `'<unknown>'` | 用于解析模式、source map 和 warning 的文件名 |
+| `sourceMap` | `boolean | 'inline'` | `false` | 启用后生成 source map |
+| `importFrom` | `string` | `'schema-dsl/pure'` | 注入 `dsl` helper 时使用的导入来源 |
+| `methods` | `readonly string[]` | `['description']` | 允许被编译期改写的链式方法名 |
+| `include` | `(filename) => boolean` | - | 可选文件过滤器 |
+| `onWarning` | `(warning) => void` | - | 接收解析失败和跳过字面量的 warning |
+
+**返回值**:
+
+```javascript
+{
+  code: string,
+  changed: boolean,
+  warnings: Array<{ code: string, message: string, filename?: string, loc?: object }>,
+  map?: object
+}
+```
+
+---
+
+### `schemaDslEsbuildPlugin(options?)`
+
+把 `transformSchemaDsl()` 接入 esbuild 插件流程。`esbuild` 是可选 peer dependency，只有使用该适配器的项目需要安装。
+
+```javascript
+import { build } from 'esbuild';
+import { schemaDslEsbuildPlugin } from 'schema-dsl/esbuild';
+
+await build({
+  entryPoints: ['src/schema.ts'],
+  bundle: true,
+  outfile: 'dist/schema.js',
+  plugins: [schemaDslEsbuildPlugin()]
+});
+```
+
+该适配器只转换 `file` namespace 下的 JavaScript/TypeScript 源文件，跳过 `node_modules`，并把虚拟模块交给其所属插件处理。
 
 ---
 
@@ -1142,5 +1238,5 @@ console.log(result.valid); // true
 
 ---
 
-**最后更新**: 2026-06-10
+**最后更新**: 2026-06-17
 

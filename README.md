@@ -131,6 +131,8 @@ const schema = dsl({
 | **TypeScript** | ✅ | Written in native TypeScript with full type inference |
 | **Plugin system** | ✅ | Custom types / formats / validators |
 | **Schema reuse** | ✅ | pick / omit / partial / extend |
+| **Side-effect-controlled entries** | ✅ | root compatibility plus `schema-dsl/pure` for no `String.prototype` installation |
+| **Compile-time transform** | ✅ | `schema-dsl/transform` core and optional `schema-dsl/esbuild` adapter |
 
 ### 🎨 One schema, many uses (unique capability)
 
@@ -171,6 +173,38 @@ npm install schema-dsl
 ```
 
 **Runtime requirement**: Node.js >= 18.0.0
+
+---
+
+## 📦 Package Entry Points
+
+`schema-dsl` keeps the root import compatible with v1-style direct string chaining, and also exposes explicit entries for projects that want tighter control over global side effects.
+
+| Entry | Purpose |
+|-------|---------|
+| `schema-dsl` | Root compatibility entry; imports install the non-enumerable String chain API by default. |
+| `schema-dsl/pure` | Same core API without installing `String.prototype` extensions. Use this in libraries, workers, tests, or isolation-sensitive runtimes. |
+| `schema-dsl/compat` | Explicit compatibility entry that installs String extensions on import. |
+| `schema-dsl/register-string` | Side-effect entry for explicitly registering String extensions during application startup. |
+| `schema-dsl/transform` | Babel AST transform core that rewrites static string-chain calls into `dsl('...')` calls. |
+| `schema-dsl/esbuild` | Optional esbuild plugin adapter around the transform core. `esbuild` is an optional peer dependency. |
+
+```typescript
+import { dsl, validate } from 'schema-dsl/pure';
+import { transformSchemaDsl } from 'schema-dsl/transform';
+import { schemaDslEsbuildPlugin } from 'schema-dsl/esbuild';
+
+const schema = dsl({ email: dsl('email!').description('Login email') });
+
+const transformed = transformSchemaDsl(
+  'export const field = "email!".description("Login email")',
+  { filename: 'schema.ts' }
+);
+
+const plugins = [schemaDslEsbuildPlugin()];
+```
+
+The transform handles static DSL string literals and injects imports from `schema-dsl/pure`. By default it rewrites `.description()` chains such as `"email!".description("...")`; pass `methods` when additional chain methods should be transformed. Dynamic expressions are left unchanged.
 
 ---
 
@@ -334,6 +368,8 @@ const markdown = exporters.MarkdownExporter.export(productSchema, { title: 'Prod
 | Multilingual API errors | `I18nError` | [Error Handling](https://vextjs.github.io/schema-dsl/error-handling) |
 | Conditional / dynamic rules | `dsl.if()` / `dsl.match()` | [Conditional API](https://vextjs.github.io/schema-dsl/conditional-api) |
 | Custom type extensions | `PluginManager` | [Plugin System](https://vextjs.github.io/schema-dsl/plugin-system) |
+| No global String extension | `schema-dsl/pure` | [API Reference](https://vextjs.github.io/schema-dsl/api-reference) |
+| Compile-time string-chain transform | `transformSchemaDsl()` / `schemaDslEsbuildPlugin()` | [API Reference](https://vextjs.github.io/schema-dsl/api-reference) |
 
 ---
 
@@ -516,6 +552,9 @@ const result = validator.validate(schema, { color: '#FF5733', mac: '00:1A:2B:3C:
 | `dsl.match(field, map)` | Branch validation | ConditionalBuilder | [Conditional API](https://vextjs.github.io/schema-dsl/conditional-api) |
 | `I18nError.throw()` | Throw an i18n error | never | [Error Handling](https://vextjs.github.io/schema-dsl/error-handling) |
 | `I18nError.assert()` | Assert then throw | void | [Error Handling](https://vextjs.github.io/schema-dsl/error-handling) |
+| `schema-dsl/pure` | Import the API without installing String extensions | API namespace | [API Reference](https://vextjs.github.io/schema-dsl/api-reference) |
+| `transformSchemaDsl()` | Rewrite static string-chain DSL calls at compile time | `{ code, changed, warnings }` | [API Reference](https://vextjs.github.io/schema-dsl/api-reference) |
+| `schemaDslEsbuildPlugin()` | Use the transform in esbuild build/context flows | esbuild plugin | [API Reference](https://vextjs.github.io/schema-dsl/api-reference) |
 
 ---
 

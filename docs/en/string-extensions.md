@@ -1,12 +1,13 @@
 # String extension documentation
 
-> **Update time**: 2026-06-10
+> **Update time**: 2026-06-17
 
 ---
 
 ## 📑 Table of Contents
 
 - [Core Features](#core-features)
+- [Side-effect-controlled entries](#side-effect-controlled-entries)
 - [Available methods](#available-methods)
 - [Quick Start](#quick-start)
 - [Detailed example](#detailed-example)
@@ -55,6 +56,32 @@ const schema = dsl({
   age: 'number:18-120'
 });
 ```
+
+---
+
+## Side-effect-controlled entries
+
+The root `schema-dsl` entry still installs String extensions by default for v1 compatibility. Use the explicit entries below when you need to control that global side effect.
+
+| Entry | Behavior | Recommended use |
+|------|------|------|
+| `schema-dsl` | v1-compatible root entry; installs String extensions on import | Existing apps that already rely on direct `'email!'.description(...)` chains |
+| `schema-dsl/pure` | Core API only; does not install String extensions | Libraries, workers, tests, SSR, or isolated runtimes |
+| `schema-dsl/compat` | Compatibility entry with the same String-extension side effect as the root entry | Code that wants to make compatibility explicit |
+| `schema-dsl/register-string` | Explicit side-effect entry that installs String extensions | Application startup after importing from `schema-dsl/pure` |
+| `schema-dsl/transform` | Compile-time transform for static String-chain DSL calls | Build tools and custom adapters |
+| `schema-dsl/esbuild` | Optional esbuild adapter around the transform | esbuild build/context flows |
+
+```javascript
+import { dsl } from 'schema-dsl/pure';
+import 'schema-dsl/register-string';
+
+const schema = dsl({
+  email: 'email!'.description('Login email')
+});
+```
+
+For builds that want String-chain authoring without runtime prototype mutation, use `transformSchemaDsl()` or `schemaDslEsbuildPlugin()` to rewrite supported static chains into `dsl('...')` calls that import from `schema-dsl/pure`.
 
 ---
 
@@ -456,7 +483,7 @@ const schema = dsl({
 
 ### Q1: Will String expansion pollute the global situation?
 
-**A**: Will extend `String.prototype`, root entry is installed by default to be compatible with v1.1.x. Side effects have been reduced to a minimum: extension methods are not enumerable, conflicts with the same name are detected before installation, and can be uninstalled through `uninstallStringExtensions()`; if you need completely non-intrusive writing, use `dsl('...')` to wrap the string after uninstalling.
+**A**: The root `schema-dsl` entry extends `String.prototype` by default for v1.1.x compatibility. Side effects have been reduced to a minimum: extension methods are not enumerable, conflicts with the same name are detected before installation, and they can be uninstalled through `uninstallStringExtensions()`. For no import-time prototype mutation, import from `schema-dsl/pure`; when you want the side effect explicitly, import `schema-dsl/register-string` during application startup.
 
 ### Q2: How is the performance?
 
@@ -497,4 +524,4 @@ const schema = dsl({
 
 ---
 
-**Last updated**: 2026-06-10
+**Last updated**: 2026-06-17
