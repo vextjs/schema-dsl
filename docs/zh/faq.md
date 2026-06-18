@@ -1,45 +1,29 @@
 # 常见问题解答 (FAQ)
 
-> **更新时间**: 2026-06-10
+> **更新时间**: 2026-06-18
 
 
 ---
 
-## 📑 目录
-
-- [基础问题](#基础问题)
-- [DSL 语法问题](#dsl-语法问题)
-- [验证问题](#验证问题)
-- [性能问题](#性能问题)
-- [设计理念](#设计理念)
-- [错误处理](#错误处理)
-- [数据库导出](#数据库导出)
-- [TypeScript 支持](#typescript-支持)
-
----
 
 ## 基础问题
 
-### Q: schema-dsl 和 Joi、Yup 有什么区别？
+### Q: schema-dsl 适合解决什么问题？
 
-**A**: schema-dsl 采用 DSL 语法，更简洁：
+**A**: schema-dsl 适合把验证规则写成紧凑、可序列化、便于在配置、API、前端表单和后端服务之间共享的形式。
 
-```javascript
-// schema-dsl - 简洁
-const schema = dsl({
+```typescript
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
   username: 'string:3-32!',
   email: 'email!'
-});
-
-// Joi - 繁琐
-const schema = Joi.object({
-  username: Joi.string().min(3).max(32).required(),
-  email: Joi.string().email().required()
 });
 ```
 
 **主要区别**：
 - 更简洁的 DSL 语法
+- 字段需要元数据或自定义约束时，可继续使用链式 builder
 - 支持数据库 Schema 导出
 - 内置常见验证器（username、password、phone）
 - 基于 JSON Schema 标准
@@ -54,7 +38,7 @@ npm install schema-dsl
 
 **Node.js 版本要求**：`>=18.0.0`
 
-当前 TypeScript 重构版以 `Node.js >=18.0.0` 为唯一运行时基线，不再承诺旧 Node 版本兼容。
+当前版本以 `Node.js >=18.0.0` 为运行时基线，不再承诺旧 Node 版本兼容。
 
 ---
 
@@ -63,19 +47,16 @@ npm install schema-dsl
 **A**: 支持。
 
 ```javascript
-// CommonJS
-const { dsl, validate } = require('schema-dsl');
+// v2.1.0 起公开文档推荐入口
+import { s, validate } from 'schema-dsl/pure';
 
-// ES Modules（named import）
-import { dsl, validate } from 'schema-dsl';
-
-// ES Modules（default import）
-import dslDefault from 'schema-dsl';
+const schema = s({ email: 'email!' });
+const result = validate(schema, { email: 'test@example.com' });
 ```
 
 ### Q: i18n 目录加载支持哪些语言包文件格式？
 
-**A**: 在 **Node.js >= 18.0.0** 下，`dsl.config({ i18n: '/path/to/locales' })` 默认支持：
+**A**: 在 **Node.js >= 18.0.0** 下，`s.config({ i18n: '/path/to/locales' })` 默认支持：
 
 - `.js`（CommonJS 语言包）
 - `.cjs`
@@ -132,7 +113,9 @@ tags: 'array<string:1-20>'  // 带约束的字符串数组
 **A**: 直接嵌套即可：
 
 ```javascript
-const schema = dsl({
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
   user: {
     name: 'string!',
     address: {
@@ -147,31 +130,27 @@ const schema = dsl({
 
 ### Q: 如何使用 String 扩展？
 
-**A**: JavaScript 中导入 `schema-dsl` 后默认可以直接字符串链式调用；TypeScript 中为了完整类型提示，复杂字段仍推荐使用 `dsl()` 包裹。
+**A**: String 扩展属于显式兼容/易用性路径。新的公开示例默认使用 `schema-dsl/pure` + `s`，因为它同时支持纯 DSL 字符串、`s('...')` 和 `s.xxx()`，并且不会往 `String.prototype` 上安装方法。
 
-```javascript
-const schema = dsl({
-  email: 'email!'
+```typescript
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
+  email: s('email!')
     .label('邮箱地址')
     .messages({
       'required': '{{#label}}不能为空',
       'format': '请输入有效的{{#label}}'
     }),
 
-  username: 'string:3-32!'
+  username: s('string:3-32!')
     .pattern(/^[a-z0-9_]+$/)
     .label('用户名')
     .username('medium')
 });
-
-// 如果需要完全非侵入式写法，可以先卸载再用 dsl() 包裹。
-const { uninstallStringExtensions } = require('schema-dsl');
-uninstallStringExtensions();
-
-const safeSchema = dsl({
-  email: dsl('email!').label('邮箱地址')
-});
 ```
+
+如果确实想使用直接字符串链式，请参考 [String 扩展](string-extensions.md) 中的显式 runtime/type 入口。
 
 ---
 
@@ -183,11 +162,14 @@ const safeSchema = dsl({
 
 ```javascript
 // 方式1：便捷函数
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
+
+const schema = s({ email: 'email!' });
 const result = validate(schema, data);
 
 // 方式2：Validator 实例
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
+
 const validator = new Validator();
 const result = validator.validate(schema, data);
 ```
@@ -225,9 +207,11 @@ const validator = new Validator({ allErrors: false });
 **A**: 使用 `.default()` 方法：
 
 ```javascript
-const schema = dsl({
-  status: 'string'.default('active'),
-  count: 'integer'.default(0)
+import { s, validate } from 'schema-dsl/pure';
+
+const schema = s({
+  status: s('string').default('active'),
+  count: s('integer').default(0)
 });
 
 const result = validate(schema, {});
@@ -241,25 +225,26 @@ console.log(result.data);
 
 ### Q: schema-dsl 的性能怎么样？
 
-**A**: 性能不错，**S3 嵌套场景快于 Zod（28%），无效数据公平对比快 89x**：
+**A**: 当前 benchmark 应作为项目本地吞吐证据，而不是永久营销结论。最新本地运行记录如下：
 
-| 场景 | Schema-DSL | Zod | 对比 |
-|------|-----------|-----|------|
-| S1 简单有效 | **1.301M ops/s** | 1.305M ops/s | ≈ 持平（差 <1%）|
-| S2 无效（均无 i18n）| **1.205M ops/s** | 13.49K ops/s | ✅ 快 **89x** |
-| S3 嵌套有效 | **1.085M ops/s** | 847K ops/s | ✅ 快 **28%** |
-| 底层 Ajv (raw) | ~4.7M ops/s | — | 底层引擎 |
+| 场景 | schema-dsl 吞吐 |
+|------|-----------|
+| S1 简单有效对象 | ~1.185M ops/s |
+| S2 无效对象，不做 i18n 格式化 | ~1.178M ops/s |
+| S3 嵌套有效对象 | ~941K ops/s |
 
 **结论**:
-- ✅ S3 嵌套场景快于 Zod（**28%**），S1 简单有效场景持平；无效数据公平对比快 **89x**
-- ✅ 比 Joi 快约 **13x**（无效数据公平对比）
-- ✅ 内置缓存确保热路径零解析开销
+- ✅ 在这台本地机器上，热路径验证已处于百万 ops/sec 级别。
+- ✅ 内置缓存可避免复用 schema 时重复解析。
+- ✅ 这些数字适合作为回归基线；运行时、依赖或 schema 复杂度变化后应重新跑 benchmark。
+
+**环境**: Node.js v20.20.2，Windows x64，运行时间 2026-06-18T08:49:22.365Z。
 
 ---
 
 ### Q: 有效/无效数据场景性能差异为什么大？
 
-**A**: 公平对比（S2，均不做 i18n 格式化）schema-dsl 显著快于 Zod（**89x**）。Zod 在无效数据场景极慢的根源是其错误收集使用异常驱动（`try/catch` 控制流），每个无效字段抛出一次 Error，4 个错误字段 = 4 次 Error 实例创建 + 4 次堆栈捕获。schema-dsl 基于 AJV 的无异常收集路径，无格式化时达 1.2M ops/s。
+**A**: 无效数据吞吐高度依赖错误收集和格式化方式。schema-dsl 会把热验证路径和本地化消息渲染分开，因此原始无效数据 benchmark 可以接近有效数据 benchmark。启用自定义格式化、i18n 或大型嵌套错误输出后，应使用自己的真实 schema 与错误输出重新测量。
 
 ---
 
@@ -342,7 +327,7 @@ console.log(stats);
 **A**: 使用 `SchemaUtils.validateBatch()`：
 
 ```javascript
-const { SchemaUtils, Validator } = require('schema-dsl');
+import { SchemaUtils, Validator } from 'schema-dsl/pure';
 
 const validator = new Validator();
 const batch = SchemaUtils.validateBatch(schema, [data1, data2, data3], validator.getAjv());
@@ -388,13 +373,13 @@ console.log(batch.results[0].valid);
 6. **前后端共享验证** - 一套规则，两端使用
 
 ⚠️ **不适合的场景**:
-1. 绝对吞吐量优先、且不需要 DSL 动态能力 → 推荐 **Ajv**
-2. TypeScript 强类型推断 → 推荐 **Zod**
-3. 静态验证规则 → 推荐 **Zod**
+1. 只追求绝对吞吐量，且不需要 DSL 动态能力
+2. 需要把每个值约束都建模成 TypeScript 静态类型
+3. 验证规则完全静态，永远不需要序列化、存储或配置化编辑
 
 ---
 
-### Q: 为什么不做成像 Zod 那样的编译时库？
+### Q: 为什么不做成纯编译时库？
 
 **A**: 因为会失去核心价值：
 
@@ -402,11 +387,11 @@ console.log(batch.results[0].valid);
 ```javascript
 // ❌ 无法从数据库读取规则
 const rules = await db.findOne({ entity: 'user' });
-const schema = dsl(rules);
+const schema = s(rules);
 
 // ❌ 无法多租户动态规则
 function getTenantSchema(tenantId) {
-  return dsl(tenantConfig[tenantId]);
+  return s(tenantConfig[tenantId]);
 }
 
 // ❌ 无法通过 API 传输
@@ -418,7 +403,7 @@ res.json({ validationRules: rules });
 **保留的能力**:
 ```javascript
 // ✅ 完全动态
-const schema = dsl({
+const schema = s({
   username: `string:${config.min}-${config.max}!`
 });
 
@@ -440,7 +425,8 @@ JSON.stringify({ username: 'string:3-32!' });
 ```
 
 **权衡结果**:
-- 增益：S3 嵌套场景快于 Zod 28%，S1 持平；无效数据公平对比快 89x
+- 增益：规则紧凑、可序列化，可跨运行时边界存储、传输、编辑和共享
+- 成本：TypeScript 无法把每个 DSL 约束都细化成精确静态值域类型
 
 ---
 
@@ -451,8 +437,7 @@ JSON.stringify({ username: 'string:3-32!' });
 **A**: 使用 `.messages()` 方法：
 
 ```javascript
-username: 'string:3-32!'
-  .label('用户名')
+username: s('string:3-32!').label('用户名')
   .messages({
     'min': '{{#label}}太短了',
     'max': '{{#label}}太长了',
@@ -467,7 +452,7 @@ username: 'string:3-32!'
 **A**: 使用 `Locale` 类：
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 // 添加语言包
 Locale.addLocale('zh-CN', {
@@ -498,7 +483,7 @@ validator.validate(schema, data, { locale: 'zh-CN' });
 ### Q: 如何导出为 MongoDB Schema？
 
 ```javascript
-const { exporters } = require('schema-dsl');
+import { exporters } from 'schema-dsl/pure';
 
 const exporter = new exporters.MongoDBExporter();
 const mongoSchema = exporter.export(schema);
@@ -529,8 +514,7 @@ const ddl = exporter.export('table_name', schema);
 **A**: 使用 `.description()`：
 
 ```javascript
-username: 'string:3-32!'
-  .description('用户登录名，只能包含字母数字')
+username: s('string:3-32!').description('用户登录名，只能包含字母数字')
 ```
 
 MySQL 会生成 `COMMENT`，PostgreSQL 会生成 `COMMENT ON COLUMN`。
@@ -541,14 +525,14 @@ MySQL 会生成 `COMMENT`，PostgreSQL 会生成 `COMMENT ON COLUMN`。
 
 ### Q: schema-dsl 支持 TypeScript 吗？
 
-**A**: 支持。当前更稳定的 TypeScript 写法是直接使用 `dsl('...')` Builder API，而不是依赖 String 原型扩展：
+**A**: 支持。自 v2.1.0 起，公开 TypeScript 示例推荐 `schema-dsl/pure` + `s`：简单字段用纯 DSL 字符串，需要 builder 提示时用 `s('...')`，需要最完整方法发现时用 `s.xxx()` factory。
 
 ```typescript
-import { dsl, validate, Validator } from 'schema-dsl';
+import { s, validate, Validator } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
-  email: dsl('email!').label('邮箱地址').error({
+  email: s('email!').label('邮箱地址').error({
     required: '请输入邮箱地址'
   })
 });
@@ -564,11 +548,11 @@ if (result.valid) {
 
 ### Q: TypeScript 下如何写出更稳妥的链式提示？
 
-**A**: 推荐始终从 `dsl('...')` 开始链式调用；这样能和当前类型声明保持一致：
+**A**: 想保留 DSL 语法并获得 builder 方法提示时，建议从 `s('...')` 开始链式调用：
 
 ```typescript
-const schema = dsl({
-  email: dsl('email!')
+const schema = s({
+  email: s('email!')
     .label('邮箱')
     .error({ format: '请输入有效邮箱地址' })
 });

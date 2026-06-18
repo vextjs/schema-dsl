@@ -10,11 +10,11 @@
 ## 基本用法
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // 邮箱 或 手机号
-const schema = dsl({
-  contact: dsl('string!')
+const schema = s({
+  contact: s('string!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|1[3-9]\d{9})$/)
     .messages({ pattern: '必须是邮箱或手机号' })
 });
@@ -35,8 +35,8 @@ validate(schema, { contact: 'invalid' });           // ❌
 ### 用户登录（用户名或邮箱）
 
 ```javascript
-const loginSchema = dsl({
-  username: dsl('string:3-32!')
+const loginSchema = s({
+  username: s('string:3-32!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|[a-zA-Z0-9_]+)$/)
     .messages({ pattern: '必须是邮箱或用户名' }),
   password: 'string:8-32!'
@@ -46,8 +46,8 @@ const loginSchema = dsl({
 ### 联系方式（邮箱或手机号）
 
 ```javascript
-const schema = dsl({
-  contact: dsl('string!')
+const schema = s({
+  contact: s('string!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|1[3-9]\d{9})$/)
     .messages({ pattern: '必须是邮箱或手机号' })
 });
@@ -56,8 +56,8 @@ const schema = dsl({
 ### URL（http 或 https）
 
 ```javascript
-const schema = dsl({
-  website: dsl('string!')
+const schema = s({
+  website: s('string!')
     .pattern(/^https?:\/\/.+$/)
     .messages({ pattern: '必须是 http 或 https 开头的 URL' })
 });
@@ -69,8 +69,8 @@ const schema = dsl({
 
 ```javascript
 // 使用多语言 key
-const schema = dsl({
-  contact: dsl('string!')
+const schema = s({
+  contact: s('string!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|1[3-9]\d{9})$/)
     .messages({ pattern: 'pattern.emailOrPhone' })  // 多语言 key
 });
@@ -115,11 +115,11 @@ validate(schema, { contact: 'invalid' }, { locale: 'en-US' });  // 英文：Must
 ## 完整示例
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const registerSchema = dsl({
+const registerSchema = s({
   name: 'string:1-50!',
-  contact: dsl('string!')
+  contact: s('string!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|1[3-9]\d{9})$/)
     .messages({ pattern: '必须是邮箱或手机号' })
 });

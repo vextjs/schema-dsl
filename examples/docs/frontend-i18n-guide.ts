@@ -1,4 +1,4 @@
-import { dsl, validate } from '../../dist/index.js'
+import { s, validate } from '../../dist/pure.js'
 
 // ============================================================
 // Frontend i18n guide — per-request locale resolution
@@ -9,9 +9,9 @@ import { dsl, validate } from '../../dist/index.js'
 //   3. Fallback default (e.g. 'en-US')
 // ============================================================
 
-const formSchema = dsl({
-  username: dsl('string:3-32!').label('Username'),
-  email:    dsl('email!').label('Email Address'),
+const formSchema = s({
+  username: s('string:3-32!').label('Username'),
+  email:    s('email!').label('Email Address'),
 })
 
 // ============================================================

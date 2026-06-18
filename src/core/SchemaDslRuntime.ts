@@ -1,10 +1,11 @@
 import type { JSONSchema } from '../types/schema.js'
-import type { DslDefinition, IDslBuilder } from '../types/dsl.js'
+import type { DslDefinition, DslExtensionDefinition, DslFn, IDslBuilder } from '../types/dsl.js'
 import type { IConditionalBuilder } from '../types/conditional.js'
 import type {
   SchemaDslRuntimeConfigureControl,
   SchemaDslRuntimeConfigureMode,
   SchemaDslRuntime,
+  SchemaDslRuntimeNamespace,
   SchemaDslRuntimeOptions,
   SchemaDslRuntimeStats,
   SchemaDslRuntimeValidateOptions,
@@ -13,6 +14,7 @@ import type {
 import type { ValidationResult } from '../types/validate.js'
 import type { ValidateOptions } from '../types/validate.js'
 import { DslBuilder } from './DslBuilder.js'
+import { attachDslNamespaceFactories, resetDslNamespaceExtensions } from '../adapters/DslNamespace.js'
 import { DslParser, type DslParseOptions } from '../parser/DslParser.js'
 import { RuntimeCompileContext } from './RuntimeCompileContext.js'
 import { RuntimeIssueFormatter } from './RuntimeIssueFormatter.js'
@@ -34,6 +36,8 @@ function isSchemaLike(value: Record<string, unknown>): boolean {
 }
 
 export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
+  readonly dsl: SchemaDslRuntimeNamespace
+  readonly s: SchemaDslRuntimeNamespace
   private readonly compileContext: RuntimeCompileContext
   private readonly formatter: RuntimeIssueFormatter
   private readonly parseOptions: DslParseOptions
@@ -52,15 +56,25 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
       ...(options.strict !== undefined ? { unknownType: options.strict ? 'error' : 'warn' } : {}),
     }
     this.validatorEngine = new RuntimeValidatorEngine(options, this.formatter, this.parseOptions)
-  }
-
-  dsl(definition: string): IDslBuilder
-  dsl(definition: DslDefinition): JSONSchema
-  dsl(definition: string | DslDefinition): IDslBuilder | JSONSchema {
-    this.assertActive()
-    return typeof definition === 'string'
-      ? this.compileField(definition)
-      : this.compile(definition)
+    const namespace = ((definition: string | DslDefinition): IDslBuilder | JSONSchema => {
+      this.assertActive()
+      return typeof definition === 'string'
+        ? this.compileField(definition)
+        : this.compile(definition)
+    }) as DslFn
+    this.dsl = attachDslNamespaceFactories(namespace, {
+      createBuilder: definition => this.compileField(definition),
+      createBuilderFromSchema: schema => DslBuilder.fromSchema(schema, {
+        parseOptions: this.parseOptions,
+        patterns: this.compileContext.patterns,
+        validatorFactory: () => this.validatorEngine.getDefaultValidator(),
+        validatorGuard: () => this.assertActive(),
+        cacheValidator: false,
+      }) as IDslBuilder,
+      parseObject: definition => this.compile(definition),
+      registerType: (name, schema) => this.registerType(name, schema),
+    })
+    this.s = this.dsl
   }
 
   compile(definition: string | DslDefinition): JSONSchema {
@@ -126,6 +140,9 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   ): void {
     this.assertActive()
     const mode = control.mode ?? 'merge'
+    if (mode === 'reset' || mode === 'replace') {
+      resetDslNamespaceExtensions(this.dsl)
+    }
     this.runtimeOptions = this.mergeRuntimeOptions(this.runtimeOptions, options, mode)
     this.compileContext.configure(options, mode)
     this.formatter.configure(options, mode)
@@ -142,6 +159,12 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   registerDynamicType(name: string, factory: () => JSONSchema): void {
     this.assertActive()
     this.compileContext.registerDynamicType(name, factory)
+    this.clearCache()
+  }
+
+  registerExtension(definition: DslExtensionDefinition): void {
+    this.assertActive()
+    this.dsl.registerExtension(definition)
     this.clearCache()
   }
 
@@ -174,6 +197,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
 
   dispose(): void {
     if (this.disposed) return
+    resetDslNamespaceExtensions(this.dsl)
     this.validatorEngine.dispose()
     this.compileContext.dispose()
     this.formatter.dispose()

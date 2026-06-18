@@ -1,33 +1,11 @@
 # schema-dsl 错误处理完整指南
 
-> **更新**: 2026-01-30  
-> **版本**: v1.1.8+  
-> **适用**: 企业级应用开发  
+> **更新**: 2026-01-30
+> **版本**: v1.1.8+
+> **适用**: 企业级应用开发
 
 ---
 
-## 📋 目录
-
-1. [错误对象结构](#错误对象结构)
-2. [I18nError - 多语言错误抛出](#i18nerror---多语言错误抛出) 🆕
-   - [📖 概述](#-概述)
-   - [🚀 快速开始](#-快速开始)
-   - [📚 核心 API](#-核心-api)
-   - [🔧 配置语言包](#-配置语言包)
-   - [🌐 默认语言机制](#-默认语言机制)
-   - [智能参数识别（v1.1.8）](#智能参数识别v118)
-   - [🌐 实际场景](#-实际场景)
-   - [📦 错误对象结构](#-错误对象结构)
-   - [❓ 常见问题](#-常见问题)
-3. [错误消息定制](#错误消息定制)
-4. [错误码系统](#错误码系统)
-5. [多层级错误处理](#多层级错误处理)
-6. [API响应设计](#api响应设计)
-7. [前端错误展示](#前端错误展示)
-8. [错误日志记录](#错误日志记录)
-9. [最佳实践](#最佳实践)
-
----
 
 ## I18nError - 多语言错误抛出
 
@@ -62,7 +40,7 @@
 #### 5分钟上手
 
 ```javascript
-const { I18nError, Locale } = require('schema-dsl');
+import { I18nError, Locale } from 'schema-dsl/pure';
 
 // 步骤1：配置语言包
 Locale.addLocale('zh-CN', {
@@ -181,42 +159,42 @@ I18nError.assert(condition, code, paramsOrLocale?, statusCode?, locale?)
 ```javascript
 function getAccount(id) {
   const account = db.findAccount(id);
-  
+
   // 断言：账户必须存在
   I18nError.assert(account, 'account.notFound', { id });
-  
+
   // 断言：余额必须充足
   I18nError.assert(
     account.balance >= 100,
     'account.insufficientBalance',
     { balance: account.balance, required: 100 }
   );
-  
+
   return account;
 }
 ```
 
 ---
 
-#### dsl.error 快捷方法
+#### s.error 快捷方法
 
-`dsl.error` 是 `I18nError` 的快捷访问方式，提供相同的三个方法：
+`s.error` 是 `I18nError` 的快捷访问方式，提供相同的三个方法：
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // 等价于 I18nError.create()
-dsl.error.create('account.notFound');
+s.error.create('account.notFound');
 
 // 等价于 I18nError.throw()
-dsl.error.throw('order.notPaid');
+s.error.throw('order.notPaid');
 
 // 等价于 I18nError.assert()
-dsl.error.assert(order, 'order.notFound');
+s.error.assert(order, 'order.notFound');
 ```
 
 **推荐使用场景**:
-- ✅ 与 `dsl()` 函数一起使用时（风格统一）
+- ✅ 与 `s()` 函数一起使用时（风格统一）
 - ✅ 导入较少依赖时（只需 `dsl`）
 
 ---
@@ -228,12 +206,12 @@ dsl.error.assert(order, 'order.notFound');
 #### 方式1：使用 Locale.addLocale()（推荐）
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 Locale.addLocale('zh-CN', {
   // 字符串格式（简单场景）
   'user.notFound': '用户不存在',
-  
+
   // 对象格式（推荐，v1.1.5+）
   'account.notFound': {
     code: 40001,  // 数字错误码
@@ -260,12 +238,12 @@ Locale.addLocale('en-US', {
 
 ---
 
-#### 方式2：使用 dsl.config()（批量配置）
+#### 方式2：使用 s.config()（批量配置）
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-dsl.config({
+s.config({
   i18n: {
     'zh-CN': {
       'payment.failed': {
@@ -300,9 +278,9 @@ project/
 
 **配置**:
 ```javascript
-const path = require('path');
+import path from 'path';
 
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'i18n/errors')
 });
 ```
@@ -337,7 +315,7 @@ module.exports = {
 
 **全局设置**:
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 // 按应用需要切换默认语言
 Locale.setLocale('zh-CN');
@@ -365,9 +343,9 @@ Locale.setLocale('zh-CN');
 I18nError.throw('account.notFound', 'en-US');  // 覆盖为英文 'en-US'
 
 // 场景3：参数对象 + 运行时语言
-I18nError.throw('account.insufficientBalance', 
+I18nError.throw('account.insufficientBalance',
   { balance: 50, required: 100 },  // 参数对象
-  400, 
+  400,
   'ja-JP'  // 运行时指定日文
 );
 ```
@@ -377,8 +355,8 @@ I18nError.throw('account.insufficientBalance',
 #### 实际应用 - API 多语言响应
 
 ```javascript
-const express = require('express');
-const { I18nError } = require('schema-dsl');
+import express from 'express';
+import { I18nError } from 'schema-dsl/pure';
 
 const app = express();
 
@@ -392,10 +370,10 @@ app.use((req, res, next) => {
 app.get('/api/account/:id', async (req, res) => {
   try {
     const account = await findAccount(req.params.id);
-    
+
     // 🎯 运行时指定语言（根据客户端请求）
     I18nError.assert(account, 'account.notFound', req.locale, 404);
-    
+
     res.json({ success: true, data: account });
   } catch (error) {
     if (error instanceof I18nError) {
@@ -421,7 +399,7 @@ app.get('/api/account/:id', async (req, res) => {
 #### 简化语法
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+import { s, Locale } from 'schema-dsl/pure';
 
 // 配置语言包
 Locale.addLocale('zh-CN', {
@@ -439,12 +417,12 @@ Locale.addLocale('en-US', {
 });
 
 // ✅ 新增：简化语法（推荐）
-dsl.error.throw('account.notFound', 'zh-CN');
-dsl.error.throw('account.notFound', 'zh-CN', 404);
+s.error.throw('account.notFound', 'zh-CN');
+s.error.throw('account.notFound', 'zh-CN', 404);
 
 // ✅ 标准语法（完全兼容）
-dsl.error.throw('account.notFound', {}, 404, 'zh-CN');
-dsl.error.throw('account.notFound', { id: '123' }, 404, 'zh-CN');
+s.error.throw('account.notFound', {}, 404, 'zh-CN');
+s.error.throw('account.notFound', { id: '123' }, 404, 'zh-CN');
 ```
 
 #### 智能识别规则
@@ -460,23 +438,23 @@ params === null/undefined   → 使用默认值
 
 ```javascript
 // 1. 简化语法 - 只传语言
-dsl.error.throw('account.notFound', 'zh-CN');
-dsl.error.create('account.notFound', 'en-US');
-dsl.error.assert(account, 'account.notFound', 'zh-CN');
+s.error.throw('account.notFound', 'zh-CN');
+s.error.create('account.notFound', 'en-US');
+s.error.assert(account, 'account.notFound', 'zh-CN');
 
 // 2. 简化语法 - 语言 + 状态码
-dsl.error.throw('account.notFound', 'zh-CN', 404);
-dsl.error.assert(account, 'account.notFound', 'zh-CN', 404);
+s.error.throw('account.notFound', 'zh-CN', 404);
+s.error.assert(account, 'account.notFound', 'zh-CN', 404);
 
 // 3. 标准语法 - 带参数对象
-dsl.error.throw('account.insufficientBalance', 
-  { balance: 50, required: 100 }, 
-  400, 
+s.error.throw('account.insufficientBalance',
+  { balance: 50, required: 100 },
+  400,
   'zh-CN'
 );
 
 // 4. 省略所有参数 - 使用全局语言
-dsl.error.throw('account.notFound');
+s.error.throw('account.notFound');
 ```
 
 #### 实际应用
@@ -487,10 +465,10 @@ app.get('/api/account/:id', async (req, res) => {
   try {
     const account = await findAccount(req.params.id);
     const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
-    
+
     // 🎯 简化语法：只需2个参数
-    dsl.error.assert(account, 'account.notFound', locale);
-    
+    s.error.assert(account, 'account.notFound', locale);
+
     res.json(account);
   } catch (error) {
     res.status(error.statusCode).json(error.toJSON());
@@ -507,8 +485,8 @@ app.get('/api/account/:id', async (req, res) => {
 #### Express 完整集成
 
 ```javascript
-const express = require('express');
-const { I18nError, Locale } = require('schema-dsl');
+import express from 'express';
+import { I18nError, Locale } from 'schema-dsl/pure';
 
 const app = express();
 app.use(express.json());
@@ -550,7 +528,7 @@ app.use((error, req, res, next) => {
       error: error.toJSON()
     });
   }
-  
+
   // 其他错误
   res.status(500).json({
     success: false,
@@ -562,10 +540,10 @@ app.use((error, req, res, next) => {
 app.get('/api/account/:id', async (req, res, next) => {
   try {
     const account = await findAccount(req.params.id);
-    
+
     // 使用运行时语言
     I18nError.assert(account, 'account.notFound', req.locale, 404);
-    
+
     res.json({ success: true, data: account });
   } catch (error) {
     next(error);
@@ -576,7 +554,7 @@ app.post('/api/account/transfer', async (req, res, next) => {
   try {
     const { fromId, toId, amount } = req.body;
     const account = await findAccount(fromId);
-    
+
     I18nError.assert(account, 'account.notFound', req.locale, 404);
     I18nError.assert(
       account.balance >= amount,
@@ -585,7 +563,7 @@ app.post('/api/account/transfer', async (req, res, next) => {
       400,
       req.locale
     );
-    
+
     await transferMoney(fromId, toId, amount);
     res.json({ success: true });
   } catch (error) {
@@ -599,8 +577,8 @@ app.post('/api/account/transfer', async (req, res, next) => {
 #### Koa 完整集成
 
 ```javascript
-const Koa = require('koa');
-const { I18nError, Locale } = require('schema-dsl');
+import Koa from 'koa';
+import { I18nError, Locale } from 'schema-dsl/pure';
 
 const app = new Koa();
 
@@ -640,9 +618,9 @@ app.use(async (ctx, next) => {
 app.use(async (ctx) => {
   if (ctx.path === '/api/admin/users' && ctx.method === 'GET') {
     const user = await getCurrentUser(ctx);
-    
+
     I18nError.assert(user.role === 'admin', 'user.noPermission', ctx.locale, 403);
-    
+
     ctx.body = { success: true, data: await getUsers() };
   }
 });
@@ -653,8 +631,8 @@ app.use(async (ctx) => {
 #### 原生 Node.js HTTP Server
 
 ```javascript
-const http = require('http');
-const { I18nError, Locale } = require('schema-dsl');
+import http from 'http';
+import { I18nError, Locale } from 'schema-dsl/pure';
 
 // 配置语言包
 Locale.addLocale('zh-CN', {
@@ -668,11 +646,11 @@ const server = http.createServer((req, res) => {
   try {
     // 提取语言
     const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
-    
+
     // 业务逻辑
     const order = getOrder(req.url);
     I18nError.assert(order && order.paid, 'order.notPaid', locale, 400);
-    
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ success: true, data: order }));
   } catch (error) {
@@ -697,7 +675,7 @@ server.listen(3000);
 #### TypeScript 支持
 
 ```typescript
-import { I18nError, Locale } from 'schema-dsl';
+import { I18nError, Locale } from 'schema-dsl/pure';
 
 // 类型安全的语言包配置
 interface ErrorMessages {
@@ -729,9 +707,9 @@ function handleError(error: unknown): void {
 // 业务函数
 async function getAccount(id: string): Promise<Account> {
   const account = await findAccount(id);
-  
+
   I18nError.assert(account, 'account.notFound', { id }, 404);
-  
+
   return account;
 }
 ```
@@ -780,9 +758,9 @@ try {
 
 ```javascript
 try {
-  I18nError.throw('account.insufficientBalance', 
-    { balance: 50, required: 100 }, 
-    400, 
+  I18nError.throw('account.insufficientBalance',
+    { balance: 50, required: 100 },
+    400,
     'zh-CN'
   );
 } catch (error) {
@@ -810,7 +788,7 @@ try {
     if (error.is('account.notFound')) {
       console.log('账户不存在错误');
     }
-    
+
     // 使用数字 code 判断（v1.1.5+）
     if (error.is(40001)) {
       console.log('账户不存在错误（通过数字码判断）');
@@ -845,7 +823,7 @@ I18nError.throw('account.notFound', 'zh-CN');  // 使用中文
 
 #### Q2: 字符串格式和对象格式有什么区别？
 
-**A**: 
+**A**:
 
 | 格式 | 优势 | 适用场景 |
 |------|------|---------|
@@ -892,16 +870,16 @@ I18nError.throw('account.insufficientBalance', {
 
 ---
 
-#### Q4: 与 dsl.if 的 message() 有什么区别？
+#### Q4: 与 s.if 的 message() 有什么区别？
 
-**A**: 
+**A**:
 
-- `dsl.if().message()`: 用于**数据验证错误**（Schema 验证）
+- `s.if().message()`: 用于**数据验证错误**（Schema 验证）
 - `I18nError`: 用于**业务逻辑错误**（API 业务逻辑）
 
 ```javascript
-// dsl.if - 数据验证
-dsl.if(d => !d).message('user.notFound').assert(user);
+// s.if - 数据验证
+s.if(d => !d).message('user.notFound').assert(user);
 
 // I18nError - 业务逻辑
 I18nError.assert(user.role === 'admin', 'user.noPermission');
@@ -910,9 +888,9 @@ I18nError.assert(user.role === 'admin', 'user.noPermission');
 **可以混合使用**:
 ```javascript
 function validateAndProcess(user) {
-  // 步骤1：数据验证（使用 dsl.if）
-  dsl.if(d => !d).message('user.notFound').assert(user);
-  
+  // 步骤1：数据验证（使用 s.if）
+  s.if(d => !d).message('user.notFound').assert(user);
+
   // 步骤2：业务逻辑验证（使用 I18nError）
   I18nError.assert(user.role === 'admin', 'user.noPermission');
 }
@@ -922,10 +900,10 @@ function validateAndProcess(user) {
 
 #### Q5: 如何获取所有可用语言？
 
-**A**: 
+**A**:
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 const locales = Locale.getAvailableLocales();
 console.log(locales);  // ['en-US', 'zh-CN', 'ja-JP', ...]
@@ -968,13 +946,13 @@ async function apiCall() {
 
 #### Q7: 默认语言是什么？如何修改？
 
-**A**: 
+**A**:
 
 - **默认语言**: `'en-US'`（英文）
-- **修改方式**: 
+- **修改方式**:
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 // 启动时按应用需要设置默认语言
 Locale.setLocale('zh-CN');
@@ -997,7 +975,7 @@ I18nError.throw('custom.error');
 // message: 'custom.error'（原样返回）
 ```
 
-**建议**: 
+**建议**:
 1. 使用 TypeScript 定义错误 key 类型，避免拼写错误
 2. 在开发环境检查是否所有错误 key 都已配置
 
@@ -1005,7 +983,7 @@ I18nError.throw('custom.error');
 
 #### Q9: 支持哪些内置语言？
 
-**A**: 
+**A**:
 
 | 语言代码 | 语言名称 | 支持状态 |
 |---------|---------|---------|
@@ -1021,10 +999,10 @@ I18nError.throw('custom.error');
 
 #### Q10: 如何在日志中记录错误详情？
 
-**A**: 
+**A**:
 
 ```javascript
-const winston = require('winston');
+import winston from 'winston';
 
 app.use((error, req, res, next) => {
   if (error instanceof I18nError) {
@@ -1040,7 +1018,7 @@ app.use((error, req, res, next) => {
       method: req.method,
       ip: req.ip
     });
-    
+
     return res.status(error.statusCode).json(error.toJSON());
   }
   next(error);
@@ -1058,10 +1036,10 @@ app.use((error, req, res, next) => {
 schema-dsl 验证返回的错误对象结构：
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
-  username: 'string:3-32!'.label('用户名')
+const schema = s({
+  username: s('string:3-32!').label('用户名')
 });
 
 const result = validate(schema, { username: 'ab' });
@@ -1084,9 +1062,9 @@ const result = validate(schema, { username: 'ab' });
 ### 嵌套对象错误
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   user: {
     profile: {
       email: 'email!'
@@ -1110,9 +1088,9 @@ console.log(result.errors[0].message); // '邮箱必须是有效的邮箱地址'
 ### 数组项错误
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   items: 'array<string:3->!'
 });
 
@@ -1131,12 +1109,11 @@ console.log(result.errors[0].path); // 'items/0'
 ### 单字段定制
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // 使用 String 扩展定制消息
-const schema = dsl({
-  username: 'string:3-32!'
-    .label('用户名')
+const schema = s({
+  username: s('string:3-32!').label('用户名')
     .messages({
       'min': '太短了！至少要3个字符'
     })
@@ -1146,11 +1123,10 @@ const schema = dsl({
 ### 多规则定制
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
-  email: 'email!'
-    .label('邮箱地址')
+const schema = s({
+  email: s('email!').label('邮箱地址')
     .messages({
       'format': '邮箱格式不对哦',
       'required': '邮箱不能为空'
@@ -1161,18 +1137,16 @@ const schema = dsl({
 ### 对象级定制
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
-  username: 'string:3-32!'
-    .label('用户名')
+const schema = s({
+  username: s('string:3-32!').label('用户名')
     .messages({
       'min': '{{#label}}至少{{#limit}}个字符',
       'max': '{{#label}}最多{{#limit}}个字符'
     }),
-  
-  email: 'email!'
-    .label('邮箱')
+
+  email: s('email!').label('邮箱')
     .messages({
       'format': '{{#label}}格式无效'
     })
@@ -1182,7 +1156,7 @@ const schema = dsl({
 ### 全局定制
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 // 设置全局消息
 Locale.setMessages({
@@ -1237,7 +1211,7 @@ Locale.addLocale('zh-CN', {
 });
 
 // Schema
-const schema = dsl({
+const schema = s({
   username: 'string!' // 自动查找 label.username
 });
 
@@ -1247,11 +1221,10 @@ const schema = dsl({
 ### 自定义验证错误
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
-  username: 'string:3-32!'
-    .custom((value) => {
+const schema = s({
+  username: s('string:3-32!').custom((value) => {
       if (value.includes('forbidden')) {
         return '内容包含禁止的词语';
       }
@@ -1268,15 +1241,15 @@ const schema = dsl({
 ### 嵌套对象验证
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   user: {
     name: 'string:1-100!',
     address: {
-      country: 'string!'.label('国家'),
-      city: 'string!'.label('城市'),
-      street: 'string!'.label('街道')
+      country: s('string!').label('国家'),
+      city: s('string!').label('城市'),
+      street: s('string!').label('街道')
     }
   }
 });
@@ -1299,11 +1272,10 @@ const result = validate(schema, {
 ### 数组验证
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
-  items: 'array:1-<string:3->!'
-    .label('商品列表')
+const schema = s({
+  items: s('array:1-<string:3->!').label('商品列表')
 });
 
 const result = validate(schema, {
@@ -1354,15 +1326,15 @@ console.log(result.errors[0].path); // 'items/0'
 ### Express中间件
 
 ```javascript
-const { dsl, Validator } = require('schema-dsl');
+import { s, Validator } from 'schema-dsl/pure';
 
 // 验证中间件
 function validateBody(schema) {
   const validator = new Validator();
-  
+
   return (req, res, next) => {
     const result = validator.validate(schema, req.body);
-    
+
     if (!result.valid) {
       return res.status(400).json({
         success: false,
@@ -1376,20 +1348,20 @@ function validateBody(schema) {
         }))
       });
     }
-    
+
     // 验证通过，继续处理
     next();
   };
 }
 
 // 使用示例
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   password: 'string:8-64!'
 });
 
-app.post('/api/users', 
+app.post('/api/users',
   validateBody(userSchema),
   async (req, res) => {
     const user = await createUser(req.body);
@@ -1401,14 +1373,14 @@ app.post('/api/users',
 ### Koa中间件
 
 ```javascript
-const { dsl, Validator } = require('schema-dsl');
+import { s, Validator } from 'schema-dsl/pure';
 
 function validateBody(schema) {
   const validator = new Validator();
-  
+
   return async (ctx, next) => {
     const result = validator.validate(schema, ctx.request.body);
-    
+
     if (!result.valid) {
       ctx.status = 400;
       ctx.body = {
@@ -1423,16 +1395,16 @@ function validateBody(schema) {
       };
       return;
     }
-    
+
     await next();
   };
 }
 
 // 使用示例
-const registerSchema = dsl({
-  username: 'string:3-32!'.username(),
+const registerSchema = s({
+  username: s('string:3-32!').username(),
   email: 'email!',
-  password: 'string!'.password('strong')
+  password: s('string!').password('strong')
 });
 
 router.post('/register', validateBody(registerSchema), async (ctx) => {
@@ -1451,19 +1423,19 @@ import React, { useState } from 'react';
 
 function RegisterForm() {
   const [errors, setErrors] = useState({});
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      
+
       const data = await response.json();
-      
+
       if (!data.success && data.code === 'VALIDATION_ERROR') {
         // 将错误数组转为对象
         const errorMap = {};
@@ -1472,12 +1444,12 @@ function RegisterForm() {
         });
         setErrors(errorMap);
       }
-      
+
     } catch (error) {
       console.error(error);
     }
   };
-  
+
   return (
     <form onSubmit={handleSubmit}>
       <div>
@@ -1486,14 +1458,14 @@ function RegisterForm() {
           <span className="error">{errors.username}</span>
         )}
       </div>
-      
+
       <div>
         <input name="email" type="email" />
         {errors.email && (
           <span className="error">{errors.email}</span>
         )}
       </div>
-      
+
       <button type="submit">注册</button>
     </form>
   );
@@ -1511,14 +1483,14 @@ function RegisterForm() {
         {{ errors.username }}
       </span>
     </div>
-    
+
     <div>
       <input v-model="form.email" type="email" />
       <span v-if="errors.email" class="error">
         {{ errors.email }}
       </span>
     </div>
-    
+
     <button type="submit">注册</button>
   </form>
 </template>
@@ -1542,16 +1514,16 @@ export default {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.form)
         });
-        
+
         const data = await response.json();
-        
+
         if (!data.success && data.code === 'VALIDATION_ERROR') {
           this.errors = data.errors.reduce((acc, err) => {
             acc[err.field] = err.message;
             return acc;
           }, {});
         }
-        
+
       } catch (error) {
         console.error(error);
       }
@@ -1572,7 +1544,7 @@ app.post('/api/register', async (req, res) => {
   const result = await registerSchema.validate(req.body, {
     abortEarly: false
   });
-  
+
   if (!result.isValid) {
     // 记录验证错误
     logger.warn('用户注册验证失败', {
@@ -1580,13 +1552,13 @@ app.post('/api/register', async (req, res) => {
       errors: result.errors,
       data: req.body
     });
-    
+
     return res.status(400).json({
       success: false,
       errors: result.errors
     });
   }
-  
+
   // 继续处理
 });
 ```
@@ -1594,7 +1566,7 @@ app.post('/api/register', async (req, res) => {
 ### 结构化日志
 
 ```javascript
-const logger = require('winston');
+import logger from 'winston';
 
 function logValidationError(req, result) {
   logger.warn({
@@ -1622,16 +1594,16 @@ function logValidationError(req, result) {
 ### 1. 使用 label 让错误消息更清晰
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // ✅ 推荐：使用 label
-const schema = dsl({
-  username: 'string:3-32!'.label('用户名')
+const schema = s({
+  username: s('string:3-32!').label('用户名')
 });
 // 错误消息会包含"用户名"标签
 
 // ❌ 不推荐：不使用 label
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!'
 });
 // 错误消息只显示字段名 "username"
@@ -1640,12 +1612,11 @@ const schema = dsl({
 ### 2. 提供友好的中文错误消息
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // ✅ 推荐：自定义中文消息
-const schema = dsl({
-  username: 'string:3-32!'
-    .label('用户名')
+const schema = s({
+  username: s('string:3-32!').label('用户名')
     .messages({
       'minLength': '{{#label}}至少需要{{#limit}}个字符',
       'maxLength': '{{#label}}最多{{#limit}}个字符'
@@ -1653,7 +1624,7 @@ const schema = dsl({
 });
 
 // ❌ 不推荐：使用默认英文消息
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!'
 });
 ```
@@ -1661,12 +1632,11 @@ const schema = dsl({
 ### 3. 使用自定义验证实现业务逻辑
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // ✅ 推荐：返回错误消息字符串
-const schema = dsl({
-  username: 'string:3-32!'
-    .custom((value) => {
+const schema = s({
+  username: s('string:3-32!').custom((value) => {
       if (value === 'admin') {
         return '用户名已被占用';
       }
@@ -1734,7 +1704,7 @@ if (!result.valid) {
 module.exports = {
   // 字符串格式（向后兼容）
   'user.notFound': '用户不存在',
-  
+
   // 对象格式（v1.1.5 新增）✨ - 使用数字错误码
   'account.notFound': {
     code: 40001,
@@ -1753,10 +1723,10 @@ module.exports = {
 
 **使用示例**:
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 try {
-  dsl.error.throw('account.notFound');
+  s.error.throw('account.notFound');
 } catch (error) {
   console.log(error.originalKey);  // 'account.notFound'
   console.log(error.code);         // 40001 ✨ 数字错误码
@@ -1772,7 +1742,7 @@ try {
 
 ```javascript
 try {
-  dsl.error.throw('account.notFound');
+  s.error.throw('account.notFound');
 } catch (error) {
   error.originalKey  // 'account.notFound' (原始 key)
   error.code         // 40001 (数字错误码)
@@ -1816,7 +1786,7 @@ switch (error.code) {
 
 ```javascript
 try {
-  dsl.error.throw('account.notFound');
+  s.error.throw('account.notFound');
 } catch (error) {
   // 两种方式都可以
   if (error.is('account.notFound')) { }  // ✅ 使用 originalKey
@@ -1848,7 +1818,7 @@ const json = error.toJSON();
 'user.notFound': '用户不存在'
 
 // 自动转换为对象
-dsl.error.throw('user.notFound');
+s.error.throw('user.notFound');
 // error.code = 'user.notFound' (使用 key 作为 code)
 // error.originalKey = 'user.notFound'
 // error.message = '用户不存在'
@@ -1875,7 +1845,7 @@ dsl.error.throw('user.notFound');
 ```javascript
 // 错误码规范（5位数字）
 // 4xxxx - 客户端错误
-// 5xxxx - 业务逻辑错误  
+// 5xxxx - 业务逻辑错误
 // 6xxxx - 系统错误
 
 'account.notFound': {
@@ -1978,12 +1948,12 @@ function handleError(error) {
 
 ## 对应示例文件
 
-**示例入口**: [error-handling.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/error-handling.ts)  
+**示例入口**: [error-handling.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/error-handling.ts)
 **说明**: 覆盖 `validate()` 产生的字段错误、`I18nError` 业务错误对象、`toJSON()` 输出与错误码判断。
 
 ---
 
-**最后更新**: 2026-05-08  
+**最后更新**: 2026-05-08
 **版本**: v1.1.5
 
 

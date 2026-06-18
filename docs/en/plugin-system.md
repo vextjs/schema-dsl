@@ -1,9 +1,13 @@
-# plug-in system
+# Plugin Manager (advanced)
 
 > **Update**: 2026-05-01
 > **Status**: ✅ Stable
 
 ---
+
+This page is about `PluginManager`: lifecycle, hooks, install/uninstall, and integration orchestration.
+
+If your goal is only to add a reusable type, factory, or builder method, start with [Extension Overview](extensions-overview.md), [Custom DSL Types](plugin-type-registration.md), [Custom s.xxx() Factories](custom-factories.md), or [Custom Chain Methods](custom-chain-methods.md). `PluginManager` is the advanced layer for packaging and coordinating those capabilities.
 
 ## Overview
 
@@ -15,7 +19,7 @@
 - Expose plugin registry and hook table through `context`
 
 > **Important Note**
-> `PluginManager` itself will not automatically connect to the execution processes of `dsl()`, `Validator`, and various Exporters.
+> `PluginManager` itself will not automatically connect to the execution processes of `s()`, `Validator`, and various Exporters.
 > If you wish to run certain hooks during the validation, compilation or export phases, `pluginManager.runHook(...)` needs to be called explicitly by your integration code.
 
 ---
@@ -23,8 +27,8 @@
 ## quick start
 
 ```javascript
-const { PluginManager } = require('schema-dsl');
-const schemaDsl = require('schema-dsl');
+import { PluginManager } from 'schema-dsl/pure';
+import * as schemaDsl from 'schema-dsl/pure';
 
 const pluginManager = new PluginManager();
 
@@ -53,7 +57,7 @@ pluginManager.uninstall('my-plugin', schemaDsl);
 ## Plug-in object structure
 
 ```javascript
-module.exports = {
+export default {
   // required
   name: 'plugin-name',
   install(core, options, context) {
@@ -80,7 +84,7 @@ module.exports = {
 
 | Parameter | Description |
 |---|---|
-| `core` | The core object passed to `install()` / `uninstall()`, usually the result of `require('schema-dsl')` or your own integration object |
+| `core` | The core object passed to `install()` / `uninstall()`, usually the result of `import * as schemaDsl from 'schema-dsl/pure'` or your own integration object |
 | `options` | Merged configuration during installation: `{...plugin.options,...installOptions }` |
 | `context.plugins` | `Map<string, Plugin>` of currently registered plugins |
 | `context.hooks` | `Map<string, Function[]>` of the current hook registry |
@@ -342,9 +346,9 @@ The current warehouse has restored the v1 style official plug-in sub-path entry,
 - `schema-dsl/plugins/custom-type-example`
 
 ```javascript
-const { PluginManager } = require('schema-dsl');
-const schemaDsl = require('schema-dsl');
-const customFormat = require('schema-dsl/plugins/custom-format');
+import { PluginManager } from 'schema-dsl/pure';
+import * as schemaDsl from 'schema-dsl/pure';
+import customFormat from 'schema-dsl/plugins/custom-format';
 
 const pluginManager = new PluginManager();
 pluginManager.register(customFormat);
@@ -352,8 +356,8 @@ pluginManager.install(schemaDsl, 'custom-format');
 ```
 
 ```typescript
-import { PluginManager } from 'schema-dsl';
-import * as schemaDsl from 'schema-dsl';
+import { PluginManager } from 'schema-dsl/pure';
+import * as schemaDsl from 'schema-dsl/pure';
 import customTypeExample from 'schema-dsl/plugins/custom-type-example';
 
 const pluginManager = new PluginManager();

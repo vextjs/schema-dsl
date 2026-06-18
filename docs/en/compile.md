@@ -18,9 +18,9 @@ validator.compile(schema, cacheKey?)
 Returns the AJV validation function, which can be called directly like a normal function; the execution result is `true / false`, and the error details are hung on `validate.errors`.
 
 ```javascript
-const { Validator, dsl } = require('schema-dsl');
+import { Validator, s } from 'schema-dsl/pure';
 const validator = new Validator();
-const schema = dsl({ name: 'string!' });
+const schema = s({ name: 'string!' });
 const validate = validator.compile(schema, 'user-schema');
 console.log(validate({ name: 'Rocky' }));
 ```

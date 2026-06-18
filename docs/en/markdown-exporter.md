@@ -5,15 +5,6 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Quick Start](#quick-start)
-- [API Reference](#api-reference)
-- [Usage example](#usage-example)
-- [Multi-language support](#multi-language-support)
-- [Custom options](#custom-options)
-
----
 
 ## quick start
 
@@ -26,10 +17,10 @@ npm install schema-dsl
 ### Basic usage
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 //define Schema
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:18-120'
@@ -99,7 +90,7 @@ Export JSON Schema to Markdown document.
 ### Example 1: Basic usage
 
 ```javascript
-const schema = dsl({
+const schema = s({
   name: 'string:1-50!',
   email: 'email!'
 });
@@ -114,10 +105,10 @@ console.log(markdown);
 ### Example 2: Using tags
 
 ```javascript
-const schema = dsl({
-  name: 'string:1-50!'.label('name'),
-  email: 'email!'.label('email address'),
-  age: 'number:18-120'.label('age')
+const schema = s({
+  name: s('string:1-50!').label('name'),
+  email: s('email!').label('email address'),
+  age: s('number:18-120').label('age')
 });
 
 const markdown = exporters.MarkdownExporter.export(schema, {
@@ -137,15 +128,15 @@ const markdown = exporters.MarkdownExporter.export(schema, {
 ### Example 3: Complex Schema
 
 ```javascript
-const productSchema = dsl({
-  'id': 'string:24!'.label('Product ID'),
-  'name': 'string:1-100!'.label('product name'),
-  'price': 'number:0.01-!'.label('Price (USD)'),
-  'stock': 'integer:0-!'.label('Stock quantity'),
-  'category': 'electronics|clothing|books|other!'.label('category'),
-  'tags': 'array:1-10<string:1-20>'.label('label'),
-  'description': 'string:500'.label('Product Description'),
-  'active': 'boolean'.label('Whether it is on the shelves')
+const productSchema = s({
+  'id': s('string:24!').label('Product ID'),
+  'name': s('string:1-100!').label('product name'),
+  'price': s('number:0.01-!').label('Price (USD)'),
+  'stock': s('integer:0-!').label('Stock quantity'),
+  'category': s('electronics|clothing|books|other!').label('category'),
+  'tags': s('array:1-10<string:1-20>').label('label'),
+  'description': s('string:500').label('Product Description'),
+  'active': s('boolean').label('Whether it is on the shelves')
 });
 
 const markdown = exporters.MarkdownExporter.export(productSchema, {
@@ -243,7 +234,7 @@ const markdown = exporters.MarkdownExporter.export(schema, {
 ### save as file
 
 ```javascript
-const fs = require('fs');
+import fs from 'fs';
 
 const markdown = exporters.MarkdownExporter.export(schema, {
   title: 'API Documentation',
@@ -286,9 +277,9 @@ console.log('Markdown document has been generated: API.md');
 ### Combine with other exporters
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
@@ -322,12 +313,11 @@ console.log('\nPostgreSQL DDL:\n', pgDDL);
 
 ### Q: How to customize field descriptions?
 
-A: Use `.label()` for the display name and `.description()` for the field note. When both are present, Markdown output includes both pieces of metadata.
+A: Use `.label()s(` for the display name and `).description()` for the field note. When both are present, Markdown output includes both pieces of metadata.
 
 ```javascript
-const schema = dsl({
-  email: 'email!'
-    .label('Email Address')
+const schema = s({
+  email: s('email!').label('Email Address')
     .description('Primary login email')
 });
 ```
@@ -353,23 +343,23 @@ A: The current version mainly supports flat structure. Nested objects appear as 
 ## Complete example
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
-const fs = require('fs');
+import { s, exporters } from 'schema-dsl/pure';
+import fs from 'fs';
 
 //Define user registration Schema
-const userRegistrationSchema = dsl({
+const userRegistrationSchema = s({
   //Basic information
-  'username': 'string:3-32!'.label('username'),
-  'email': 'email!'.label('email address'),
-  'password': 'string:8-32!'.label('password'),
+  'username': s('string:3-32!').label('username'),
+  'email': s('email!').label('email address'),
+  'password': s('string:8-32!').label('password'),
 
   // personal information
-  'realName': 'string:1-50'.label('real name'),
-  'age': 'integer:18-120'.label('age'),
-  'gender': 'male|female|other'.label('gender'),
+  'realName': s('string:1-50').label('real name'),
+  'age': s('integer:18-120').label('age'),
+  'gender': s('male|female|other').label('gender'),
 
   // other
-  'acceptTerms': 'boolean!'.label('Agree to the terms')
+  'acceptTerms': s('boolean!').label('Agree to the terms')
 });
 
 //Generate Chinese document

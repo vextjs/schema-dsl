@@ -37,10 +37,10 @@
 **Note**: The value must be greater than the specified value (excluding the boundary value itself)
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 //Basic usage
-const schema = dsl({ value: 'number:>0' });
+const schema = s({ value: 'number:>0' });
 
 validate(schema, { value: 1 });    // ✅ true
 validate(schema, { value: 0.1 });  // ✅ true
@@ -48,17 +48,17 @@ validate(schema, { value: 0 }); // ❌ false (0 does not satisfy >0)
 validate(schema, { value: -1 });   // ❌ false
 
 // Support decimals
-const schema2 = dsl({ value: 'number:>0.5' });
+const schema2 = s({ value: 'number:>0.5' });
 validate(schema2, { value: 0.6 }); // ✅ true
 validate(schema2, { value: 0.5 }); // ❌ false (0.5 does not satisfy >0.5)
 
 // Support negative numbers
-const schema3 = dsl({ value: 'number:>-10' });
+const schema3 = s({ value: 'number:>-10' });
 validate(schema3, { value: -9 });  // ✅ true
 validate(schema3, { value: -10 }); // ❌ false
 
 //Required for cooperation
-const schema4 = dsl({ value: 'number:>0!' });
+const schema4 = s({ value: 'number:>0!' });
 validate(schema4, { value: 1 });   // ✅ true
 validate(schema4, {}); // ❌ false (required)
 ```
@@ -75,14 +75,14 @@ validate(schema4, {}); // ❌ false (required)
 
 ```javascript
 //Basic usage
-const schema = dsl({ age: 'number:>=18' });
+const schema = s({ age: 'number:>=18' });
 
 validate(schema, { age: 18 }); // ✅ true (including 18)
 validate(schema, { age: 19 });  // ✅ true
 validate(schema, { age: 17 });  // ❌ false
 
 // Practical application: age validation
-const schema2 = dsl({ age: 'number:>=18!' });
+const schema2 = s({ age: 'number:>=18!' });
 
 validate(schema2, { age: 20 }); // ✅ true
 validate(schema2, { age: 17 }); // ❌ false
@@ -101,7 +101,7 @@ validate(schema2, {}); // ❌ false (required)
 
 ```javascript
 //Basic usage
-const schema = dsl({ value: 'number:<100' });
+const schema = s({ value: 'number:<100' });
 
 validate(schema, { value: 99 });   // ✅ true
 validate(schema, { value: 99.9 }); // ✅ true
@@ -109,7 +109,7 @@ validate(schema, { value: 100 }); // ❌ false (100 does not satisfy <100)
 validate(schema, { value: 101 });  // ❌ false
 
 // Practical application: upper temperature limit
-const schema2 = dsl({ temperature: 'number:<100' });
+const schema2 = s({ temperature: 'number:<100' });
 
 validate(schema2, { temperature: 99.9 }); // ✅ true
 validate(schema2, { temperature: 100 });  // ❌ false
@@ -127,14 +127,14 @@ validate(schema2, { temperature: 100 });  // ❌ false
 
 ```javascript
 //Basic usage
-const schema = dsl({ score: 'number:<=100' });
+const schema = s({ score: 'number:<=100' });
 
 validate(schema, { score: 100 }); // ✅ true (including 100)
 validate(schema, { score: 99 });  // ✅ true
 validate(schema, { score: 101 }); // ❌ false
 
 // Practical application: scoring system
-const schema2 = dsl({ score: 'number:<=100!' });
+const schema2 = s({ score: 'number:<=100!' });
 
 validate(schema2, { score: 100 }); // ✅ true
 validate(schema2, { score: 101 }); // ❌ false
@@ -152,14 +152,14 @@ validate(schema2, { score: 101 }); // ❌ false
 
 ```javascript
 //Basic usage
-const schema = dsl({ level: 'number:=5' });
+const schema = s({ level: 'number:=5' });
 
 validate(schema, { level: 5 });  // ✅ true
 validate(schema, { level: 4 });  // ❌ false
 validate(schema, { level: 6 });  // ❌ false
 
 //Supports exact decimal matching
-const schema2 = dsl({ price: 'number:=99.99' });
+const schema2 = s({ price: 'number:=99.99' });
 
 validate(schema2, { price: 99.99 }); // ✅ true
 validate(schema2, { price: 99.98 }); // ❌ false
@@ -186,7 +186,7 @@ validate(schema2, { price: 100 });   // ❌ false
 ### Scenario 1: User Registration - Age Restriction
 
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:>=18!', // Must be over 18 years old
@@ -214,7 +214,7 @@ validate(schema, {
 ### Scenario 2: E-commerce system - price validation
 
 ```javascript
-const schema = dsl({
+const schema = s({
   productName: 'string:1-100!',
   price: 'number:>0!', // price must be greater than 0
   discount: 'number:0-100' // Discount 0-100
@@ -239,7 +239,7 @@ validate(schema, {
 ### Scenario 3: Examination System - Scoring
 
 ```javascript
-const schema = dsl({
+const schema = s({
   studentId: 'string!',
   score: 'number:>=0!', // score ≥ 0
   bonus: 'number:<=20' // Extra points ≤ 20
@@ -263,7 +263,7 @@ validate(schema, {
 ### Scenario 4: Temperature Monitoring - Range Limitation
 
 ```javascript
-const schema = dsl({
+const schema = s({
   deviceId: 'string!',
   temperature: 'number:>0', // temperature > 0
   humidity: 'number:<=100' // Humidity ≤ 100
@@ -288,7 +288,7 @@ validate(schema, {
 ### Scenario 5: Game System - Level Validation
 
 ```javascript
-const schema = dsl({
+const schema = s({
   playerId: 'string!',
   level: 'number:=5!', // must be level 5
   experience: 'number:>=1000' // experience >= 1000
@@ -316,7 +316,7 @@ validate(schema, {
 
 ```javascript
 // DSL → JSON Schema
-dsl({ value: 'number:>0' })
+s({ value: 'number:>0' })
 // Generate:
 {
   type: 'object',
@@ -329,7 +329,7 @@ dsl({ value: 'number:>0' })
 }
 
 // DSL → JSON Schema
-dsl({ age: 'number:>=18' })
+s({ age: 'number:>=18' })
 // Generate:
 {
   type: 'object',
@@ -349,7 +349,7 @@ dsl({ age: 'number:>=18' })
 All comparison operators also apply to `integer` types:
 
 ```javascript
-const schema = dsl({
+const schema = s({
   count: 'integer:>0', // integer and greater than 0
   level: 'integer:>=1', // Integer and greater than or equal to 1
   maxValue: 'integer:<=100' // Integer and less than or equal to 100
@@ -376,17 +376,17 @@ All original syntax remains unchanged, no breaking changes:
 
 ```javascript
 // ✅ The original syntax continues to be valid
-dsl({ age: 'number:18-120' }) // range
-dsl({ age: 'number:18-' }) // minimum value
-dsl({ score: 'number:-100' }) // Maximum value
-dsl({ count: 'number:100' }) // Maximum value
+s({ age: 'number:18-120' }) // range
+s({ age: 'number:18-' }) // minimum value
+s({ score: 'number:-100' }) // Maximum value
+s({ count: 'number:100' }) // Maximum value
 
 // ✅ Added new syntax
-dsl({ age: 'number:>=18' }) // Greater than or equal to
-dsl({ value: 'number:>0' }) // Greater than
-dsl({ score: 'number:<=100' }) // Less than or equal to
-dsl({ temp: 'number:<100' }) // less than
-dsl({ level: 'number:=5' }) // equal to
+s({ age: 'number:>=18' }) // Greater than or equal to
+s({ value: 'number:>0' }) // Greater than
+s({ score: 'number:<=100' }) // Less than or equal to
+s({ temp: 'number:<100' }) // less than
+s({ level: 'number:=5' }) // equal to
 ```
 
 ---

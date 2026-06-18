@@ -1,47 +1,31 @@
 # Frequently Asked Questions (FAQ)
 
-> **Update time**: 2026-06-10
+> **Update time**: 2026-06-18
 
 
 ---
 
-## 📑 Table of Contents
-
-- [Basic question](#basic-questions)
-- [DSL syntax issue](#dsl-syntax-issues)
-- [Validation Issue](#validation-issues)
-- [Performance issue](#performance-issues)
-- [Design Concept](#design-concept)
-- [Error handling](#error-handling)
-- [Database export](#database-export)
-- [TypeScript Support](#typescript-support)
-
----
 
 ## Basic questions
 
-### Q: What is the difference between schema-dsl and Joi and Yup?
+### Q: What is schema-dsl designed for?
 
-**A**: schema-dsl uses DSL syntax, which is more concise:
+**A**: schema-dsl is designed for validation rules that need to stay compact, serializable, and easy to share between configuration, APIs, front-end forms, and back-end services.
 
-```javascript
-// schema-dsl - concise
-const schema = dsl({
+```typescript
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
   username: 'string:3-32!',
   email: 'email!'
-});
-
-// Joi - tedious
-const schema = Joi.object({
-  username: Joi.string().min(3).max(32).required(),
-  email: Joi.string().email().required()
 });
 ```
 
 **Main Differences**:
 - More concise DSL syntax
-- Support database Schema export
-- Built-in common authenticators (username, password, phone)
+- Optional builder chains when a field needs metadata or custom constraints
+- Database Schema export support
+- Built-in common validators such as username, password, phone, and email
 - Based on JSON Schema standard
 
 ---
@@ -54,7 +38,7 @@ npm install schema-dsl
 
 **Node.js version requirement**: `>=18.0.0`
 
-The current refactored version of TypeScript uses `Node.js >=18.0.0` as the only runtime baseline and no longer promises compatibility with older Node versions.
+The current version uses `Node.js >=18.0.0` as the runtime baseline and no longer promises compatibility with older Node versions.
 
 ---
 
@@ -63,19 +47,16 @@ The current refactored version of TypeScript uses `Node.js >=18.0.0` as the only
 **A**: Supported.
 
 ```javascript
-// CommonJS
-const { dsl, validate } = require('schema-dsl');
+// Recommended public entry since v2.1.0
+import { s, validate } from 'schema-dsl/pure';
 
-// ES Modules（named import）
-import { dsl, validate } from 'schema-dsl';
-
-// ES Modules（default import）
-import dslDefault from 'schema-dsl';
+const schema = s({ email: 'email!' });
+const result = validate(schema, { email: 'test@example.com' });
 ```
 
 ### Q: What language pack file formats are supported by i18n directory loading?
 
-**A**: Under **Node.js >= 18.0.0**, `dsl.config({ i18n: '/path/to/locales' })` supports:
+**A**: Under **Node.js >= 18.0.0**, `s.config({ i18n: '/path/to/locales' })` supports:
 
 - `.js` (CommonJS language pack)
 - `.cjs`
@@ -132,7 +113,9 @@ tags: 'array<string:1-20>' // Constrained string array
 **A**: Just nest directly:
 
 ```javascript
-const schema = dsl({
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
   user: {
     name: 'string!',
     address: {
@@ -147,31 +130,27 @@ const schema = dsl({
 
 ### Q: How to use String extension?
 
-**A**: After importing `schema-dsl` in JavaScript, it can be called directly in string chain by default; in TypeScript, for complete type hints, it is still recommended to use `dsl()` package for complex fields.
+**A**: String extension is an explicit compatibility/ergonomics path. New public examples use `schema-dsl/pure` + `s` by default, because it supports pure DSL strings, `s('...')`, and `s.xxx()` without installing methods on `String.prototype`.
 
-```javascript
-const schema = dsl({
-  email: 'email!'
+```typescript
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
+  email: s('email!')
     .label('email address')
     .messages({
       'required': '{{#label}} cannot be empty',
       'format': 'Please enter a valid {{#label}}'
     }),
 
-  username: 'string:3-32!'
+  username: s('string:3-32!')
     .pattern(/^[a-z0-9_]+$/)
     .label('username')
     .username('medium')
 });
-
-// If you need completely non-intrusive writing, you can uninstall it first and then wrap it with dsl().
-const { uninstallStringExtensions } = require('schema-dsl');
-uninstallStringExtensions();
-
-const safeSchema = dsl({
-  email: dsl('email!').label('email address')
-});
 ```
+
+If you intentionally want direct String chains, import the explicit String runtime/type entries described in [String Extensions](string-extensions.md).
 
 ---
 
@@ -183,11 +162,14 @@ const safeSchema = dsl({
 
 ```javascript
 // Method 1: Convenience function
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
+
+const schema = s({ email: 'email!' });
 const result = validate(schema, data);
 
 // Method 2: Validator instance
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
+
 const validator = new Validator();
 const result = validator.validate(schema, data);
 ```
@@ -225,9 +207,11 @@ const validator = new Validator({ allErrors: false });
 **A**: Use `.default()` method:
 
 ```javascript
-const schema = dsl({
-  status: 'string'.default('active'),
-  count: 'integer'.default(0)
+import { s, validate } from 'schema-dsl/pure';
+
+const schema = s({
+  status: s('string').default('active'),
+  count: s('integer').default(0)
 });
 
 const result = validate(schema, {});
@@ -241,25 +225,26 @@ console.log(result.data);
 
 ### Q: What is the performance of schema-dsl?
 
-**A**: The performance is good, **S3 nested scenes are faster than Zod (28%), and the fair comparison of invalid data is 89x** faster:
+**A**: The current benchmark should be read as project-local throughput evidence, not as a permanent marketing claim. The latest local run recorded:
 
-| scene | Schema-DSL | Zod | contrast |
-|------|-----------|-----|------|
-| S1 is simple and effective | **1.301M ops/s** | 1.305M ops/s | ≈ flat (difference <1%)|
-| S2 invalid (neither i18n)| **1.205M ops/s** | 13.49K ops/s | ✅ Fast **89x** |
-| S3 nesting works | **1.085M ops/s** | 847K ops/s | ✅ Fast **28%** |
-| Bottom Ajv (raw) | ~4.7M ops/s | — | underlying engine |
+| Scenario | schema-dsl throughput |
+|------|-----------|
+| S1 simple valid object | ~1.185M ops/s |
+| S2 invalid object without i18n formatting | ~1.178M ops/s |
+| S3 nested valid object | ~941K ops/s |
 
-**in conclusion**:
-- ✅ S3 nested scenes are faster than Zod (**28%**), S1 simple and effective scenes are the same; fair comparison of invalid data is faster **89x**
-- ✅ About **13x** faster than Joi (invalid data for fair comparison)
-- ✅ Built-in caching ensures zero parsing overhead for hot paths
+**Environment**: Node.js v20.20.2, Windows x64, run time 2026-06-18T08:49:22.365Z.
+
+**Conclusion**:
+- ✅ Hot-path validation is already in the million-ops/sec range on this local machine.
+- ✅ Built-in caching avoids repeated schema parsing on reused schema objects.
+- ✅ Treat these numbers as a regression baseline; rerun the benchmark when runtime, dependency, or schema complexity changes.
 
 ---
 
 ### Q: Why is the performance difference between valid/invalid data scenarios so big?
 
-**A**: Fair comparison (S2, neither does i18n formatting) schema-dsl is significantly faster than Zod (**89x**). The root cause of Zod's extreme slowness in invalid data scenarios is that its error collection uses exception driver (`try/catch` control flow). Each invalid field throws an Error. 4 error fields = 4 Error instance creations + 4 stack captures. schema-dsl is an exception-free collection path based on AJV, reaching 1.2M ops/s without formatting.
+**A**: Invalid-data throughput depends heavily on how errors are collected and formatted. schema-dsl keeps the hot validation path separate from localized message rendering, so the raw invalid-data benchmark can stay close to the valid-data benchmark. Once you enable custom formatting, i18n, or large nested error payloads, measure with your real schema and error output.
 
 ---
 
@@ -342,7 +327,7 @@ console.log(stats);
 **A**: Use `SchemaUtils.validateBatch()`:
 
 ```javascript
-const { SchemaUtils, Validator } = require('schema-dsl');
+import { SchemaUtils, Validator } from 'schema-dsl/pure';
 
 const validator = new Validator();
 const batch = SchemaUtils.validateBatch(schema, [data1, data2, data3], validator.getAjv());
@@ -388,13 +373,13 @@ console.log(batch.results[0].valid);
 6. **Front-end and back-end shared validation** - a set of rules, used by both ends
 
 ⚠️ **Unsuitable scene**:
-1. Absolute throughput is preferred and DSL dynamic capabilities are not required → Recommended **Ajv**
-2. TypeScript Strong Type Inference → Recommended **Zod**
-3. Static validation rules → Recommended **Zod**
+1. Absolute throughput is the only goal and DSL dynamic capabilities are not required
+2. You need a schema API that models every value constraint as static TypeScript types
+3. Validation rules are fully static and never need to be serialized, stored, or edited as configuration
 
 ---
 
-### Q: Why not make a compile-time library like Zod?
+### Q: Why not make schema-dsl purely compile-time?
 
 **A**: Because the core value will be lost:
 
@@ -402,11 +387,11 @@ console.log(batch.results[0].valid);
 ```javascript
 // ❌ Unable to read rules from database
 const rules = await db.findOne({ entity: 'user' });
-const schema = dsl(rules);
+const schema = s(rules);
 
 // ❌ Unable to multi-tenant dynamic rules
 function getTenantSchema(tenantId) {
-  return dsl(tenantConfig[tenantId]);
+  return s(tenantConfig[tenantId]);
 }
 
 // ❌ Cannot be transferred via API
@@ -418,7 +403,7 @@ res.json({ validationRules: rules });
 **RESERVED ABILITIES**:
 ```javascript
 // ✅ Fully dynamic
-const schema = dsl({
+const schema = s({
   username: `string:${config.min}-${config.max}!`
 });
 
@@ -440,7 +425,8 @@ Flexibility > Ease of use > Performance
 ```
 
 **Weigh the results**:
-- Gain: S3 nested scene is 28% faster than Zod, S1 is the same; invalid data fair comparison is 89x faster
+- Gain: compact, serializable rules that can be stored, transmitted, edited, and shared across runtime boundaries
+- Cost: TypeScript cannot refine every DSL constraint into exact static value types
 
 ---
 
@@ -451,8 +437,7 @@ Flexibility > Ease of use > Performance
 **A**: Use `.messages()` method:
 
 ```javascript
-username: 'string:3-32!'
-  .label('username')
+username: s('string:3-32!').label('username')
   .messages({
     'min': '{{#label}} is too short',
     'max': '{{#label}} is too long',
@@ -467,7 +452,7 @@ username: 'string:3-32!'
 **A**: Use `Locale` class:
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 //Add language pack
 Locale.addLocale('zh-CN', {
@@ -498,7 +483,7 @@ validator.validate(schema, data, { locale: 'zh-CN' });
 ### Q: How to export to MongoDB Schema?
 
 ```javascript
-const { exporters } = require('schema-dsl');
+import { exporters } from 'schema-dsl/pure';
 
 const exporter = new exporters.MongoDBExporter();
 const mongoSchema = exporter.export(schema);
@@ -529,8 +514,7 @@ const ddl = exporter.export('table_name', schema);
 **A**: Use `.description()`:
 
 ```javascript
-username: 'string:3-32!'
-  .description('User login name, can only contain letters and numbers')
+username: s('string:3-32!').description('User login name, can only contain letters and numbers')
 ```
 
 MySQL will generate `COMMENT` and PostgreSQL will generate `COMMENT ON COLUMN`.
@@ -541,14 +525,14 @@ MySQL will generate `COMMENT` and PostgreSQL will generate `COMMENT ON COLUMN`.
 
 ### Q: Does schema-dsl support TypeScript?
 
-**A**: Supported. The current more stable way to write TypeScript is to use the `dsl('...')` Builder API directly instead of relying on the String prototype extension:
+**A**: Supported. Since v2.1.0, public TypeScript examples prefer `schema-dsl/pure` + `s`: pure DSL strings for simple fields, `s('...')` for DSL seeds with builder hints, and `s.xxx()` factories for the strongest method discovery.
 
 ```typescript
-import { dsl, validate, Validator } from 'schema-dsl';
+import { s, validate, Validator } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
-  email: dsl('email!').label('Email address').error({
+  email: s('email!').label('Email address').error({
     required: 'Please enter your email address'
   })
 });
@@ -564,11 +548,11 @@ if (result.valid) {
 
 ### Q: How to write a more reliable chain prompt in TypeScript?
 
-**A**: It is recommended to always start the chain call from `dsl('...')`; this can be consistent with the current type declaration:
+**A**: Start the chain call from `s('...')` when you want to keep DSL syntax and still get builder-method hints:
 
 ```typescript
-const schema = dsl({
-  email: dsl('email!')
+const schema = s({
+  email: s('email!')
     .label('mailbox')
     .error({ format: 'Please enter a valid email address' })
 });

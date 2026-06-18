@@ -1,4 +1,4 @@
-import { dsl, validate } from '../../dist/index.js'
+import { s, validate } from '../../dist/pure.js'
 
 // ============================================================
 // JSON Schema basics — toSchema() vs toJsonSchema()
@@ -13,7 +13,7 @@ import { dsl, validate } from '../../dist/index.js'
 // 1. Field-level difference
 // ============================================================
 
-const emailField = dsl('email!')
+const emailField = s('email!')
   .label('Email Address')
   .description('Primary contact email')
   .error({ required: 'Email is required' })
@@ -39,10 +39,10 @@ console.log('json-schema-basics.clean.desc   =', cleanFieldSchema.description)  
 // 2. Object schema — required array and properties
 // ============================================================
 
-const userSchema = dsl({
-  email: dsl('email!').label('Email'),
-  age:   dsl('integer:18-100').label('Age'),
-  bio:   dsl('string:500').label('Bio'),
+const userSchema = s({
+  email: s('email!').label('Email'),
+  age:   s('integer:18-100').label('Age'),
+  bio:   s('string:500').label('Bio'),
 }) as any
 
 console.log('json-schema-basics.obj.type     =', userSchema.type)            // 'object'
@@ -55,7 +55,7 @@ console.log('json-schema-basics.obj.keys     =',
 // 3. Primitive string schema structure
 // ============================================================
 
-const usernameSchema = dsl('string:3-32!').toJsonSchema() as any
+const usernameSchema = s('string:3-32!').toJsonSchema() as any
 
 console.log('json-schema-basics.str.type     =', usernameSchema.type)         // 'string'
 console.log('json-schema-basics.str.minLen   =', usernameSchema.minLength)    // 3
@@ -65,7 +65,7 @@ console.log('json-schema-basics.str.maxLen   =', usernameSchema.maxLength)    //
 // 4. Number/integer schema structure
 // ============================================================
 
-const ageSchema = dsl('integer:0-150').toJsonSchema() as any
+const ageSchema = s('integer:0-150').toJsonSchema() as any
 
 console.log('json-schema-basics.int.type     =', ageSchema.type)   // 'integer'
 console.log('json-schema-basics.int.min      =', ageSchema.minimum) // 0
@@ -75,7 +75,7 @@ console.log('json-schema-basics.int.max      =', ageSchema.maximum) // 150
 // 5. Array schema structure
 // ============================================================
 
-const tagsSchema = dsl('array<string:1-50>').toJsonSchema() as any
+const tagsSchema = s('array<string:1-50>').toJsonSchema() as any
 
 console.log('json-schema-basics.arr.type     =', tagsSchema.type)             // 'array'
 console.log('json-schema-basics.arr.items    =', tagsSchema.items?.type)      // 'string'

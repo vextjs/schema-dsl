@@ -1,4 +1,4 @@
-import { SchemaUtils, ValidationError, Validator, dsl, validate, validateAsync } from '../../dist/index.js'
+import { SchemaUtils, ValidationError, Validator, s, validate, validateAsync } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`faq expectation failed: ${label}`)
@@ -13,9 +13,9 @@ function expect(label: string, condition: boolean): void {
 //     A: Use Validator with allErrors: true
 // ============================================================
 
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
-  email:    dsl('email!').label('Email address'),
+  email:    s('email!').label('Email address'),
   age:      'number:18-120',
 })
 
@@ -94,9 +94,9 @@ console.log('faq.compile.errors            =', Array.isArray(compiled.errors) ||
 //     A: Yes — default fills missing values; optional just skips
 // ============================================================
 
-const schemaWithDefault = dsl({
+const schemaWithDefault = s({
   name:  'string!',
-  theme: dsl('light|dark').default('light'),
+  theme: s('light|dark').default('light'),
 })
 
 const noTheme = validate(schemaWithDefault, { name: 'Alice' })
@@ -125,7 +125,7 @@ expect('allErrors is controlled by constructor', firstOnly.errors?.length === 1)
 //     A: top-level validate() smart-coerces by default; pass { coerce: false }.
 // ============================================================
 
-const numericSchema = dsl({ age: 'number:18-120!' })
+const numericSchema = s({ age: 'number:18-120!' })
 const coercedAge = validate(numericSchema, { age: '42' })
 const strictAge = validate(numericSchema, { age: '42' }, { coerce: false })
 

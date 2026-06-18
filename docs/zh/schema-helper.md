@@ -6,14 +6,6 @@
 
 ---
 
-## 📑 目录
-
-- [概述](#概述)
-- [快速开始](#快速开始)
-- [API 参考](#api-参考)
-- [实用示例](#实用示例)
-
----
 
 ## 概述
 
@@ -36,10 +28,10 @@
 ## 快速开始
 
 ```javascript
-const { SchemaHelper, dsl } = require('schema-dsl');
+import { SchemaHelper, s } from 'schema-dsl/pure';
 
 // 创建 Schema
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   profile: {
@@ -112,7 +104,7 @@ console.log(userSchema.properties.newField); // undefined
 扁平化嵌套 Schema。
 
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     name: 'string!',
     address: {
@@ -161,9 +153,9 @@ const required = SchemaHelper.extractRequiredFields(userSchema);
 比较两个 Schema 是否相同。
 
 ```javascript
-const schema1 = dsl({ name: 'string!' });
-const schema2 = dsl({ name: 'string!' });
-const schema3 = dsl({ name: 'string' });
+const schema1 = s({ name: 'string!' });
+const schema2 = s({ name: 'string!' });
+const schema3 = s({ name: 'string' });
 
 SchemaHelper.compareSchemas(schema1, schema2); // true
 SchemaHelper.compareSchemas(schema1, schema3); // false
@@ -213,11 +205,11 @@ SchemaHelper.isValidPropertyName('user name');    // false
 
 ```javascript
 // 无嵌套
-const simple = dsl({ name: 'string!' });
+const simple = s({ name: 'string!' });
 SchemaHelper.getSchemaComplexity(simple); // 0
 
 // 一层嵌套
-const nested = dsl({
+const nested = s({
   user: {
     name: 'string!'
   }
@@ -225,7 +217,7 @@ const nested = dsl({
 SchemaHelper.getSchemaComplexity(nested); // 1
 
 // 多层嵌套
-const deep = dsl({
+const deep = s({
   level1: {
     level2: {
       level3: 'string!'
@@ -262,7 +254,7 @@ const summary = SchemaHelper.summarizeSchema(userSchema);
 ### Schema 分析工具
 
 ```javascript
-const { SchemaHelper, dsl } = require('schema-dsl');
+import { SchemaHelper, s } from 'schema-dsl/pure';
 
 function analyzeSchema(schema, name = 'Schema') {
   console.log(`\n=== ${name} 分析 ===`);
@@ -290,7 +282,7 @@ function analyzeSchema(schema, name = 'Schema') {
 }
 
 // 使用
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   profile: {

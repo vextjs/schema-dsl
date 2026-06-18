@@ -9,5 +9,5 @@
 ## 对应示例文件
 
 **示例入口**: [api.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/api.ts)  
-**说明**: 以最小入口串起 `dsl()`、`validate()`、`Validator.validateAsync()` 和 `TypeConverter` 这些最常用公开 API。
+**说明**: 以最小入口串起 `s()`、`validate()`、`Validator.validateAsync()` 和 `TypeConverter` 这些最常用公开 API。
 

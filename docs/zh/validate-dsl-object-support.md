@@ -6,7 +6,7 @@
 
 ## 答案
 
-**现在可以了！** 🎉 当前 TypeScript 重构版中，顶层 `validate()` 和 `validateAsync()` 都支持直接传入 DSL 对象。
+**现在可以了。** 当前版本中，顶层 `validate()` 和 `validateAsync()` 都支持直接传入 DSL 对象。
 
 ---
 
@@ -15,9 +15,9 @@
 ### 方式1：传入 DSL 对象（✅ 当前版本支持）
 
 ```javascript
-const { validate } = require('schema-dsl');
+import { validate } from 'schema-dsl/pure';
 
-// ✅ 直接传入 DSL 对象，无需 dsl() 包裹
+// ✅ 直接传入 DSL 对象，无需 s() 包裹
 const result = validate(
   { email: 'email!', age: 'number:18-120' },  // DSL 对象
   { email: 'test@example.com', age: 25 }
@@ -27,18 +27,18 @@ console.log(result.valid);  // true
 ```
 
 **优点**：
-- ✅ 最简洁，无需 `dsl()` 包裹
+- ✅ 最简洁，无需 `s()` 包裹
 - ✅ 代码更直观，适合简单场景
 
 **⚠️ 注意**：DSL 对象也支持混合使用 DslBuilder 实例：
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // ✅ 混合使用：DslBuilder + DSL 字符串
 const result = validate(
   {
-    username: dsl('string:3-32!')
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': '只能包含字母、数字和下划线' }),
     email: 'email!',  // 纯 DSL 字符串
@@ -48,13 +48,13 @@ const result = validate(
 );
 ```
 
-### 方式2：使用 dsl() 包裹（推荐）
+### 方式2：使用 s() 包裹（推荐）
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // ✅ 先转换为 JSON Schema，再验证
-const schema = dsl({
+const schema = s({
   email: 'email!',
   age: 'number:18-120'
 });
@@ -70,7 +70,7 @@ const result = validate(schema, { email: 'test@example.com', age: 25 });
 ### 方式3：传入标准 JSON Schema
 
 ```javascript
-const { validate } = require('schema-dsl');
+import { validate } from 'schema-dsl/pure';
 
 // ✅ 传入标准 JSON Schema
 const result = validate(
@@ -141,7 +141,7 @@ const result = validate(
 
 ### 当前方案
 
-当前 TypeScript 重构版已补齐自动检测和转换逻辑：
+当前版本已补齐自动检测和转换逻辑：
 
 1. **检测 DSL 对象**：识别对象中的 DSL 字符串
 2. **自动转换**：通过内部 DSL object 归一化流程转换为 JSON Schema
@@ -179,24 +179,24 @@ app.post('/api/user', (req, res) => {
 // ✅ 最佳实践：在单独的文件中定义所有 schema
 
 // schemas/user.js - 项目启动时加载，转换一次
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-module.exports = {
-  register: dsl({
-    username: dsl('string:3-32!')
+export default {
+  register: s({
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': '只能包含字母、数字和下划线' }),
     email: 'email!',
-    password: dsl('string!').password('strong'),
+    password: s('string!').password('strong'),
     age: 'number:18-120'
   }),
   
-  login: dsl({
+  login: s({
     username: 'string!',
     password: 'string!'
   }),
   
-  updateProfile: dsl({
+  updateProfile: s({
     nickname: 'string:2-20',
     avatar: 'url',
     bio: 'string:0-500'
@@ -204,8 +204,8 @@ module.exports = {
 };
 
 // routes/user.js - 路由中直接使用，不再转换
-const userSchemas = require('../schemas/user');
-const { validate } = require('schema-dsl');
+import userSchemas from '../schemas/user.js';
+import { validate } from 'schema-dsl/pure';
 
 app.post('/api/register', (req, res) => {
   const result = validate(userSchemas.register, req.body);  // ✅ 直接使用
@@ -234,12 +234,12 @@ app.put('/api/user/profile', (req, res) => {
 
 ```javascript
 // ✅ 需要自定义消息
-const schema = dsl({
-  email: dsl('email!')
+const schema = s({
+  email: s('email!')
     .label('邮箱地址')
     .messages({ 'string.email': '请输入有效的邮箱' }),
   
-  username: dsl('string:3-32!')
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .messages({ 'string.pattern': '只能包含字母、数字和下划线' })
 });
@@ -254,7 +254,7 @@ const result = validate(schema, data);
 | 方式 | 简洁性 | 灵活性 | 复用性 | 适用场景 |
 |------|-------|-------|-------|---------|
 | DSL 对象 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ | 简单验证、一次性使用 |
-| dsl() 包裹 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 复杂验证、需要复用 |
+| s() 包裹 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 复杂验证、需要复用 |
 | JSON Schema | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 与其他工具互操作 |
 
 ---
@@ -275,7 +275,7 @@ app.post('/api/user', (req, res) => {
 });
 
 // ✅ 推荐：提前转换，复用 schema
-const userSchema = dsl({ email: 'email!', age: 'number!' });
+const userSchema = s({ email: 'email!', age: 'number!' });
 
 app.post('/api/user', (req, res) => {
   const result = validate(userSchema, req.body);  // 直接使用
@@ -322,13 +322,13 @@ const result = validate(
 ## 完整示例
 
 ```javascript
-const { dsl, validate, validateAsync } = require('schema-dsl');
+import { s, validate, validateAsync } from 'schema-dsl/pure';
 
 // 示例1：同步验证
 const result = validate(
   {
     email: 'email!',
-    password: dsl('string!').password('strong'),
+    password: s('string!').password('strong'),
     age: 'number:18-120',
     username: 'string:3-32!'
   },
@@ -375,7 +375,7 @@ if (result.valid) {
 
 **推荐使用**：
 - 简单场景：直接用 DSL 对象
-- 复杂场景：先用 `dsl()` 转换，便于复用和扩展
+- 复杂场景：先用 `s()` 转换，便于复用和扩展
 
 ---
 
@@ -388,7 +388,7 @@ if (result.valid) {
 ```javascript
 const result = validate(
   {
-    username: dsl('string:3-32!')
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': '只能包含字母、数字和下划线' }),
     email: 'email!',  // 纯 DSL 字符串
@@ -404,7 +404,7 @@ const result = validate(
 const result = validate(
   {
     user: {
-      name: dsl('string:3-32!').messages({ 'string.min': '名字太短了' }),
+      name: s('string:3-32!').messages({ 'string.min': '名字太短了' }),
       email: 'email!'
     }
   },
@@ -428,7 +428,7 @@ app.post('/api/user', (req, res) => {
 });
 
 // ✅ 性能最优：项目启动时转换一次，复用 schema
-const userSchema = dsl({ email: 'email!', age: 'number!' });  // ✅ 启动时转换一次
+const userSchema = s({ email: 'email!', age: 'number!' });  // ✅ 启动时转换一次
 
 app.post('/api/user', (req, res) => {
   const result = validate(userSchema, req.body);  // ✅ 直接使用，不再转换
@@ -451,35 +451,35 @@ app.post('/api/user', (req, res) => {
 
 ```javascript
 // ✅ 推荐：在单独的文件中定义所有 schema（schemas/user.js）
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // 项目启动时转换一次，后续直接复用
 const userSchemas = {
-  register: dsl({
-    username: dsl('string:3-32!')
+  register: s({
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': '只能包含字母、数字和下划线' }),
     email: 'email!',
-    password: dsl('string!').password('strong'),
+    password: s('string!').password('strong'),
     age: 'number:18-120'
   }),
   
-  login: dsl({
+  login: s({
     username: 'string!',
     password: 'string!'
   }),
   
-  updateProfile: dsl({
+  updateProfile: s({
     nickname: 'string:2-20',
     avatar: 'url',
     bio: 'string:0-500'
   })
 };
 
-module.exports = userSchemas;
+export default userSchemas;
 
 // 在路由中使用（routes/user.js）
-const userSchemas = require('../schemas/user');
+import userSchemas from '../schemas/user.js';
 
 app.post('/api/register', (req, res) => {
   const result = validate(userSchemas.register, req.body);  // ✅ 直接使用
@@ -502,14 +502,14 @@ app.post('/api/login', (req, res) => {
 | **原型开发** | ✅ 直接用 DSL 对象 | 快速迭代，无需在意性能 |
 | **测试代码** | ✅ 直接用 DSL 对象 | 简洁清晰，易于维护 |
 
-### Q3: 为什么复杂场景仍然建议先用 `dsl()` 转换？
+### Q3: 为什么复杂场景仍然建议先用 `s()` 转换？
 
 **历史原因**：
 
 1. **明确的职责分离**（设计哲学）
    ```javascript
    // 转换阶段：DSL → JSON Schema
-   const schema = dsl({ email: 'email!', age: 'number!' });
+   const schema = s({ email: 'email!', age: 'number!' });
    
    // 验证阶段：JSON Schema + data → result
    const result = validate(schema, data);
@@ -571,7 +571,7 @@ app.post('/api/login', (req, res) => {
 validate({ email: 'email!' }, data);
 
 // ✅ 复杂场景：显式转换
-const schema = dsl({ email: 'email!' });
+const schema = s({ email: 'email!' });
 validate(schema, data);
 ```
 

@@ -1,16 +1,4 @@
-import {
-  dsl,
-  validate,
-  validateAsync,
-  Validator,
-  ValidationError,
-  SchemaUtils,
-  TypeConverter,
-  MarkdownExporter,
-  MongoDBExporter,
-  MySQLExporter,
-  PostgreSQLExporter,
-} from '../../dist/index.js'
+import { s, validate, validateAsync, Validator, ValidationError, SchemaUtils, TypeConverter, MarkdownExporter, MongoDBExporter, MySQLExporter, PostgreSQLExporter, resetRuntimeState, type IDslBuilder } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`feature-index expectation failed: ${label}`)
@@ -24,9 +12,9 @@ function expect(label: string, condition: boolean): void {
 // 1. DSL string types + chaining
 // ============================================================
 
-const userSchema = dsl({
-  username: dsl('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/).label('Username'),
-  email:    dsl('email!').label('Email Address'),
+const userSchema = s({
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/).label('Username'),
+  email:    s('email!').label('Email Address'),
   role:     'admin|user|guest',
   score:    'number:>=0',
   tags:     'array:1-5<string:1-20>',
@@ -88,12 +76,12 @@ expect('compiled feature validator passes', compiledValid === true)
 expect('feature batch includes invalid row', batchUsers[1]?.valid === false)
 
 // ============================================================
-// 4. Conditional fields — dsl.match()
+// 4. Conditional fields — s.match()
 // ============================================================
 
-const contactSchema = dsl({
+const contactSchema = s({
   contactType: 'email|phone!',
-  contact: dsl.match('contactType', {
+  contact: s.match('contactType', {
     email: 'email!',
     phone: 'phone:cn!',
   }),
@@ -111,8 +99,8 @@ expect('conditional schema rejects branch mismatch', contactBad.valid === false)
 // 5. Async custom validators
 // ============================================================
 
-const asyncSignupSchema = dsl({
-  email: dsl('email!').custom(async value =>
+const asyncSignupSchema = s({
+  email: s('email!').custom(async value =>
     value !== 'taken@example.com' || 'Email already exists'),
 })
 
@@ -187,7 +175,7 @@ expect('PostgreSQL export creates table', postgres.includes('CREATE TABLE'))
 // 11. Nested object schema
 // ============================================================
 
-const nestedSchema = dsl({
+const nestedSchema = s({
   user: {
     profile: {
       firstName: 'string:1-64!',
@@ -212,3 +200,25 @@ expect('nested schema validates valid nested data', validate(nestedSchema, {
     contact: { email: 'rocky@example.com', phone: '13800138000' },
   },
 }).valid)
+
+// ============================================================
+// 12. Custom DSL type + factory
+// ============================================================
+
+s.registerExtension({
+  literal: 'feature-tenant-id',
+  factoryName: 'featureTenantId',
+  schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' },
+} as any)
+
+const sWithFeatureTenant = s as typeof s & { featureTenantId(): IDslBuilder }
+const extensionSchema = s({
+  tenant: sWithFeatureTenant.featureTenantId().require(),
+})
+
+const extensionValid = validate(extensionSchema, { tenant: 'tenant_demo' })
+
+console.log('feature-index.extension.valid           =', extensionValid.valid)
+expect('custom extension factory validates', extensionValid.valid)
+
+resetRuntimeState()

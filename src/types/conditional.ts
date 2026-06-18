@@ -7,6 +7,8 @@ import type { ValidationResult } from './validate.js'
 
 export interface IConditionalBuilder {
   and(condition: (data: unknown) => boolean): this
+  /** Add a v1-compatible truthy field requirement to the current condition chain. */
+  require(field: string): this
   or(condition: (data: unknown) => boolean): this
   /** then/else accept string DSL, JSONSchema, or null (no-op). */
   then(schema: string | JSONSchema | null): this

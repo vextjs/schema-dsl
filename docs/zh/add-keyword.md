@@ -1,11 +1,11 @@
-# addKeyword 方法
+# 自定义校验关键字
 
 `Validator.addKeyword(name, definition)` 用于向底层 AJV 实例注册自定义关键字。
 
 当前实现内部已经兼容 AJV 8 的对象式注册，因此可以继续使用 v1 的两参数写法，而不会把 deprecated 警告暴露给调用方。
 
 ```javascript
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
 const validator = new Validator();
 validator.addKeyword('isEven', {
   type: 'number',

@@ -5,16 +5,6 @@
 
 ---
 
-## 📑 目录
-
-- [基本原理](#基本原理)
-- [方案1: 验证时指定语言（推荐）](#方案1-验证时指定语言推荐)
-- [方案2: 临时切换语言](#方案2-临时切换语言)
-- [方案3: Express/Koa 中间件](#方案3-expresskoa-中间件)
-- [完整示例](#完整示例)
-- [最佳实践](#最佳实践)
-
----
 
 ## 基本原理
 
@@ -36,22 +26,22 @@ validator.validate(schema, data, {
 
 ### 1.1 应用启动时配置（一次性加载所有语言）
 
-使用 `dsl.config` 在应用启动时一次性加载所有自定义语言包。
+使用 `s.config` 在应用启动时一次性加载所有自定义语言包。
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 // ========== 应用启动时配置（只执行一次）==========
 
 // 方式一：传入目录路径（推荐）⭐
 // Node >=18：自动扫描目录下的 .js（CommonJS）、.cjs、.json、.jsonc、.json5 文件
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales')
 });
 
 // 方式二：直接传入对象
-dsl.config({
+s.config({
   i18n: {
     'fr-FR': {
       'required': '{{#label}} est requis',
@@ -73,10 +63,10 @@ dsl.config({
 ### 1.2 运行时直接切换语言（无需重新加载）
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // 定义 Schema
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
@@ -107,19 +97,19 @@ const result3 = validate(schema, data, { locale: 'de-DE' });
 ### 1.3 从请求头获取语言（实际应用场景）
 
 ```javascript
-const express = require('express');
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import express from 'express';
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 const app = express();
 
 // ========== 应用启动时配置（只执行一次）==========
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales')
 });
 
 // 定义 Schema
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   password: 'string:8-32!'
@@ -229,7 +219,7 @@ app.post('/api/user/register', (req, res) => {
 通过中间件一次性配置，后续业务代码无需关心语言参数。
 
 ```javascript
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
 const validator = new Validator();
 
 const schemaIoMiddleware = (req, res, next) => {
@@ -269,7 +259,7 @@ app.post('/users', (req, res) => {
 ### 3.2 Koa 中间件
 
 ```javascript
-const { Locale, Validator } = require('schema-dsl');
+import { Locale, Validator } from 'schema-dsl/pure';
 
 const validator = new Validator();
 
@@ -318,8 +308,8 @@ router.post('/api/user/register', async (ctx) => {
 ### Express 完整示例
 
 ```javascript
-const express = require('express');
-const { dsl, Validator, Locale } = require('schema-dsl');
+import express from 'express';
+import { s, Validator, Locale } from 'schema-dsl/pure';
 
 const app = express();
 app.use(express.json());
@@ -384,16 +374,15 @@ app.use(localeMiddleware);
 
 // ========== 4. 定义Schema ==========
 
-const userSchema = dsl({
-  username: 'string:3-32!'.label('用户名'),
-  email: 'email!'.label('邮箱地址'),
-  password: 'string:8-64!'
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
+const userSchema = s({
+  username: s('string:3-32!').label('用户名'),
+  email: s('email!').label('邮箱地址'),
+  password: s('string:8-64!').pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
     .label('密码')
     .messages({
       'pattern': '密码必须包含大小写字母和数字'
     }),
-  age: 'number:18-120'.label('年龄')
+  age: s('number:18-120').label('年龄')
 });
 
 // ========== 5. API 路由 ==========
@@ -443,10 +432,14 @@ app.listen(3000, () => {
 
 ```javascript
 // locales/index.js
-module.exports = {
-  'zh-CN': require('./zh-CN.json'),
-  'en-US': require('./en-US.json'),
-  'ja-JP': require('./ja-JP.json')
+import zhCN from './zh-CN.cjs';
+import enUS from './en-US.cjs';
+import jaJP from './ja-JP.cjs';
+
+export default {
+  'zh-CN': zhCN,
+  'en-US': enUS,
+  'ja-JP': jaJP
 };
 
 // locales/zh-CN.json
@@ -459,7 +452,7 @@ module.exports = {
 }
 
 // 初始化
-const locales = require('./locales');
+import locales from './locales/index.js';
 Object.entries(locales).forEach(([locale, messages]) => {
   Locale.addLocale(locale, messages);
 });
@@ -571,9 +564,8 @@ app.use(async (req, res, next) => {
 **A**: 使用 `.messages()` 方法
 
 ```javascript
-const schema = dsl({
-  password: 'string:8-64!'
-    .label('密码')
+const schema = s({
+  password: s('string:8-64!').label('密码')
     .messages({
       'required': req.locale === 'zh-CN' 
         ? '请输入密码' 

@@ -1,4 +1,4 @@
-import { TypeConverter, Validator, dsl, validate } from '../../dist/index.js'
+import { TypeConverter, Validator, s, registerExtension, resetRuntimeState, validate } from '../../dist/pure.js'
 
 // ============================================================
 // API reference — primary exports and their usage
@@ -8,7 +8,7 @@ import { TypeConverter, Validator, dsl, validate } from '../../dist/index.js'
 // 1. validate() — synchronous validation
 // ============================================================
 
-const userSchema = dsl({
+const userSchema = s({
   email:   'email!',
   age:     'number:18-100',
   role:    'admin|user|guest',
@@ -85,9 +85,49 @@ console.log('api.compile.invalid          =',
 // 6. toJsonSchema() — get raw JSON Schema
 // ============================================================
 
-const fieldBuilder = dsl('string:3-64!').pattern(/^[a-zA-Z0-9_]+$/).label('Username')
+const fieldBuilder = s.string().min(3).max(64).require().pattern(/^[a-zA-Z0-9_]+$/).label('Username')
 const jsonSchema   = fieldBuilder.toJsonSchema()
 
 console.log('api.toJsonSchema.type        =', jsonSchema.type)          // 'string'
 console.log('api.toJsonSchema.minLength   =', jsonSchema.minLength)     // 3
 console.log('api.toJsonSchema.pattern     =', typeof jsonSchema.pattern) // 'string'
+
+// ============================================================
+// 7. DslBuilder chain method surface — representative methods
+// ============================================================
+
+const defaultSchema = s('string').default('active').toSchema()
+console.log('api.chain.default            =', defaultSchema.default === 'active') // true
+
+const usernameSchema = s.string().username('5-20').label('Username').require().toSchema()
+console.log('api.chain.username.required  =', usernameSchema._required === true)  // true
+console.log('api.chain.username.pattern   =', typeof usernameSchema.pattern === 'string') // true
+
+const numberSchema = s.number().min(18).max(120).precision(2).multiple(0.5).toSchema()
+console.log('api.chain.number.minimum     =', numberSchema.minimum === 18) // true
+console.log('api.chain.number.precision   =', numberSchema.precision === 2) // true
+console.log('api.chain.number.multipleOf  =', numberSchema.multipleOf === 0.5) // true
+
+const objectSchema = s('object').strict().requireAll().toSchema()
+console.log('api.chain.object.strict      =', objectSchema.strictSchema === true) // true
+console.log('api.chain.object.requireAll  =', objectSchema.requiredAll === true) // true
+
+const arraySchema = s.array(s.string().require()).min(1).noSparse().includesRequired(['admin']).toSchema()
+console.log('api.chain.array.minItems     =', arraySchema.minItems === 1) // true
+console.log('api.chain.array.noSparse     =', arraySchema.noSparse === true) // true
+console.log('api.chain.array.includes     =', Array.isArray(arraySchema.includesRequired)) // true
+
+console.log('api.namespace.available      =', typeof s === 'function') // true
+console.log('api.namespace.email.eq       =',
+  JSON.stringify(s('email!').toSchema()) === JSON.stringify(s.email().require().toSchema())) // true
+
+registerExtension({
+  literal: 'tenant-id',
+  factoryName: 'tenantId',
+  schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' },
+})
+
+const tenantSchema = (s as typeof s & { tenantId(): ReturnType<typeof s.string> }).tenantId().require().toSchema()
+console.log('api.namespace.customFactory  =', tenantSchema.pattern === '^tenant_[a-z0-9]+$') // true
+
+resetRuntimeState()

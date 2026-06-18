@@ -1,4 +1,4 @@
-import { dsl, validate, validateAsync, ValidationError, Validator } from '../../dist/index.js'
+import { s, validate, validateAsync, ValidationError, Validator } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`validator expectation failed: ${label}`)
@@ -32,11 +32,11 @@ const validator = new Validator({
   cache:       true,
 })
 
-const userSchema = dsl({
+const userSchema = s({
   name:   'string:2-50!',
   email:  'email!',
   age:    'integer:18-120',
-  role:   dsl('string').default('user'),
+  role:   s('string').default('user'),
 })
 
 // Valid — role filled by default, age coerced from string
@@ -170,7 +170,7 @@ expect('schema reference validates before removal', refOk.valid)
 // ============================================================
 
 const strictValidator = new Validator({ strict: false })  // AJV strict mode OFF (DSL uses own strict)
-const strictSchema = dsl({
+const strictSchema = s({
   id:   'uuid!',
   name: 'string:1-50!',
 })

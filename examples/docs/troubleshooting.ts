@@ -1,14 +1,4 @@
-import {
-  dsl,
-  validate,
-  validateAsync,
-  Validator,
-  DslBuilder,
-  ValidationError,
-  MySQLExporter,
-  installStringExtensions,
-  uninstallStringExtensions,
-} from '../../dist/index.js'
+import { s, validate, validateAsync, Validator, DslBuilder, ValidationError, MySQLExporter, installStringExtensions, uninstallStringExtensions } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`troubleshooting expectation failed: ${label}`)
@@ -22,7 +12,7 @@ function expect(label: string, condition: boolean): void {
 // 1. Basic debugging — inspect error details
 // ============================================================
 
-const debugSchema = dsl({
+const debugSchema = s({
   username: 'string:3-12!',
   email:    'email!',
   age:      'number:18-120',
@@ -52,13 +42,13 @@ console.log('troubleshooting.basic.errors         =', errorSummary)
 
 const validator = new Validator()
 // Build a clean JSON Schema for compile() by converting each field explicitly.
-// dsl({...}) keeps internal _* markers; compile() needs a plain JSON Schema.
+// s({...}) keeps internal _* markers; compile() needs a plain JSON Schema.
 const compileSchema = {
   type:                 'object',
   properties: {
-    username: dsl('string:3-12!').toJsonSchema(),
-    email:    dsl('email!').toJsonSchema(),
-    age:      dsl('number:18-120').toJsonSchema(),
+    username: s('string:3-12!').toJsonSchema(),
+    email:    s('email!').toJsonSchema(),
+    age:      s('number:18-120').toJsonSchema(),
   },
   required:             ['username', 'email'],
   additionalProperties: false,
@@ -85,7 +75,7 @@ expect('allErrors mode collects three field errors', (allResult.errors?.length ?
 // 4. Inspecting toJsonSchema() output to check the generated schema
 // ============================================================
 
-const fieldSchema = dsl('string:3-32!').pattern(/^[a-z]+$/).label('Username')
+const fieldSchema = s('string:3-32!').pattern(/^[a-z]+$/).label('Username')
 const jsonSchema  = fieldSchema.toJsonSchema()
 
 console.log('troubleshooting.toJsonSchema.type    =', jsonSchema.type)        // 'string'
@@ -96,7 +86,7 @@ expect('toJsonSchema exposes generated pattern', typeof jsonSchema.pattern === '
 
 let unsafeRegexRejected = false
 try {
-  dsl('string').pattern(/^(a+)+$/)
+  s('string').pattern(/^(a+)+$/)
 } catch (err) {
   unsafeRegexRejected = err instanceof Error && err.message.includes('Unsafe regex')
 }
@@ -107,7 +97,7 @@ expect('unsafe regex is rejected', unsafeRegexRejected)
 // 5. Detecting optional vs required
 // ============================================================
 
-const mixedSchema = dsl({ name: 'string!', bio: 'string' })
+const mixedSchema = s({ name: 'string!', bio: 'string' })
 
 // The ! marker makes a field required; detect it by testing validation behavior
 const missingName = validate(mixedSchema, { bio: 'hello' })
@@ -146,8 +136,8 @@ expect('fixed data should validate', validate(debugSchema, fixedData).valid)
 // 8. Async custom validators — use validateAsync(), not sync validate()
 // ============================================================
 
-const asyncCustomSchema = dsl({
-  email: dsl('email!').custom(async value =>
+const asyncCustomSchema = s({
+  email: s('email!').custom(async value =>
     value !== 'taken@example.com' || 'Email is already taken'),
 })
 

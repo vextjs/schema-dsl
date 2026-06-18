@@ -1,4 +1,4 @@
-import { Validator, dsl, validate } from '../../dist/index.js'
+import { Validator, s, validate } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`add-keyword expectation failed: ${label}`)
@@ -82,12 +82,12 @@ console.log('add-keyword.nows.space   =', validator.validate(slugSchema as any, 
 expect('noWhitespace rejects spaces', validator.validate(slugSchema as any, 'bad slug').valid === false)
 
 // ============================================================
-// 5. Combine keyword with dsl() via the Validator instance
+// 5. Combine keyword with s() via the Validator instance
 // ============================================================
 
-const priceSchema = dsl({ amount: 'number!', currency: 'string:3-3!' })
+const priceSchema = s({ amount: 'number!', currency: 'string:3-3!' })
 
-// Custom keyword does not interact with dsl() validate() helper
+// Custom keyword does not interact with s() validate() helper
 // Use the validator instance directly when you need custom keywords
 const combined = { type: 'number', minimum: 0, isPositive: true }
 
@@ -96,7 +96,7 @@ console.log('add-keyword.combined.0   =', validator.validate(combined as any, 0)
 expect('combined keywords reject zero', validator.validate(combined as any, 0).valid === false)
 
 // dsl schema still validates normally via validate()
-console.log('add-keyword.dsl.valid    =',
+console.log('add-keyword.s.valid    =',
   validate(priceSchema, { amount: 9.99, currency: 'USD' }).valid)   // true
 
 // ============================================================

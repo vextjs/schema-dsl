@@ -6,17 +6,6 @@
 
 ---
 
-## 📋 Table of Contents
-
-- [Overview](#overview)
-- [🆕 v1.1.1 new features](#-v111-new-features)
-- [Quick Start](#quick-start)
-- [API Reference](#api-reference)
-- [Usage Scenario](#usage-scenarios)
-- [Best Practice](#best-practices)
-- [FAQ](#faq)
-
----
 
 ## Overview
 
@@ -49,10 +38,10 @@ Starting from v1.1.1, it is supported to call `.message()` after `.and()` and `.
 #### Basic usage
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // ✅ v1.1.1+ new feature: independent message for each condition
-dsl.if(d => !d)
+s.if(d => !d)
   .message('ACCOUNT_NOT_FOUND')
   .and(d => d.tradable_credits < amount)
   .message('INSUFFICIENT_TRADABLE_CREDITS')
@@ -68,7 +57,7 @@ dsl.if(d => !d)
 
 ```javascript
 //Multiple layers of validation, with clear error messages for each layer
-dsl.if(d => !d)
+s.if(d => !d)
   .message('ACCOUNT_NOT_FOUND')
   .and(d => d.status !== 'active')
   .message('ACCOUNT_INACTIVE')
@@ -83,7 +72,7 @@ dsl.if(d => !d)
 
 ```javascript
 // OR conditions also support independent messages
-dsl.if(d => d.age < 18)
+s.if(d => d.age < 18)
   .message('Underage users cannot register')
   .or(d => d.isBlocked)
   .message('Account has been banned')
@@ -110,13 +99,13 @@ v1.1.1 introduced **Chain Check Mode**, which is automatically enabled when the 
 
 ```javascript
 // ✅ Enable chain checking (pure AND scenario)
-dsl.if(d => !d).message('A').and(d => d < 100).message('B')
+s.if(d => !d).message('A').and(d => d < 100).message('B')
 
 // ❌ Not enabled (has.or(), uses traditional AND/OR logic)
-dsl.if(d => !d).message('A').and(d => d < 100).or(d => d > 200).message('B')
+s.if(d => !d).message('A').and(d => d < 100).or(d => d > 200).message('B')
 
 // ❌ Not enabled (use.then()/.else(), not message mode)
-dsl.if(d => d.age >= 18).and(d => d.role === 'admin').then('email!')
+s.if(d => d.age >= 18).and(d => d.role === 'admin').then('email!')
 ```
 
 #### backward compatibility
@@ -125,10 +114,10 @@ dsl.if(d => d.age >= 18).and(d => d.role === 'admin').then('email!')
 
 ```javascript
 // ✅Original usage continues to work
-dsl.if(d => d.age >= 18).and(d => d.role === 'admin').message('does not meet the conditions')
+s.if(d => d.age >= 18).and(d => d.role === 'admin').message('does not meet the conditions')
 
 // ✅ It’s okay not to call.message() after.and()
-dsl.if(d =>!d).message('Overall error').and(d => d < 100).assert(50)
+s.if(d =>!d).message('Overall error').and(d => d < 100).assert(50)
 // → Use global message 'Global error'
 ```
 
@@ -137,7 +126,7 @@ dsl.if(d =>!d).message('Overall error').and(d => d < 100).assert(50)
 **Scenario 1: Account Validation**
 ```javascript
 function validateAccount(account, amount) {
-  dsl.if(d => !d)
+  s.if(d => !d)
     .message('ACCOUNT_NOT_FOUND')
     .and(d => d.status !== 'active')
     .message('ACCOUNT_INACTIVE')
@@ -152,7 +141,7 @@ function validateAccount(account, amount) {
 **Scenario 2: User permission validation**
 ```javascript
 function validateUserPermission(user) {
-  dsl.if(d => d.role !== 'admin')
+  s.if(d => d.role !== 'admin')
     .message('NO_ADMIN_PERMISSION')
     .and(d => !d.isVerified)
     .message('USER_NOT_VERIFIED')
@@ -165,7 +154,7 @@ function validateUserPermission(user) {
 **Scenario 3: Order status check**
 ```javascript
 function validateOrder(order) {
-  dsl.if(d => d.status !== 'paid')
+  s.if(d => d.status !== 'paid')
     .message('ORDER_NOT_PAID')
     .and(d => !d.payment)
     .message('PAYMENT_INFO_MISSING')
@@ -179,31 +168,31 @@ function validateOrder(order) {
 
 ## Differences from existing methods
 
-`dsl.if()` provides two usage methods, automatically selected according to the parameter type:
+`s.if()` provides two usage methods, automatically selected according to the parameter type:
 
 | Way | Parameter type | execution timing | use | Example |
 |------|---------|---------|------|------|
-| **Method 1** | string | When Schema is defined | static boolean condition | `dsl.if('isVip', thenSchema, elseSchema)` |
-| **Method 2** | function | When verifying | Dynamic condition judgment | `dsl.if((data) => data.age >= 18).then(...)` |
+| **Method 1** | string | When Schema is defined | static boolean condition | `s.if('isVip', thenSchema, elseSchema)` |
+| **Method 2** | function | When verifying | Dynamic condition judgment | `s.if((data) => data.age >= 18).then(...)` |
 
 **Method 1** (field conditions): static judgment based on field values
 ```javascript
 // Example: Select different validation rules based on isVip field value
-dsl.if('isVip', 'number:0-50', 'number:0-10')
+s.if('isVip', 'number:0-50', 'number:0-10')
 ```
 
 **Method 2** (function condition): dynamic judgment based on complete data
 ```javascript
 // Example: Dynamic selection based on the combination logic of multiple fields
-dsl.if((data) => data.age >= 18 && data.role === 'admin')
+s.if((data) => data.age >= 18 && data.role === 'admin')
   .then('email!')
   .else('email')
 ```
 
-In addition, `dsl.match()` is suitable for multi-value mapping scenarios:
+In addition, `s.match()` is suitable for multi-value mapping scenarios:
 ```javascript
 // Example: Map different validation rules based on type field value
-dsl.match('type', {
+s.match('type', {
   email: 'email!',
   phone: 'string:11!',
   _default: 'string'
@@ -217,12 +206,12 @@ dsl.match('type', {
 ### Basic usage
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // Method 1: Traditional method (requires validate function)
-const schema1 = dsl({
+const schema1 = s({
   age: 'number!',
-  status: dsl.if((data) => data.age < 18)
+  status: s.if((data) => data.age < 18)
     .message('Underage users cannot register')
 });
 
@@ -230,31 +219,31 @@ validate(schema1, { age: 16, status: 'active' });
 // => { valid: false, errors: [{ message: 'Underage users cannot register' }], data: { age: 16, status: 'active' } }
 
 // ✅ Method 2: Shortcut (one line of code validation)
-const result = dsl.if((data) => data.age < 18)
+const result = s.if((data) => data.age < 18)
   .message('Underage users cannot register')
   .validate({ age: 16 });
 // => { valid: false, errors: [{ message: 'Underage users cannot register' }], data: { age: 16 } }
 
 // ✅ Method 3:.check() quick judgment
-const isValid = dsl.if((data) => data.age < 18)
+const isValid = s.if((data) => data.age < 18)
   .message('Underage users cannot register')
   .check({ age: 16 });
 // => false
 
 // 2. Condition + then/else (dynamic Schema)
-const result = dsl.if((data) => data.userType === 'admin')
+const result = s.if((data) => data.userType === 'admin')
   .then('email!') // Required by administrator
   .else('email') // Optional for ordinary users
   .validate({ userType: 'admin', email: 'admin@example.com' });
 
 // 3. else optional
-const result = dsl.if((data) => data.userType === 'vip')
+const result = s.if((data) => data.userType === 'vip')
   .then('enum:gold|silver|bronze!')
   // Do not write else, non-vip users will not be validated
   .validate({ userType: 'user' });
 
 // 4. Reuse validator
-const ageValidator = dsl.if(d => d.age < 18).message('Underage users cannot register');
+const ageValidator = s.if(d => d.age < 18).message('Underage users cannot register');
 const r1 = ageValidator.validate({ age: 16 }); // failed
 const r2 = ageValidator.validate({ age: 20 }); // Pass
 ```
@@ -263,19 +252,19 @@ const r2 = ageValidator.validate({ age: 20 }); // Pass
 
 ```javascript
 // 1. AND condition
-const result = dsl.if((data) => data.age >= 18)
+const result = s.if((data) => data.age >= 18)
   .and((data) => data.userType === 'admin')
   .message('Only adult administrators can operate')
   .validate({ age: 20, userType: 'user' });
 
 // 2. OR condition
-const result = dsl.if((data) => data.age < 18)
+const result = s.if((data) => data.age < 18)
   .or((data) => data.status === 'blocked')
   .message('Registration not allowed')
   .validate({ age: 16, status: 'active' });
 
 // 3. Complex combination
-const result = dsl.if((data) => data.age >= 18)
+const result = s.if((data) => data.age >= 18)
   .and((data) => data.userType === 'admin')
   .or((data) => data.status === 'vip')
   .then('email!')
@@ -286,7 +275,7 @@ const result = dsl.if((data) => data.age >= 18)
 ### elseIf branch
 
 ```javascript
-const validator = dsl.if((data) => data.userType === 'admin')
+const validator = s.if((data) => data.userType === 'admin')
   .then('array<string>!')
   .elseIf((data) => data.userType === 'vip')
   .then('array<string>')
@@ -303,7 +292,7 @@ const r3 = validator.validate({ userType: 'guest' });
 
 ## API reference
 
-### dsl.if(condition)
+### s.if(condition)
 
 Create a chained conditional builder.
 **Parameters**:
@@ -315,9 +304,9 @@ Create a chained conditional builder.
 
 **Example**:
 ```javascript
-dsl.if((data) => data.age >= 18)
-dsl.if((data) => data.userType === 'admin')
-dsl.if((data) => data.status === 'active' && data.validated)
+s.if((data) => data.age >= 18)
+s.if((data) => data.userType === 'admin')
+s.if((data) => data.status === 'active' && data.validated)
 ```
 
 ---
@@ -335,7 +324,7 @@ Add an AND condition (combine with the previous condition).
 **Basic example**:
 ```javascript
 // Traditional usage: all conditions share one message
-dsl.if((data) => data.age >= 18)
+s.if((data) => data.age >= 18)
   .and((data) => data.userType === 'admin')
   .message('Does not meet conditions')
 ```
@@ -343,7 +332,7 @@ dsl.if((data) => data.age >= 18)
 **v1.1.1+ Standalone Message**:
 ```javascript
 // ✅ Each condition has its own error message
-dsl.if((data) => !data)
+s.if((data) => !data)
   .message('Account does not exist')
   .and((data) => data.balance < 100)
   .message('Insufficient balance')
@@ -358,7 +347,7 @@ dsl.if((data) => !data)
 **Multiple.and() conditions**:
 ```javascript
 // Supports multiple.and() conditions, each with independent messages
-dsl.if(d => !d)
+s.if(d => !d)
   .message('NOT_FOUND')
   .and(d => d.status !== 'active')
   .message('INACTIVE')
@@ -394,7 +383,7 @@ Add an OR condition (combine with the previous condition).
 **Basic example**:
 ```javascript
 // Traditional usage: all conditions share one message
-dsl.if((data) => data.age < 18)
+s.if((data) => data.age < 18)
   .or((data) => data.status === 'blocked')
   .message('Registration not allowed')
 ```
@@ -402,7 +391,7 @@ dsl.if((data) => data.age < 18)
 **v1.1.1+ Standalone Message**:
 ```javascript
 // ✅ Each OR condition has its own error message
-dsl.if(d => d.age < 18)
+s.if(d => d.age < 18)
   .message('Underage users cannot register')
   .or(d => d.isBlocked)
   .message('Account has been banned')
@@ -429,9 +418,9 @@ Output the current `ConditionalBuilder` into a schema object that can be directl
 `.build()` is an alias of `.toSchema()`, suitable for use when you want to get the final schema explicitly.
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const conditionalSchema = dsl.if(data => data.age >= 18)
+const conditionalSchema = s.if(data => data.age >= 18)
   .then('email!')
   .else('email')
   .build();
@@ -452,7 +441,7 @@ Add else-if branch.
 
 **Example**:
 ```javascript
-dsl.if((data) => data.userType === 'admin')
+s.if((data) => data.userType === 'admin')
   .then('email!')
   .elseIf((data) => data.userType === 'vip')
   .then('email')
@@ -477,18 +466,18 @@ Set error message (supports multi-language keys).
 
 **Basic example**:
 ```javascript
-dsl.if((data) => data.age < 18)
+s.if((data) => data.age < 18)
   .message('Underage users cannot register')
 
 //Support multi-language key
-dsl.if((data) => data.age < 18)
+s.if((data) => data.age < 18)
   .message('error.underage')
 ```
 
 **v1.1.1+ Set independent message for.and()**:
 ```javascript
 // ✅ Each condition has its own error message
-dsl.if((data) => !data)
+s.if((data) => !data)
   .message('Account does not exist')
   .and((data) => data.balance < 100)
   .message('Insufficient balance')
@@ -498,7 +487,7 @@ dsl.if((data) => !data)
 **v1.1.1+ Set independent message for.or()**:
 ```javascript
 // ✅ OR conditions also support independent messages
-dsl.if(d => d.age < 18)
+s.if(d => d.age < 18)
   .message('underage')
   .or(d => d.isBlocked)
   .message('Banned')
@@ -515,13 +504,13 @@ Chained check mode is automatically enabled when the following conditions are me
 
 ```javascript
 // ✅ Enable chain checking (pure AND scenario)
-dsl.if(d => !d).message('A').and(d => d < 100).message('B')
+s.if(d => !d).message('A').and(d => d < 100).message('B')
 
 // ❌ Not enabled (with.or())
-dsl.if(d => !d).message('A').and(d => d < 100).or(d => d > 200).message('B')
+s.if(d => !d).message('A').and(d => d < 100).or(d => d > 200).message('B')
 
 // ❌ Not enabled (use.then()/.else())
-dsl.if(d => d.age >= 18).and(d => d.role === 'admin').then('email!')
+s.if(d => d.age >= 18).and(d => d.role === 'admin').then('email!')
 ```
 
 ---
@@ -537,15 +526,15 @@ Set the Schema when the conditions are met.
 **Example**:
 ```javascript
 // DSL string
-dsl.if((data) => data.userType === 'admin')
+s.if((data) => data.userType === 'admin')
   .then('email!')
 
 // DslBuilder instance
-dsl.if((data) => data.userType === 'admin')
-  .then(dsl('email!').label('Administrator's email'))
+s.if((data) => data.userType === 'admin')
+  .then(s('email!').label('Administrator's email'))
 
 // JSON Schema object
-dsl.if((data) => data.userType === 'admin')
+s.if((data) => data.userType === 'admin')
   .then({ type: 'string', format: 'email' })
 ```
 
@@ -564,17 +553,17 @@ Set the default Schema (when all conditions are not met).
 **Example**:
 ```javascript
 //Explicitly specify else
-dsl.if((data) => data.userType === 'admin')
+s.if((data) => data.userType === 'admin')
   .then('email!')
   .else('email')
 
 // else is null (explicitly skip validation)
-dsl.if((data) => data.userType === 'admin')
+s.if((data) => data.userType === 'admin')
   .then('email!')
   .else(null)
 
 // Don't write else (implicitly skip validation)
-dsl.if((data) => data.userType === 'admin')
+s.if((data) => data.userType === 'admin')
   .then('email!')
 ```
 
@@ -596,23 +585,23 @@ Quick validation method - returns complete validation results.
 **Example**:
 ```javascript
 // One line of code validation
-const result = dsl.if(d => d.age < 18)
+const result = s.if(d => d.age < 18)
   .message('Underage users cannot register')
   .validate({ age: 16 });
 // => { valid: false, errors: [...], data }
 
 //Reuse validator
-const ageValidator = dsl.if(d => d.age < 18).message('underage');
+const ageValidator = s.if(d => d.age < 18).message('underage');
 const r1 = ageValidator.validate({ age: 16 });  // false
 const r2 = ageValidator.validate({ age: 20 });  // true
 
 //Support validation options
-const result = dsl.if(d => d.age < 18)
+const result = s.if(d => d.age < 18)
   .message('conditional.underAge')
   .validate({ age: 16 }, { locale: 'zh-CN' });
 
 // Validate non-object types
-const result = dsl.if(d => d.includes('@'))
+const result = s.if(d => d.includes('@'))
   .then('email!')
   .validate('test@example.com');
 ```
@@ -636,7 +625,7 @@ Asynchronous validation method - automatically throws an exception on failure.
 ```javascript
 // Asynchronous validation, automatically throwing an error if it fails
 try {
-  const data = await dsl.if(d => d.age < 18)
+  const data = await s.if(d => d.age < 18)
     .message('Underage users cannot register')
     .validateAsync({ age: 16 });
 } catch (error) {
@@ -647,7 +636,7 @@ try {
 // Express middleware
 app.post('/register', async (req, res, next) => {
   try {
-    await dsl.if(d => d.age < 18)
+    await s.if(d => d.age < 18)
       .message('Underage users cannot register')
       .validateAsync(req.body);
 
@@ -660,7 +649,7 @@ app.post('/register', async (req, res, next) => {
 });
 
 //Reuse validator
-const ageValidator = dsl.if(d => d.age < 18).message('underage');
+const ageValidator = s.if(d => d.age < 18).message('underage');
 
 try {
   await ageValidator.validateAsync({ age: 16 });
@@ -688,7 +677,7 @@ Assertion method - synchronous validation, if it fails, an error will be thrown 
 ```javascript
 // Assertion validation, if it fails, an error will be thrown directly
 try {
-  dsl.if(d => d.age < 18)
+  s.if(d => d.age < 18)
     .message('Underage users cannot register')
     .assert({ age: 16 });
 } catch (error) {
@@ -698,11 +687,11 @@ try {
 // Quick assertion in function
 function registerUser(userData) {
   // Assertion validation
-  dsl.if(d => d.age < 18)
+  s.if(d => d.age < 18)
     .message('Underage users cannot register')
     .assert(userData);
 
-  dsl.if(d => !d.email)
+  s.if(d => !d.email)
     .message('Mailbox cannot be empty')
     .assert(userData);
 
@@ -712,9 +701,9 @@ function registerUser(userData) {
 
 // chained assertions
 function validateAndCreate(data) {
-  dsl.if(d => d.age < 18).message('underage').assert(data);
-  dsl.if(d =>!d.email).message('Email required').assert(data);
-  dsl.if(d =>!d.username).message('Username required').assert(data);
+  s.if(d => d.age < 18).message('underage').assert(data);
+  s.if(d =>!d.email).message('Email required').assert(data);
+  s.if(d =>!d.username).message('Username required').assert(data);
 
   return createUser(data);
 }
@@ -735,7 +724,7 @@ Quick check method - returns only boolean.
 **Example**:
 ```javascript
 //Quick judgment
-const isValid = dsl.if(d => d.age < 18)
+const isValid = s.if(d => d.age < 18)
   .message('underage')
   .check({ age: 16 });
 // => false
@@ -748,7 +737,7 @@ if (!validator.check(userData)) {
 // Loop validation
 const users = [{ age: 16 }, { age: 20 }, { age: 17 }];
 const adults = users.filter(u =>
-  !dsl.if(d => d.age < 18).message('underage').check(u)
+  !s.if(d => d.age < 18).message('underage').check(u)
 );
 ```
 
@@ -763,8 +752,8 @@ Use the `.validate()` method to quickly verify user registration data.
 ```javascript
 //Create a reusable validator
 const validators = {
-  age: dsl.if(d => d.age < 18).message('Underage users cannot register'),
-  email: dsl.if(d => d.userType === 'admin')
+  age: s.if(d => d.age < 18).message('Underage users cannot register'),
+  email: s.if(d => d.userType === 'admin')
     .message('The administrator must provide an email address')
 };
 
@@ -803,7 +792,7 @@ const users = [
 ];
 
 //Create validator
-const canRegister = dsl.if(d => d.age < 18)
+const canRegister = s.if(d => d.age < 18)
   .message('underage');
 
 // ✅ Use.check() to filter
@@ -821,10 +810,10 @@ console.log(`Underage users: ${minorCount}`);
 ```javascript
 // Front-end form validation
 const formValidators = {
-  username: dsl.if(d => d.length < 3)
+  username: s.if(d => d.length < 3)
     .message('Username must be at least 3 characters'),
 
-  password: dsl.if(d => d.length < 8)
+  password: s.if(d => d.length < 8)
     .message('Password must be at least 8 characters')
 };
 
@@ -859,7 +848,7 @@ function onSubmit(formData) {
 
 ```javascript
 // Permission validator
-const hasPermission = dsl.if(d => d.role === 'admin')
+const hasPermission = s.if(d => d.role === 'admin')
   .or(d => d.role === 'moderator')
   .message('Insufficient permissions');
 
@@ -879,27 +868,27 @@ app.delete('/users/:id', checkPermission, deleteUser);
 
 ```javascript
 // Traditional way (requires validate function)
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   age: 'number:1-120!',
   userType: 'enum:admin|vip|user!',
 
   // Minors are prohibited from registering
-  ageCheck: dsl.if((data) => data.age < 18)
+  ageCheck: s.if((data) => data.age < 18)
     .message('Underage users cannot register'),
 
   //The administrator must have an email address
-  email: dsl.if((data) => data.userType === 'admin')
+  email: s.if((data) => data.userType === 'admin')
     .then('email!')
     .else('email'),
 
   // VIP users must have a mobile phone number
-  phone: dsl.if((data) => data.userType === 'vip')
+  phone: s.if((data) => data.userType === 'vip')
     .then('string:11!')
     .else(null),
 
   // Administrators and VIPs can set nicknames
-  nickname: dsl.if((data) => data.userType === 'admin')
+  nickname: s.if((data) => data.userType === 'admin')
     .or((data) => data.userType === 'vip')
     .then('string:2-20')
     .else(null)
@@ -920,27 +909,27 @@ validate(schema, {
 Validate different fields based on product type.
 
 ```javascript
-const schema = dsl({
+const schema = s({
   title: 'string:1-100!',
   price: 'number:0-!',
   type: 'enum:physical|digital|service!',
 
   // Physical products require weight and dimensions
-  weight: dsl.if((data) => data.type === 'physical')
+  weight: s.if((data) => data.type === 'physical')
     .then('number:0-!')
     .else(null),
 
-  dimensions: dsl.if((data) => data.type === 'physical')
+  dimensions: s.if((data) => data.type === 'physical')
     .then('string!')
     .else(null),
 
   // Digital products require a download link
-  downloadUrl: dsl.if((data) => data.type === 'digital')
+  downloadUrl: s.if((data) => data.type === 'digital')
     .then('url!')
     .else(null),
 
   // Service class requires service duration
-  duration: dsl.if((data) => data.type === 'service')
+  duration: s.if((data) => data.type === 'service')
     .then('number:1-!')
     .else(null)
 });
@@ -970,22 +959,22 @@ validate(schema, {
 Control access based on user role and status.
 
 ```javascript
-const schema = dsl({
+const schema = s({
   userId: 'string!',
   role: 'enum:admin|moderator|user!',
   status: 'enum:active|suspended|banned!',
 
   // Banned users are prohibited from operating
-  accessCheck: dsl.if((data) => data.status === 'banned')
+  accessCheck: s.if((data) => data.status === 'banned')
     .message('Your account has been banned'),
 
   // Pause user can only view
-  operationType: dsl.if((data) => data.status === 'suspended')
+  operationType: s.if((data) => data.status === 'suspended')
     .then('enum:view!')
     .else('enum:view|edit|delete!'),
 
   // Administrators can access all resources
-  resourceIds: dsl.if((data) => data.role === 'admin')
+  resourceIds: s.if((data) => data.role === 'admin')
     .then('array<string>') // optional
     .else('array<string>!') // required
 });
@@ -999,7 +988,7 @@ const schema = dsl({
 
 ❌ **Not recommended**:
 ```javascript
-dsl.if((data) => {
+s.if((data) => {
   const user = getUserFromDB(data.userId); // Synchronous database query
   return user.level > 5;
 })
@@ -1007,7 +996,7 @@ dsl.if((data) => {
 
 ✅ **Recommended**:
 ```javascript
-dsl.if((data) => data.userLevel > 5)
+s.if((data) => data.userLevel > 5)
 ```
 
 **Reason**: Conditional functions should only read data objects and should not have side effects or perform time-consuming operations.
@@ -1018,18 +1007,18 @@ dsl.if((data) => data.userLevel > 5)
 
 ❌ **Not recommended**:
 ```javascript
-const schema = dsl({
+const schema = s({
   field1: 'string!',
-  check1: dsl.if((data) => data.field1 === 'admin')
+  check1: s.if((data) => data.field1 === 'admin')
     .message('Error')
 });
 ```
 
 ✅ **Recommended**:
 ```javascript
-const schema = dsl({
+const schema = s({
   userType: 'string!',
-  ageVerification: dsl.if((data) => data.age < 18)
+  ageVerification: s.if((data) => data.age < 18)
     .message('Underage users cannot register')
 });
 ```
@@ -1041,7 +1030,7 @@ const schema = dsl({
 When conditions are not met and different validation rules are required, use `.else()`:
 
 ```javascript
-dsl.if((data) => data.userType === 'admin')
+s.if((data) => data.userType === 'admin')
   .then('email!')
   .else('email') // Different validation rules
 ```
@@ -1049,7 +1038,7 @@ dsl.if((data) => data.userType === 'admin')
 When the conditions are not met, validation is not required and `.else()` is omitted:
 
 ```javascript
-dsl.if((data) => data.userType === 'vip')
+s.if((data) => data.userType === 'vip')
   .then('string:6!')
   // Do not write else, non-vip users will not be validated
 ```
@@ -1062,11 +1051,11 @@ Simple conditions can be composed directly inside functions:
 
 ```javascript
 // ✅ Recommended (concise)
-dsl.if((data) => data.age >= 18 && data.userType === 'admin')
+s.if((data) => data.age >= 18 && data.userType === 'admin')
   .then('email!')
 
 // ⚠️ Available but a little cumbersome
-dsl.if((data) => data.age >= 18)
+s.if((data) => data.age >= 18)
   .and((data) => data.userType === 'admin')
   .then('email!')
 ```
@@ -1075,7 +1064,7 @@ Use `.and()` / `.or()` when complex logic or maintainability is required:
 
 ```javascript
 // ✅ Recommended (high readability)
-dsl.if((data) => data.age >= 18)
+s.if((data) => data.age >= 18)
   .and((data) => data.userType === 'admin')
   .and((data) => data.validated)
   .or((data) => data.isSuperUser)
@@ -1088,19 +1077,19 @@ dsl.if((data) => data.age >= 18)
 
 ❌ **Not recommended**:
 ```javascript
-dsl.if((data) => data.age < 18)
+s.if((data) => data.age < 18)
   .message('Error')
 ```
 
 ✅ **Recommended**:
 ```javascript
-dsl.if((data) => data.age < 18)
+s.if((data) => data.age < 18)
   .message('Underage users cannot register')
 ```
 
 ✅ **BETTER** (Supports multiple languages):
 ```javascript
-dsl.if((data) => data.age < 18)
+s.if((data) => data.age < 18)
   .message('error.user.underage')
 ```
 
@@ -1113,8 +1102,8 @@ dsl.if((data) => data.age < 18)
 **A**: Executed when calling `validate()`, not when defining Schema.
 
 ```javascript
-const schema = dsl({
-  email: dsl.if((data) => data.userType === 'admin')
+const schema = s({
+  email: s.if((data) => data.userType === 'admin')
     .then('email!') // ← will not be executed here
 });
 
@@ -1128,11 +1117,11 @@ validate(schema, data); // ← conditional function is executed here
 **A**: Can access the complete data object.
 
 ```javascript
-const schema = dsl({
+const schema = s({
   age: 'number!',
   userType: 'string!',
   status: 'string!',
-  email: dsl.if((data) => {
+  email: s.if((data) => {
     // All fields can be accessed
     return data.age >= 18 && data.userType === 'admin' && data.status === 'active';
   }).then('email!')
@@ -1146,9 +1135,9 @@ const schema = dsl({
 **A**: If the conditional function throws an error, it will be captured and regarded as the condition is not met.
 
 ```javascript
-const schema = dsl({
+const schema = s({
   obj: 'object!',
-  result: dsl.if((data) => data.obj.nested.value > 10)
+  result: s.if((data) => data.obj.nested.value > 10)
     .then('string!')
     .else(null)
 });
@@ -1161,23 +1150,23 @@ validate(schema, { obj: {} });
 **Suggestion**: Do defensive checks in conditional functions:
 
 ```javascript
-dsl.if((data) => data.obj?.nested?.value > 10)
+s.if((data) => data.obj?.nested?.value > 10)
   .then('string!')
 ```
 
 ---
 
-### Q4: Can dsl.if() be nested?
+### Q4: Can s.if() be nested?
 
 **A**: Yes, nesting is supported.
 
 ```javascript
-const schema = dsl({
+const schema = s({
   userType: 'string!',
   age: 'number!',
-  email: dsl.if((data) => data.userType === 'admin')
+  email: s.if((data) => data.userType === 'admin')
     .then(
-      dsl.if((data) => data.age >= 18)
+      s.if((data) => data.age >= 18)
         .then('email!')
         .else('email')
     )
@@ -1187,30 +1176,30 @@ const schema = dsl({
 
 ---
 
-### Q5: How to use it with the existing dsl.match() method?
+### Q5: How to use it with the existing s.match() method?
 
 **A**: Can be mixed, choose the most suitable method.
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // Static value mapping - use match
   userType: 'enum:admin|vip|user!',
-  level: dsl.match('userType', {
+  level: s.match('userType', {
     admin: 'enum:high!',
     vip: 'enum:medium!',
     user: 'enum:low!'
   }),
 
   // Dynamic conditional judgment - use if
-  email: dsl.if((data) => data.userType === 'admin' && data.level === 'high')
+  email: s.if((data) => data.userType === 'admin' && data.level === 'high')
     .then('email!')
     .else('email')
 });
 ```
 
 **Selection Suggestions**:
-- **Simple Value Mapping** → Use `dsl.match()`
-- **Complex conditional logic** → Use `dsl.if()`
+- **Simple Value Mapping** → Use `s.match()`
+- **Complex conditional logic** → Use `s.if()`
 
 ---
 
@@ -1220,7 +1209,7 @@ const schema = dsl({
 
 ```javascript
 //Example 1: Directly verify the string
-const stringSchema = dsl.if((data) => typeof data === 'string' && data.includes('@'))
+const stringSchema = s.if((data) => typeof data === 'string' && data.includes('@'))
   .then('email!')
   .else('string:1-50');
 
@@ -1228,21 +1217,21 @@ validate(stringSchema, 'test@example.com'); // ✅ as email validation
 validate(stringSchema, 'just a text'); // ✅ Validate as a normal string
 
 //Example 2: Directly verify the array
-const arraySchema = dsl.if((data) => Array.isArray(data) && data.length > 5)
+const arraySchema = s.if((data) => Array.isArray(data) && data.length > 5)
   .message('Array can have up to 5 elements');
 
 validate(arraySchema, [1, 2, 3]); // ✅ Passed
 validate(arraySchema, [1, 2, 3, 4, 5, 6]); // ❌ failed
 
 // Example 3: Verify numbers directly
-const numberSchema = dsl.if((data) => typeof data === 'number' && data < 0)
+const numberSchema = s.if((data) => typeof data === 'number' && data < 0)
   .message('Negative numbers are not allowed');
 
 validate(numberSchema, 10); // ✅ Passed
 validate(numberSchema, -5); // ❌ failed
 
 //Example 4: Automatically identify the type (email or mobile phone number)
-const contactSchema = dsl.if((data) => typeof data === 'string' && data.includes('@'))
+const contactSchema = s.if((data) => typeof data === 'string' && data.includes('@'))
   .then('email!')
   .else('string:11!');
 
@@ -1273,7 +1262,7 @@ validate(contactSchema, '13800138000'); // ✅ Verify as mobile phone number
 ### v1.1.1 (2026-01-05)
 
 - ✅ Added `ConditionalBuilder` category
-- ✅ Added `dsl.if()` chain condition API
+- ✅ Added `s.if()` chain condition API
 - ✅Supports and/or multiple condition combinations
 - ✅ Support elseIf multiple branches
 - ✅ message automatically throws errors (no need to throwError)
@@ -1294,4 +1283,4 @@ validate(contactSchema, '13800138000'); // ✅ Verify as mobile phone number
 ## Corresponding sample file
 
 **Example entry**: [conditional-api.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/conditional-api.ts)
-**Description**: Also overrides `.check()` / `.assert()` in failed predicate mode, as well as field name version `dsl.if(field, then, else)` and `dsl.match()` mapping.
+**Description**: Also overrides `.check()` / `.assert()` in failed predicate mode, as well as field name version `s.if(field, then, else)` and `s.match()` mapping.

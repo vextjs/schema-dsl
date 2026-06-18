@@ -1,20 +1,12 @@
 # TypeScript usage guide
 
-> **Version**: schema-dsl v2.0.11
-> **Updated date**: 2026-06-17
-> **Important**: v1.0.6 removed the global String type extension to avoid type pollution
+> **Version**: schema-dsl v2.1.0
+> **Updated date**: 2026-06-18
+> **Important**: since v2.1.0, public TypeScript examples prefer `schema-dsl/pure` + `s` so that schema authoring has no automatic String prototype side effect.
 
 ---
 
-## 📋 Table of Contents
-
-1. [Quick Start](#1-quick-start)
-2. [Chained calls in TypeScript](#2-chained-calls-in-typescript)
-3. [Best Practices in Type Deduction](#3-best-practices-for-type-inference)
-4. [Complete example](#4-complete-example)
-5. [FAQ](#5-faq)
-
----
+Read this early when choosing between pure DSL strings, DSL seed builders, namespace factories, and optional String extension ergonomics. It explains what TypeScript can infer, what remains runtime-only, and where editor hints are intentionally limited.
 
 ## 1. Quick start
 
@@ -27,10 +19,10 @@ npm install schema-dsl
 ### 1.2 Basic usage
 
 ```typescript
-import { dsl, validate } from 'schema-dsl';
+import { s, validate } from 'schema-dsl/pure';
 
 //define Schema
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:18-100'
@@ -62,55 +54,69 @@ Direct string chaining therefore reports a type error unless you explicitly opt 
 
 ```typescript
 // ❌ TypeScript error by default
-const schema = dsl({
+const defaultErrorSchema = s({
   email: 'email!'.label('email') // Type error: Property 'label' does not exist on type 'string'
 });
 
-// ✅ Default TypeScript path: use dsl()
-const schema = dsl({
-  email: dsl('email!').label('mailbox')
+// ✅ Default TypeScript path without global String types: use a factory
+const defaultBuilderSchema = s({
+  email: s.email().label('mailbox').require()
 });
 ```
 
-### 2.2 Correct usage ⭐⭐⭐
+### 2.2 Recommended authoring entries since v2.1.0
 
-**Default recommendation: use `dsl()` to wrap the string** in order to obtain type hints and chained calls without global type augmentation:
+Choose one of the three recommended entries according to the authoring goal:
 
 ```typescript
-// ✅ Correct default path
-const schema = dsl({
-  email: dsl('email!').label('mailbox').pattern(/custom/)
+import { s } from 'schema-dsl/pure';
+
+// ✅ Pure DSL: shortest configuration, limited editor hints inside the literal
+const compactSchema = s({
+  email: 'email!',
+  username: 'string:3-32!'
 });
 
-// ✅ You can also define it first and then use it
-const emailField = dsl('email!').label('mailbox');
-const schema = dsl({ email: emailField });
+// ✅ Explicit DSL seed: compact DSL plus builder hints
+const emailField = s('email!').label('mailbox').pattern(/custom/);
+const reusableSchema = s({ email: emailField });
+
+// ✅ Factory form: strongest TypeScript method discovery
+const accountEmail = s.email().label('mailbox').pattern(/custom/).require();
+const factorySchema = s({ email: accountEmail });
 ```
 
-If the project uses `transformSchemaDsl()` or `schemaDslEsbuildPlugin()` to compile static String chains into `dsl(...)` calls, add the opt-in type entry:
+The compatibility `dsl` export remains available, but new public examples use `s` as the short namespace. When imported from `schema-dsl/pure`, `s` supports pure DSL strings, `s('...')`, and `s.xxx()` without installing String extensions.
+
+If the project uses `transformSchemaDsl()` or `schemaDslEsbuildPlugin()` to compile static String chains into builder calls, add the opt-in type entry:
 
 ```typescript
-import { dsl } from 'schema-dsl/pure';
+import { s } from 'schema-dsl/pure';
 import 'schema-dsl/string-types';
 
-const schema = dsl({
+const schema = s({
   role: 'admin|user|guest'.label('Role'),
-  email: 'email!'.label('Email').required()
+  email: 'email!'.label('Email').require()
 });
 ```
 
+Direct String chains are intentionally not the default path. Use them when the compact source form matters and your project explicitly installs the compile-time or runtime String extension support.
+
 **benefit**:
-- ✅ Get complete type inference and IDE auto-tips
-- ✅ The default `dsl()` path does not pollute the native String type (`trim()` correctly returns `string`)
-- ✅ The transform + `schema-dsl/string-types` path gives String-chain hints only when explicitly requested
-- ✅ Better type safety and development experience
+- ✅ Pure DSL strings remain the shortest schema configuration.
+- ✅ `s('...')` keeps DSL syntax while adding complete builder-method hints after the seed.
+- ✅ `s.email()` / `s.string()` / `s.number()` give the strongest factory and method discovery.
+- ✅ The `schema-dsl/pure` entry does not install String extensions.
+- ✅ The transform + `schema-dsl/string-types` path gives String-chain hints only when explicitly requested.
+- ✅ Known DSL literals still get lightweight value inference through `InferSchema` / `InferDslString`.
 
 ### 2.3 Working principle
 
 ```typescript
-// dsl(string) returns a DslBuilder instance typed with the public IDslBuilder chain contract
-const emailBuilder = dsl('email!');
-// ^? DslBuilder & IDslBuilder - complete public chain type
+// s factory and s(string) both return a builder typed with the public IDslBuilder chain contract
+const emailBuilder = s.email().require();
+const sameBuilderShape = s('email!').label('mailbox');
+// ^? IDslBuilder - complete public chain type
 
 // DslBuilder supports all chained methods and has complete type hints
 emailBuilder.label('mailbox')
@@ -118,6 +124,8 @@ emailBuilder.label('mailbox')
   .pattern(/^[a-z]+@[a-z]+\.[a-z]+$/)
   .error({ required: 'Email required' });
 ```
+
+`s('string:3-32!')` should not be described as a full type-level parser for the DSL grammar. It gives full type hints for the returned builder methods, while the string literal itself is only inferred at a coarse schema-value level by helper types such as `InferDslString<'string:3-32!'>` -> `string`. Length ranges, regular expressions, custom validators, and localized messages are runtime schema constraints, not TypeScript value refinements.
 
 ---
 
@@ -127,62 +135,60 @@ emailBuilder.label('mailbox')
 
 | Way | JavaScript | TypeScript | type inference | Recommendation |
 |------|-----------|-----------|---------|--------|
-| direct string without `string-types` | ✅ Perfect | ❌ Type error | ❌ weak | ⭐ |
-| transform + `schema-dsl/string-types` | ✅ Perfect after build transform | ✅ Opt-in global hints | ✅ Strong | ⭐⭐⭐⭐ |
-| dsl() package | ✅ Perfect | ✅ Perfect | ✅ Strong | ⭐⭐⭐⭐⭐ |
-| Define before using | ✅ Perfect | ✅ Perfect | ✅ Strong | ⭐⭐⭐⭐ |
+| Pure DSL in `s({})` | ✅ Works | ✅ Stable | ✅ Lightweight DSL literal inference | ⭐⭐⭐⭐⭐ |
+| `s('...')` DSL seed | ✅ Works | ✅ Builder method hints | ✅ Builder hints plus lightweight DSL literal inference | ⭐⭐⭐⭐⭐ |
+| `s.xxx()` namespace factories | ✅ Works | ✅ Builder method hints | ✅ Strong builder hints without DSL literal parsing | ⭐⭐⭐⭐⭐ |
+| direct string without `string-types` | ✅ Runtime works only after String runtime install | ❌ Type error | ❌ Weak | ⭐ |
+| direct string with `schema-dsl/string-types` | ✅ Works after explicit runtime/transform support | ✅ Opt-in String-chain hints | ✅ Strong authoring hints; lightweight DSL literal inference | ⭐⭐⭐ |
+| `dsl('...')` compatibility alias | ✅ Works | ✅ Builder method hints | ✅ Same builder surface as `s('...')` | ⭐⭐⭐ |
 
 ### 3.2 Recommended writing method
 
-#### ✅ Way 1: Use dsl() wrapper inline (most recommended)
+#### ✅ Way 1: Pure DSL strings for the shortest configuration
 
 ```typescript
-const schema = dsl({
-  username: dsl('string:3-32!')
-    .pattern(/^[a-zA-Z0-9_]+$/)
-    .label('username'),
-    .error({ pattern: 'Can only contain letters, numbers and underscores' }),
+import { s } from 'schema-dsl/pure';
 
-  email: dsl('email!')
-    .label('email address')
-    .error({ required: 'Email required' }),
-
-  age: dsl('number:18-100')
-    .label('age')
+const schema = s({
+  username: 'username:medium!',
+  email: 'email!',
+  age: 'number:18-100'
 });
 ```
 
 **advantage**:
-- ✅ Complete type deduction
-- ✅ IDE automatically prompts all methods
-- ✅ The code is compact and the logic is clear
+- ✅ Shortest public authoring form
+- ✅ No String extension installation
+- ✅ Best for fields that only need built-in DSL constraints
 
-#### ✅ Method 2: Define fields first and then combine them (suitable for reuse)
+#### ✅ Way 2: Define DSL seeds first and then combine them
 
 ```typescript
+import { s } from 'schema-dsl/pure';
+
 //Define reusable fields
-const emailField = dsl('email!')
+const emailField = s('email!')
   .label('email address')
   .error({ required: 'Email required' });
 
-const usernameField = dsl('string:3-32!')
+const usernameField = s('string:3-32!')
   .pattern(/^[a-zA-Z0-9_]+$/)
   .label('username')
   .error({ pattern: 'Username can only contain letters, numbers and underscores' });
 
 // Use in combination
-const registrationSchema = dsl({
+const registrationSchema = s({
   email: emailField,
   username: usernameField,
-  password: dsl('string:8-64!')
+  password: s('string:8-64!')
     .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
     .label('password')
     .error({ pattern: 'Password must be at least 8 characters and must contain letters and numbers' })
 });
 
-const loginSchema = dsl({
+const loginSchema = s({
   email: emailField, //reuse
-  password: dsl('string!').label('password')
+  password: s('string!').label('password')
 });
 ```
 
@@ -191,19 +197,36 @@ const loginSchema = dsl({
 - ✅ The code is more modular
 - ✅ Suitable for large projects
 
-#### ❌ Not recommended writing method
+#### ✅ Way 3: Use `s` namespace factories when discovery matters most
 
 ```typescript
-// ❌ Directly use string chain calls in TypeScript
-const schema = dsl({
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
+  username: s.string().min(3).max(32).require()
+    .pattern(/^[a-zA-Z0-9_]+$/)
+    .label('username'),
+
+  email: s.email().label('email address').require(),
+  age: s.number().min(18).max(100).label('age')
+});
+```
+
+**advantage**:
+- ✅ Complete builder-method hints
+- ✅ IDE automatically prompts all factory and builder methods
+- ✅ Best for users who prefer discoverable APIs over compact DSL literals
+
+#### ❌ Avoid unconfigured or inconsistent writing styles
+
+```typescript
+// ❌ Direct string chains without schema-dsl/string-types
+const schema = s({
   email: 'email!'.label('email') // There may be no type hint
 });
 
-// ❌ Mixed usage (inconsistent)
-const schema = dsl({
-  email: 'email!'.label('email'), // String expansion
-  username: dsl('string!').label('username') // dsl package
-});
+// ❌ Mixing root-entry String side effects with pure-entry examples in the same guide
+// Keep one entry style per guide, package, or codebase section.
 ```
 
 ---
@@ -213,35 +236,35 @@ const schema = dsl({
 ### 4.1 User registration form
 
 ```typescript
-import { dsl, validateAsync, ValidationError } from 'schema-dsl';
+import { s, validateAsync, ValidationError } from 'schema-dsl/pure';
 
 //define Schema
-const registrationSchema = dsl({
-  profile: dsl({
-    username: dsl('string:3-32!')
+const registrationSchema = s({
+  profile: s({
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .label('username')
       .error({ pattern: 'Can only contain letters, numbers and underscores' }),
 
-    email: dsl('email!')
+    email: s('email!')
       .label('email address')
       .error({ required: 'Email required' }),
 
-    password: dsl('string:8-64!')
+    password: s('string:8-64!')
       .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
       .label('password')
       .error({ pattern: 'Password must be at least 8 characters and must contain letters and numbers' }),
 
-    age: dsl('number:18-100')
+    age: s('number:18-100')
       .label('age')
   }),
 
-  settings: dsl({
-    emailNotify: dsl('boolean')
+  settings: s({
+    emailNotify: s('boolean')
       .default(true)
       .label('Email Notification'),
 
-    language: dsl('string')
+    language: s('string')
       .default('zh-CN')
       .label('Language settings')
   })
@@ -283,21 +306,21 @@ registerUser({
 ### 4.2 API request validation
 
 ```typescript
-import { ValidationError, dsl, validateAsync } from 'schema-dsl';
+import { ValidationError, s, validateAsync } from 'schema-dsl/pure';
 import express from 'express';
 
 const app = express();
 app.use(express.json());
 
 //Define API Schema
-const createUserSchema = dsl({
-  username: dsl('string:3-32!')
+const createUserSchema = s({
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .label('username'),
 
-  email: dsl('email!').label('mailbox'),
+  email: s('email!').label('mailbox'),
 
-  role: dsl('string')
+  role: s('string')
     .default('user')
     .label('role')
 });
@@ -330,43 +353,43 @@ app.post('/api/users', async (req, res) => {
 ### 4.3 Form field reuse
 
 ```typescript
-import { dsl } from 'schema-dsl';
+import { s } from 'schema-dsl/pure';
 
 //Define common fields
 const commonFields = {
-  email: dsl('email!')
+  email: s('email!')
     .label('email address')
     .error({ required: 'Email required' }),
 
-  username: dsl('string:3-32!')
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .label('username')
     .error({ pattern: 'Username can only contain letters, numbers and underscores' }),
 
-  password: dsl('string:8-64!')
+  password: s('string:8-64!')
     .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
     .label('password')
     .error({ pattern: 'Password must be at least 8 characters and must contain letters and numbers' })
 };
 
 //Registration form
-const registrationSchema = dsl({
+const registrationSchema = s({
   ...commonFields,
-  confirmPassword: dsl('string!')
+  confirmPassword: s('string!')
     .label('Confirm password')
 });
 
 //Login form
-const loginSchema = dsl({
+const loginSchema = s({
   email: commonFields.email,
-  password: dsl('string!').label('password') // No strong password validation is required when logging in
+  password: s('string!').label('password') // No strong password validation is required when logging in
 });
 
 // Password reset form
-const resetPasswordSchema = dsl({
+const resetPasswordSchema = s({
   email: commonFields.email,
   newPassword: commonFields.password,
-  confirmPassword: dsl('string!').label('Confirm new password')
+  confirmPassword: s('string!').label('Confirm new password')
 });
 ```
 
@@ -378,34 +401,26 @@ const resetPasswordSchema = dsl({
 
 **Cause**: TypeScript has restrictions on type inference for the global `String.prototype` extension.
 
-**Solution**: Use `dsl()` to wrap the string:
+**Solution**: Use `s('...')` to wrap the string:
 
 ```typescript
 // ❌ May be silent
 'email!'.label('email')
 
 // ✅ Full Tips
-dsl('email!').label('mailbox')
+s('email!').label('mailbox')
 ```
 
 ### 5.2 Do JavaScript users need to change the way they write?
 
-JavaScript users can directly call string chains by default after importing `schema-dsl`, which is compatible with v1.1.x usage habits:
+Existing JavaScript users can keep root-entry compatibility code, but new documentation recommends the side-effect-free pure entry:
 
 ```javascript
-const schema = dsl({
-  email: 'email!'.label('mailbox')
-});
-```
+import { s } from 'schema-dsl/pure';
 
-If you don’t want to keep the `String.prototype` extension, you can uninstall it actively and then use the `dsl()` package:
-
-```javascript
-const { dsl, uninstallStringExtensions } = require('schema-dsl');
-uninstallStringExtensions();
-
-const schema = dsl({
-  email: dsl('email!').label('mailbox')
+const schema = s({
+  email: s('email!').label('mailbox'),
+  age: 'number:18-100'
 });
 ```
 
@@ -422,11 +437,11 @@ Enabling strict mode in `tsconfig.json` is no problem either:
 }
 ```
 
-Just use the `dsl()` package:
+Just use `s('...')`:
 
 ```typescript
-const schema = dsl({
-  email: dsl('email!').label('mailbox') // ✅ Normal in strict mode
+const schema = s({
+  email: s('email!').label('mailbox') // ✅ Normal in strict mode
 });
 ```
 
@@ -485,8 +500,8 @@ try {
 ### 6.1 Additional business rules
 
 ```typescript
-const schema = dsl({
-  username: dsl('string:3-32!').label('username')
+const schema = s({
+  username: s('string:3-32!').label('username')
 });
 
 const result = await validateAsync(schema, data);
@@ -500,11 +515,11 @@ The advantage of this writing method is that schema-dsl is still responsible for
 ### 6.2 Condition validation
 
 ```typescript
-const schema = dsl({
-  userType: dsl('string!').label('user type'),
+const schema = s({
+  userType: s('string!').label('user type'),
 
-  // Use dsl.match() to dynamically verify based on the userType field
-  companyName: dsl.match('userType', {
+  // Use s.match() to dynamically verify based on the userType field
+  companyName: s.match('userType', {
     'company': 'string!', // Required for enterprise users
     '_default': 'string' // Optional for individual users
   })
@@ -514,18 +529,18 @@ const schema = dsl({
 ### 6.3 Schema reuse and extension
 
 ```typescript
-import { SchemaUtils } from 'schema-dsl';
+import { SchemaUtils, s } from 'schema-dsl/pure';
 
 //Basic user Schema
-const baseUserSchema = dsl({
-  username: dsl('string:3-32!').label('username'),
-  email: dsl('email!').label('mailbox')
+const baseUserSchema = s({
+  username: s('string:3-32!').label('username'),
+  email: s('email!').label('mailbox')
 });
 
 //Expand to administrator Schema
 const adminSchema = SchemaUtils.extend(baseUserSchema, {
-  role: dsl('string!').default('admin').label('role'),
-  permissions: dsl('array<string>').label('permission list')
+  role: s('string!').default('admin').label('role'),
+  permissions: s('array<string>').label('permission list')
 });
 
 // Select only some fields
@@ -542,8 +557,8 @@ const publicUserSchema = SchemaUtils.pick(
 ### 7.1 Reuse Schema and default cache
 
 ```typescript
-const schema = dsl({
-  email: dsl('email!').label('mailbox')
+const schema = s({
+  email: s('email!').label('mailbox')
 });
 
 // Multiple verifications will reuse the default Validator's compilation cache.
@@ -555,10 +570,10 @@ await validateAsync(schema, data3);
 ### 7.2 Cache configuration
 
 ```typescript
-import { dsl } from 'schema-dsl';
+import { s } from 'schema-dsl/pure';
 
 //Configure cache size
-dsl.config({
+s.config({
   cache: {
     maxSize: 5000, //Number of cache entries
     ttl: 60000 // Expiration time (milliseconds)
@@ -570,7 +585,7 @@ dsl.config({
 
 ## 8. Summary of best practices
 
-1. ✅ **Always use `dsl()` to wrap strings in TypeScript**
+1. ✅ **Choose the authoring entry by goal: pure DSL in `s({})`, `s('...')`, or `s.xxx()`**
 2. ✅ **Use `validateAsync` for asynchronous validation**
 3. ✅ **Add generic type parameters for validation results**
 4. ✅ **Reuse common field definitions**
@@ -593,9 +608,9 @@ dsl.config({
 ## Corresponding sample file
 
 **Example entry**: [typescript-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/typescript-guide.ts)
-**Description**: Shows the recommended `dsl()` package writing method, `validate<T>()` / `validateAsync<T>()`, and `ValidationError` field error reading method recommended under TypeScript.
+**Description**: Shows the three recommended TypeScript authoring entries, `validate<T>()` / `validateAsync<T>()`, and `ValidationError` field error reading.
 
 ---
 
-**Updated date**: 2026-06-17
-**Document version**: v2.0.11
+**Updated date**: 2026-06-18
+**Document version**: v2.1.0

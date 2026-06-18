@@ -6,16 +6,6 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-- [API Reference](#api-reference)
-- [Configuration Options](#configuration-options)
-- [Complete example](#complete-example)
-- [Type mapping](#type-mapping)
-
----
 
 ## Overview
 
@@ -35,10 +25,10 @@
 ## quick start
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // 1. Define Schema
-const userSchema = dsl({
+const userSchema = s({
   id: 'string!',
   username: 'string:3-32!',
   email: 'email!',
@@ -157,15 +147,13 @@ const exporter = new exporters.MySQLExporter({
 ### User table DDL generation
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 //Define user Schema (with description)
-const userSchema = dsl({
+const userSchema = s({
   id: 'string!',
-  username: 'string:3-32!'
-    .description('User login name'),
-  email: 'email!'
-    .description('User Email'),
+  username: s('string:3-32!').description('User login name'),
+  email: s('email!').description('User Email'),
   password: 'string:8-64!',
   age: 'number:0-150',
   status: 'active|inactive|banned',
@@ -254,7 +242,7 @@ If these fields exist, `PRIMARY KEY` constraints are automatically added.
 - ❌ Numerical range constraints (`minimum/maximum`)
 - ❌ Enumeration CHECK constraints (exported as normal `VARCHAR`)
 - ❌ Minimum string length (`minLength`)
-- ❌ Conditional validation logic (`dsl.match()`, `dsl.if()`)
+- ❌ Conditional validation logic (`s.match()`, `s.if()`)
 
 **Detailed instructions**: Please read [Export restrictions document](export-limitations.md)
 

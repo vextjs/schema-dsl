@@ -28,16 +28,15 @@ email: 'email!'
 // 错误消息: "email is required"  ❌ 不友好
 
 // 使用label
-email: 'email!'.label('邮箱地址')
+email: s('email!').label('邮箱地址')
 // 错误消息: "邮箱地址不能为空"  ✅ 友好
 ```
 
 **完整示例**:
 
 ```javascript
-const schema = dsl({
-  userEmail: 'email!'
-    .label('用户邮箱')
+const schema = s({
+  userEmail: s('email!').label('用户邮箱')
     .messages({
       'required': '{{#label}}不能为空',  // 使用label值
       'format': '{{#label}}格式不正确'
@@ -64,8 +63,7 @@ const schema = dsl({
 **示例**:
 
 ```javascript
-email: 'email!'
-  .label('邮箱地址')
+email: s('email!').label('邮箱地址')
   .description('用于登录和接收系统通知')
 ```
 
@@ -101,11 +99,11 @@ email: 'email!'
 ### 1. label 是必需的（用户可见字段）
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // ✅ 好：所有用户可见字段都有label
-  username: 'string:3-32!'.label('用户名'),
-  email: 'email!'.label('邮箱地址'),
-  password: 'string:8-64!'.label('密码'),
+  username: s('string:3-32!').label('用户名'),
+  email: s('email!').label('邮箱地址'),
+  password: s('string:8-64!').label('密码'),
   
   // ⚠️ 可以：内部字段可以不用label
   userId: 'uuid!',
@@ -116,18 +114,16 @@ const schema = dsl({
 ### 2. description 是可选的（需要说明时使用）
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // ✅ 复杂字段：添加description
-  apiKey: 'string:32!'
-    .label('API密钥')
+  apiKey: s('string:32!').label('API密钥')
     .description('用于调用第三方API，请妥善保管'),
   
   // ✅ 简单字段：不需要description
-  name: 'string:1-50!'.label('姓名'),
+  name: s('string:1-50!').label('姓名'),
   
   // ✅ 有特殊要求的字段：添加description
-  password: 'string:8-64!'
-    .label('密码')
+  password: s('string:8-64!').label('密码')
     .description('必须包含大小写字母和数字')
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
 });
@@ -136,10 +132,9 @@ const schema = dsl({
 ### 3. 组合使用示例
 
 ```javascript
-const userSchema = dsl({
+const userSchema = s({
   // 完整的字段定义
-  email: 'email!'
-    .label('邮箱地址')                    // 错误消息中显示
+  email: s('email!').label('邮箱地址')                    // 错误消息中显示
     .description('用于登录和接收通知')    // 表单提示/文档
     .messages({
       'required': '{{#label}}不能为空',
@@ -147,11 +142,10 @@ const userSchema = dsl({
     }),
   
   // 简单字段
-  age: 'number:18-120'.label('年龄'),
+  age: s('number:18-120').label('年龄'),
   
   // 复杂字段
-  bio: 'string:500'
-    .label('个人简介')
+  bio: s('string:500').label('个人简介')
     .description('介绍你自己，最多500字'),
   
   // 内部字段（无需label/description）
@@ -181,9 +175,8 @@ const userSchema = dsl({
 
 ```javascript
 // Schema定义
-const schema = dsl({
-  email: 'email!'
-    .label('邮箱地址')
+const schema = s({
+  email: s('email!').label('邮箱地址')
     .messages({
       'required': '{{#label}}不能为空',
       'format': '{{#label}}格式不正确'
@@ -202,9 +195,8 @@ validator.validate(schema, { email: 'invalid' });
 ### 表单渲染
 
 ```javascript
-const schema = dsl({
-  password: 'string:8-64!'
-    .label('登录密码')
+const schema = s({
+  password: s('string:8-64!').label('登录密码')
     .description('8-64位，包含大小写字母和数字')
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
 });
@@ -239,16 +231,14 @@ const schema = dsl({
 
 ```javascript
 // 最小配置（简单字段）
-name: 'string:1-50!'.label('姓名')
+name: s('string:1-50!').label('姓名')
 
 // 标准配置（常规字段）
-email: 'email!'
-  .label('邮箱地址')
+email: s('email!').label('邮箱地址')
   .messages({ 'format': '请输入有效的{{#label}}' })
 
 // 完整配置（复杂字段）
-apiKey: 'string:32!'
-  .label('API密钥')
+apiKey: s('string:32!').label('API密钥')
   .description('用于调用第三方API，请妥善保管')
   .pattern(/^[A-Za-z0-9]{32}$/)
   .messages({

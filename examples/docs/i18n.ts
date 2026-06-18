@@ -1,4 +1,4 @@
-import { dsl, validate, Locale } from '../../dist/index.js'
+import { s, validate, Locale } from '../../dist/pure.js'
 
 // ============================================================
 // i18n — internationalized validation messages
@@ -11,10 +11,10 @@ import { dsl, validate, Locale } from '../../dist/index.js'
 // 1. Built-in locales: en-US and zh-CN
 // ============================================================
 
-const profileSchema = dsl({
-  username: dsl('string:3-32!').label('Username'),
-  email:    dsl('email!').label('Email'),
-  age:      dsl('integer:18-120').label('Age'),
+const profileSchema = s({
+  username: s('string:3-32!').label('Username'),
+  email:    s('email!').label('Email'),
+  age:      s('integer:18-120').label('Age'),
 })
 
 // English errors
@@ -54,14 +54,14 @@ console.log('i18n.de.msgs           =', deResult.errors?.map(e => e.message))
 // 3. Per-field custom messages override the locale
 // ============================================================
 
-const formSchema = dsl({
-  username: dsl('string:3-20!')
+const formSchema = s({
+  username: s('string:3-20!')
     .label('username')
     .error({
       minLength: 'username must be at least 3 characters',
       maxLength: 'username must be at most 20 characters',
     }),
-  password: dsl('string:8-64!')
+  password: s('string:8-64!')
     .label('password')
     .error({ minLength: 'password must be at least 8 characters' }),
 })

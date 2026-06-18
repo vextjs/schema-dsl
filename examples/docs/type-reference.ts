@@ -1,4 +1,4 @@
-import { dsl, validate } from '../../dist/index.js';
+import { s, validate } from '../../dist/pure.js';
 
 // ============================================================
 // All 32 built-in types, grouped by category.
@@ -6,7 +6,7 @@ import { dsl, validate } from '../../dist/index.js';
 
 // ── 1. Primitive types (8) ────────────────────────────────
 
-const primitiveSchema = dsl({
+const primitiveSchema = s({
   a: 'string',    // any string
   b: 'number',    // float or integer
   c: 'integer',   // whole number
@@ -23,7 +23,7 @@ console.log('type-reference.primitives.valid =',
 
 // ── 2. Format types (11) ─────────────────────────────────
 
-const formatSchema = dsl({
+const formatSchema = s({
   a: 'email',      // user@example.com
   b: 'url',        // https://example.com
   c: 'uri',        // any valid URI
@@ -62,7 +62,7 @@ console.log('type-reference.formats.errorCount =', formatInvalid.errors?.length)
 
 // ── 3. Special string types (9) ─────────────────────────
 
-const specialSchema = dsl({
+const specialSchema = s({
   a: 'binary',       // base64 encoded binary data
   b: 'objectId',     // MongoDB ObjectId (24-char hex)
   c: 'hexColor',     // #rrggbb or #rgb
@@ -88,7 +88,7 @@ console.log('type-reference.special.valid =',
 
 // ── 4. Extension types (5) ───────────────────────────────
 
-const extensionSchema = dsl({
+const extensionSchema = s({
   a: 'alphanum',  // letters and digits only
   b: 'lower',     // lowercase letters only
   c: 'upper',     // uppercase letters only
@@ -114,7 +114,7 @@ console.log('type-reference.extensions.invalid =',
 
 // ── 5. Phone and identity patterns ──────────────────────
 
-const phoneSchema = dsl({
+const phoneSchema = s({
   cn: 'phone:cn',             // Chinese mobile: 1[3-9]xxxxxxxx
   us: 'phone:us',             // US: (xxx) xxx-xxxx or xxx-xxx-xxxx
   uk: 'phone:uk',             // UK: +44 or 0 followed by number
@@ -129,14 +129,14 @@ console.log('type-reference.phone.valid =',
   }).valid)
 
 // Chinese national ID
-const idSchema = dsl({ idCard: 'idCard:cn!' })
+const idSchema = s({ idCard: 'idCard:cn!' })
 console.log('type-reference.idCard.valid =',
   validate(idSchema, { idCard: '110101199003071234' }).valid)
 console.log('type-reference.idCard.invalid =',
   validate(idSchema, { idCard: '123456' }).valid)
 
 // Credit card types
-const creditCardSchema = dsl({
+const creditCardSchema = s({
   visa:       'creditCard:visa',
   mastercard: 'creditCard:mastercard',
   amex:       'creditCard:amex',
@@ -149,7 +149,7 @@ console.log('type-reference.creditCard.valid =',
   }).valid)
 
 // Other identity patterns
-const miscSchema = dsl({
+const miscSchema = s({
   plate:    'licensePlate:cn',    // Chinese vehicle plate
   postal:   'postalCode:cn',      // Chinese postal code
   passport: 'passport:cn',        // Chinese passport
@@ -163,7 +163,7 @@ console.log('type-reference.misc.valid =',
 
 // ── 6. Types with constraints ────────────────────────────
 
-const constrainedSchema = dsl({
+const constrainedSchema = s({
   email:      'email!',
   serverIp:   'ip!',
   schedule:   'cron',

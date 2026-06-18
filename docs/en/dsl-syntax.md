@@ -1,37 +1,27 @@
 # A complete guide to DSL syntax
 
-> **Update time**: 2026-05-22
+> **Update time**: 2026-06-18
 
 ---
 
-## 📑 Table of Contents
-
-- [Quick Start](#quick-start)
-- [Full list of types](#complete-list-of-types)
-- [Basic Grammar](#basic-grammar)
-- [Constraint syntax](#constraint-syntax)
-- [Array syntax](#array-syntax)
-- [Object syntax](#object-syntax)
-- [Conditional Validation (Match)](#conditional-validation-match)
-- [Advanced usage](#advanced-usage)
-- [Comparison of implementation plans](#comparison-of-implementation-plans)
-- [Complete example](#complete-example)
-
----
+This page is the main reference for writing schema rules. Read it after [Quick Start](quick-start.md), then use [Type Reference](type-reference.md) and [Validation Guide](validation-guide.md) for deeper behavior.
 
 ## quick start
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 //Basic type
-const schema = dsl({
+const schema = s({
   name: 'string!', // required string
   age: 'number', // optional number
   email: 'email!', // required email
   active: 'boolean', // Boolean value
   tags: 'array<string>' // String array
 });
+
+// Factory entry for stronger method discovery:
+const emailField = s.email().label('Email').require();
 ```
 
 ---
@@ -112,7 +102,7 @@ const schema = dsl({
 Use `!` to mark required fields and `?` to explicitly mark optional fields:
 
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string!', // required
   nickname: 'string', // optional (default)
   bio: 'string?', // Explicitly optional (equivalent to string)
@@ -134,7 +124,7 @@ Two methods are supported:
 
 ```javascript
 // Method 1: Required inside the field
-const schema1 = dsl({
+const schema1 = s({
   user: {
     name: 'string!', // name is required (user is optional)
     email: 'email!' // email is required
@@ -142,7 +132,7 @@ const schema1 = dsl({
 });
 
 // Method 2: The object itself is required ✅ Recommended
-const schema2 = dsl({
+const schema2 = s({
   'user!': { // user itself is required
     name: 'string', // name optional
     email: 'email' // email optional
@@ -165,7 +155,7 @@ const schema2 = dsl({
 
 **Example**:
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!', // 3-32 characters, required
   bio: 'string:500', // Maximum 500 characters
   password: 'string:8-' // minimum 8 characters
@@ -182,7 +172,7 @@ const schema = dsl({
 
 **Example**:
 ```javascript
-const schema = dsl({
+const schema = s({
   age: 'number:18-120',         // 18-120
   score: 'number:100',          // 0-100
   price: 'number:0-'            // ≥0
@@ -194,7 +184,7 @@ const schema = dsl({
 Use `|` to separate enumeration values:
 
 ```javascript
-const schema = dsl({
+const schema = s({
   status: 'active|inactive|pending',
   gender: 'male|female|other!',
   role: 'admin|user|guest'
@@ -206,7 +196,7 @@ const schema = dsl({
 When a field needs to accept multiple different types, you can use the `types:` prefix to generate a union type:
 
 ```javascript
-const schema = dsl({
+const schema = s({
   contact: 'types:email|phone',
   price: 'types:number:0-|string:1-20',
   payload: 'types:object|array<object>'
@@ -235,7 +225,7 @@ Support format-specific constraints:
 
 **Example**:
 ```javascript
-const schema = dsl({
+const schema = s({
   mobile: 'phone:cn!',
   id: 'idCard:cn',
   card: 'creditCard:mastercard'
@@ -267,7 +257,7 @@ const schema = dsl({
 
 **Example**:
 ```javascript
-const schema = dsl({
+const schema = s({
   tags: 'array!1-10<string>', // required, 1-10 strings
   scores: 'array:1-5<number>', // optional, 1-5 numbers
   items: 'array:1-<string>' // at least 1 string
@@ -277,7 +267,7 @@ const schema = dsl({
 ### 3. Array element constraints
 
 ```javascript
-const schema = dsl({
+const schema = s({
   tags: 'array<string:1-20>', // 1-20 characters per string
   scores: 'array<number:0-100>', // each number 0-100
   ids: 'array<integer:1->' // Each integer ≥ 1
@@ -288,12 +278,12 @@ const schema = dsl({
 
 ```javascript
 // two-dimensional array
-const schema = dsl({
+const schema = s({
   matrix: 'array<array<number>>'
 });
 
 // array of objects
-const schema = dsl({
+const schema = s({
   users: 'array<object>',
   // or more detailed definition
   items: {
@@ -313,7 +303,7 @@ const schema = dsl({
 ### 1. Basic objects
 
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     name: 'string!',
     email: 'email!',
@@ -325,7 +315,7 @@ const schema = dsl({
 ### 2. Nested objects
 
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     profile: {
       bio: 'string:500',
@@ -341,7 +331,7 @@ const schema = dsl({
 ### 3. Mixed nesting
 
 ```javascript
-const schema = dsl({
+const schema = s({
   'user!': { // user required
     name: 'string!', // name is required
     contacts: 'array!1-5<object>', // 1-5 contact information
@@ -354,15 +344,15 @@ const schema = dsl({
 
 ## Conditional validation (Match)
 
-Supports more elegant conditional validation syntax `dsl.match` and `dsl.if`.
+Supports more elegant conditional validation syntax `s.match` and `s.if`.
 
-### 1. dsl.match (recommended)
+### 1. s.match (recommended)
 
 Similar to `switch-case`, the validation rules for the current field are determined based on the value of a certain field.
 
 **grammar**:
 ```javascript
-dsl.match(field, {
+s.match(field, {
   value1: 'schema1',
   value2: 'schema2',
   _default: 'defaultSchema' // optional
@@ -371,11 +361,11 @@ dsl.match(field, {
 
 **Example**:
 ```javascript
-const schema = dsl({
+const schema = s({
   contactType: 'email|phone',
 
   //Determine the rules for contact based on the value of contactType
-  contact: dsl.match('contactType', {
+  contact: s.match('contactType', {
     email: 'email!', // when contactType=email
     phone: 'string:11!', // when contactType=phone
     _default: 'string' // other situations
@@ -387,29 +377,29 @@ const schema = dsl({
 If the condition value contains Chinese, numbers or special characters, just add quotes to the key name:
 
 ```javascript
-discount: dsl.match('level', {
+discount: s.match('level', {
   'Normal user': 'number:0-5',
   'VIP-1':   'number:0-20',
   '100':     'number:0-50'
 })
 ```
 
-### 2. dsl.if (simple condition)
+### 2. s.if (simple condition)
 
 Suitable for simple two-choice scenarios.
 
 **grammar**:
 ```javascript
-dsl.if(conditionField, thenSchema, elseSchema)
+s.if(conditionField, thenSchema, elseSchema)
 ```
 
 **Example**:
 ```javascript
-const schema = dsl({
+const schema = s({
   isVip: 'boolean',
 
   // If it is VIP, discount 0-50, otherwise 0-10
-  discount: dsl.if('isVip', 'number:0-50', 'number:0-10')
+  discount: s.if('isVip', 'number:0-50', 'number:0-10')
 });
 ```
 
@@ -422,16 +412,14 @@ const schema = dsl({
 > ⚠️ `.custom()` supports synchronous custom logic; the asynchronous custom validator that returns `Promise` should be executed through `validateAsync()`.
 
 ```javascript
-const schema = dsl({
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
+const schema = s({
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/)
     .label('username')
     .messages({
       'pattern': 'can only contain letters, numbers and underscores'
     }),
 
-  email: 'email!'
-    .label('email address')
+  email: s('email!').label('email address')
     .description('Used to log in and receive notifications')
     .custom((value) => {
       if (value.endsWith('@blocked.example')) return 'This email domain name is not allowed to be registered';
@@ -442,10 +430,10 @@ const schema = dsl({
 ### 2. Default validator
 
 ```javascript
-const schema = dsl({
-  username: 'string!'.username('5-20'), // Automatic regularization + length
-  phone: 'string!'.phone('cn'), // China mobile phone number
-  password: 'string!'.password('strong') // Strong password
+const schema = s({
+  username: s('string!').username('5-20'), // Automatic regularization + length
+  phone: s('string!').phone('cn'), // China mobile phone number
+  password: s('string!').password('strong') // Strong password
 });
 ```
 
@@ -463,13 +451,13 @@ const schema = dsl({
 'string | number' // ❌ not supported
 ```
 
-**Solution**: Use `dsl.match` (recommended)
+**Solution**: Use `s.match` (recommended)
 
 ```javascript
-// ✅ Recommendation: use dsl.match
-const schema = dsl({
+// ✅ Recommendation: use s.match
+const schema = s({
   vipLevel: 'string',
-  discount: dsl.match('vipLevel', {
+  discount: s.match('vipLevel', {
     gold:   'number:0-50',
     silver: 'number:0-20',
     normal: 'number:0-5'
@@ -508,7 +496,7 @@ const schema = dsl({
 
 **Solution**: Use `.pattern()` method
 ```javascript
-'string!'.pattern(/^[a-z]+$/) // ✅ Recommended
+s('string!').pattern(/^[a-z]+$/) // ✅ Recommended
 ```
 
 ---
@@ -523,7 +511,7 @@ const schema = dsl({
 
 **Solution**: Use `.custom()` method to carry custom logic; synchronization logic can be used `validate()` / `validateAsync()`, Promise-returning logic must use `validateAsync()`
 ```javascript
-'string!'.custom((value) => {
+s('string!').custom((value) => {
   // Custom synchronization logic
   if (value === 'reserved') {
     return 'The value is not available';
@@ -545,7 +533,7 @@ Asynchronous validation (such as database duplication checking) can be placed in
 
 **Solution**: Use full object definition
 ```javascript
-const schema = dsl({
+const schema = s({
   users: {
     type: 'array',
     items: {
@@ -563,14 +551,14 @@ const schema = dsl({
 ### User registration form
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   //Basic information
-  username: 'string:3-32!'.username().label('username'),
-  password: 'string!'.password('strong').label('password'),
-  email: 'email!'.label('mailbox'),
-  phone: 'string!'.phone('cn').label('mobile number'),
+  username: s('string:3-32!').username().label('username'),
+  password: s('string!').password('strong').label('password'),
+  email: s('email!').label('mailbox'),
+  phone: s('string!').phone('cn').label('mobile number'),
 
   // personal data
   'profile!': {
@@ -594,7 +582,7 @@ const schema = dsl({
 ### E-commerce product Schema
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // Basic product information
   title: 'string:1-100!',
   price: 'number:0-!',
@@ -625,7 +613,7 @@ const schema = dsl({
 ### API request validation
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // Query parameters
   page: 'integer:1-',
   pageSize: 'integer:10-100',
@@ -668,7 +656,7 @@ const schema = dsl({
 
 **A**: Use full object definition:
 ```javascript
-const schema = dsl({
+const schema = s({
   users: {
     type: 'array',
     items: {
@@ -681,16 +669,16 @@ const schema = dsl({
 
 ### Q4: Doesn’t it support conditional validation?
 
-**A**: Supported. It is recommended to use `dsl.match`:
+**A**: Supported. It is recommended to use `s.match`:
 ```javascript
-dsl.match('vipLevel', { gold: 'number:0-50', silver: 'number:0-20' })
+s.match('vipLevel', { gold: 'number:0-50', silver: 'number:0-20' })
 ```
 
 ### Q5: Can I use regular validation?
 
 **A**: Yes, use `.pattern()` method:
 ```javascript
-'string!'.pattern(/^[a-z]+$/)
+s('string!').pattern(/^[a-z]+$/)
 ```
 
 ---

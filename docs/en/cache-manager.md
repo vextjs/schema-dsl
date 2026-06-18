@@ -1,22 +1,11 @@
 # CacheManager cache manager
 
-> **Module**: `src/core/CacheManager.ts` (Public export: `require('schema-dsl').CacheManager`)
+> **Module**: `src/core/CacheManager.ts` (Public export: `import { CacheManager } from 'schema-dsl/pure'`)
 
 > **Purpose**: High-performance Schema compilation cache, supporting LRU eviction and TTL expiration
 
 ---
 
-## 📑 Table of Contents
-
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-- [API Reference](#api-reference)
-- [Configuration Options](#configuration-options)
-- [Statistics](#statistics)
-- [Cache Boundaries](#cache-boundaries)
-- [Best Practice](#best-practices)
-
----
 
 ## Overview
 
@@ -35,7 +24,7 @@
 ## quick start
 
 ```javascript
-const { CacheManager } = require('schema-dsl');
+import { CacheManager } from 'schema-dsl/pure';
 
 //Create cache instance
 const cache = new CacheManager({

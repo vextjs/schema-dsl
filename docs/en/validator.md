@@ -3,9 +3,9 @@
 `Validator` is an encapsulation of AJV, providing compilation caching, error formatting, custom keywords and batch validation capabilities.
 
 ```javascript
-const { Validator, dsl } = require('schema-dsl');
+import { Validator, s } from 'schema-dsl/pure';
 const validator = new Validator();
-const schema = dsl({ email: 'email!' });
+const schema = s({ email: 'email!' });
 console.log(validator.validate(schema, { email: 'test@example.com' }));
 ```
 
@@ -40,7 +40,7 @@ Creating `new Validator()` inside every request handler is usually not a retaine
 
 The cache only helps when schema structures repeat. If each request produces a never-before-seen dynamic schema, cache entries will churn and the application still pays the compile cost for each miss. Bound the number of dynamic schema shapes, or validate them in an isolated short-lived path.
 
-> If you wish to pass in a DSL object directly (e.g. `validate({ email: 'email!' }, data)`), please use the top-level convenience functions `validate()` / `validateAsync()`; `Validator` instance methods are still recommended to receive the conversion results of standard JSON Schema or `dsl({...})`.
+> If you wish to pass in a DSL object directly (e.g. `validate({ email: 'email!' }, data)`), please use the top-level convenience functions `validate()` / `validateAsync()`; `Validator` instance methods are still recommended to receive the conversion results of standard JSON Schema or `s({...})`.
 
 Related methods: `compile()`, `validate()`, `validateAsync()`, `validateBatch()`, `addKeyword()`, `addFormat()`.
 

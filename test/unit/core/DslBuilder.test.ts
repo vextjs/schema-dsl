@@ -50,8 +50,11 @@ describe('DslBuilder', () => {
       expect(s.exactLength).toBe(6)
     })
 
-    it('min() throws error for number type', () => {
-      expect(() => new DslBuilder('number').min(1)).toThrow()
+    it('min() supports number type as minimum', () => {
+      expect(new DslBuilder('number').min(1).toSchema()).toMatchObject({
+        type: 'number',
+        minimum: 1,
+      })
     })
 
     it('label()', () => {
@@ -89,6 +92,15 @@ describe('DslBuilder', () => {
       expect(s._required).toBe(true)
     })
 
+    it('require() is a no-argument alias of required()', () => {
+      expect(new DslBuilder('string').require().toSchema()).toMatchObject(
+        new DslBuilder('string').required().toSchema()
+      )
+      expect(() => (new DslBuilder('string').require as unknown as (field: string) => unknown)('field')).toThrow(
+        /does not accept arguments/
+      )
+    })
+
     it('error() sets custom message', () => {
       const s = new DslBuilder('string!').error({ required: 'Name is required' }).toSchema()
       expect(s._customMessages?.['required']).toBe('Name is required')
@@ -105,6 +117,28 @@ describe('DslBuilder', () => {
     it('integer:1- → minimum only', () => {
       const s = new DslBuilder('integer:1-').toSchema()
       expect(s.minimum).toBe(1)
+    })
+
+    it('min() / max() map to numeric bounds for number and integer builders', () => {
+      expect(new DslBuilder('number').min(18).max(120).toSchema()).toMatchObject({
+        type: 'number',
+        minimum: 18,
+        maximum: 120,
+      })
+      expect(new DslBuilder('integer').min(1).max(5).toSchema()).toMatchObject({
+        type: 'integer',
+        minimum: 1,
+        maximum: 5,
+      })
+    })
+
+    it('min() / max() map to item count bounds for array builders', () => {
+      expect(new DslBuilder('array').min(1).max(3).items('string!').toSchema()).toMatchObject({
+        type: 'array',
+        minItems: 1,
+        maxItems: 3,
+        items: { type: 'string' },
+      })
     })
   })
 

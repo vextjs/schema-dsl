@@ -6,16 +6,6 @@
 
 ---
 
-## 📑 目录
-
-- [概述](#概述)
-- [快速开始](#快速开始)
-- [API 参考](#api-参考)
-- [配置选项](#配置选项)
-- [完整示例](#完整示例)
-- [类型映射](#类型映射)
-
----
 
 ## 概述
 
@@ -34,10 +24,10 @@
 ## 快速开始
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // 1. 定义 Schema
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:18-120'
@@ -195,15 +185,14 @@ const strictExporter = new exporters.MongoDBExporter({ strict: true });
 ### 用户集合验证
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // 定义复杂用户 Schema
-const userSchema = dsl({
+const userSchema = s({
   _id: 'string!',
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/)
     .label('用户名'),
-  email: 'email!'.label('邮箱'),
+  email: s('email!').label('邮箱'),
   profile: {
     bio: 'string:500',
     avatar: 'url'
@@ -222,7 +211,7 @@ console.log(command);
 ### 在 MongoDB 中使用
 
 ```javascript
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
 
 async function createValidatedCollection() {
   const client = new MongoClient('mongodb://localhost:27017');
@@ -275,7 +264,7 @@ async function createValidatedCollection() {
 ⚠️ **重要提示**: 并非所有 schema-dsl 特性都能导出到数据库 Schema。
 
 **不支持导出的特性**:
-- ❌ 条件验证逻辑（`dsl.match()`, `dsl.if()`）
+- ❌ 条件验证逻辑（`s.match()`, `s.if()`）
 - ❌ 自定义验证器（`.custom()`）
 - ❌ 复杂 JSON Schema 关键字（`allOf`, `anyOf`, `oneOf`）
 - ❌ 自定义错误消息（`.messages()`）

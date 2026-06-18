@@ -1,4 +1,4 @@
-import { ValidationError, dsl, validate, validateAsync } from '../../dist/index.js'
+import { ValidationError, s, validate, validateAsync } from '../../dist/pure.js'
 
 // ============================================================
 // TypeScript generics guide — typed validation results
@@ -16,23 +16,23 @@ interface UserForm {
 }
 
 const commonFields = {
-  email: dsl('email!')
+  email: s('email!')
     .label('Email Address')
     .error({ required: 'Email is required' }),
 
-  username: dsl('string:3-32!')
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .label('Username')
     .error({ pattern: 'Username may only contain letters, digits and underscores' }),
 }
 
-const userSchema = dsl({
+const userSchema = s({
   ...commonFields,
-  password: dsl('string:8-64!')
+  password: s('string:8-64!')
     .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
     .label('Password')
     .error({ pattern: 'Password must be at least 8 chars and contain letters and digits' }),
-  age: dsl('number:18-100').label('Age'),
+  age: s('number:18-100').label('Age'),
 })
 
 const syncResult = validate<UserForm>(userSchema, {
@@ -89,7 +89,7 @@ try {
 // 4. Typed partial schemas — generic flows through
 // ============================================================
 
-import { SchemaUtils } from '../../dist/index.js'
+import { SchemaUtils } from '../../dist/pure.js'
 
 interface PublicProfile { username: string; email: string }
 
@@ -118,14 +118,14 @@ interface Post {
   draft:   boolean
 }
 
-const postSchema = dsl({
-  title:  dsl('string:1-200!').label('Title'),
-  author: dsl({
-    name:  dsl('string:1-100!').label('Author Name'),
-    email: dsl('email!').label('Author Email'),
+const postSchema = s({
+  title:  s('string:1-200!').label('Title'),
+  author: s({
+    name:  s('string:1-100!').label('Author Name'),
+    email: s('email!').label('Author Email'),
   }),
-  tags:  dsl('array<string:1-40>!'),
-  draft: dsl('boolean').label('Draft'),
+  tags:  s('array<string:1-40>!'),
+  draft: s('boolean').label('Draft'),
 })
 
 const postResult = validate<Post>(postSchema, {

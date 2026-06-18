@@ -1,4 +1,4 @@
-import { SchemaUtils, Validator, dsl, validate } from '../../dist/index.js'
+import { SchemaUtils, Validator, s, validate } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`best-practices expectation failed: ${label}`)
@@ -15,28 +15,28 @@ function expect(label: string, condition: boolean): void {
 
 const fields = SchemaUtils.createLibrary({
   username: () =>
-    dsl('string:3-32!')
+    s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .label('Username')
       .error({ pattern: 'Username may only contain letters, digits and underscores' }),
 
   email: () =>
-    dsl('email!')
+    s('email!')
       .label('Email Address')
       .error({ required: 'Email address is required' }),
 
   password: () =>
-    dsl('string:8-64!')
+    s('string:8-64!')
       .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
       .label('Password')
       .error({ pattern: 'Password must be at least 8 chars and include letters and numbers' }),
 
   displayName: () =>
-    dsl('string:2-48')
+    s('string:2-48')
       .label('Display Name'),
 
   website: () =>
-    dsl('url')
+    s('url')
       .label('Website'),
 })
 
@@ -44,19 +44,19 @@ const fields = SchemaUtils.createLibrary({
 // 2. Compose schemas from the library
 // ============================================================
 
-const registerSchema = dsl({
+const registerSchema = s({
   username:    fields.username(),
   email:       fields.email(),
   password:    fields.password(),
   displayName: fields.displayName(),
 })
 
-const loginSchema = dsl({
+const loginSchema = s({
   username: 'string!',
   password: 'string!',
 })
 
-const profileSchema = dsl({
+const profileSchema = s({
   displayName: fields.displayName(),
   email:       fields.email(),
   website:     fields.website(),
@@ -174,13 +174,13 @@ expect('batch import reports one invalid row', importSummary.invalid === 1)
 // 9. Derive schemas for create/update/public views
 // ============================================================
 
-const accountBaseSchema = dsl({
+const accountBaseSchema = s({
   username: fields.username(),
   email: fields.email(),
   displayName: fields.displayName(),
 })
 
-const accountCreateSchema = SchemaUtils.extend(accountBaseSchema, dsl({
+const accountCreateSchema = SchemaUtils.extend(accountBaseSchema, s({
   password: fields.password(),
 }))
 const accountUpdateSchema = SchemaUtils.partial(accountCreateSchema)

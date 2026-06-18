@@ -1,4 +1,4 @@
-import { dsl, validate, Validator } from '../../dist/index.js'
+import { s, validate, Validator } from '../../dist/pure.js'
 
 // ============================================================
 // Number constraint operators
@@ -17,7 +17,7 @@ import { dsl, validate, Validator } from '../../dist/index.js'
 // 1. All five operators, all valid
 // ============================================================
 
-const opsSchema = dsl({
+const opsSchema = s({
   adultAge:   'number:>=18!',     // >= 18
   score:      'number:<100',      // < 100
   maxBonus:   'number:<=20',      // <= 20
@@ -54,7 +54,7 @@ console.log('number-ops.invalid.errorCount    =', invalidResult.errors?.length ?
 // 3. Mixed range + operator syntax
 // ============================================================
 
-const mixedSchema = dsl({
+const mixedSchema = s({
   temperature: 'number:-273.15-!',  // >= -273.15 (absolute zero), open upper
   percentage:  'number:0-100!',     // classic closed range [0, 100]
   port:        'integer:1-65535!',  // closed range
@@ -86,7 +86,7 @@ console.log('number-ops.coerce.valid          =', coerced.valid)   // true
 // 5. Edge cases — exclusive boundaries
 // ============================================================
 
-const exclusiveSchema = dsl({
+const exclusiveSchema = s({
   temp: 'number:>-273.15!',   // absolute zero exclusive
   prob: 'number:>0',          // probability exclusive of 0
 })

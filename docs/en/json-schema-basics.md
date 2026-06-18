@@ -16,7 +16,7 @@ Common fields:
 When outputting pure JSON Schema, please use `toJsonSchema()`.
 
 ```javascript
-const emailField = dsl('email!').label('mailbox');
+const emailField = s('email!').label('mailbox');
 
 emailField.toSchema();
 // Contains internal fields such as _label / _customMessages
@@ -24,11 +24,11 @@ emailField.toSchema();
 emailField.toJsonSchema();
 // Pure JSON Schema, suitable for exporting to external systems
 
-const objectSchema = dsl({
+const objectSchema = s({
 	email: emailField,
-	age: dsl('number:18-100')
+	age: s('number:18-100')
 });
-// dsl({... }) entry directly returns Draft 7 style object
+// s({... }) entry directly returns Draft 7 style object
 ```
 
 ---

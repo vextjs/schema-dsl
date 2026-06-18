@@ -1,32 +1,21 @@
 # String extension documentation
 
-> **Update time**: 2026-06-17
+> **Update time**: 2026-06-18
 
 ---
 
-## 📑 Table of Contents
-
-- [Core Features](#core-features)
-- [Side-effect-controlled entries](#side-effect-controlled-entries)
-- [Available methods](#available-methods)
-- [Quick Start](#quick-start)
-- [Detailed example](#detailed-example)
-- [Multi-language support](#multi-language-support)
-- [Default installation and uninstallation](#default-installation-and-uninstallation)
-- [Best Practice](#best-practices)
-- [FAQ](#faq)
-
----
+This page documents the explicit String extension path. For ordinary application code, prefer `schema-dsl/pure` + `s`. Use this page when you intentionally want direct string-chain authoring, or when you need to maintain compatibility with code that already uses it.
 
 ## Core features
 
-**After importing schema-dsl, strings can directly call the chain method**
+**After explicitly enabling String extensions, strings can directly call chain methods**
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import 'schema-dsl/register-string';
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
-  // ✅ Root entry has String extension installed by default
+const schema = s({
+  // ✅ Direct String chain is intentionally enabled
   email: 'email!'.pattern(/custom/).label('email'),
 
   // ✅ Pure DSL still works
@@ -37,20 +26,18 @@ const schema = dsl({
 **Advantages**:
 - ✅ More concise and natural
 - ✅ Reduce the amount of code
-- ✅ Can coexist with `dsl()` package writing method
+- ✅ Can coexist with `s('...')` seeds and `s.xxx()` factories
 
-## Alternative (non-intrusive after active uninstallation)
+## Default alternative: no prototype mutation
 
-If you mind modifying `String.prototype`, you can actively uninstall the extension and then use `dsl()` to wrap the string:
+If you do not want to modify `String.prototype`, import from `schema-dsl/pure` and use `s('...')` or `s.xxx()` factories from the start:
 
 ```javascript
-const { dsl, uninstallStringExtensions } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-uninstallStringExtensions();
-
-const schema = dsl({
-  // Use dsl() to wrap the string
-  email: dsl('email!').pattern(/custom/).label('mailbox'),
+const schema = s({
+  // Use s() or s.xxx() instead of direct String chaining
+  email: s.email().pattern(/custom/).label('mailbox').require(),
 
   // Pure DSL is not affected
   age: 'number:18-120'
@@ -61,7 +48,7 @@ const schema = dsl({
 
 ## Side-effect-controlled entries
 
-The root `schema-dsl` entry still installs String extensions by default for v1 compatibility. Use the explicit entries below when you need to control that global side effect.
+The root `schema-dsl` entry still installs String extensions for v1 compatibility. New code should usually start from `schema-dsl/pure`; use the explicit entries below only when you intentionally want direct string-chain authoring.
 
 | Entry | Behavior | Recommended use |
 |------|------|------|
@@ -74,52 +61,54 @@ The root `schema-dsl` entry still installs String extensions by default for v1 c
 | `schema-dsl/esbuild` | Optional esbuild adapter around the transform | esbuild build/context flows |
 
 ```javascript
-import { dsl } from 'schema-dsl/pure';
+import { s } from 'schema-dsl/pure';
 import 'schema-dsl/register-string';
 
-const schema = dsl({
+const schema = s({
   email: 'email!'.description('Login email')
 });
 ```
 
-For builds that want String-chain authoring without runtime prototype mutation, use `transformSchemaDsl()` or `schemaDslEsbuildPlugin()` to rewrite static chains into `dsl('...')` calls that import from `schema-dsl/pure`. The default transform covers the full built-in String extension method set and naked pipe enums; add user-defined methods with `additionalMethods`, and add registered custom DSL type literals with `additionalTypes` or `additionalTypePatterns`.
+For builds that want String-chain authoring without runtime prototype mutation, use `transformSchemaDsl()` or `schemaDslEsbuildPlugin()` to rewrite static chains into `s('...')` calls that import from `schema-dsl/pure`. The default transform covers the full built-in String extension method set and naked pipe enums; add user-defined methods with `additionalMethods`, and add registered custom DSL type literals with `additionalTypes` or `additionalTypePatterns`.
 
 ---
 
-## Available methods
+## Available direct String methods
 
-The following examples are available by default after importing `schema-dsl`.
+The following methods are installed on `String.prototype` by the root entry or `schema-dsl/register-string`. This list mirrors the runtime `STRING_EXTENSION_METHODS` list. `DslBuilder.length(n)` and `DslBuilder.trim()` are intentionally not installed because JavaScript strings already have native `.length` and `.trim()` members.
 
-| method | Description | Example |
-|------|------|------|
-| `.pattern(regex, msg?)` | Regular validation | `'string!'.pattern(/^\w+$/)` |
-| `.label(text)` | Field labels | `'email!'.label('Email address')` |
-| `.messages(obj)` | Custom message | `'string!'.messages({...})` |
-| `.description(text)` | describe | `'url'.description('Homepage')` |
-| `.custom(fn)` | Custom validation; `validateAsync()` is required when returning a Promise | `'string!'.custom(value => value !== "admin")` |
-| `.default(value)` | default value | `'string'.default('guest')` |
-| `.username(range?)` | Username validation | `'string!'.username('5-20')` |
-| `.phone(country)` | Mobile phone number validation | `'string!'.phone('cn')` |
-| `.phoneNumber(country)` | Mobile phone number validation (alias) | `'string!'.phoneNumber('cn')` |
-| `.idCard(country)` | ID validation | `'string!'.idCard('cn')` |
-| `.slug()` | URL alias validation | `'string!'.slug()` |
-| `.password(strength)` | Password validation | `'string!'.password('strong')` |
-| `.format(name)` | Format | `'string'.format('email')` |
-| `.toSchema()` | Convert to Schema | `'string!'.toSchema()` |
-| `.creditCard(type)` | Credit card validation | `'string!'.creditCard('visa')` |
-| `.licensePlate(country)` | License plate validation | `'string!'.licensePlate('cn')` |
-| `.postalCode(country)` | Postcode validation | `'string!'.postalCode('cn')` |
-| `.passport(country)` | Passport validation | `'string!'.passport('cn')` |
+| Category | Methods |
+|----------|---------|
+| Metadata and messages | `.label(text)`, `.description(text)`, `.messages(obj)`, `.error(obj)` |
+| Required and defaults | `.require()`, `.required()`, `.optional()`, `.default(value)` |
+| Common constraints | `.pattern(regex, msg?)`, `.format(name)`, `.enum(...values)`, `.custom(fn)` |
+| String rules | `.min(n)`, `.max(n)`, `.alphanum()`, `.lowercase()`, `.uppercase()`, `.json()` |
+| String formats | `.slug()`, `.domain()`, `.ip()`, `.base64()`, `.jwt()`, `.dateFormat(fmt)`, `.after(date)`, `.before(date)`, `.dateGreater(date)`, `.dateLess(date)` |
+| Presets | `.username(range?)`, `.password(strength?)`, `.phone(country?)`, `.phoneNumber(country?)`, `.idCard(country?)`, `.creditCard(type?)`, `.licensePlate(country?)`, `.postalCode(country?)`, `.passport(country?)` |
+| Number helpers | `.precision(n)`, `.multiple(n)`, `.port()` |
+| Object helpers | `.requireAll()`, `.strict()` |
+| Array helpers | `.items(item)`, `.noSparse()`, `.includesRequired(items)` |
+| Output | `.toSchema()`, `.toJsonSchema()` |
+
+Examples:
+
+```javascript
+'email!'.label('Email').require().pattern(/custom/).toSchema()
+'string'.default('guest')
+'number'.min(18).max(120).precision(2)
+'array'.items('string').noSparse().includesRequired(['admin'])
+```
 
 ---
 
 ## quick start
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import 'schema-dsl/register-string';
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
-  // By default, direct string chain calls can be made
+const schema = s({
+  // Direct string chain calls are available after explicit registration
   email: 'email!'.label('email address'),
 
   username: 'string:3-32!'
@@ -136,12 +125,12 @@ const schema = dsl({
 
 ## Detailed example
 
-The following examples are available by default after importing `schema-dsl`. If you don’t want to keep the `String.prototype` extension, you can call `uninstallStringExtensions()` first, and then rewrite each complex field into a `dsl('...')` package.
+The following examples assume direct String extensions have been explicitly registered. If you do not want runtime prototype mutation, use `s('...')` or `s.xxx()` instead.
 
 ### 1. Regularity validation
 
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!'
     .pattern(/^[a-zA-Z0-9_]+$/)
     .messages({
@@ -178,7 +167,7 @@ const schema = dsl({
 ### 2. Customize error messages
 
 ```javascript
-const schema = dsl({
+const schema = s({
   email: 'email!'
     .label('email address')
     .messages({
@@ -211,7 +200,7 @@ const schema = dsl({
 ### 3. Custom validator
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // Most elegant: only return an error message on failure
   username: 'string:3-32!'
     .custom((value) => {
@@ -251,7 +240,7 @@ const schema = dsl({
 ### 5. Default validator
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // Username validation (automatic regularization + length)
   username: 'string!'.username('5-20'), // 5-20 characters
 
@@ -290,9 +279,10 @@ const schema = dsl({
 ### 6. Complete form example
 
 ```javascript
-const { dsl, Validator } = require('schema-dsl');
+import 'schema-dsl/register-string';
+import { s, validate } from 'schema-dsl/pure';
 
-const formSchema = dsl({
+const formSchema = s({
   email: 'email!'
     .label('email address')
     .description('Used to log in and receive notifications')
@@ -322,7 +312,6 @@ const formSchema = dsl({
 });
 
 // verify
-const { validate } = require('schema-dsl');
 const result = validate(formSchema, {
   email: 'user@example.com',
   username: 'john_doe',
@@ -341,7 +330,8 @@ console.log(result.valid); // true
 ### Solution 1: Global multi-language configuration (recommended)
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import 'schema-dsl/register-string';
+import { Locale, s } from 'schema-dsl/pure';
 
 //Set language
 Locale.setLocale('zh-CN');
@@ -356,7 +346,7 @@ Locale.addLocale('zh-CN', {
 });
 
 // Use label in Schema
-const schema = dsl({
+const schema = s({
   email: 'email!'
     .label('email address'), // The error message will automatically use "email address"
 
@@ -371,7 +361,7 @@ Locale.setLocale('en-US'); // Automatically switch to English message
 ### Option 2: Field-level multilingualism
 
 ```javascript
-const schema = dsl({
+const schema = s({
   email: 'email!'
     .label('email address')
     .messages({
@@ -384,13 +374,14 @@ const schema = dsl({
 ### Option 3: Dynamic switching at runtime
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import 'schema-dsl/register-string';
+import { Locale, s } from 'schema-dsl/pure';
 
 //Switch based on user language preference
 function getSchema(locale) {
   Locale.setLocale(locale);
 
-  return dsl({
+  return s({
     email: 'email!'.label(
       locale === 'zh-CN'? 'Email Address': 'Email Address'
     )
@@ -405,16 +396,17 @@ const enSchema = getSchema('en-US');
 
 ---
 
-## Default installation and uninstallation
+## Compatibility installation and cleanup
 
-### Default installation
+### Compatibility installation
 
-The root entry installs the String extension by default, which is used to be compatible with v1.1.x direct string chain writing:
+The root compatibility entry and `schema-dsl/compat` install String extensions on import. New code should prefer `schema-dsl/pure` unless direct String chains are intentional.
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import 'schema-dsl/compat';
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   email: 'email!'.label('email address')
 });
 ```
@@ -423,21 +415,21 @@ The extension is mounted to `String.prototype` with non-enumerable attributes, a
 
 If your running environment has extended a method with the same name (such as `String.prototype.label`) before importing `schema-dsl`, the root entry will throw a conflict error during the import phase to avoid silently overwriting the external implementation. The solution is to first remove or rename the conflicting external extension, and then import `schema-dsl`; ordinary projects usually do not encounter this scenario.
 
-### Manually disable
+### Disable after an explicit install
 
 ```javascript
-const { uninstallStringExtensions } = require('schema-dsl');
+import { uninstallStringExtensions } from 'schema-dsl/pure';
 
 uninstallStringExtensions();
 
-// Only pure DSL can be used later
+// Direct String chains are no longer available after cleanup.
 'email!'.pattern(/custom/) // ❌ Report error
 ```
 
 ### Re-enable or customize the installation
 
 ```javascript
-const { installStringExtensions } = require('schema-dsl');
+import { installStringExtensions } from 'schema-dsl/pure';
 
 installStringExtensions();
 
@@ -452,7 +444,9 @@ installStringExtensions();
 ### 1. Use pure DSL for simple fields
 
 ```javascript
-const schema = dsl({
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
   name: 'string:1-50!',
   age: 'number:18-120',
   role: 'user|admin'
@@ -462,7 +456,10 @@ const schema = dsl({
 ### 2. Use chain calls for complex fields
 
 ```javascript
-const schema = dsl({
+import { s } from 'schema-dsl/pure';
+import 'schema-dsl/register-string';
+
+const schema = s({
   email: 'email!'
     .pattern(/custom/)
     .messages({...})
@@ -476,7 +473,7 @@ const schema = dsl({
 
 ### 3. Follow the 80/20 rule
 
-**80% of the fields in JavaScript use pure DSL, and 20% of the complex fields can be called directly through string chaining; in TypeScript, for type hints, complex fields are wrapped with `dsl()` first. **
+**Use pure DSL strings for simple fields. Use direct string chains only when that authoring style is intentional; otherwise use `s('...')` for explicit DSL seeds with builder hints or `s.xxx()` factories for the strongest method discovery. In TypeScript, direct string chain hints require `schema-dsl/string-types`.**
 
 ---
 
@@ -484,15 +481,15 @@ const schema = dsl({
 
 ### Q1: Will String expansion pollute the global situation?
 
-**A**: The root `schema-dsl` entry extends `String.prototype` by default for v1.1.x compatibility. Side effects have been reduced to a minimum: extension methods are not enumerable, conflicts with the same name are detected before installation, and they can be uninstalled through `uninstallStringExtensions()`. For no import-time prototype mutation, import from `schema-dsl/pure`; when you want the side effect explicitly, import `schema-dsl/register-string` during application startup.
+**A**: Direct String chains modify `String.prototype`, so they are opt-in for new code. For no import-time prototype mutation, import from `schema-dsl/pure` and use `s('...')` or `s.xxx()`. When you intentionally want direct string chains, import `schema-dsl/register-string` during application startup. `uninstallStringExtensions()` is mainly for test cleanup or legacy compatibility checks.
 
 ### Q2: How is the performance?
 
-**A**: The performance overhead is minimal (<5%), and tests show that it is faster (fewer function calls).
+**A**: Treat String extension overhead as an ergonomics concern rather than a permanent performance claim. For hot paths, reuse schema objects and validators, then verify with the benchmark route described in [Performance Optimization Guide](performance-guide.md).
 
 ### Q3: Is TypeScript supported?
 
-**A**: Fully supported. Use `dsl('...')` for the default no-global-type path, or import `schema-dsl/string-types` when a TypeScript project intentionally wants String-chain IDE hints for code that is compiled through the transform.
+**A**: Fully supported. Use `s('...')` or `s.xxx()` for the default no-global-type path, or import `schema-dsl/string-types` when a TypeScript project intentionally wants String-chain IDE hints for code that is compiled through the transform.
 
 ### Q4: What is the correct error code?
 
@@ -525,4 +522,4 @@ const schema = dsl({
 
 ---
 
-**Last updated**: 2026-06-17
+**Last updated**: 2026-06-18

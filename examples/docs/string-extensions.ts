@@ -1,12 +1,14 @@
-import { dsl, validate, installStringExtensions, uninstallStringExtensions } from '../../dist/index.js'
+import { s, validate, installStringExtensions, uninstallStringExtensions } from '../../dist/pure.js'
 
 // ============================================================
 // 1. What string extensions do
-//    The root entry installs a non-enumerable String.prototype chain API by
-//    default, so DSL string literals behave like builders in JavaScript.
+//    The pure entry does not install String.prototype methods. Install them
+//    explicitly when this authoring style is intentional.
 // ============================================================
 
-// Before uninstall — chain methods are available on string literals by default
+installStringExtensions(s)
+
+// After explicit install, chain methods are available on string literals.
 console.log('string-ext.installed.label  =', typeof ('email!' as any).label)     // 'function'
 console.log('string-ext.installed.error  =', typeof ('string!' as any).error)    // 'function'
 console.log('string-ext.installed.custom =', typeof ('string!' as any).custom)   // 'function'
@@ -16,7 +18,7 @@ console.log('string-ext.installed.custom =', typeof ('string!' as any).custom)  
 // ============================================================
 
 const nameField = ('string:2-50!' as any).label('Full Name')
-const schema = dsl({ name: nameField })
+const schema = s({ name: nameField })
 
 const result = validate(schema, { name: 'x' })
 console.log('string-ext.label.error.message =', result.errors?.[0]?.message)  // mentions minLength
@@ -52,7 +54,7 @@ console.log('string-ext.description.meta =', rawBio.description)  // the descrip
 
 const roleField = ('admin|user|guest' as any).default('user')
 
-const withDefault = validate(dsl({ role: roleField }), {}, { useDefaults: true })
+const withDefault = validate(s({ role: roleField }), {}, { useDefaults: true })
 console.log('string-ext.default.applied =', (withDefault.data as any)?.role)  // 'user'
 
 // ============================================================
@@ -67,7 +69,7 @@ const usernameField = ('string:3-32!' as any)
       `Username '${value}' is reserved — please choose another`
   })
 
-const usernameSchema = dsl({ username: usernameField })
+const usernameSchema = s({ username: usernameField })
 console.log('string-ext.custom.valid   =',
   validate(usernameSchema, { username: 'alice' }).valid)     // true
 console.log('string-ext.custom.reserved =',
@@ -82,17 +84,30 @@ const accountNameField = ('string:3-32!' as any)
   .pattern(/^[a-z][a-z0-9_]{2,31}$/)
   .error({ pattern: 'Account name must start with a lowercase letter and use only lowercase letters, digits, or underscores' })
 
-const accountNameSchema = dsl({ accountName: accountNameField })
+const accountNameSchema = s({ accountName: accountNameField })
 console.log('string-ext.pattern.valid   =',
   validate(accountNameSchema, { accountName: 'rocky_dev' }).valid)   // true
 console.log('string-ext.pattern.invalid =',
   validate(accountNameSchema, { accountName: 'Rocky Dev' }).valid)   // false — uppercase + spaces
 
 // ============================================================
-// 8. Full profile schema with all extensions combined
+// 8. .items() — array item schema
 // ============================================================
 
-const profileSchema = dsl({
+const tagsField = ('array' as any)
+  .items('string:1-30')
+  .noSparse()
+  .includesRequired(['docs'])
+
+const tagsSchema = s({ tags: tagsField })
+console.log('string-ext.items.valid     =',
+  validate(tagsSchema, { tags: ['docs', 'api'] }).valid)             // true
+
+// ============================================================
+// 9. Full profile schema with all extensions combined
+// ============================================================
+
+const profileSchema = s({
   username: ('string:3-32!' as any)
     .label('Username')
     .pattern(/^[a-zA-Z0-9_]+$/)
@@ -136,7 +151,7 @@ const profileInvalid = validate(profileSchema, {
 console.log('string-ext.profile.invalid.errors =', profileInvalid.errors?.length)    // 5
 
 // ============================================================
-// 9. Uninstall / reinstall lifecycle
+// 10. Uninstall / reinstall lifecycle
 // ============================================================
 
 uninstallStringExtensions()
@@ -146,3 +161,6 @@ console.log('string-ext.uninstalled.error    =', typeof ('string!' as any).error
 // Reinstall works cleanly
 installStringExtensions()
 console.log('string-ext.reinstalled.label    =', typeof ('email!' as any).label)     // 'function'
+
+uninstallStringExtensions()
+console.log('string-ext.cleanup.label        =', typeof ('email!' as any).label)     // 'undefined'

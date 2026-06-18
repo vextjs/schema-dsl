@@ -60,11 +60,11 @@ const orderZhCN = {
 
 ```javascript
 // app.js
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 // 自动递归扫描 locales/ 下所有子目录，同语言文件合并为一个完整语言包
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales')
 });
 ```
@@ -76,7 +76,7 @@ dsl.config({
 ### 严格模式：key 冲突时阻断启动（推荐 CI 环境）
 
 ```javascript
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales'),
   strict: true   // 同名 key 冲突时直接抛 Error，防止静默覆盖
 });
@@ -113,7 +113,7 @@ dsl.config({
 #### 第1步：创建语言包文件
 
 ```bash
-# 项目结构
+## 项目结构
 my-project/
 ├── locales/              # 语言包目录
 │   ├── zh-CN.cjs        # 中文（CommonJS / ESM 项目都稳定）
@@ -124,8 +124,8 @@ my-project/
 
 #### 第2步：定义语言包（`locales/pt-BR.json5`）
 
-```javascript
-module.exports = {
+```json5
+{
   // 通用验证错误
   'required': '{{#label}} é obrigatório',
   'type': '{{#label}} deve ser do tipo {{#expected}}',
@@ -181,17 +181,17 @@ module.exports = {
   'pattern.macAddress': 'Endereço MAC inválido',
   'pattern.cron': 'Expressão Cron inválida',
   'pattern.slug': 'Slug deve conter apenas letras minúsculas, números e hífens'
-};
+}
 ```
 
 #### 第3步：应用启动时一次性加载所有语言
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 // ========== 应用启动时配置（只执行一次）==========
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales')  // 自动加载目录下所有语言文件
 });
 
@@ -202,7 +202,7 @@ dsl.config({
 // 4. 用户自定义的语言包会与系统默认语言包合并，用户的优先
 
 // ========== 运行时直接切换语言（无需重新加载）==========
-const schema = dsl({ username: 'string:3-32!' });
+const schema = s({ username: 'string:3-32!' });
 
 // 使用葡萄牙语
 const result1 = validate(schema, { username: 'ab' }, { locale: 'pt-BR' });
@@ -245,14 +245,17 @@ const finalZhCN = {
 ### 方式2：直接传入对象（适合动态配置）
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
+import ptBR from './locales/pt-BR.cjs';
+import deDE from './locales/de-DE.cjs';
+import koKR from './locales/ko-KR.cjs';
 
 // 应用启动时配置
-dsl.config({
+s.config({
   i18n: {
-    'pt-BR': require('./locales/pt-BR'),
-    'de-DE': require('./locales/de-DE'),
-    'ko-KR': require('./locales/ko-KR')
+    'pt-BR': ptBR,
+    'de-DE': deDE,
+    'ko-KR': koKR
   }
 });
 
@@ -268,12 +271,13 @@ validate(schema, data, { locale: 'de-DE' });
 ### ❌ 错误：运行时单个加载语言包
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 // ❌ 不推荐：在每次验证前动态加载
-function validateUser(data, locale) {
+async function validateUser(data, locale) {
   if (locale === 'pt-BR') {
-    Locale.addLocale('pt-BR', require('./locales/pt-BR'));  // 每次都加载，性能差
+    const { default: ptBR } = await import('./locales/pt-BR.cjs');
+    Locale.addLocale('pt-BR', ptBR);  // 每次都加载，性能差
   }
   return validate(schema, data, { locale });
 }
@@ -282,7 +286,7 @@ function validateUser(data, locale) {
 ```javascript
 // ✅ 正确：应用启动时一次性加载
 // app.js 启动入口
-dsl.config({ i18n: './locales' });  // 只加载一次
+s.config({ i18n: './locales' });  // 只加载一次
 
 // 运行时直接切换，无需重新加载
 function validateUser(data, locale) {
@@ -303,19 +307,19 @@ function validateUser(data, locale) {
 
 ```javascript
 // ========== app.js（应用启动入口）==========
-const express = require('express');
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import express from 'express';
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 // 应用启动时一次性加载所有语言包
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales')
 });
 
 const app = express();
 
 // ========== routes/user.js（业务路由）==========
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:18-120'
@@ -433,7 +437,7 @@ app.post('/api/users', (req, res) => {
 你可以参考内置的语言包作为模板：
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 // 查看中文语言包
 const zhCN = Locale.getMessages('zh-CN');

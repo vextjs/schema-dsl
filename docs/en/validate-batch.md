@@ -24,9 +24,9 @@ Returns an array, each item is consistent with the return structure of a single 
 ```
 
 ```javascript
-const { Validator, dsl } = require('schema-dsl');
+import { Validator, s } from 'schema-dsl/pure';
 const validator = new Validator();
-const schema = dsl({ email: 'email!' });
+const schema = s({ email: 'email!' });
 const results = validator.validateBatch(schema, [
   { email: 'a@example.com' },
   { email: 'bad' }

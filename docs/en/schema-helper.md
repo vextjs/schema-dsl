@@ -6,14 +6,6 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-- [API Reference](#api-reference)
-- [Practical example](#practical-examples)
-
----
 
 ## Overview
 
@@ -36,10 +28,10 @@
 ## quick start
 
 ```javascript
-const { SchemaHelper, dsl } = require('schema-dsl');
+import { SchemaHelper, s } from 'schema-dsl/pure';
 
 //Create Schema
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   profile: {
@@ -112,7 +104,7 @@ console.log(userSchema.properties.newField); // undefined
 Flatten nested schemas.
 
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     name: 'string!',
     address: {
@@ -161,9 +153,9 @@ const required = SchemaHelper.extractRequiredFields(userSchema);
 Compare two Schemas to see if they are the same.
 
 ```javascript
-const schema1 = dsl({ name: 'string!' });
-const schema2 = dsl({ name: 'string!' });
-const schema3 = dsl({ name: 'string' });
+const schema1 = s({ name: 'string!' });
+const schema2 = s({ name: 'string!' });
+const schema3 = s({ name: 'string' });
 
 SchemaHelper.compareSchemas(schema1, schema2); // true
 SchemaHelper.compareSchemas(schema1, schema3); // false
@@ -213,11 +205,11 @@ Get the Schema's complexity (maximum nesting level).
 
 ```javascript
 // no nesting
-const simple = dsl({ name: 'string!' });
+const simple = s({ name: 'string!' });
 SchemaHelper.getSchemaComplexity(simple); // 0
 
 // One level of nesting
-const nested = dsl({
+const nested = s({
   user: {
     name: 'string!'
   }
@@ -225,7 +217,7 @@ const nested = dsl({
 SchemaHelper.getSchemaComplexity(nested); // 1
 
 //Multiple levels of nesting
-const deep = dsl({
+const deep = s({
   level1: {
     level2: {
       level3: 'string!'
@@ -262,7 +254,7 @@ const summary = SchemaHelper.summarizeSchema(userSchema);
 ### Schema analysis tools
 
 ```javascript
-const { SchemaHelper, dsl } = require('schema-dsl');
+import { SchemaHelper, s } from 'schema-dsl/pure';
 
 function analyzeSchema(schema, name = 'Schema') {
   console.log(`\n=== ${name} analysis ===`);
@@ -290,7 +282,7 @@ function analyzeSchema(schema, name = 'Schema') {
 }
 
 // use
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   profile: {

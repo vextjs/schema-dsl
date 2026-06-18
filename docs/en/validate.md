@@ -1,44 +1,5 @@
 # validate method detailed documentation
 
-## 📑 Table of Contents
-
-### basic concepts
-- [Overview](#overview) - Introduction to validate method
-- [Method signature](#method-signature) - API definition
-
-### Detailed explanation of parameters
-- [Detailed explanation of parameters](#detailed-explanation-of-parameters)
-  - [schema parameter](#schema-parameters)
-  - [options object properties](#options-object-properties)
-- [Detailed explanation of return value](#detailed-explanation-of-return-value)
-  - [valid (Boolean)](#valid-boolean)
-  - [errors (Array)](#errors-array)
-  - [data (Any)](#data-any)
-
-### Usage example
-- [Basic example](#basic-example)
-  - [Example 1: Validating simple objects](#example-1-validating-simple-objects)
-  - [Example 2: Handling validation failures](#example-2-handling-validation-failures)
-- [Advanced examples](#advanced-examples)
-  - [Example 3: Validating string constraints](#example-3-validating-string-constraints)
-  - [Example 4: Validating number ranges](#example-4-validate-number-range)
-  - [Example 5: Validating email format](#example-5-verify-email-format)
-  - [Example 6: Validating enum values](#example-6-validating-enumeration-values)
-  - [Example 7: Validating nested objects](#example-7-validate-nested-objects)
-  - [Example 8: Validating arrays](#example-8-validating-an-array)
-
-### Advanced features
-- [Use default values](#use-default-value)
-- [Use compiled validation functions](#use-compiled-validation-functions)
-- [Error handling best practices](#error-handling-best-practices)
-  - [Performance optimization](#performance-optimization-suggestions)
-- [FAQ](#faq)
-
-### References
-- [Related documents](#related-documents)
-- [External references](#external-reference)
-
----
 
 ## Overview
 
@@ -143,7 +104,7 @@ Validated data. The current implementation will retain this validation data even
 ### Example 1: Validating simple objects
 
 ```javascript
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
 
 const validator = new Validator();
 

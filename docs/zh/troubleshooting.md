@@ -5,16 +5,6 @@
 
 ---
 
-## 📑 目录
-
-- [验证问题](#验证问题)
-- [性能问题](#性能问题)
-- [多语言问题](#多语言问题)
-- [导出器问题](#导出器问题)
-- [String扩展问题](#string扩展问题)
-- [调试技巧](#调试技巧)
-
----
 
 ## 验证问题
 
@@ -43,7 +33,7 @@ const result = validator.validate(schema, data);
 
 3. **使用 Schema 摘要工具**
 ```javascript
-const { SchemaHelper } = require('schema-dsl');
+import { SchemaHelper } from 'schema-dsl/pure';
 console.log(SchemaHelper.summarizeSchema(schema));
 ```
 
@@ -66,7 +56,7 @@ console.log(SchemaHelper.summarizeSchema(schema));
 
 **症状**:
 ```javascript
-email: 'email!'.custom(async (value) => {
+email: s('email!').custom(async (value) => {
   // 这里的代码没有执行
 })
 ```
@@ -83,7 +73,7 @@ const result = validate(schema, data); // 同步模式
 await validateAsync(schema, data);
 
 // ✅ 正确：使用同步验证器
-email: 'email!'.custom((value) => {
+email: s('email!').custom((value) => {
   // 同步代码
   if (checkSync(value)) return '邮箱已被占用';
 })
@@ -118,7 +108,7 @@ if (result.valid) {
 
 **症状**:
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     name: 'string!',
     email: 'email!'
@@ -131,7 +121,7 @@ const schema = dsl({
 **解决方案**:
 ```javascript
 // ✅ 方案1: 标记对象本身为必填
-const schema = dsl({
+const schema = s({
   'user!': {  // 注意这里的 !
     name: 'string!',
     email: 'email!'
@@ -183,12 +173,12 @@ tags: 'array!1-10<string>'
 ```javascript
 // ❌ 未使用缓存
 app.post('/api/user', (req, res) => {
-  const schema = dsl({ username: 'string!' }); // 每次都创建
+  const schema = s({ username: 'string!' }); // 每次都创建
   validate(schema, req.body);
 });
 
 // ✅ 使用缓存
-const userSchema = dsl({ username: 'string!' }); // 创建一次
+const userSchema = s({ username: 'string!' }); // 创建一次
 app.post('/api/user', (req, res) => {
   validate(userSchema, req.body); // 重复使用
 });
@@ -259,7 +249,7 @@ app.post('/admin/clear-cache', (req, res) => {
 
 #### 1. 检查语言包是否加载
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 console.log(Object.keys(Locale.locales));
 // 应该包含: ['zh-CN', 'en-US', 'ja-JP', ...]
 ```
@@ -291,12 +281,12 @@ const result = validator.validate(schema, data, {
 **检查错误关键字**:
 ```javascript
 // ❌ 错误：使用了错误的关键字
-username: 'string:3-32!'.messages({
+username: s('string:3-32!').messages({
   'length': '长度不正确'  // 错误的关键字
 })
 
 // ✅ 正确：使用正确的关键字
-username: 'string:3-32!'.messages({
+username: s('string:3-32!').messages({
   'min': '至少3个字符',
   'max': '最多32个字符',
   'required': '用户名不能为空'
@@ -324,13 +314,13 @@ username: 'string:3-32!'.messages({
 #### 1. 字段名包含保留关键字
 ```javascript
 // ❌ 问题：使用了 SQL 保留字
-const schema = dsl({
+const schema = s({
   order: 'string!',  // 'order' 是 SQL 保留字
   group: 'string'    // 'group' 是 SQL 保留字
 });
 
 // ✅ 解决：使用反引号包裹或重命名
-const schema = dsl({
+const schema = s({
   order_id: 'string!',
   group_name: 'string'
 });
@@ -378,7 +368,7 @@ db.createCollection('users', {
 
 **症状**:
 ```javascript
-'string!'.pattern(/test/);
+s('string!').pattern(/test/);
 // TypeError: "string!".pattern is not a function
 ```
 
@@ -387,12 +377,12 @@ db.createCollection('users', {
 **解决方案**:
 ```javascript
 // 重新启用直接字符串链式调用：
-const { installStringExtensions } = require('schema-dsl');
+import { installStringExtensions } from 'schema-dsl/pure';
 installStringExtensions();
 
-// 或者使用 dsl() 包裹（非侵入式）
-const schema = dsl({
-  username: dsl('string!').pattern(/test/)
+// 或者使用 s() 包裹（非侵入式）
+const schema = s({
+  username: s('string!').pattern(/test/)
 });
 ```
 
@@ -412,7 +402,7 @@ const schema = dsl({
 // 在导入 schema-dsl 前，先移除或重命名外部同名扩展。
 delete String.prototype.label;
 
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 ```
 
 如果冲突方法来自其他库，优先在应用初始化顺序或依赖配置中避免两个库同时扩展同名 `String.prototype` 方法。
@@ -424,7 +414,7 @@ const { dsl } = require('schema-dsl');
 ### 技巧1: 查看生成的 JSON Schema
 
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
@@ -436,7 +426,7 @@ console.log(JSON.stringify(schema, null, 2));
 ### 技巧2: 使用 Schema 摘要工具
 
 ```javascript
-const { SchemaHelper } = require('schema-dsl');
+import { SchemaHelper } from 'schema-dsl/pure';
 
 // 查看 Schema 结构摘要
 const summary = SchemaHelper.summarizeSchema(schema);

@@ -1,4 +1,4 @@
-import { dsl, validate, Locale } from '../../dist/index.js'
+import { s, validate, Locale } from '../../dist/pure.js'
 
 // ============================================================
 // Dynamic locale — detect the right locale at request time
@@ -47,10 +47,10 @@ function parseAcceptLanguage(header: string | undefined): string {
 // 2. Validation with detected locale
 // ============================================================
 
-const registerSchema = dsl({
-  username: dsl('string:3-32!').label('username'),
-  email:    dsl('email!').label('email address'),
-  age:      dsl('integer:18-120').label('age'),
+const registerSchema = s({
+  username: s('string:3-32!').label('username'),
+  email:    s('email!').label('email address'),
+  age:      s('integer:18-120').label('age'),
 })
 
 const badPayload = { username: 'ab', email: 'bad-email', age: 15 }
@@ -88,7 +88,7 @@ console.log('dynamic-locale.default.valid  =', defaultResult.valid)     // false
 interface MockRequest  { headers: { 'accept-language'?: string }; body: unknown }
 interface MockResponse { status(code: number): MockResponse; json(data: unknown): void }
 
-function validateMiddleware(schema: ReturnType<typeof dsl>) {
+function validateMiddleware(schema: ReturnType<typeof s>) {
   return (req: MockRequest, res: MockResponse, next: () => void) => {
     const locale = parseAcceptLanguage(req.headers['accept-language'])
     const result = validate(schema, req.body, { locale, allErrors: true })

@@ -1,4 +1,4 @@
-import { dsl, validate, Validator } from '../../dist/index.js'
+import { s, validate, Validator } from '../../dist/pure.js'
 
 // ============================================================
 // Home — comprehensive introduction to schema-dsl
@@ -8,8 +8,8 @@ import { dsl, validate, Validator } from '../../dist/index.js'
 // 1. Basic schema — string DSL syntax
 // ============================================================
 
-const homeSchema = dsl({
-  username: dsl('string:3-32!')
+const homeSchema = s({
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .label('Username')
     .error({ pattern: 'Username may only contain letters, digits and underscores' }),
@@ -90,7 +90,7 @@ console.log('home.allErrors.count                 =',
 // 6. Nested object schema — inline definition
 // ============================================================
 
-const productSchema = dsl({
+const productSchema = s({
   name:  'string:1-128!',
   price: 'number:0-999999!',
   stock: 'integer:0-999999',

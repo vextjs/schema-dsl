@@ -1,4 +1,4 @@
-import { dsl, validate, SchemaUtils } from '../../dist/index.js'
+import { s, validate, SchemaUtils } from '../../dist/pure.js'
 
 // ============================================================
 // SchemaUtils chaining — compose schemas with transform chains
@@ -8,13 +8,13 @@ import { dsl, validate, SchemaUtils } from '../../dist/index.js'
 // 1. The base "god" schema — all fields defined once
 // ============================================================
 
-const baseSchema = dsl({
+const baseSchema = s({
   id:        'objectId!',
-  username:  dsl('string:3-32!').label('Username').pattern(/^[a-zA-Z0-9_]+$/),
-  email:     dsl('email!').label('Email'),
-  password:  dsl('string:8-32!').label('Password'),
-  age:       dsl('integer:0-150').label('Age'),
-  bio:       dsl('string:500').label('Bio'),
+  username:  s('string:3-32!').label('Username').pattern(/^[a-zA-Z0-9_]+$/),
+  email:     s('email!').label('Email'),
+  password:  s('string:8-32!').label('Password'),
+  age:       s('integer:0-150').label('Age'),
+  bio:       s('string:500').label('Bio'),
 })
 
 // ============================================================
@@ -23,7 +23,7 @@ const baseSchema = dsl({
 
 const publicProfileSchema = SchemaUtils
   .omit(baseSchema, ['password'])          // drop password
-  .extend({ avatar: dsl('url').label('Avatar') })  // add avatar
+  .extend({ avatar: s('url').label('Avatar') })  // add avatar
   .pick(['username', 'email', 'avatar'])   // keep only three fields
   .partial()                               // make all optional
 

@@ -6,7 +6,7 @@ User asked: Can `schema` in `validate(schema, { email: 'test@example.com', age: 
 
 ## Answer
 
-**It works now! ** 🎉 In the current refactored version of TypeScript, both the top-level `validate()` and `validateAsync()` support passing in DSL objects directly.
+**It works now.** In the current version, both the top-level `validate()` and `validateAsync()` support passing in DSL objects directly.
 
 ---
 
@@ -15,9 +15,9 @@ User asked: Can `schema` in `validate(schema, { email: 'test@example.com', age: 
 ### Method 1: Pass in DSL object (✅ Supported by current version)
 
 ```javascript
-const { validate } = require('schema-dsl');
+import { validate } from 'schema-dsl/pure';
 
-// ✅ Pass in the DSL object directly without dsl() wrapping
+// ✅ Pass in the DSL object directly without s() wrapping
 const result = validate(
   { email: 'email!', age: 'number:18-120' }, // DSL object
   { email: 'test@example.com', age: 25 }
@@ -27,18 +27,18 @@ console.log(result.valid);  // true
 ```
 
 **advantage**:
-- ✅ The simplest, no `dsl()` package required
+- ✅ The simplest, no `s()` package required
 - ✅ The code is more intuitive and suitable for simple scenarios
 
 **⚠️ NOTE**: DSL objects also support mixed use of DslBuilder instances:
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // ✅ Mixed use: DslBuilder + DSL string
 const result = validate(
   {
-    username: dsl('string:3-32!')
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': 'Can only contain letters, numbers and underscores' }),
     email: 'email!', // Pure DSL string
@@ -48,13 +48,13 @@ const result = validate(
 );
 ```
 
-### Way 2: Use dsl() wrapper (recommended)
+### Way 2: Use s() wrapper (recommended)
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // ✅ Convert to JSON Schema first, then verify
-const schema = dsl({
+const schema = s({
   email: 'email!',
   age: 'number:18-120'
 });
@@ -70,7 +70,7 @@ const result = validate(schema, { email: 'test@example.com', age: 25 });
 ### Method 3: Pass in standard JSON Schema
 
 ```javascript
-const { validate } = require('schema-dsl');
+import { validate } from 'schema-dsl/pure';
 
 // ✅ Pass in standard JSON Schema
 const result = validate(
@@ -141,7 +141,7 @@ const result = validate(
 
 ### Current plan
 
-The current refactored version of TypeScript has completed automatic detection and conversion logic:
+The current version has completed automatic detection and conversion logic:
 
 1. **Detect DSL Objects**: Identify DSL strings in objects
 2. **Automatic Conversion**: Converted to JSON Schema via internal DSL object normalization process
@@ -179,24 +179,24 @@ Applicable to: production environments, high-concurrency services, and scenarios
 // ✅ Best practice: define all schemas in separate files
 
 // schemas/user.js - loaded when the project starts, converted once
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-module.exports = {
-  register: dsl({
-    username: dsl('string:3-32!')
+export default {
+  register: s({
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': 'Can only contain letters, numbers and underscores' }),
     email: 'email!',
-    password: dsl('string!').password('strong'),
+    password: s('string!').password('strong'),
     age: 'number:18-120'
   }),
 
-  login: dsl({
+  login: s({
     username: 'string!',
     password: 'string!'
   }),
 
-  updateProfile: dsl({
+  updateProfile: s({
     nickname: 'string:2-20',
     avatar: 'url',
     bio: 'string:0-500'
@@ -204,8 +204,8 @@ module.exports = {
 };
 
 // routes/user.js - used directly in routing without conversion
-const userSchemas = require('../schemas/user');
-const { validate } = require('schema-dsl');
+import userSchemas from '../schemas/user.js';
+import { validate } from 'schema-dsl/pure';
 
 app.post('/api/register', (req, res) => {
   const result = validate(userSchemas.register, req.body); // ✅ Use directly
@@ -234,12 +234,12 @@ Applicable to: Need to customize error messages, complex validation rules
 
 ```javascript
 // ✅Need custom message
-const schema = dsl({
-  email: dsl('email!')
+const schema = s({
+  email: s('email!')
     .label('email address')
     .messages({ 'string.email': 'Please enter a valid email' }),
 
-  username: dsl('string:3-32!')
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .messages({ 'string.pattern': 'Can only contain letters, numbers and underscores' })
 });
@@ -254,7 +254,7 @@ const result = validate(schema, data);
 | Way | Simplicity | flexibility | Reusability | Applicable scenarios |
 |------|-------|-------|-------|---------|
 | DSL object | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ | Simple validation, one-time use |
-| dsl() package | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Complex validation, need to be reused |
+| s() package | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Complex validation, need to be reused |
 | JSON Schema | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | Interoperate with other tools |
 
 ---
@@ -275,7 +275,7 @@ app.post('/api/user', (req, res) => {
 });
 
 // ✅ Recommendation: Convert in advance and reuse schema
-const userSchema = dsl({ email: 'email!', age: 'number!' });
+const userSchema = s({ email: 'email!', age: 'number!' });
 
 app.post('/api/user', (req, res) => {
   const result = validate(userSchema, req.body); // Use directly
@@ -322,13 +322,13 @@ const result = validate(
 ## Complete example
 
 ```javascript
-const { dsl, validate, validateAsync } = require('schema-dsl');
+import { s, validate, validateAsync } from 'schema-dsl/pure';
 
 // Example 1: Synchronous validation
 const result = validate(
   {
     email: 'email!',
-    password: dsl('string!').password('strong'),
+    password: s('string!').password('strong'),
     age: 'number:18-120',
     username: 'string:3-32!'
   },
@@ -375,7 +375,7 @@ if (result.valid) {
 
 **Recommended use**:
 - Simple scenario: use DSL objects directly
-- Complex scenarios: Use `dsl()` for conversion first to facilitate reuse and expansion.
+- Complex scenarios: Use `s()` for conversion first to facilitate reuse and expansion.
 
 ---
 
@@ -388,7 +388,7 @@ if (result.valid) {
 ```javascript
 const result = validate(
   {
-    username: dsl('string:3-32!')
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': 'Can only contain letters, numbers and underscores' }),
     email: 'email!', // Pure DSL string
@@ -404,7 +404,7 @@ Also supported in nested objects:
 const result = validate(
   {
     user: {
-      name: dsl('string:3-32!').messages({ 'string.min': 'The name is too short' }),
+      name: s('string:3-32!').messages({ 'string.min': 'The name is too short' }),
       email: 'email!'
     }
   },
@@ -428,7 +428,7 @@ app.post('/api/user', (req, res) => {
 });
 
 // ✅ Optimum performance: convert once when starting the project and reuse the schema
-const userSchema = dsl({ email: 'email!', age: 'number!' }); // ✅ Convert once at startup
+const userSchema = s({ email: 'email!', age: 'number!' }); // ✅ Convert once at startup
 
 app.post('/api/user', (req, res) => {
   const result = validate(userSchema, req.body); // ✅ Use it directly without conversion
@@ -451,35 +451,35 @@ app.post('/api/user', (req, res) => {
 
 ```javascript
 // ✅ Recommended: Define all schemas in separate files (schemas/user.js)
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // Convert once when the project starts and reuse directly later.
 const userSchemas = {
-  register: dsl({
-    username: dsl('string:3-32!')
+  register: s({
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .messages({ 'string.pattern': 'Can only contain letters, numbers and underscores' }),
     email: 'email!',
-    password: dsl('string!').password('strong'),
+    password: s('string!').password('strong'),
     age: 'number:18-120'
   }),
 
-  login: dsl({
+  login: s({
     username: 'string!',
     password: 'string!'
   }),
 
-  updateProfile: dsl({
+  updateProfile: s({
     nickname: 'string:2-20',
     avatar: 'url',
     bio: 'string:0-500'
   })
 };
 
-module.exports = userSchemas;
+export default userSchemas;
 
 // Used in routing (routes/user.js)
-const userSchemas = require('../schemas/user');
+import userSchemas from '../schemas/user.js';
 
 app.post('/api/register', (req, res) => {
   const result = validate(userSchemas.register, req.body); // ✅ Use directly
@@ -502,14 +502,14 @@ app.post('/api/login', (req, res) => {
 | **Prototype Development** | ✅ Use DSL objects directly | Iterate quickly without worrying about performance |
 | **Test code** | ✅ Use DSL objects directly | Simple, clear and easy to maintain |
 
-### Q3: Why is it still recommended to use `dsl()` to convert complex scenes first?
+### Q3: Why is it still recommended to use `s()` to convert complex scenes first?
 
 **Historical reasons**:
 
 1. **Clear Separation of Duties** (Design Philosophy)
    ```javascript
    // Conversion stage: DSL → JSON Schema
-   const schema = dsl({ email: 'email!', age: 'number!' });
+   const schema = s({ email: 'email!', age: 'number!' });
 
    // Validation phase: JSON Schema + data → result
    const result = validate(schema, data);
@@ -571,7 +571,7 @@ This design makes the responsibilities of each step clearer.
 validate({ email: 'email!' }, data);
 
 // ✅ Complex scenarios: explicit conversion
-const schema = dsl({ email: 'email!' });
+const schema = s({ email: 'email!' });
 validate(schema, data);
 ```
 

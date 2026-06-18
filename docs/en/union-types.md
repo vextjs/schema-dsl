@@ -13,7 +13,7 @@ The `types:` syntax allows you to define cross-type joint validation, supporting
 
 ✅ **Concise syntax** - `'types:string|number'` One line to do it
 ✅ **With restraints** - `'types:string:3-10|number:0-100'`
-✅ **Plugin Extension** - Supports custom type registration
+✅ **Custom DSL types** - Supports reusable type registration
 ✅ **Multi-language** - full i18n support
 
 ---
@@ -23,10 +23,10 @@ The `types:` syntax allows you to define cross-type joint validation, supporting
 ### Basic usage
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 //Define union type
-const schema = dsl({
+const schema = s({
   value: 'types:string|number'
 });
 
@@ -39,7 +39,7 @@ validate(schema, { value: true }); // ❌ failed
 ### With constraints
 
 ```javascript
-const schema = dsl({
+const schema = s({
   value: 'types:string:3-10|number:0-100!'
 });
 
@@ -86,7 +86,7 @@ All built-in types are available in `types:`:
 Custom types registered via plugins can also be used:
 
 ```javascript
-const { DslBuilder, PluginManager } = require('schema-dsl');
+import { DslBuilder, PluginManager } from 'schema-dsl/pure';
 
 //Register custom type
 DslBuilder.registerType('order-id', {
@@ -97,7 +97,7 @@ DslBuilder.registerType('order-id', {
 });
 
 // used in types:
-const schema = dsl({
+const schema = s({
   identifier: 'types:uuid|order-id'
 });
 ```
@@ -109,7 +109,7 @@ const schema = dsl({
 ### Scenario 1: User registration (email or mobile phone number)
 
 ```javascript
-const registerSchema = dsl({
+const registerSchema = s({
   username: 'string:3-20!',
   password: 'string:8-20!',
   contact: 'types:email|phone!' // Email or mobile phone number
@@ -119,7 +119,7 @@ const registerSchema = dsl({
 ### Scenario 2: Flexible price input
 
 ```javascript
-const productSchema = dsl({
+const productSchema = s({
   price: 'types:number:0-|string:1-20' // Numeric price or "negotiable"
 });
 
@@ -134,7 +134,7 @@ validate(productSchema, { price: 'Negotiable' }); // ✅ String
 DslBuilder.registerType('order-id', { ... });
 DslBuilder.registerType('sku', { ... });
 
-const querySchema = dsl({
+const querySchema = s({
   identifier: 'types:order-id|sku!'
 });
 ```
@@ -268,8 +268,8 @@ Union types verify each type in turn until a match is found. The more types, the
 
 ## Related documents
 
-- [Plug-in system](./plugin-system.md)
-- [Custom type registration](./plugin-type-registration.md)
+- [Extension Overview](./extensions-overview.md)
+- [Custom DSL Types](./plugin-type-registration.md)
 - [Contribution Guide](https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md)
 
 ---

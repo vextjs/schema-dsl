@@ -1,4 +1,4 @@
-import { dsl, validate } from '../../dist/index.js'
+import { s, validate } from '../../dist/pure.js'
 
 function expect(condition: boolean, message: string): void {
   if (!condition) throw new Error(`[label-vs-description] ${message}`)
@@ -21,7 +21,7 @@ function expectIncludes(value: string, expected: string, message: string): void 
 // 1. Basic usage: label appears in error messages
 // ============================================================
 
-const emailField = dsl('email!')
+const emailField = s('email!')
   .label('Email Address')
   .description('Primary login email — used for account recovery')
   .messages({
@@ -29,10 +29,10 @@ const emailField = dsl('email!')
     format: '{{#label}} must be a valid email address',
   })
 
-const schema = dsl({
+const schema = s({
   email:    emailField,
-  username: dsl('string:3-32!').label('Username').description('Login handle; letters and digits only'),
-  age:      dsl('integer:13-120').label('Age').description('Must be at least 13 to register'),
+  username: s('string:3-32!').label('Username').description('Login handle; letters and digits only'),
+  age:      s('integer:13-120').label('Age').description('Must be at least 13 to register'),
 })
 
 const raw = (emailField as any).toSchema() as any
@@ -71,7 +71,7 @@ console.log('label-vs-description.err.message =', emailError)
 // 4. No label — error falls back to path
 // ============================================================
 
-const noLabelSchema = dsl({ email: 'email!' })
+const noLabelSchema = s({ email: 'email!' })
 const noLabelResult = validate(noLabelSchema, {})
 const noLabelError = noLabelResult.errors?.[0]?.message ?? ''
 
@@ -83,8 +83,8 @@ console.log('label-vs-description.noLabel.error =', noLabelError || 'none')
 // 5. label vs enum in error messages
 // ============================================================
 
-const roleField = dsl('string!').label('User Role').enum(['admin', 'editor', 'viewer'])
-const roleSchema = dsl({ role: roleField })
+const roleField = s('string!').label('User Role').enum(['admin', 'editor', 'viewer'])
+const roleSchema = s({ role: roleField })
 
 const roleResult = validate(roleSchema, { role: 'superuser' })
 const roleError = roleResult.errors?.[0]?.message ?? ''

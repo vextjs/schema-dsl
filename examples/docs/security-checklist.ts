@@ -1,4 +1,4 @@
-import { dsl, validate } from '../../dist/index.js'
+import { s, validate } from '../../dist/pure.js'
 
 // ============================================================
 // Security checklist — safe schema patterns for API inputs
@@ -15,8 +15,8 @@ import { dsl, validate } from '../../dist/index.js'
 // 1. API token — strict alphanum + bounded length
 // ============================================================
 
-const tokenSchema = dsl({
-  apiToken:    dsl('string:20-64!').pattern(/^[A-Za-z0-9_-]+$/).label('API Token'),
+const tokenSchema = s({
+  apiToken:    s('string:20-64!').pattern(/^[A-Za-z0-9_-]+$/).label('API Token'),
   callbackUrl: 'url!',
 })
 
@@ -34,10 +34,10 @@ console.log('security.token.injection   =', validate(tokenSchema, {
 // 2. User registration — role allowlist, bounded fields
 // ============================================================
 
-const registrationSchema = dsl({
-  username: dsl('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/),
+const registrationSchema = s({
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/),
   email:    'email!',
-  password: dsl('string:8-128!').pattern(/^(?=.*[A-Za-z])(?=.*\d).+$/),
+  password: s('string:8-128!').pattern(/^(?=.*[A-Za-z])(?=.*\d).+$/),
   role:     'user|moderator',          // never 'admin' from user input
 })
 
@@ -59,8 +59,8 @@ console.log('security.register.fakeAdmin =', validate(registrationSchema, {
 // 3. Search / query input — max length + pattern
 // ============================================================
 
-const searchSchema = dsl({
-  query:    dsl('string:1-100!').pattern(/^[a-zA-Z0-9 _-]+$/),
+const searchSchema = s({
+  query:    s('string:1-100!').pattern(/^[a-zA-Z0-9 _-]+$/),
   page:     'integer:1-9999!',
   pageSize: 'integer:1-100!',
 })
@@ -81,8 +81,8 @@ console.log('security.search.injection  =', validate(searchSchema, {
 // 4. File upload metadata — mime type allowlist
 // ============================================================
 
-const uploadSchema = dsl({
-  filename:  dsl('string:1-200!').pattern(/^[a-zA-Z0-9_.-]+$/),
+const uploadSchema = s({
+  filename:  s('string:1-200!').pattern(/^[a-zA-Z0-9_.-]+$/),
   mimeType:  'image/png|image/jpeg|image/webp|application/pdf',
   sizeBytes: 'integer:1-10485760!',    // 1 byte to 10 MB
 })

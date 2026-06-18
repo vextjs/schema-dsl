@@ -1,13 +1,13 @@
-import { dsl, PostgreSQLExporter } from '../../dist/index.js'
+import { s, PostgreSQLExporter } from '../../dist/pure.js'
 
 // ============================================================
 // 1. Basic export: dsl schema → PostgreSQL CREATE TABLE DDL
 // ============================================================
 
-const userSchema = dsl({
-  id:        dsl('uuid!').description('Primary key — UUID v4'),
-  username:  dsl('string:3-32!').description('Login name'),
-  email:     dsl('email!').description('Primary email address'),
+const userSchema = s({
+  id:        s('uuid!').description('Primary key — UUID v4'),
+  username:  s('string:3-32!').description('Login name'),
+  email:     s('email!').description('Primary email address'),
   password:  'string:8-64!',
   age:       'integer:0-150',
   score:     'number:0-100',
@@ -61,7 +61,7 @@ console.log('postgresql-exporter.index.tags.gin      =', tagsIndex.includes('USI
 // 4. Product schema with JSONB, arrays, and full type mapping
 // ============================================================
 
-const productSchema = dsl({
+const productSchema = s({
   id:          'uuid!',
   sku:         'alphanum:5-20!',
   name:        'string:2-200!',
@@ -85,7 +85,7 @@ console.log('postgresql-exporter.product.hasCheck    =', productDdl.includes('CH
 // ============================================================
 
 const plainExporter = new PostgreSQLExporter()
-const plainDdl = plainExporter.export('orders', dsl({
+const plainDdl = plainExporter.export('orders', s({
   id:       'uuid!',
   userId:   'uuid!',
   total:    'number:0.01-!',
@@ -98,8 +98,8 @@ console.log('postgresql-exporter.plain.hasTable =', plainDdl.includes('CREATE TA
 // 6. COMMENT ON — descriptions carried into DDL
 // ============================================================
 
-const commentedDdl = exporter.export('users', dsl({
-  id:    dsl('uuid!').description('Unique user identifier — UUID v4'),
-  email: dsl('email!').description('Primary email used for login'),
+const commentedDdl = exporter.export('users', s({
+  id:    s('uuid!').description('Unique user identifier — UUID v4'),
+  email: s('email!').description('Primary email used for login'),
 }))
 console.log('postgresql-exporter.comment.hasComment =', commentedDdl.includes('COMMENT'))  // true

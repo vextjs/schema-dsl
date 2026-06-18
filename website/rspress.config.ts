@@ -8,25 +8,26 @@ const englishSidebar = [
     items: [
       { text: 'Quick Start', link: '/quick-start' },
       { text: 'Design Philosophy', link: '/design-philosophy' },
-      { text: 'Documentation Index', link: '/doc-index' },
-      { text: 'Feature Index', link: '/FEATURE-INDEX' }
+      { text: 'TypeScript Guide', link: '/typescript-guide' }
     ]
   },
   {
-    text: 'Core Syntax',
+    text: 'Schema Authoring',
     items: [
       { text: 'DSL Syntax', link: '/dsl-syntax' },
-      { text: 'Type Reference', link: '/type-reference' },
+      { text: 'Complete Type List', link: '/type-reference' },
+      { text: 'Chain Method List', link: '/chain-methods' },
       { text: 'Optional Marker ?', link: '/optional-marker-guide' },
       { text: 'Multi-type Support', link: '/multi-type-support' },
       { text: 'Union Types', link: '/union-types' },
       { text: 'Union Type Guide', link: '/union-type-guide' },
       { text: 'Number Operators', link: '/number-operators' },
-      { text: 'Enum', link: '/enum' }
+      { text: 'Enum', link: '/enum' },
+      { text: 'String Extensions', link: '/string-extensions' }
     ]
   },
   {
-    text: 'Validation',
+    text: 'Validation and Runtime',
     items: [
       { text: 'validate()', link: '/validate' },
       { text: 'validateAsync()', link: '/validate-async' },
@@ -36,7 +37,33 @@ const englishSidebar = [
       { text: 'Validator', link: '/validator' },
       { text: 'Conditional API', link: '/conditional-api' },
       { text: 'Error Handling', link: '/error-handling' },
-      { text: 'String Extensions', link: '/string-extensions' }
+      { text: 'compile()', link: '/compile' },
+      { text: 'Runtime Isolation', link: '/runtime-isolation' }
+    ]
+  },
+  {
+    text: 'Export and Interop',
+    items: [
+      { text: 'JSON Schema Basics', link: '/json-schema-basics' },
+      { text: 'Export Guide', link: '/export-guide' },
+      { text: 'Export Limitations', link: '/export-limitations' },
+      { text: 'MongoDB Exporter', link: '/mongodb-exporter' },
+      { text: 'MySQL Exporter', link: '/mysql-exporter' },
+      { text: 'PostgreSQL Exporter', link: '/postgresql-exporter' },
+      { text: 'Markdown Exporter', link: '/markdown-exporter' },
+      { text: 'TypeConverter', link: '/type-converter' }
+    ]
+  },
+  {
+    text: 'Reuse and Utilities',
+    items: [
+      { text: 'SchemaUtils', link: '/schema-utils' },
+      { text: 'SchemaUtils Chaining', link: '/schema-utils-chaining' },
+      { text: 'SchemaUtils Advanced Issues', link: '/schema-utils-advanced-issues' },
+      { text: 'SchemaUtils Best Practices', link: '/schema-utils-best-practices' },
+      { text: 'SchemaHelper', link: '/schema-helper' },
+      { text: 'CacheManager', link: '/cache-manager' },
+      { text: 'label vs description', link: '/label-vs-description' }
     ]
   },
   {
@@ -48,46 +75,24 @@ const englishSidebar = [
       { text: 'Frontend i18n Guide', link: '/frontend-i18n-guide' },
       { text: 'Add Custom Locale', link: '/add-custom-locale' },
       { text: 'Dynamic Locale', link: '/dynamic-locale' },
-      { text: 'Runtime Locale Support', link: '/runtime-locale-support' },
-      { text: 'Runtime Isolation', link: '/runtime-isolation' }
+      { text: 'Runtime Locale Support', link: '/runtime-locale-support' }
     ]
   },
   {
-    text: 'Exporters',
+    text: 'Extensions and Integration',
     items: [
-      { text: 'Export Guide', link: '/export-guide' },
-      { text: 'MongoDB Exporter', link: '/mongodb-exporter' },
-      { text: 'MySQL Exporter', link: '/mysql-exporter' },
-      { text: 'PostgreSQL Exporter', link: '/postgresql-exporter' },
-      { text: 'Markdown Exporter', link: '/markdown-exporter' },
-      { text: 'Export Limitations', link: '/export-limitations' }
+      { text: 'Extension Overview', link: '/extensions-overview' },
+      { text: 'Custom DSL Types', link: '/plugin-type-registration' },
+      { text: 'Custom s.xxx() Factories', link: '/custom-factories' },
+      { text: 'Custom Chain Methods', link: '/custom-chain-methods' },
+      { text: 'Custom Validation Keywords', link: '/add-keyword' },
+      { text: 'Framework Integration', link: '/framework-extension-setup' },
+      { text: 'Plugin Manager (Advanced)', link: '/plugin-system' },
+      { text: 'Advanced Extension Recipes', link: '/custom-extensions-guide' }
     ]
   },
   {
-    text: 'Utilities',
-    items: [
-      { text: 'SchemaUtils', link: '/schema-utils' },
-      { text: 'SchemaUtils Chaining', link: '/schema-utils-chaining' },
-      { text: 'SchemaUtils Advanced Issues', link: '/schema-utils-advanced-issues' },
-      { text: 'SchemaUtils Best Practices', link: '/schema-utils-best-practices' },
-      { text: 'SchemaHelper', link: '/schema-helper' },
-      { text: 'CacheManager', link: '/cache-manager' },
-      { text: 'TypeConverter', link: '/type-converter' },
-      { text: 'label vs description', link: '/label-vs-description' }
-    ]
-  },
-  {
-    text: 'Plugins and Extensions',
-    items: [
-      { text: 'Plugin System', link: '/plugin-system' },
-      { text: 'addKeyword', link: '/add-keyword' },
-      { text: 'Type Registration', link: '/plugin-type-registration' },
-      { text: 'Custom Extensions', link: '/custom-extensions-guide' },
-      { text: 'TypeScript Guide', link: '/typescript-guide' }
-    ]
-  },
-  {
-    text: 'Practice and Troubleshooting',
+    text: 'Production and Troubleshooting',
     items: [
       { text: 'Best Practices', link: '/best-practices' },
       { text: 'Project Structure Best Practices', link: '/best-practices-project-structure' },
@@ -98,12 +103,12 @@ const englishSidebar = [
     ]
   },
   {
-    text: 'API Reference',
+    text: 'Reference and Index',
     items: [
       { text: 'API Reference', link: '/api-reference' },
       { text: 'API Overview', link: '/api' },
-      { text: 'compile()', link: '/compile' },
-      { text: 'JSON Schema Basics', link: '/json-schema-basics' }
+      { text: 'Documentation Index', link: '/doc-index' },
+      { text: 'Feature Index', link: '/FEATURE-INDEX' }
     ]
   }
 ];
@@ -114,25 +119,26 @@ const chineseSidebar = [
     items: [
       { text: '快速上手', link: '/zh/quick-start' },
       { text: '设计理念', link: '/zh/design-philosophy' },
-      { text: '文档索引', link: '/zh/doc-index' },
-      { text: '功能索引', link: '/zh/FEATURE-INDEX' }
+      { text: 'TypeScript 指南', link: '/zh/typescript-guide' }
     ]
   },
   {
-    text: '核心语法',
+    text: 'Schema 写法',
     items: [
       { text: 'DSL 语法', link: '/zh/dsl-syntax' },
-      { text: '类型参考', link: '/zh/type-reference' },
+      { text: '完整类型列表', link: '/zh/type-reference' },
+      { text: '链式字段方法列表', link: '/zh/chain-methods' },
       { text: '可选标记 ?', link: '/zh/optional-marker-guide' },
       { text: '多类型支持', link: '/zh/multi-type-support' },
       { text: '联合类型', link: '/zh/union-types' },
       { text: '联合类型指南', link: '/zh/union-type-guide' },
       { text: '数字比较运算符', link: '/zh/number-operators' },
-      { text: '枚举', link: '/zh/enum' }
+      { text: '枚举', link: '/zh/enum' },
+      { text: 'String 扩展', link: '/zh/string-extensions' }
     ]
   },
   {
-    text: '验证',
+    text: '验证与运行时',
     items: [
       { text: 'validate()', link: '/zh/validate' },
       { text: 'validateAsync()', link: '/zh/validate-async' },
@@ -142,7 +148,33 @@ const chineseSidebar = [
       { text: 'Validator', link: '/zh/validator' },
       { text: '条件 API', link: '/zh/conditional-api' },
       { text: '错误处理', link: '/zh/error-handling' },
-      { text: 'String 扩展', link: '/zh/string-extensions' }
+      { text: '编译', link: '/zh/compile' },
+      { text: '运行时隔离', link: '/zh/runtime-isolation' }
+    ]
+  },
+  {
+    text: '导出与互操作',
+    items: [
+      { text: 'JSON Schema 基础', link: '/zh/json-schema-basics' },
+      { text: '导出指南', link: '/zh/export-guide' },
+      { text: '导出限制', link: '/zh/export-limitations' },
+      { text: 'MongoDB 导出', link: '/zh/mongodb-exporter' },
+      { text: 'MySQL 导出', link: '/zh/mysql-exporter' },
+      { text: 'PostgreSQL 导出', link: '/zh/postgresql-exporter' },
+      { text: 'Markdown 导出', link: '/zh/markdown-exporter' },
+      { text: 'TypeConverter', link: '/zh/type-converter' }
+    ]
+  },
+  {
+    text: '复用与工具',
+    items: [
+      { text: 'SchemaUtils', link: '/zh/schema-utils' },
+      { text: 'SchemaUtils 链式调用', link: '/zh/schema-utils-chaining' },
+      { text: 'SchemaUtils 进阶问题', link: '/zh/schema-utils-advanced-issues' },
+      { text: 'SchemaUtils 最佳实践', link: '/zh/schema-utils-best-practices' },
+      { text: 'SchemaHelper', link: '/zh/schema-helper' },
+      { text: 'CacheManager', link: '/zh/cache-manager' },
+      { text: 'label vs description', link: '/zh/label-vs-description' }
     ]
   },
   {
@@ -154,46 +186,24 @@ const chineseSidebar = [
       { text: '前端 i18n 指南', link: '/zh/frontend-i18n-guide' },
       { text: '添加自定义语言包', link: '/zh/add-custom-locale' },
       { text: '动态语言切换', link: '/zh/dynamic-locale' },
-      { text: '运行时 locale 支持', link: '/zh/runtime-locale-support' },
-      { text: '运行时隔离', link: '/zh/runtime-isolation' }
+      { text: '运行时 locale 支持', link: '/zh/runtime-locale-support' }
     ]
   },
   {
-    text: '导出器',
+    text: '扩展与集成',
     items: [
-      { text: '导出指南', link: '/zh/export-guide' },
-      { text: 'MongoDB 导出', link: '/zh/mongodb-exporter' },
-      { text: 'MySQL 导出', link: '/zh/mysql-exporter' },
-      { text: 'PostgreSQL 导出', link: '/zh/postgresql-exporter' },
-      { text: 'Markdown 导出', link: '/zh/markdown-exporter' },
-      { text: '导出限制', link: '/zh/export-limitations' }
+      { text: '扩展概览', link: '/zh/extensions-overview' },
+      { text: '自定义 DSL 类型', link: '/zh/plugin-type-registration' },
+      { text: '自定义 s.xxx() 工厂', link: '/zh/custom-factories' },
+      { text: '自定义链式方法', link: '/zh/custom-chain-methods' },
+      { text: '自定义校验关键字', link: '/zh/add-keyword' },
+      { text: '框架集成与目录结构', link: '/zh/framework-extension-setup' },
+      { text: '插件管理器（高级）', link: '/zh/plugin-system' },
+      { text: '高级扩展组合指南', link: '/zh/custom-extensions-guide' }
     ]
   },
   {
-    text: '工具类',
-    items: [
-      { text: 'SchemaUtils', link: '/zh/schema-utils' },
-      { text: 'SchemaUtils 链式调用', link: '/zh/schema-utils-chaining' },
-      { text: 'SchemaUtils 进阶问题', link: '/zh/schema-utils-advanced-issues' },
-      { text: 'SchemaUtils 最佳实践', link: '/zh/schema-utils-best-practices' },
-      { text: 'SchemaHelper', link: '/zh/schema-helper' },
-      { text: 'CacheManager', link: '/zh/cache-manager' },
-      { text: 'TypeConverter', link: '/zh/type-converter' },
-      { text: 'label vs description', link: '/zh/label-vs-description' }
-    ]
-  },
-  {
-    text: '插件与扩展',
-    items: [
-      { text: '插件系统', link: '/zh/plugin-system' },
-      { text: '添加关键字', link: '/zh/add-keyword' },
-      { text: '类型注册', link: '/zh/plugin-type-registration' },
-      { text: '自定义扩展', link: '/zh/custom-extensions-guide' },
-      { text: 'TypeScript 指南', link: '/zh/typescript-guide' }
-    ]
-  },
-  {
-    text: '实践与排错',
+    text: '生产实践与排错',
     items: [
       { text: '最佳实践', link: '/zh/best-practices' },
       { text: '项目结构最佳实践', link: '/zh/best-practices-project-structure' },
@@ -204,12 +214,12 @@ const chineseSidebar = [
     ]
   },
   {
-    text: 'API 参考',
+    text: '参考与索引',
     items: [
       { text: 'API 参考', link: '/zh/api-reference' },
       { text: 'API 概览', link: '/zh/api' },
-      { text: '编译', link: '/zh/compile' },
-      { text: 'JSON Schema 基础', link: '/zh/json-schema-basics' }
+      { text: '文档索引', link: '/zh/doc-index' },
+      { text: '功能索引', link: '/zh/FEATURE-INDEX' }
     ]
   }
 ];

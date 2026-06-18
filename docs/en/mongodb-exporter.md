@@ -6,16 +6,6 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-- [API Reference](#api-reference)
-- [Configuration Options](#configuration-options)
-- [Complete example](#complete-example)
-- [Type mapping](#type-mapping)
-
----
 
 ## Overview
 
@@ -34,10 +24,10 @@
 ## quick start
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // 1. Define Schema
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:18-120'
@@ -192,15 +182,14 @@ const strictExporter = new exporters.MongoDBExporter({ strict: true });
 ### User set validation
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 //Define complex user Schema
-const userSchema = dsl({
+const userSchema = s({
   _id: 'string!',
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/)
     .label('username'),
-  email: 'email!'.label('mailbox'),
+  email: s('email!').label('mailbox'),
   profile: {
     bio: 'string:500',
     avatar: 'url'
@@ -219,7 +208,7 @@ console.log(command);
 ### Used in MongoDB
 
 ```javascript
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
 
 async function createValidatedCollection() {
   const client = new MongoClient('mongodb://localhost:27017');
@@ -272,7 +261,7 @@ async function createValidatedCollection() {
 ⚠️ **IMPORTANT**: Not all schema-dsl features can be exported to a database schema.
 
 **Exported features not supported**:
-- ❌ Conditional validation logic (`dsl.match()`, `dsl.if()`)
+- ❌ Conditional validation logic (`s.match()`, `s.if()`)
 - ❌ Custom validator (`.custom()`)
 - ❌ Complex JSON Schema keywords (`allOf`, `anyOf`, `oneOf`)
 - ❌ Custom error message (`.messages()`)

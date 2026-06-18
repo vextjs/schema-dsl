@@ -1,14 +1,14 @@
-import { dsl, validate, Validator, MarkdownExporter } from '../../dist/index.js'
+import { s, validate, Validator, MarkdownExporter } from '../../dist/pure.js'
 
 // ============================================================
 // Documentation index — quick reference for all API surfaces
 // ============================================================
 
 // ============================================================
-// 1. Quick start — dsl() + validate()
+// 1. Quick start — s() + validate()
 // ============================================================
 
-const quickStartSchema = dsl({
+const quickStartSchema = s({
   name:  'string:2-32!',
   email: 'email!',
   age:   'number:18-120',
@@ -35,7 +35,7 @@ console.log('doc-index.quickstart.errorCount      =',
 // 2. Advanced DSL types
 // ============================================================
 
-const advancedSchema = dsl({
+const advancedSchema = s({
   role:      'admin|user|guest',
   score:     'number:>=0',
   tags:      'array:0-10<string:2-20>',
@@ -75,7 +75,7 @@ console.log('doc-index.markdown.hasProperty       =', markdown.includes('name'))
 // 4. DslBuilder chaining
 // ============================================================
 
-const builtField = dsl('string:3-64!')
+const builtField = s('string:3-64!')
   .pattern(/^[a-zA-Z0-9_]+$/)
   .label('Username')
   .error({ pattern: 'Only letters, digits and underscores allowed' })

@@ -1,22 +1,11 @@
 # CacheManager 缓存管理器
 
-> **模块**: `src/core/CacheManager.ts`（公开导出：`require('schema-dsl').CacheManager`）  
+> **模块**: `src/core/CacheManager.ts`（公开导出：`import { CacheManager } from 'schema-dsl/pure'`）
 
 > **用途**: 高性能 Schema 编译缓存，支持 LRU 淘汰和 TTL 过期
 
 ---
 
-## 📑 目录
-
-- [概述](#概述)
-- [快速开始](#快速开始)
-- [API 参考](#api-参考)
-- [配置选项](#配置选项)
-- [统计信息](#统计信息)
-- [缓存边界](#缓存边界)
-- [最佳实践](#最佳实践)
-
----
 
 ## 概述
 
@@ -35,7 +24,7 @@
 ## 快速开始
 
 ```javascript
-const { CacheManager } = require('schema-dsl');
+import { CacheManager } from 'schema-dsl/pure';
 
 // 创建缓存实例
 const cache = new CacheManager({
@@ -319,7 +308,7 @@ setInterval(() => {
 function updateSchema(name, newSchema) {
   // 更新 Schema
   schemas[name] = newSchema;
-  
+
   // 清除相关缓存
   cache.delete(`schema:${name}`);
 }
@@ -352,6 +341,6 @@ function updateSchema(name, newSchema) {
 
 ## 对应示例文件
 
-**示例入口**: [cache-manager.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/cache-manager.ts)  
+**示例入口**: [cache-manager.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/cache-manager.ts)
 **说明**: 覆盖 `set/get/has`、LRU 淘汰、统计信息读取和 `resetStats()` 的实际行为。
 

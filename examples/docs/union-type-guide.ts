@@ -1,4 +1,4 @@
-import { dsl, validate } from '../../dist/index.js'
+import { s, validate } from '../../dist/pure.js'
 
 // ============================================================
 // Union type guide — OR-type values via regex pattern
@@ -13,8 +13,8 @@ import { dsl, validate } from '../../dist/index.js'
 // 1. Contact — email OR mobile phone
 // ============================================================
 
-const contactSchema = dsl({
-  contact: dsl('string!')
+const contactSchema = s({
+  contact: s('string!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|1[3-9]\d{9})$/)
     .label('Contact')
     .error({ pattern: 'Must be a valid email or Chinese mobile number' }),
@@ -33,8 +33,8 @@ console.log('union.intlPhone.valid         =',
 // 2. Website — http OR https, plus FTP
 // ============================================================
 
-const websiteSchema = dsl({
-  website: dsl('string!')
+const websiteSchema = s({
+  website: s('string!')
     .pattern(/^(https?|ftp):\/\/.+$/)
     .label('Website'),
 })
@@ -52,8 +52,8 @@ console.log('union.noProto.valid           =',
 // 3. ID field — UUID OR MongoDB ObjectId
 // ============================================================
 
-const idSchema = dsl({
-  id: dsl('string!')
+const idSchema = s({
+  id: s('string!')
     .pattern(/^([0-9a-f]{24}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)
     .label('ID')
     .error({ pattern: 'Must be a UUID or MongoDB ObjectId' }),
@@ -80,9 +80,9 @@ console.log('union.error.zh.type           =', typeof zhMsg)  // 'string'
 // 5. Optional union field — field is not required
 // ============================================================
 
-const profileSchema = dsl({
+const profileSchema = s({
   username:  'string:3-32!',
-  website:   dsl('string').pattern(/^https?:\/\/.+$/).label('Website'),  // optional
+  website:   s('string').pattern(/^https?:\/\/.+$/).label('Website'),  // optional
 })
 
 console.log('union.optional.noWebsite      =',

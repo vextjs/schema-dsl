@@ -7,7 +7,7 @@
 
 ## 📋 概述
 
-schema-dsl 的 `dsl.error` 和 `I18nError` 支持**运行时指定语言**，无需修改全局语言设置。
+schema-dsl 的 `s.error` 和 `I18nError` 支持**运行时指定语言**，无需修改全局语言设置。
 
 这对于 **API 开发**特别有用，可以根据每个请求的语言偏好（如 `Accept-Language` 请求头）动态返回对应语言的错误消息。
 
@@ -17,11 +17,11 @@ schema-dsl 的 `dsl.error` 和 `I18nError` 支持**运行时指定语言**，无
 
 ```javascript
 // ✅ 新增：简化语法（推荐）
-dsl.error.throw('account.notFound', 'zh-CN');
-dsl.error.throw('account.notFound', 'zh-CN', 404);
+s.error.throw('account.notFound', 'zh-CN');
+s.error.throw('account.notFound', 'zh-CN', 404);
 
 // ✅ 标准语法（完全兼容）
-dsl.error.throw('account.notFound', {}, 404, 'zh-CN');
+s.error.throw('account.notFound', {}, 404, 'zh-CN');
 ```
 
 **智能识别规则**：
@@ -63,7 +63,7 @@ Locale.addLocale('zh-CN', {
 ### 方式 1: 简化语法（v1.1.8 推荐）⭐
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+import { s, Locale } from 'schema-dsl/pure';
 
 // 配置语言包
 Locale.addLocale('zh-CN', {
@@ -81,10 +81,10 @@ Locale.addLocale('en-US', {
 });
 
 // ✅ 简化语法：直接传语言参数
-const error1 = dsl.error.create('account.notFound', 'zh-CN');
+const error1 = s.error.create('account.notFound', 'zh-CN');
 console.log(error1.message);  // "账户不存在"
 
-const error2 = dsl.error.create('account.notFound', 'en-US');
+const error2 = s.error.create('account.notFound', 'en-US');
 console.log(error2.message);  // "Account not found"
 ```
 
@@ -96,16 +96,16 @@ console.log(error2.message);  // "Account not found"
 ### 方式 2: 全局语言设置（传统方式）
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+import { s, Locale } from 'schema-dsl/pure';
 
 // 设置全局语言
 Locale.setLocale('zh-CN');
 
 // 后续所有错误都使用中文
-const error1 = dsl.error.create('account.notFound');
+const error1 = s.error.create('account.notFound');
 console.log(error1.message);  // "账户不存在"
 
-const error2 = dsl.error.create('user.noPermission');
+const error2 = s.error.create('user.noPermission');
 console.log(error2.message);  // "没有管理员权限"
 ```
 
@@ -119,19 +119,19 @@ console.log(error2.message);  // "没有管理员权限"
 ### 方式 3: 运行时指定语言（推荐用于 API）⭐
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+import { s, Locale } from 'schema-dsl/pure';
 
 // 全局保持默认语言
 Locale.setLocale('zh-CN');
 
 // 每次调用时指定语言
-const error1 = dsl.error.create('account.notFound', {}, 404, 'zh-CN');
+const error1 = s.error.create('account.notFound', {}, 404, 'zh-CN');
 console.log(error1.message);  // "账户不存在"
 
-const error2 = dsl.error.create('account.notFound', {}, 404, 'en-US');
+const error2 = s.error.create('account.notFound', {}, 404, 'en-US');
 console.log(error2.message);  // "Account not found"
 
-const error3 = dsl.error.create('account.notFound', {}, 404, 'ja-JP');
+const error3 = s.error.create('account.notFound', {}, 404, 'ja-JP');
 console.log(error3.message);  // "account.notFound"（日语未翻译）
 ```
 
@@ -145,10 +145,10 @@ console.log(error3.message);  // "account.notFound"（日语未翻译）
 
 ## 🔧 API 参数
 
-### dsl.error.create()
+### s.error.create()
 
 ```typescript
-dsl.error.create(
+s.error.create(
   code: string,          // 错误代码（如 'account.notFound'）
   params?: object,       // 参数插值（如 { balance: 50 }）
   statusCode?: number,   // HTTP 状态码（默认 400）
@@ -156,10 +156,10 @@ dsl.error.create(
 ): I18nError
 ```
 
-### dsl.error.throw()
+### s.error.throw()
 
 ```typescript
-dsl.error.throw(
+s.error.throw(
   code: string,
   params?: object,
   statusCode?: number,
@@ -167,10 +167,10 @@ dsl.error.throw(
 ): never
 ```
 
-### dsl.error.assert()
+### s.error.assert()
 
 ```typescript
-dsl.error.assert(
+s.error.assert(
   condition: any,
   code: string,
   params?: object,
@@ -186,7 +186,7 @@ dsl.error.assert(
 ### 场景 1: Express/Koa 中根据请求头返回多语言错误
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 function getRequestLocale(acceptLanguage) {
   return acceptLanguage?.split(',')[0]?.trim() || 'zh-CN';
@@ -201,7 +201,7 @@ app.get('/api/account/:id', async (req, res, next) => {
     const locale = getRequestLocale(req.headers['accept-language']);
     
     // 使用运行时语言抛出错误
-    dsl.error.assert(account, 'account.notFound', {}, 404, locale);
+    s.error.assert(account, 'account.notFound', {}, 404, locale);
     
     res.json(account);
   } catch (error) {
@@ -225,14 +225,14 @@ app.get('/api/account/:id', async (req, res, next) => {
 ### 场景 2: 微服务架构中的错误传递
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // 服务 A: 用户服务
 async function getUserService(userId, locale) {
   const user = await db.findUser(userId);
   
   // 传递 locale 到错误
-  dsl.error.assert(user, 'user.notFound', { userId }, 404, locale);
+  s.error.assert(user, 'user.notFound', { userId }, 404, locale);
   
   return user;
 }
@@ -258,7 +258,7 @@ app.get('/api/users/:id', async (req, res) => {
 ### 场景 3: 同一请求中使用多种语言
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // 批量验证，为不同用户返回不同语言的错误
 async function batchValidateAccounts(requests) {
@@ -269,7 +269,7 @@ async function batchValidateAccounts(requests) {
       const account = await getAccount(req.accountId);
       
       // 每个用户使用各自的语言偏好
-      dsl.error.assert(
+      s.error.assert(
         account.balance >= req.amount,
         'account.insufficientBalance',
         { balance: account.balance, required: req.amount },
@@ -305,7 +305,7 @@ const results = await batchValidateAccounts([
 ### 场景 4: GraphQL Resolver 中的多语言错误
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 const resolvers = {
   Query: {
@@ -316,7 +316,7 @@ const resolvers = {
       const account = await getAccount(id);
       
       // 使用运行时语言
-      dsl.error.assert(account, 'account.notFound', {}, 404, locale);
+      s.error.assert(account, 'account.notFound', {}, 404, locale);
       
       return account;
     }
@@ -332,7 +332,7 @@ const resolvers = {
 
 | 特性 | 全局语言 | 运行时语言 |
 |------|---------|-----------|
-| 设置方式 | `Locale.setLocale('zh-CN')` | `dsl.error.create(..., locale)` |
+| 设置方式 | `Locale.setLocale('zh-CN')` | `s.error.create(..., locale)` |
 | 影响范围 | 全局所有错误 | 仅当前错误 |
 | 是否改变全局状态 | ✅ 是 | ❌ 否 |
 | 适用场景 | 单一语言应用 | 多语言 API |
@@ -350,7 +350,7 @@ app.get('/api/account/:id', async (req, res) => {
   Locale.setLocale(req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN');
   
   // 如果同时有多个请求，语言会互相干扰
-  const error = dsl.error.create('account.notFound');
+  const error = s.error.create('account.notFound');
   // 错误消息可能是错误的语言！
 });
 ```
@@ -363,7 +363,7 @@ app.get('/api/account/:id', async (req, res) => {
   const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
   
   // 不修改全局状态，每个请求独立
-  const error = dsl.error.create('account.notFound', {}, 404, locale);
+  const error = s.error.create('account.notFound', {}, 404, locale);
   // 错误消息始终是正确的语言
 });
 ```
@@ -375,15 +375,15 @@ app.get('/api/account/:id', async (req, res) => {
 ### 运行时语言测试
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+import { s, Locale } from 'schema-dsl/pure';
 
 // 设置全局为中文
 Locale.setLocale('zh-CN');
 
 // 测试1: 运行时指定不同语言
-const error1 = dsl.error.create('account.notFound', {}, 404, 'zh-CN');
-const error2 = dsl.error.create('account.notFound', {}, 404, 'en-US');
-const error3 = dsl.error.create('account.notFound', {}, 404, 'ja-JP');
+const error1 = s.error.create('account.notFound', {}, 404, 'zh-CN');
+const error2 = s.error.create('account.notFound', {}, 404, 'en-US');
+const error3 = s.error.create('account.notFound', {}, 404, 'ja-JP');
 
 console.log(error1.message);  // "账户不存在"
 console.log(error2.message);  // "Account not found"
@@ -393,14 +393,14 @@ console.log(error3.message);  // "account.notFound"
 const currentLocale = Locale.getLocale();
 console.log(currentLocale);  // "zh-CN"
 
-const error4 = dsl.error.create('user.noPermission');  // 不指定locale
+const error4 = s.error.create('user.noPermission');  // 不指定locale
 console.log(error4.message);  // "没有管理员权限"（使用全局语言）
 ```
 
 ### 带参数的运行时语言
 
 ```javascript
-const error1 = dsl.error.create(
+const error1 = s.error.create(
   'account.insufficientBalance',
   { balance: 50, required: 100 },
   400,
@@ -408,7 +408,7 @@ const error1 = dsl.error.create(
 );
 console.log(error1.message);  // "余额不足，当前余额50，需要100"
 
-const error2 = dsl.error.create(
+const error2 = s.error.create(
   'account.insufficientBalance',
   { balance: 50, required: 100 },
   400,
@@ -430,7 +430,7 @@ app.get('/api/account/:id', async (req, res) => {
   
   try {
     const account = await getAccount(req.params.id);
-    dsl.error.assert(account, 'account.notFound', {}, 404, locale);
+    s.error.assert(account, 'account.notFound', {}, 404, locale);
     res.json(account);
   } catch (error) {
     res.status(error.statusCode).json(error.toJSON());
@@ -460,7 +460,7 @@ app.get('/api/account/:id', async (req, res) => {
   
   try {
     const account = await getAccount(req.params.id);
-    dsl.error.assert(account, 'account.notFound', {}, 404, locale);
+    s.error.assert(account, 'account.notFound', {}, 404, locale);
     res.json(account);
   } catch (error) {
     res.status(error.statusCode).json(error.toJSON());
@@ -475,7 +475,7 @@ app.get('/api/account/:id', async (req, res) => {
 async function getUser(userId, options = {}) {
   const user = await db.findUser(userId);
   
-  dsl.error.assert(
+  s.error.assert(
     user,
     'user.notFound',
     { userId },

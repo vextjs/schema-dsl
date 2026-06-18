@@ -73,6 +73,10 @@ export type {
   DslIfFn,
   DslConditionMarker,
   DslErrorNamespace,
+  DslFactoryInput,
+  DslNamespaceFactories,
+  DslExtensionDefinition,
+  NormalizedDslExtensionDefinition,
 } from './types/dsl.js'
 
 export type {
@@ -109,6 +113,7 @@ import { DslBuilder as _DslBuilder } from './core/DslBuilder.js'
 import { TypeRegistry as _TypeRegistry } from './parser/TypeRegistry.js'
 import { DslParser as _DslParser } from './parser/DslParser.js'
 import { DslAdapter as _DslAdapter } from './adapters/DslAdapter.js'
+import { attachDslNamespaceFactories as _attachDslNamespaceFactories, resetDslNamespaceExtensions as _resetDslNamespaceExtensions } from './adapters/DslNamespace.js'
 import { ConditionalBuilder as _ConditionalBuilder } from './core/ConditionalBuilder.js'
 import { Locale as _Locale } from './core/Locale.js'
 import { installStringExtensions as _install } from './core/StringExtensions.js'
@@ -120,7 +125,14 @@ import { I18nError as _I18nError } from './errors/I18nError.js'
 import type { LocaleMessage as _LocaleMessage } from './locales/types.js'
 import type { JSONSchema as _JSONSchema } from './types/schema.js'
 import type { SchemaIOOptions as _SchemaIOOptions } from './types/schema.js'
-import type { IDslBuilder as _IDslBuilder, DslDefinition as _DslDefinition, DslConditionMarker as _DslConditionMarker } from './types/dsl.js'
+import type {
+  DslConditionMarker as _DslConditionMarker,
+  DslDefinition as _DslDefinition,
+  DslExtensionDefinition as _DslExtensionDefinition,
+  DslFn as _DslFn,
+  IDslBuilder as _IDslBuilder,
+  NormalizedDslExtensionDefinition as _NormalizedDslExtensionDefinition,
+} from './types/dsl.js'
 import type { IConditionalBuilder as _IConditionalBuilder } from './types/conditional.js'
 import type { DslConfigOptions as _DslConfigOptions } from './types/config.js'
 import type { ValidationResult as _ValidationResult } from './types/validate.js'
@@ -551,6 +563,7 @@ const _INITIAL_PATTERNS = {
 export function resetRuntimeState(): void {
   resetDefaultValidator()
   _DslBuilder.clearCustomTypes()
+  _resetDslNamespaceExtensions(_dslWithNS)
   _Locale.reset()
   _TypeRegistry.setStrict(false)
   _restorePatternGroup(_PATTERNS.phone, _INITIAL_PATTERNS.phone)
@@ -619,26 +632,7 @@ function _dslFn(def: unknown, _options?: _SchemaIOOptions): _DslBuilderPublic | 
 }
 
 // Namespace shape (mirrors DslFn interface in types/dsl.ts)
-const _dslWithNS = _dslFn as {
-  (def: string, options?: _SchemaIOOptions): _DslBuilderPublic
-  (def: _DslDefinition, options?: _SchemaIOOptions): _JSONSchema
-  config: (options?: Partial<_DslConfigOptions>) => void
-  if: {
-    (condition: string, thenSchema: unknown, elseSchema?: unknown): _DslConditionMarker
-    (condition: (data: unknown) => boolean): ReturnType<typeof _ConditionalBuilder.start>
-  }
-  _if: {
-    (condition: string, thenSchema: unknown, elseSchema?: unknown): _DslConditionMarker
-    (condition: (data: unknown) => boolean): ReturnType<typeof _ConditionalBuilder.start>
-  }
-  match: (value: unknown, cases: Record<string, unknown>) => _DslConditionMarker
-  error: {
-    create: typeof _I18nError.create
-    throw: typeof _I18nError.throw
-    assert: typeof _I18nError.assert
-    [key: string]: unknown
-  }
-}
+const _dslWithNS = _dslFn as unknown as _DslFn
 
 _dslWithNS.config = _dslConfig
 
@@ -669,6 +663,21 @@ _dslWithNS.error = {
   assert: _I18nError.assert.bind(_I18nError),
 }
 
+_attachDslNamespaceFactories(_dslWithNS, {
+  createBuilder: definition => new _DslBuilder(definition) as _DslBuilderPublic,
+  createBuilderFromSchema: schema => _DslBuilder.fromSchema(schema) as _DslBuilderPublic,
+  parseObject: definition => _markSchemaCacheKey(_DslAdapter.parseObject(definition).toSchema() as _JSONSchema),
+  registerType: (name, schema) => _DslBuilder.registerType(name, schema),
+})
+
+export function defineExtension(definition: _DslExtensionDefinition): _NormalizedDslExtensionDefinition {
+  return _dslWithNS.defineExtension(definition)
+}
+
+export function registerExtension(definition: _DslExtensionDefinition): void {
+  _dslWithNS.registerExtension(definition)
+}
+
 /**
  * dsl — main API entry point
  *
@@ -681,6 +690,8 @@ _dslWithNS.error = {
  * const schema = dsl({ email: 'email!', name: 'string:2-32!' })
  */
 export const dsl = _dslWithNS
+
+export const s = _dslWithNS
 
 export default dsl
 

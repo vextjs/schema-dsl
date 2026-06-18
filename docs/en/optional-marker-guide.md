@@ -24,9 +24,9 @@ schema-dsl now supports explicit marking of optional fields using `?`, providing
 ### 1. Basic type +?
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   username: 'string!', // required string
   nickname: 'string', // optional string (default)
   bio: 'string?', // Explicit optional string
@@ -43,7 +43,7 @@ validate(schema, { username: 'test', email: 'invalid' }); // ❌ failed (email f
 ### 2. Constrained type +?
 
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!', // required, length 3-32
   nickname: 'string:3-32?', // optional, length 3-32 when valid
   age: 'number:18-?', // optional, if there is a value ≥ 18
@@ -58,7 +58,7 @@ validate(schema, { username: 'test', age: 20 }); // ✅ Passed
 ### 3. Format type +?
 
 ```javascript
-const schema = dsl({
+const schema = s({
   email: 'email?', // optional email
   url: 'url?', // optional URL
   uuid: 'uuid?', // optional UUID
@@ -74,7 +74,7 @@ validate(schema, { email: 'invalid' }); // ❌ failed (format error)
 ### 4. Array type +?
 
 ```javascript
-const schema = dsl({
+const schema = s({
   tags: 'array<string>?', // Optional string array
   items: 'array:1-10?', // Optional array, length 1-10
   numbers: 'array<number>?' // optional array of numbers
@@ -95,12 +95,12 @@ Although both behave the same (both are optional), the semantics are different:
 
 ```javascript
 // Method 1: Implicitly optional (default)
-const schema1 = dsl({
+const schema1 = s({
   nickname: 'string'
 });
 
 // Method 2: Explicitly optional (recommended)
-const schema2 = dsl({
+const schema2 = s({
   nickname: 'string?'
 });
 ```
@@ -114,7 +114,7 @@ const schema2 = dsl({
 
 ```javascript
 // ❌ Unclear: Which ones are intentionally optional? Which required marks are missing?
-const schema = dsl({
+const schema = s({
   username: 'string!',
   nickname: 'string',
   bio: 'string',
@@ -122,7 +122,7 @@ const schema = dsl({
 });
 
 // ✅ Clarity: Clearly express design intent
-const schema = dsl({
+const schema = s({
   username: 'string!', // required
   nickname: 'string?', // optional
   bio: 'string?', // optional
@@ -140,19 +140,19 @@ Special attention is required when `?` appears in an enumeration value:
 
 ```javascript
 // ❌ Error:? will be treated as part of the enumeration value
-const schema1 = dsl({
+const schema1 = s({
   status: 'active|inactive?'
 });
 // Parsed as: enum ['active', 'inactive?']
 // 'inactive' will fail validation!
 
 // ✅ Correct: enums are optional by default
-const schema2 = dsl({
+const schema2 = s({
   status: 'active|inactive'
 });
 
 // ✅ Correct: Use when enumeration is required!
-const schema3 = dsl({
+const schema3 = s({
   status: 'active|inactive!'
 });
 ```
@@ -163,7 +163,7 @@ When `!` and `?` are present at the same time (although not recommended), `!` ta
 
 ```javascript
 // ⚠️ Not recommended: use both! and?
-const schema = dsl({
+const schema = s({
   field: 'string!?' //! takes precedence, the field is required
 });
 ```
@@ -172,7 +172,7 @@ const schema = dsl({
 
 ```javascript
 // The object itself is optional, internal fields are required
-const schema1 = dsl({
+const schema1 = s({
   user: {
     name: 'string!', // When user exists, name is required
     email: 'email!' // When user exists, email is required
@@ -180,7 +180,7 @@ const schema1 = dsl({
 });
 
 // The object itself is optional (explicit), internal fields are required
-const schema2 = dsl({
+const schema2 = s({
   'user?': { // Explicitly optional
     name: 'string!',
     email: 'email!'
@@ -188,7 +188,7 @@ const schema2 = dsl({
 });
 
 // The object itself is required, internal fields are optional
-const schema3 = dsl({
+const schema3 = s({
   'user!': { // Object required
     name: 'string?', // optional
     email: 'email?' // optional
@@ -212,21 +212,21 @@ const schema3 = dsl({
 ### test code
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 //Test 1: string?
-const schema1 = dsl({ name: 'string?' });
+const schema1 = s({ name: 'string?' });
 console.log(validate(schema1, {}).valid);              // true
 console.log(validate(schema1, { name: 'test' }).valid); // true
 
 //Test 2: email?
-const schema2 = dsl({ email: 'email?' });
+const schema2 = s({ email: 'email?' });
 console.log(validate(schema2, {}).valid);                        // true
 console.log(validate(schema2, { email: 'test@ex.com' }).valid); // true
 console.log(validate(schema2, { email: 'invalid' }).valid);     // false ✅
 
 //Test 3: string:3-32?
-const schema3 = dsl({ username: 'string:3-32?' });
+const schema3 = s({ username: 'string:3-32?' });
 console.log(validate(schema3, {}).valid);                   // true
 console.log(validate(schema3, { username: 'ab' }).valid);   // false ✅
 console.log(validate(schema3, { username: 'test' }).valid); // true
@@ -263,10 +263,10 @@ The current version will uniformly strip the trailing `!` / `?` in `DslParser.pa
 ### Recommended usage
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // ✅ Recommended: Mark all fields explicitly
-const schema = dsl({
+const schema = s({
   // Required fields - use!
   username: 'string:3-32!',
   password: 'string:8-!',

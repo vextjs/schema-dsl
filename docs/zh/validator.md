@@ -3,9 +3,9 @@
 `Validator` 是对 AJV 的封装，提供编译缓存、错误格式化、自定义关键字和批量验证能力。
 
 ```javascript
-const { Validator, dsl } = require('schema-dsl');
+import { Validator, s } from 'schema-dsl/pure';
 const validator = new Validator();
-const schema = dsl({ email: 'email!' });
+const schema = s({ email: 'email!' });
 console.log(validator.validate(schema, { email: 'test@example.com' }));
 ```
 
@@ -40,7 +40,7 @@ app.post('/users', (req, res) => {
 
 缓存只对重复出现的 schema 结构有效。如果每个请求都产生从未见过的动态 schema，缓存条目会持续轮换，每次未命中仍要支付编译成本。应限制动态 schema 形态数量，或把这类校验放到隔离的短生命周期路径中。
 
-> 如果你希望直接传入 DSL 对象（例如 `validate({ email: 'email!' }, data)`），请使用顶层便捷函数 `validate()` / `validateAsync()`；`Validator` 实例方法仍建议接收标准 JSON Schema 或 `dsl({...})` 的转换结果。
+> 如果你希望直接传入 DSL 对象（例如 `validate({ email: 'email!' }, data)`），请使用顶层便捷函数 `validate()` / `validateAsync()`；`Validator` 实例方法仍建议接收标准 JSON Schema 或 `s({...})` 的转换结果。
 
 相关方法：`compile()`、`validate()`、`validateAsync()`、`validateBatch()`、`addKeyword()`、`addFormat()`。
 

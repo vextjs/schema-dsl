@@ -1,4 +1,4 @@
-import { dsl, validate, MongoDBExporter, MySQLExporter, PostgreSQLExporter, MarkdownExporter } from '../../dist/index.js'
+import { s, validate, MongoDBExporter, MySQLExporter, PostgreSQLExporter, MarkdownExporter } from '../../dist/pure.js'
 
 // ============================================================
 // Export guide — generate DDL and docs from schemas
@@ -14,14 +14,14 @@ import { dsl, validate, MongoDBExporter, MySQLExporter, PostgreSQLExporter, Mark
 // 1. Define a reusable domain schema
 // ============================================================
 
-const userSchema = dsl({
-  id:          dsl('uuid!').description('Primary key (UUID v4)'),
-  username:    dsl('string:3-32!').description('Unique login handle'),
-  email:       dsl('email!').description('Login email address'),
-  role:        dsl('admin|user|guest').description('Access role'),
-  status:      dsl('active|suspended|deleted').description('Account status'),
-  createdAt:   dsl('datetime!').description('ISO-8601 creation timestamp'),
-  age:         dsl('integer:18-120').description('User age in years'),
+const userSchema = s({
+  id:          s('uuid!').description('Primary key (UUID v4)'),
+  username:    s('string:3-32!').description('Unique login handle'),
+  email:       s('email!').description('Login email address'),
+  role:        s('admin|user|guest').description('Access role'),
+  status:      s('active|suspended|deleted').description('Account status'),
+  createdAt:   s('datetime!').description('ISO-8601 creation timestamp'),
+  age:         s('integer:18-120').description('User age in years'),
 })
 
 // ============================================================
@@ -47,11 +47,11 @@ console.log('export-guide.pg.hasCreate        =', pgDdl.includes('CREATE TABLE')
 console.log('export-guide.pg.hasEmail         =', pgDdl.toLowerCase().includes('email'))  // true
 
 // Multiple tables in one pass
-const productSchema = dsl({
+const productSchema = s({
   id:       'uuid!',
-  name:     dsl('string:2-200!').description('Product display name'),
-  price:    dsl('number:0.01-!').description('Unit price'),
-  stock:    dsl('integer:0-!').description('Current inventory'),
+  name:     s('string:2-200!').description('Product display name'),
+  price:    s('number:0.01-!').description('Unit price'),
+  stock:    s('integer:0-!').description('Current inventory'),
   active:   'boolean',
 })
 

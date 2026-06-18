@@ -4,6 +4,8 @@ Use `schema-dsl/runtime` when a framework, worker, plugin host or multi-tenant p
 
 `schema-dsl/pure` only avoids automatic `String.prototype` installation. It still uses the same global Locale, TypeRegistry, PATTERNS and default Validator state as the root API.
 
+`schema-dsl/runtime` does not export a top-level `s`. Create a runtime first, then use `runtime.s(...)`, `runtime.s.email()`, or `runtime.s(...)` from that isolated instance.
+
 ## Quick start
 
 ```typescript
@@ -24,15 +26,18 @@ const runtime = createRuntime({
     key === 'number.min' ? `[${locale}] {{#label}} must be >= {{#limit}}` : fallback
 });
 
-const schema = runtime.dsl({
+const schema = runtime.s({
   id: 'tenantId!',
   age: 'number:18-120'
 });
+
+const field = runtime.s.email().label('Login email').require().toSchema();
 
 const result = runtime.validate(schema, { id: 'tenant_demo', age: 16 });
 ```
 
 `createSchemaDslRuntime()` and `createSchemaDslAdapter()` are equivalent aliases of `createRuntime()`.
+`runtime.s` and `runtime.dsl` are the same namespace object. Factories such as `runtime.s.email()` compile with the runtime's own type, pattern, message and validator scope.
 
 ## What is isolated
 
@@ -42,12 +47,13 @@ const result = runtime.validate(schema, { id: 'tenant_demo', age: 16 });
 | Inline `messages` and `messageProvider` | Yes |
 | Custom DSL types and `typeResolver` | Yes |
 | Pattern overrides for `phone`, `idCard`, `creditCard`, `licensePlate`, `postalCode`, `passport`, `common` | Yes |
-| Validator/AJV instances and caches | Yes |
+| Validator instances and caches | Yes |
 | Custom keyword messages | Yes |
 | Conditional branch parsing and messages | Yes |
 | Async custom validator fallback messages | Yes |
 | Runtime-created `I18nError` | Yes |
 | Runtime cache lifecycle and stats | Yes |
+| `runtime.s` / `runtime.dsl` namespace custom factories | Yes |
 | `String.prototype` installation | Not installed by this entry |
 
 ## Lifecycle API
@@ -60,15 +66,15 @@ Use `configure(options, { mode })` for hot reload:
 - `replace` replaces the full runtime-local profile with `options` while preserving built-in pattern defaults.
 - `reset` clears runtime-local messages, types, patterns and strict/type resolver state, then applies `options`.
 
-Use `clearCache()` to drop runtime-owned Validator/AJV caches, `getStats()` to inspect message/type/pattern/cache counts, and `dispose()` during app shutdown, plugin unload or test teardown. `dispose()` is idempotent; using a disposed runtime throws `[schema-dsl/runtime] Runtime has been disposed`.
+Use `clearCache()` to drop runtime-owned validator caches, `getStats()` to inspect message/type/pattern/cache counts, and `dispose()` during app shutdown, plugin unload or test teardown. `dispose()` is idempotent; using a disposed runtime throws `[schema-dsl/runtime] Runtime has been disposed`.
 
 Per-call validation options follow the root helper conventions. Use `{ coerce: false }`, `{ smartCoerce: false }`, or `{ coerceTypes: false }` when a runtime validation call must reject numeric or boolean strings instead of using schema-dsl smart coercion.
 
 ## TypeScript hints
 
-`runtime.dsl('string')` and `runtime.compileField('string')` return the same chainable builder shape as the normal `dsl('string')` path, so built-in chain methods keep their existing TypeScript hints.
+`runtime.s.email()`, `runtime.s('string')`, `runtime.s('string')`, and `runtime.compileField('string')` return the same chainable builder shape as the normal namespace path, so built-in chain methods keep their existing TypeScript hints.
 
-For custom runtime DSL types, pass `types`, `dynamicTypes` or `typeResolver` to `createRuntime()`. For custom chain methods, keep using TypeScript module augmentation for the builder interface and provide the runtime method implementation in your extension code.
+For custom runtime DSL types, pass `types`, `dynamicTypes` or `typeResolver` to `createRuntime()`. For custom namespace factories, call `runtime.registerExtension({ literal, factoryName, schema })`. For custom chain methods, keep using TypeScript module augmentation for the builder interface and provide the runtime method implementation in your extension code.
 
 ## Message provider contract
 
@@ -84,8 +90,15 @@ For custom runtime DSL types, pass `types`, `dynamicTypes` or `typeResolver` to 
 }
 ```
 
-The provider covers standard AJV message tables, custom keywords, conditional validation, async custom validator fallback messages and runtime-created `I18nError` instances. Explicit `messages` still have priority over provider fallbacks.
+The provider covers standard validation message tables, custom keywords, conditional validation, async custom validator fallback messages and runtime-created `I18nError` instances. Explicit `messages` still have priority over provider fallbacks.
 
 ## When not to use it
 
-Use the root `schema-dsl` entry when you want v1-compatible automatic String-chain installation. Use `schema-dsl/pure` when you only need to avoid prototype mutation and do not need runtime-state isolation.
+Use `schema-dsl/pure` for the recommended public authoring path when you only need to avoid prototype mutation and do not need runtime-state isolation. Use the root `schema-dsl` entry only for compatibility code that intentionally keeps automatic String-chain installation.
+
+---
+
+## Corresponding sample file
+
+**Example entry**: [runtime-isolation.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/runtime-isolation.ts)
+**Description**: Covers isolated `createRuntime()` state, runtime-scoped `s` factories, custom runtime extensions, message providers, cache lifecycle and validation behavior.

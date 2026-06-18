@@ -1,4 +1,4 @@
-import { dsl, validate } from '../../dist/index.js'
+import { s, validate } from '../../dist/pure.js'
 
 // ============================================================
 // Design philosophy — DSL-as-config (schema-as-data)
@@ -28,7 +28,7 @@ const schemaConfig = {
   password: `string:${rules.password.min}-${rules.password.max}!`,
 }
 
-const schema = dsl(schemaConfig)
+const schema = s(schemaConfig)
 
 console.log('design-philosophy.runtimeRules.valid   =', validate(schema, {
   username: 'runtime_user',
@@ -43,7 +43,7 @@ console.log('design-philosophy.runtimeRules.valid   =', validate(schema, {
 
 const serialized = JSON.stringify(schemaConfig)
 const hydrated   = JSON.parse(serialized)
-const hydratedSchema = dsl(hydrated)
+const hydratedSchema = s(hydrated)
 
 console.log('design-philosophy.serialized.string    =',
   serialized.includes('string:3-32!'))  // true
@@ -66,7 +66,7 @@ type TenantConfig = {
 }
 
 function buildTenantSchema(config: TenantConfig) {
-  return dsl({
+  return s({
     username: 'string:3-32!',
     email:    'email!',
     password: `string:${config.passwordMinLength}-${config.passwordMaxLength}!`,

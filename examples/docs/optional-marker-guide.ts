@@ -1,4 +1,4 @@
-import { dsl, validate } from '../../dist/index.js'
+import { s, validate } from '../../dist/pure.js'
 
 // ============================================================
 // Optional marker guide — controlling field optionality
@@ -17,7 +17,7 @@ import { dsl, validate } from '../../dist/index.js'
 // 1. Required (!) vs. optional (default) vs. explicit (?)
 // ============================================================
 
-const profileSchema = dsl({
+const profileSchema = s({
   username:    'string:3-32!',   // required
   displayName: 'string:1-50',    // optional (no ! or ?)
   email:       'email?',         // optional (explicit ?)
@@ -39,7 +39,7 @@ console.log('optional.base.missingReq     =',
 // 2. Optional object key — 'field?': { ... }
 // ============================================================
 
-const addressSchema = dsl({
+const addressSchema = s({
   'street!':  'string:5-100',    // required
   'city!':    'string:2-50',     // required
   'state':    'string:2-10',     // optional field, no ? on key
@@ -60,7 +60,7 @@ console.log('optional.obj.missingRequired =',
 // 3. Enum types — optional by default
 // ============================================================
 
-const orderSchema = dsl({
+const orderSchema = s({
   id:     'uuid!',                            // required
   status: 'pending|processing|shipped',       // optional enum
   tier:   'standard|premium|enterprise!',     // required enum
@@ -79,7 +79,7 @@ console.log('optional.enum.missingTier    =',
 // 4. Optional nested object
 // ============================================================
 
-const userWithOptionalAddress = dsl({
+const userWithOptionalAddress = s({
   name:      'string!',
   'address?': {
     street: 'string:5-100!',
@@ -100,11 +100,11 @@ console.log('optional.nested.badAddress   =',
 // 5. default() — fill in missing optional fields
 // ============================================================
 
-const settingsSchema = dsl({
-  theme:       dsl('string').default('light'),
-  language:    dsl('string').default('en-US'),
-  pageSize:    dsl('integer').default(20),
-  emailAlerts: dsl('boolean').default(true),
+const settingsSchema = s({
+  theme:       s('string').default('light'),
+  language:    s('string').default('en-US'),
+  pageSize:    s('integer').default(20),
+  emailAlerts: s('boolean').default(true),
 })
 
 const settingsResult = validate(settingsSchema, {})  // empty → all defaults applied

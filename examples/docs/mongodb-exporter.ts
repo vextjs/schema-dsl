@@ -1,13 +1,13 @@
-import { dsl, MongoDBExporter } from '../../dist/index.js'
+import { s, MongoDBExporter } from '../../dist/pure.js'
 
 // ============================================================
 // 1. Basic export: dsl schema → MongoDB $jsonSchema validator
 // ============================================================
 
-const userSchema = dsl({
+const userSchema = s({
   _id:       'objectId!',
-  username:  dsl('string:3-32!').description('Login name — unique across all accounts'),
-  email:     dsl('email!').description('Primary email address'),
+  username:  s('string:3-32!').description('Login name — unique across all accounts'),
+  email:     s('email!').description('Primary email address'),
   age:       'integer:0-150',
   score:     'number:0-100',
   isActive:  'boolean',
@@ -60,11 +60,11 @@ console.log('mongodb-exporter.shell.hasJsonSchema =', shellCommand.includes('$js
 // 4. Embedded document / nested object schema
 // ============================================================
 
-const orderSchema = dsl({
+const orderSchema = s({
   _id:       'objectId!',
   userId:    'objectId!',
   status:    'pending|processing|shipped|delivered|cancelled!',
-  items: dsl({
+  items: s({
     productId: 'objectId!',
     name:      'string:1-200!',
     qty:       'integer:1-!',

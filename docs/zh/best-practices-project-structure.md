@@ -23,7 +23,7 @@ your-project/
 ### 1. 定义 Schema（schemas/user.js）
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 /**
  * 用户相关的所有 schema
@@ -33,8 +33,8 @@ const { dsl } = require('schema-dsl');
  */
 const userSchemas = {
   // 注册 schema
-  register: dsl({
-    username: dsl('string:3-32!')
+  register: s({
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .label('用户名')
       .messages({
@@ -43,13 +43,13 @@ const userSchemas = {
         'string.max': '用户名最多32个字符'
       }),
     
-    email: dsl('email!')
+    email: s('email!')
       .label('邮箱')
       .messages({
         'string.email': '请输入有效的邮箱地址'
       }),
     
-    password: dsl('string!').password('strong')
+    password: s('string!').password('strong')
       .label('密码')
       .messages({
         'string.password': '密码必须包含大小写字母、数字和特殊字符'
@@ -57,7 +57,7 @@ const userSchemas = {
     
     age: 'number:18-120',
     
-    phone: dsl('phone')
+    phone: s('phone')
       .label('手机号')
       .messages({
         'string.phone': '请输入有效的手机号'
@@ -65,13 +65,13 @@ const userSchemas = {
   }),
   
   // 登录 schema
-  login: dsl({
+  login: s({
     username: 'string!',
     password: 'string!'
   }),
   
   // 更新个人资料 schema
-  updateProfile: dsl({
+  updateProfile: s({
     nickname: 'string:2-20',
     avatar: 'url',
     bio: 'string:0-500',
@@ -80,25 +80,25 @@ const userSchemas = {
   }),
   
   // 修改密码 schema
-  changePassword: dsl({
+  changePassword: s({
     oldPassword: 'string!',
-    newPassword: dsl('string!').password('strong')
+    newPassword: s('string!').password('strong')
   })
 };
 
-module.exports = userSchemas;
+export default userSchemas;
 ```
 
 ### 2. 定义 Schema（schemas/order.js）
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 const orderSchemas = {
   // 创建订单
-  create: dsl({
+  create: s({
     items: 'array:1-100<object>!',
-    shippingAddress: dsl({
+    shippingAddress: s({
       name: 'string:2-50!',
       phone: 'phone!',
       address: 'string:10-200!',
@@ -109,13 +109,13 @@ const orderSchemas = {
   }),
   
   // 更新订单状态
-  updateStatus: dsl({
+  updateStatus: s({
     status: 'pending|paid|shipped|completed|cancelled!',
     note: 'string:0-500'
   })
 };
 
-module.exports = orderSchemas;
+export default orderSchemas;
 ```
 
 ### 3. 统一导出（schemas/index.js）
@@ -125,23 +125,27 @@ module.exports = orderSchemas;
  * 统一导出所有 schema
  * 
  * 使用方式：
- *   const schemas = require('./schemas');
+ *   import schemas from './schemas/index.js';
  *   const result = validate(schemas.user.register, data);
  */
-module.exports = {
-  user: require('./user'),
-  order: require('./order'),
-  product: require('./product')
+import userSchemas from './user.js';
+import orderSchemas from './order.js';
+import productSchemas from './product.js';
+
+export default {
+  user: userSchemas,
+  order: orderSchemas,
+  product: productSchemas
 };
 ```
 
 ### 4. 在路由中使用（routes/user.js）
 
 ```javascript
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { validate } = require('schema-dsl');
-const userSchemas = require('../schemas/user');
+import { validate } from 'schema-dsl/pure';
+import userSchemas from '../schemas/user';
 
 /**
  * 用户注册
@@ -211,26 +215,30 @@ router.put('/profile', authenticate, async (req, res) => {
   // ...
 });
 
-module.exports = router;
+export default router;
 ```
 
 ### 5. 主应用入口（app.js）
 
 ```javascript
-const express = require('express');
+import express from 'express';
+import userRoutes from './routes/user.js';
+import orderRoutes from './routes/order.js';
+import productRoutes from './routes/product.js';
+
 const app = express();
 
 // ✅ 在应用启动时加载所有 schema（只转换一次）
-const schemas = require('./schemas');
+import schemas from './schemas';
 console.log('✅ Schemas loaded:', Object.keys(schemas));
 
 // 中间件
 app.use(express.json());
 
 // 路由
-app.use('/api/user', require('./routes/user'));
-app.use('/api/order', require('./routes/order'));
-app.use('/api/product', require('./routes/product'));
+app.use('/api/user', userRoutes);
+app.use('/api/order', orderRoutes);
+app.use('/api/product', productRoutes);
 
 // 启动服务
 const PORT = process.env.PORT || 3000;
@@ -239,7 +247,7 @@ app.listen(PORT, () => {
   console.log('✅ All schemas are loaded and ready to validate');
 });
 
-module.exports = app;
+export default app;
 ```
 
 ---
@@ -255,7 +263,7 @@ router.post('/register', (req, res) => {
     {  // ❌ 每次请求都转换
       username: 'string:3-32!',
       email: 'email!',
-      password: dsl('string!').password('strong')
+      password: s('string!').password('strong')
     },
     req.body
   );
@@ -273,7 +281,7 @@ router.post('/register', (req, res) => {
 
 ```javascript
 // ✅ 正确示例
-const userSchemas = require('../schemas/user');  // ✅ 启动时加载
+import userSchemas from '../schemas/user.js';  // ✅ 启动时加载
 
 router.post('/register', (req, res) => {
   const result = validate(
@@ -298,7 +306,7 @@ router.post('/register', (req, res) => {
 ```javascript
 // ❌ 避免：请求级字段名会让每次请求都产生新的 schema 结构
 router.post('/dynamic', (req, res) => {
-  const schema = dsl({ [`field_${req.id}`]: 'string!' });
+  const schema = s({ [`field_${req.id}`]: 'string!' });
   const result = validate(schema, req.body);
   // ...
 });
@@ -314,7 +322,7 @@ router.post('/dynamic', (req, res) => {
 
 | 场景 | 推荐方式 | 代码示例 | 原因 |
 |------|---------|---------|------|
-| **生产环境 API** | ✅ 项目启动时配置 | `const schemas = require('./schemas')` | 避免每次请求都转换 |
+| **生产环境 API** | ✅ 项目启动时配置 | `import schemas from './schemas/index.js'` | 避免每次请求都转换 |
 | **高并发服务** | ✅ 项目启动时配置 | 同上 | 3-5% 的性能损失会被放大 |
 | **微服务** | ✅ 项目启动时配置 | 同上 | 保证响应时间稳定 |
 | **单次脚本** | ✅ 直接用 DSL 对象（当前版便捷函数支持） | `validate({ email: 'email!' }, data)` | 只执行一次，性能影响可忽略 |
@@ -330,7 +338,7 @@ router.post('/dynamic', (req, res) => {
 ```javascript
 // ❌ 不推荐
 router.post('/register', (req, res) => {
-  const schema = dsl({  // ❌ 每次请求都创建
+  const schema = s({  // ❌ 每次请求都创建
     username: 'string:3-32!',
     email: 'email!'
   });
@@ -347,7 +355,7 @@ router.post('/register', (req, res) => {
 ```javascript
 // ❌ 不推荐
 function validateUser(data) {
-  const schema = dsl({  // ❌ 每次调用都创建
+  const schema = s({  // ❌ 每次调用都创建
     username: 'string:3-32!',
     email: 'email!'
   });
@@ -362,7 +370,7 @@ function validateUser(data) {
 
 ```javascript
 // ✅ 推荐：模块加载时创建一次
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
@@ -379,28 +387,28 @@ router.post('/register', (req, res) => {
 
 ```typescript
 // schemas/user.ts
-import { dsl } from 'schema-dsl';
+import { s } from 'schema-dsl/pure';
 
 export const userSchemas = {
-  register: dsl({
-    username: dsl('string:3-32!')
+  register: s({
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .error({ pattern: '只能包含字母、数字和下划线' }),
     email: 'email!',
-    password: dsl('string:8-64!')
+    password: s('string:8-64!')
       .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
       .error({ pattern: '密码至少 8 位且必须包含字母和数字' }),
     age: 'number:18-120'
   }),
   
-  login: dsl({
+  login: s({
     username: 'string!',
     password: 'string!'
   })
 };
 
 // routes/user.ts
-import { validate } from 'schema-dsl';
+import { validate } from 'schema-dsl/pure';
 import { userSchemas } from '../schemas/user';
 
 router.post('/register', (req, res) => {

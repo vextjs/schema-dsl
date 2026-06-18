@@ -1,22 +1,22 @@
-import { dsl, validate, SchemaHelper } from '../../dist/index.js'
+import { s, validate, SchemaHelper } from '../../dist/pure.js'
 
 // ============================================================
 // SchemaHelper — static helpers for schema analysis
 // ============================================================
 
-const userSchema = dsl({
+const userSchema = s({
   id:       'objectId!',
-  username: dsl('string:3-32!').label('Username'),
-  email:    dsl('email!').label('Email'),
-  profile: dsl({
+  username: s('string:3-32!').label('Username'),
+  email:    s('email!').label('Email'),
+  profile: s({
     bio:    'string:500',
     avatar: 'url',
-    social: dsl({
+    social: s({
       twitter: 'string',
       github:  'string',
     }),
   }),
-  tags: dsl('array<string>').label('Tags'),
+  tags: s('array<string>').label('Tags'),
 })
 
 // ============================================================
@@ -34,7 +34,7 @@ console.log('schema-helper.isValid.typed    =', SchemaHelper.isValidSchema({ typ
 
 const id1 = SchemaHelper.generateSchemaId(userSchema)
 const id2 = SchemaHelper.generateSchemaId(userSchema)
-const otherId = SchemaHelper.generateSchemaId(dsl({ name: 'string!' }))
+const otherId = SchemaHelper.generateSchemaId(s({ name: 'string!' }))
 
 console.log('schema-helper.id.stable       =', id1 === id2)       // true (same schema → same id)
 console.log('schema-helper.id.unique       =', id1 !== otherId)   // true (different schemas)

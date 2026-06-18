@@ -1,4 +1,4 @@
-import { dsl, validate, Validator } from '../../dist/index.js'
+import { s, validate, Validator } from '../../dist/pure.js'
 
 // ============================================================
 // compile() — pre-compile a schema to a reusable validate function
@@ -17,7 +17,7 @@ import { dsl, validate, Validator } from '../../dist/index.js'
 
 const validator = new Validator({ allErrors: true, coerceTypes: true, cache: true })
 
-const userSchema = dsl({
+const userSchema = s({
   name:  'string:1-50!',
   email: 'email!',
   age:   'integer:18-120',
@@ -47,7 +47,7 @@ console.log('compile.cacheHit =', validateUser === validateUser2)  // true
 // 3. Different keys — produce independent compiled functions
 // ============================================================
 
-const productSchema = dsl({
+const productSchema = s({
   sku:   'alphanum:5-20!',
   price: 'number:0.01-!',
   stock: 'integer:0-!',
@@ -63,7 +63,7 @@ console.log('compile.product.valid =', productOk)  // true
 // 4. Compiled function with coerceTypes — string inputs become numbers
 // ============================================================
 
-const orderSchema = dsl({
+const orderSchema = s({
   quantity: 'integer:1-999!',
   total:    'number:0.01-!',
 })
@@ -77,7 +77,7 @@ console.log('compile.coerce.valid =', coerced)  // true (coerced from strings)
 // 5. Hot-path usage — compile once, validate many
 // ============================================================
 
-const logEntrySchema = dsl({
+const logEntrySchema = s({
   level:   'info|warn|error!',
   message: 'string:1-1000!',
   ts:      'integer:0-!',
@@ -101,7 +101,7 @@ console.log('compile.batch.results =',
 // ============================================================
 
 const noCache = new Validator({ cache: false })
-const schemaA = dsl({ x: 'string!' })
+const schemaA = s({ x: 'string!' })
 const fn1 = noCache.compile(schemaA)
 const fn2 = noCache.compile(schemaA)
 console.log('compile.noCache.sameRef =', fn1 === fn2)  // false — different objects
@@ -112,8 +112,8 @@ console.log('compile.noCache.sameRef =', fn1 === fn2)  // false — different ob
 //    compile() lets you control the key explicitly for predictable hits
 // ============================================================
 
-const s = dsl({ n: 'integer:0-100' })
-const via_validate = validate(s, { n: 50 })
-const via_compile  = validator.compile(s, 'num-test')({ n: 50 })
+const numberSchema = s({ n: 'integer:0-100' })
+const via_validate = validate(numberSchema, { n: 50 })
+const via_compile  = validator.compile(numberSchema, 'num-test')({ n: 50 })
 console.log('compile.validate.equiv  =', via_validate.valid)   // true
 console.log('compile.compile.equiv   =', via_compile)          // true

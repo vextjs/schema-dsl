@@ -9,6 +9,7 @@
  */
 
 import type { JSONSchema } from '../types/schema.js'
+import type { DslFactoryInput } from '../types/dsl.js'
 import { DslParser, type DslParseOptions } from '../parser/DslParser.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
@@ -121,6 +122,16 @@ export class DslBuilder {
     this._cacheValidator = options.cacheValidator ?? true
 
     this._baseSchema = DslBuilder._parseBody(s, this._parseOptions)
+  }
+
+  static fromSchema(schema: JSONSchema, options: DslBuilderOptions = {}): DslBuilder {
+    const builder = new DslBuilder('any', options)
+    const cloned = cloneSchemaValue(schema)
+    const { _required, ...baseSchema } = cloned as JSONSchema & { _required?: boolean }
+    builder._baseSchema = baseSchema
+    builder._required = _required === true
+    builder._optional = false
+    return builder
   }
 
   // ==================== Internal Parsing ====================
@@ -252,6 +263,48 @@ export class DslBuilder {
     this._assertType(method, 'array')
   }
 
+  private _schemaFromFactoryInput(value: DslFactoryInput): JSONSchema {
+    if (typeof value === 'string') {
+      const options: DslBuilderOptions = {
+        patterns: this._patterns,
+        cacheValidator: this._cacheValidator,
+      }
+      if (this._parseOptions !== undefined) options.parseOptions = this._parseOptions
+      if (this._validatorFactory !== undefined) options.validatorFactory = this._validatorFactory
+      if (this._validatorGuard !== undefined) options.validatorGuard = this._validatorGuard
+      return new DslBuilder(value, options).toSchema()
+    }
+    if (value && typeof value === 'object' && typeof (value as { toSchema?: unknown }).toSchema === 'function') {
+      return ((value as { toSchema: () => JSONSchema }).toSchema())
+    }
+    return cloneSchemaValue(value as JSONSchema)
+  }
+
+  private _schemaForNestedUse(value: DslFactoryInput): JSONSchema {
+    const schema = this._schemaFromFactoryInput(value)
+    const clean = (current: unknown): unknown => {
+      if (Array.isArray(current)) {
+        return current.map(item => clean(item))
+      }
+      if (!current || typeof current !== 'object') return current
+
+      const { _required, ...rest } = current as JSONSchema & { _required?: boolean }
+      void _required
+      if (rest.properties) {
+        rest.properties = Object.fromEntries(
+          Object.entries(rest.properties).map(([key, child]) => [key, clean(child) as JSONSchema])
+        )
+      }
+      if (Array.isArray(rest.items)) {
+        rest.items = rest.items.map(item => clean(item) as JSONSchema)
+      } else if (rest.items) {
+        rest.items = clean(rest.items) as JSONSchema
+      }
+      return rest
+    }
+    return clean(cloneSchemaValue(schema)) as JSONSchema
+  }
+
   private _normalizeEnumValues(values: unknown[]): unknown[] {
     if (values.length === 1 && Array.isArray(values[0]) && this._baseSchema.type !== 'array') {
       return [...values[0]]
@@ -378,6 +431,16 @@ export class DslBuilder {
   }
 
   /**
+   * Mark field as required (preferred alias).
+   */
+  require(...args: never[]): this {
+    if (args.length > 0) {
+      throw new Error('[schema-dsl] require() on a field builder does not accept arguments; use dsl.if(...).require(field) for conditional requirements')
+    }
+    return this.required()
+  }
+
+  /**
    * Mark field as required.
    */
   required(): this {
@@ -401,15 +464,31 @@ export class DslBuilder {
 
   /** String minimum length. */
   min(n: number): this {
-    this._assertStringType('min')
-    this._baseSchema.minLength = n
+    const t = this._baseSchema.type
+    if (t === 'string') {
+      this._baseSchema.minLength = n
+    } else if (t === 'number' || t === 'integer') {
+      this._baseSchema.minimum = n
+    } else if (t === 'array') {
+      this._baseSchema.minItems = n
+    } else {
+      this._assertType('min', 'string', 'number', 'integer', 'array')
+    }
     return this
   }
 
   /** String maximum length. */
   max(n: number): this {
-    this._assertStringType('max')
-    this._baseSchema.maxLength = n
+    const t = this._baseSchema.type
+    if (t === 'string') {
+      this._baseSchema.maxLength = n
+    } else if (t === 'number' || t === 'integer') {
+      this._baseSchema.maximum = n
+    } else if (t === 'array') {
+      this._baseSchema.maxItems = n
+    } else {
+      this._assertType('max', 'string', 'number', 'integer', 'array')
+    }
     return this
   }
 
@@ -716,6 +795,13 @@ export class DslBuilder {
       throw new Error('[schema-dsl] includesRequired() requires an array parameter')
     }
     this._baseSchema.includesRequired = items
+    return this
+  }
+
+  /** Array: set item schema. */
+  items(item: DslFactoryInput): this {
+    this._assertArrayType('items')
+    this._baseSchema.items = this._schemaForNestedUse(item)
     return this
   }
 

@@ -1,13 +1,13 @@
-import { dsl, MySQLExporter } from '../../dist/index.js'
+import { s, MySQLExporter } from '../../dist/pure.js'
 
 // ============================================================
 // 1. Basic export: dsl schema → MySQL CREATE TABLE DDL
 // ============================================================
 
-const userSchema = dsl({
-  id:        dsl('uuid!').description('Primary key — UUID v4'),
-  username:  dsl('string:3-32!').description('Login name'),
-  email:     dsl('email!').description('Primary email address'),
+const userSchema = s({
+  id:        s('uuid!').description('Primary key — UUID v4'),
+  username:  s('string:3-32!').description('Login name'),
+  email:     s('email!').description('Primary email address'),
   password:  'string:8-64!',
   age:       'integer:0-150',
   score:     'number:0-100',
@@ -48,7 +48,7 @@ console.log('mysql-exporter.index.age.notUnique =', !ageIndex.includes('UNIQUE')
 // 3. Product catalog schema with more MySQL-specific type mappings
 // ============================================================
 
-const productSchema = dsl({
+const productSchema = s({
   id:          'uuid!',
   sku:         'alphanum:5-20!',
   name:        'string:2-200!',
@@ -71,9 +71,9 @@ console.log('mysql-exporter.product.hasMediumText =', productDdl.toLowerCase().i
 // 4. Comments in DDL — description fields → COMMENT
 // ============================================================
 
-const commentedDdl = exporter.export('users', dsl({
-  id:    dsl('uuid!').description('Unique user identifier'),
-  email: dsl('email!').description('Primary email — must be unique'),
+const commentedDdl = exporter.export('users', s({
+  id:    s('uuid!').description('Unique user identifier'),
+  email: s('email!').description('Primary email — must be unique'),
 }))
 console.log('mysql-exporter.comment.hasComment   =', commentedDdl.includes('COMMENT'))  // true
 

@@ -9,9 +9,9 @@
 4 methods to reuse Schema:
 
 ```javascript
-const { dsl, SchemaUtils } = require('schema-dsl');
+import { s, SchemaUtils } from 'schema-dsl/pure';
 
-const userSchema = dsl({
+const userSchema = s({
   id: 'objectId!',
   name: 'string!',
   email: 'email!',
@@ -91,9 +91,9 @@ SchemaUtils.pick(userSchema, ['name']).extend({ avatar: 'url' });
 ## Express example
 
 ```javascript
-const { dsl, SchemaUtils, validateAsync } = require('schema-dsl');
+import { s, SchemaUtils, validateAsync } from 'schema-dsl/pure';
 
-const userSchema = dsl({
+const userSchema = s({
   id: 'objectId!',
   name: 'string!',
   email: 'email!',

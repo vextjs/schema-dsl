@@ -1,15 +1,15 @@
-import { dsl, validate, validateAsync, ValidationError } from '../../dist/index.js'
+import { s, validate, validateAsync, ValidationError } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`conditional-api expectation failed: ${label}`)
 }
 
 // ============================================================
-// 1. dsl.if(fn) — ConditionalBuilder for programmatic conditions
+// 1. s.if(fn) — ConditionalBuilder for programmatic conditions
 // ============================================================
 
 // Basic: single condition with message
-const ageCheck = dsl.if((data: any) => data.age < 18)
+const ageCheck = s.if((data: any) => data.age < 18)
   .message('Must be 18 or older to register')
 
 // .check(data) → boolean — true = condition passes (no problem), false = condition triggered
@@ -31,7 +31,7 @@ try {
 // ============================================================
 
 // AND: all conditions must match to trigger the shared message
-const crossBorderCheck = dsl.if((data: any) => data.amount > 10000)
+const crossBorderCheck = s.if((data: any) => data.amount > 10000)
   .and((data: any) => data.country !== 'CN')
   .message('Large cross-border transfers require review')
 
@@ -41,7 +41,7 @@ console.log('conditional-api.and.crossBorder =', crossBorderCheck.check({ amount
 expect('and requires all predicates', crossBorderCheck.check({ amount: 20000, country: 'US' }) === false)
 
 // OR: either condition triggers
-const suspiciousAmount = dsl.if((data: any) => data.amount > 50000)
+const suspiciousAmount = s.if((data: any) => data.amount > 50000)
   .or((data: any) => data.amount < 0)
   .message('Transaction amount is out of allowed range')
 
@@ -51,7 +51,7 @@ console.log('conditional-api.or.negative =',  suspiciousAmount.check({ amount: -
 expect('or rejects negative amount', suspiciousAmount.check({ amount: -1 }) === false)
 
 // Independent messages: each failed predicate can explain a different branch
-const withdrawalCheck = dsl.if((data: any) => !data)
+const withdrawalCheck = s.if((data: any) => !data)
   .message('Account not found')
   .and((data: any) => data.status !== 'active')
   .message('Account is not active')
@@ -72,7 +72,7 @@ try {
 // ============================================================
 
 // If premium=false and trialEndDate is missing, block
-const trialCheck = dsl.if((data: any) => !data.premium)
+const trialCheck = s.if((data: any) => !data.premium)
   .require('trialEndDate')
   .message('Trial end date is required for free accounts')
 
@@ -91,7 +91,7 @@ console.log('conditional-api.require.premium =',
 // ============================================================
 
 // NOTE: .then() and .else() configure schemas for schema-level conditional validation
-const rolePermission = dsl.if((data: any) => data.role === 'admin')
+const rolePermission = s.if((data: any) => data.role === 'admin')
   .then({ type: 'object', required: ['adminToken'] } as any)
   .elseIf((data: any) => data.role === 'user')
   .then({ type: 'object', required: ['email'] } as any)
@@ -104,15 +104,15 @@ console.log('conditional-api.branches.build =', typeof rolePermissionBuilt)
 expect('build is a toSchema alias', rolePermissionBuilt._isConditional === rolePermissionSchema._isConditional)
 
 // ============================================================
-// 5. dsl.if(field, thenSchema, elseSchema) — inline field conditions in object schemas
+// 5. s.if(field, thenSchema, elseSchema) — inline field conditions in object schemas
 // ============================================================
 
 // Two-argument form: when field is truthy → use thenSchema, else elseSchema
-const subscriptionSchema = dsl({
+const subscriptionSchema = s({
   premium:      'boolean!',
-  maxStorage:   dsl.if('premium', 'integer:0-', 'integer:0-5'),     // premium: unlimited; free: max 5
-  badgeLabel:   dsl.if('premium', 'string:1-20'),                    // only validated for premium
-  renewalDate:  dsl.if('premium', 'date!'),                          // required for premium only
+  maxStorage:   s.if('premium', 'integer:0-', 'integer:0-5'),     // premium: unlimited; free: max 5
+  badgeLabel:   s.if('premium', 'string:1-20'),                    // only validated for premium
+  renewalDate:  s.if('premium', 'date!'),                          // required for premium only
 })
 
 console.log('conditional-api.field.premium.valid =',
@@ -127,13 +127,13 @@ expect('field conditional rejects free over-limit storage',
   validate(subscriptionSchema, { premium: false, maxStorage: 10 }).valid === false)
 
 // ============================================================
-// 6. dsl.match(field, cases) — switch-like field conditional
+// 6. s.match(field, cases) — switch-like field conditional
 // ============================================================
 
 // Value of 'type' field selects which schema applies to 'value'
-const contactSchema = dsl({
+const contactSchema = s({
   type:  'email|phone|social!',
-  value: dsl.match('type', {
+  value: s.match('type', {
     email:  'email!',
     phone:  'phone:cn!',
     social: 'string:3-50!',
@@ -155,7 +155,7 @@ expect('match rejects email branch mismatch',
 // 7. ConditionalBuilder.validate() / validateAsync() — result-style usage
 // ============================================================
 
-const accessCheck = dsl.if((data: any) => data.status === 'banned')
+const accessCheck = s.if((data: any) => data.status === 'banned')
   .message('Banned accounts cannot access this resource')
 
 const accessOk = accessCheck.validate({ status: 'active' })
@@ -171,11 +171,11 @@ expect('builder validate blocks banned status', accessBlocked.valid === false)
 // 8. Async usage — ConditionalBuilder in validateAsync
 // ============================================================
 
-const pricingSchema = dsl({
+const pricingSchema = s({
   premium:      'boolean!',
   tier:         'free|pro|enterprise!',
-  maxApiCalls:  dsl.if('premium', 'integer:0-', 'integer:0-1000'), // premium → unlimited; free → capped
-  ssoEnabled:   dsl.if('premium', 'boolean'),
+  maxApiCalls:  s.if('premium', 'integer:0-', 'integer:0-1000'), // premium → unlimited; free → capped
+  ssoEnabled:   s.if('premium', 'boolean'),
 })
 
 async function checkPricing(): Promise<void> {

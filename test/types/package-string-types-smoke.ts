@@ -1,8 +1,14 @@
 import 'schema-dsl/string-types'
-import { dsl, type DslBuilder, type IDslBuilder } from 'schema-dsl/pure'
+import { dsl, s, type IDslBuilder } from 'schema-dsl/pure'
 
-const field: IDslBuilder = 'email!'.label('Email')
-const concrete: DslBuilder = dsl('email!')
+const alias: typeof dsl = s
+const field: IDslBuilder = 'email!'.label('Email').require()
+const arrayField: IDslBuilder = 'array'.items('string!')
+const factoryField: IDslBuilder = s.email().require()
+const wrapped: IDslBuilder = dsl('email!')
 
+alias.email().toSchema()
 field.toSchema()
-concrete.toSchema()
+arrayField.toSchema()
+factoryField.toSchema()
+wrapped.toSchema()

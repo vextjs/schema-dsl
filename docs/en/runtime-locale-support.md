@@ -7,7 +7,7 @@
 
 ## 📋 Overview
 
-schema-dsl's `dsl.error` and `I18nError` support **runtime specification of language** without modifying global language settings.
+schema-dsl's `s.error` and `I18nError` support **runtime specification of language** without modifying global language settings.
 
 This is particularly useful for **API development**, where error messages in the corresponding language can be dynamically returned based on the language preference of each request (such as the `Accept-Language` request header).
 
@@ -17,11 +17,11 @@ This is particularly useful for **API development**, where error messages in the
 
 ```javascript
 // ✅ New: Simplified syntax (recommended)
-dsl.error.throw('account.notFound', 'zh-CN');
-dsl.error.throw('account.notFound', 'zh-CN', 404);
+s.error.throw('account.notFound', 'zh-CN');
+s.error.throw('account.notFound', 'zh-CN', 404);
 
 // ✅ Standard syntax (fully compatible)
-dsl.error.throw('account.notFound', {}, 404, 'zh-CN');
+s.error.throw('account.notFound', {}, 404, 'zh-CN');
 ```
 
 **Intelligent recognition rules**:
@@ -63,7 +63,7 @@ Locale.addLocale('zh-CN', {
 ### Method 1: Simplified syntax (v1.1.8 recommended)⭐
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+import { s, Locale } from 'schema-dsl/pure';
 
 //Configure language pack
 Locale.addLocale('zh-CN', {
@@ -81,10 +81,10 @@ Locale.addLocale('en-US', {
 });
 
 // ✅ Simplified syntax: pass language parameters directly
-const error1 = dsl.error.create('account.notFound', 'zh-CN');
+const error1 = s.error.create('account.notFound', 'zh-CN');
 console.log(error1.message); // "Account does not exist"
 
-const error2 = dsl.error.create('account.notFound', 'en-US');
+const error2 = s.error.create('account.notFound', 'en-US');
 console.log(error2.message);  // "Account not found"
 ```
 
@@ -96,16 +96,16 @@ console.log(error2.message);  // "Account not found"
 ### Method 2: Global language settings (traditional method)
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+import { s, Locale } from 'schema-dsl/pure';
 
 //Set global language
 Locale.setLocale('zh-CN');
 
 // All subsequent errors will be in Chinese
-const error1 = dsl.error.create('account.notFound');
+const error1 = s.error.create('account.notFound');
 console.log(error1.message); // "Account does not exist"
 
-const error2 = dsl.error.create('user.noPermission');
+const error2 = s.error.create('user.noPermission');
 console.log(error2.message); // "No administrator rights"
 ```
 
@@ -119,19 +119,19 @@ console.log(error2.message); // "No administrator rights"
 ### Method 3: Specify language at runtime (recommended for API)⭐
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+import { s, Locale } from 'schema-dsl/pure';
 
 //Keep default language globally
 Locale.setLocale('zh-CN');
 
 //Specify the language each time it is called
-const error1 = dsl.error.create('account.notFound', {}, 404, 'zh-CN');
+const error1 = s.error.create('account.notFound', {}, 404, 'zh-CN');
 console.log(error1.message); // "Account does not exist"
 
-const error2 = dsl.error.create('account.notFound', {}, 404, 'en-US');
+const error2 = s.error.create('account.notFound', {}, 404, 'en-US');
 console.log(error2.message);  // "Account not found"
 
-const error3 = dsl.error.create('account.notFound', {}, 404, 'ja-JP');
+const error3 = s.error.create('account.notFound', {}, 404, 'ja-JP');
 console.log(error3.message); // "account.notFound" (Japanese not translated)
 ```
 
@@ -145,10 +145,10 @@ console.log(error3.message); // "account.notFound" (Japanese not translated)
 
 ## 🔧 API parameters
 
-### dsl.error.create()
+### s.error.create()
 
 ```typescript
-dsl.error.create(
+s.error.create(
   code: string, // Error code (such as 'account.notFound')
   params?: object, // Parameter interpolation (such as { balance: 50 })
   statusCode?: number, // HTTP status code (default 400)
@@ -156,10 +156,10 @@ dsl.error.create(
 ): I18nError
 ```
 
-### dsl.error.throw()
+### s.error.throw()
 
 ```typescript
-dsl.error.throw(
+s.error.throw(
   code: string,
   params?: object,
   statusCode?: number,
@@ -167,10 +167,10 @@ dsl.error.throw(
 ): never
 ```
 
-### dsl.error.assert()
+### s.error.assert()
 
 ```typescript
-dsl.error.assert(
+s.error.assert(
   condition: any,
   code: string,
   params?: object,
@@ -186,7 +186,7 @@ dsl.error.assert(
 ### Scenario 1: Multi-language errors are returned based on request headers in Express/Koa
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 function getRequestLocale(acceptLanguage) {
   return acceptLanguage?.split(',')[0]?.trim() || 'zh-CN';
@@ -201,7 +201,7 @@ app.get('/api/account/:id', async (req, res, next) => {
     const locale = getRequestLocale(req.headers['accept-language']);
 
     // throw errors using runtime language
-    dsl.error.assert(account, 'account.notFound', {}, 404, locale);
+    s.error.assert(account, 'account.notFound', {}, 404, locale);
 
     res.json(account);
   } catch (error) {
@@ -225,14 +225,14 @@ app.get('/api/account/:id', async (req, res, next) => {
 ### Scenario 2: Error propagation in microservice architecture
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // Service A: User service
 async function getUserService(userId, locale) {
   const user = await db.findUser(userId);
 
   // pass locale to error
-  dsl.error.assert(user, 'user.notFound', { userId }, 404, locale);
+  s.error.assert(user, 'user.notFound', { userId }, 404, locale);
 
   return user;
 }
@@ -258,7 +258,7 @@ app.get('/api/users/:id', async (req, res) => {
 ### Scenario 3: Multiple languages ​​used in the same request
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // Batch validation, returning errors in different languages ​​for different users
 async function batchValidateAccounts(requests) {
@@ -269,7 +269,7 @@ async function batchValidateAccounts(requests) {
       const account = await getAccount(req.accountId);
 
       //Each user uses their own language preference
-      dsl.error.assert(
+      s.error.assert(
         account.balance >= req.amount,
         'account.insufficientBalance',
         { balance: account.balance, required: req.amount },
@@ -305,7 +305,7 @@ const results = await batchValidateAccounts([
 ### Scenario 4: Multilingual errors in GraphQL Resolver
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 const resolvers = {
   Query: {
@@ -316,7 +316,7 @@ const resolvers = {
       const account = await getAccount(id);
 
       // Use runtime language
-      dsl.error.assert(account, 'account.notFound', {}, 404, locale);
+      s.error.assert(account, 'account.notFound', {}, 404, locale);
 
       return account;
     }
@@ -332,7 +332,7 @@ const resolvers = {
 
 | characteristic | global language | runtime language |
 |------|---------|-----------|
-| Setting method | `Locale.setLocale('zh-CN')` | `dsl.error.create(..., locale)` |
+| Setting method | `Locale.setLocale('zh-CN')` | `s.error.create(..., locale)` |
 | scope of influence | All global errors | Only current errors |
 | Whether to change the global state | ✅ Yes | ❌ No |
 | Applicable scenarios | Single language application | Multilingual API |
@@ -350,7 +350,7 @@ app.get('/api/account/:id', async (req, res) => {
   Locale.setLocale(req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN');
 
   // If there are multiple requests at the same time, the languages ​​will interfere with each other
-  const error = dsl.error.create('account.notFound');
+  const error = s.error.create('account.notFound');
   // The error message may be in the wrong language!
 });
 ```
@@ -363,7 +363,7 @@ app.get('/api/account/:id', async (req, res) => {
   const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
 
   //Do not modify the global state, each request is independent
-  const error = dsl.error.create('account.notFound', {}, 404, locale);
+  const error = s.error.create('account.notFound', {}, 404, locale);
   // Error messages are always in the correct language
 });
 ```
@@ -375,15 +375,15 @@ app.get('/api/account/:id', async (req, res) => {
 ### Runtime language testing
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+import { s, Locale } from 'schema-dsl/pure';
 
 //Set global to Chinese
 Locale.setLocale('zh-CN');
 
 //Test 1: Specify different languages ​​at run time
-const error1 = dsl.error.create('account.notFound', {}, 404, 'zh-CN');
-const error2 = dsl.error.create('account.notFound', {}, 404, 'en-US');
-const error3 = dsl.error.create('account.notFound', {}, 404, 'ja-JP');
+const error1 = s.error.create('account.notFound', {}, 404, 'zh-CN');
+const error2 = s.error.create('account.notFound', {}, 404, 'en-US');
+const error3 = s.error.create('account.notFound', {}, 404, 'ja-JP');
 
 console.log(error1.message); // "Account does not exist"
 console.log(error2.message);  // "Account not found"
@@ -393,14 +393,14 @@ console.log(error3.message);  // "account.notFound"
 const currentLocale = Locale.getLocale();
 console.log(currentLocale);  // "zh-CN"
 
-const error4 = dsl.error.create('user.noPermission'); // Do not specify locale
+const error4 = s.error.create('user.noPermission'); // Do not specify locale
 console.log(error4.message); // "No administrator rights" (use global language)
 ```
 
 ### Runtime language with parameters
 
 ```javascript
-const error1 = dsl.error.create(
+const error1 = s.error.create(
   'account.insufficientBalance',
   { balance: 50, required: 100 },
   400,
@@ -408,7 +408,7 @@ const error1 = dsl.error.create(
 );
 console.log(error1.message); // "Insufficient balance, current balance is 50, 100 is needed"
 
-const error2 = dsl.error.create(
+const error2 = s.error.create(
   'account.insufficientBalance',
   { balance: 50, required: 100 },
   400,
@@ -430,7 +430,7 @@ app.get('/api/account/:id', async (req, res) => {
 
   try {
     const account = await getAccount(req.params.id);
-    dsl.error.assert(account, 'account.notFound', {}, 404, locale);
+    s.error.assert(account, 'account.notFound', {}, 404, locale);
     res.json(account);
   } catch (error) {
     res.status(error.statusCode).json(error.toJSON());
@@ -460,7 +460,7 @@ app.get('/api/account/:id', async (req, res) => {
 
   try {
     const account = await getAccount(req.params.id);
-    dsl.error.assert(account, 'account.notFound', {}, 404, locale);
+    s.error.assert(account, 'account.notFound', {}, 404, locale);
     res.json(account);
   } catch (error) {
     res.status(error.statusCode).json(error.toJSON());
@@ -475,7 +475,7 @@ app.get('/api/account/:id', async (req, res) => {
 async function getUser(userId, options = {}) {
   const user = await db.findUser(userId);
 
-  dsl.error.assert(
+  s.error.assert(
     user,
     'user.notFound',
     { userId },

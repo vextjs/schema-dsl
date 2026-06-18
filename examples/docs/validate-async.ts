@@ -1,4 +1,4 @@
-import { dsl, validate, validateAsync, ValidationError, DslBuilder } from '../../dist/index.js'
+import { s, validate, validateAsync, ValidationError, DslBuilder } from '../../dist/pure.js'
 
 // ============================================================
 // 1. What validateAsync does
@@ -7,7 +7,7 @@ import { dsl, validate, validateAsync, ValidationError, DslBuilder } from '../..
 //    - Runs AJV sync checks first, then async custom validators (BC-6 fix)
 // ============================================================
 
-const signupSchema = dsl({
+const signupSchema = s({
   username: 'string:3-32!',
   email:    'email!',
   age:      'integer:18-120!',
@@ -51,7 +51,7 @@ async function isEmailRegistered(email: string): Promise<boolean> {
   return !takenEmails.has(email)
 }
 
-const registrationSchema = dsl({
+const registrationSchema = s({
   username: new DslBuilder('string:3-32!')
     .label('Username')
     .custom(async (value: unknown) => {
@@ -105,7 +105,7 @@ try {
 // 3. Multiple chained custom validators — each runs in sequence
 // ============================================================
 
-const apiKeySchema = dsl({
+const apiKeySchema = s({
   apiKey: new DslBuilder('string:32-64!')
     .custom((value: unknown) => {
       // Sync check: hex string
@@ -137,7 +137,7 @@ try {
 // 4. Async validation with coercion, locale and allErrors
 // ============================================================
 
-const productSchema = dsl({
+const productSchema = s({
   name:  'string:2-100!',
   price: 'number:0.01-!',
   stock: 'integer:0-!',
@@ -170,7 +170,7 @@ try {
 // 5. Using validate() synchronously when no async custom validators exist
 // ============================================================
 
-const simpleSchema = dsl({ email: 'email!', name: 'string:2-50!' })
+const simpleSchema = s({ email: 'email!', name: 'string:2-50!' })
 
 // validate() returns ValidationResult — never throws
 const syncResult = validate(simpleSchema, { email: 'x@', name: 'A' })

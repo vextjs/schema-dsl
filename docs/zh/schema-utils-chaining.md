@@ -9,9 +9,9 @@
 4 个方法复用 Schema：
 
 ```javascript
-const { dsl, SchemaUtils } = require('schema-dsl');
+import { s, SchemaUtils } from 'schema-dsl/pure';
 
-const userSchema = dsl({
+const userSchema = s({
   id: 'objectId!',
   name: 'string!',
   email: 'email!',
@@ -91,9 +91,9 @@ SchemaUtils.pick(userSchema, ['name']).extend({ avatar: 'url' });
 ## Express 示例
 
 ```javascript
-const { dsl, SchemaUtils, validateAsync } = require('schema-dsl');
+import { s, SchemaUtils, validateAsync } from 'schema-dsl/pure';
 
-const userSchema = dsl({
+const userSchema = s({
   id: 'objectId!',
   name: 'string!',
   email: 'email!',

@@ -1,4 +1,4 @@
-import { dsl, validate, SchemaUtils } from '../../dist/index.js'
+import { s, validate, SchemaUtils } from '../../dist/pure.js'
 
 // ============================================================
 // SchemaUtils best practices — real-world field-library pattern
@@ -11,22 +11,22 @@ import { dsl, validate, SchemaUtils } from '../../dist/index.js'
 // ============================================================
 
 const fields = SchemaUtils.createLibrary({
-  id:          () => dsl('objectId!').label('ID'),
-  username:    () => dsl('string:3-32!').label('Username').pattern(/^[a-zA-Z0-9_]+$/),
-  email:       () => dsl('email!').label('Email').description('Primary contact address'),
-  password:    () => dsl('string:8-64!').label('Password'),
-  displayName: () => dsl('string:1-60').label('Display Name'),
-  bio:         () => dsl('string:500').label('Bio'),
-  avatar:      () => dsl('url').label('Avatar URL'),
-  createdAt:   () => dsl('datetime').label('Created At'),
-  role:        () => dsl('string').label('Role').enum(['admin', 'editor', 'viewer']),
+  id:          () => s('objectId!').label('ID'),
+  username:    () => s('string:3-32!').label('Username').pattern(/^[a-zA-Z0-9_]+$/),
+  email:       () => s('email!').label('Email').description('Primary contact address'),
+  password:    () => s('string:8-64!').label('Password'),
+  displayName: () => s('string:1-60').label('Display Name'),
+  bio:         () => s('string:500').label('Bio'),
+  avatar:      () => s('url').label('Avatar URL'),
+  createdAt:   () => s('datetime').label('Created At'),
+  role:        () => s('string').label('Role').enum(['admin', 'editor', 'viewer']),
 })
 
 // ============================================================
 // 2. Compose multiple schemas from the same library
 // ============================================================
 
-const dbUserSchema = dsl({
+const dbUserSchema = s({
   id:          fields.id(),
   username:    fields.username(),
   email:       fields.email(),

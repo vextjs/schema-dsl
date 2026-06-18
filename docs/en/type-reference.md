@@ -1,6 +1,8 @@
-# schema-dsl type reference
+# schema-dsl complete type list
 
-> **Updated**: 2026-05-08
+> **Updated**: 2026-06-18
+
+This page lists the built-in DSL types and shows how to use the same type through the recommended v2.1.0 authoring entries: plain DSL strings, `s('...')` builder seeds, and `s.xxx()` factories.
 
 ---
 
@@ -65,22 +67,22 @@
 ### basic type
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // string
-const schema1 = dsl({ name: 'string' });
+const schema1 = s({ name: 'string' });
 
 // number
-const schema2 = dsl({ age: 'number' });
+const schema2 = s({ age: 'number' });
 
 // integer
-const schema3 = dsl({ count: 'integer' });
+const schema3 = s({ count: 'integer' });
 
 // boolean
-const schema4 = dsl({ active: 'boolean' });
+const schema4 = s({ active: 'boolean' });
 
 // object
-const schema5 = dsl({
+const schema5 = s({
   user: {
     name: 'string',
     age: 'number'
@@ -88,13 +90,13 @@ const schema5 = dsl({
 });
 
 // array
-const schema6 = dsl({ tags: 'array<string>' });
+const schema6 = s({ tags: 'array<string>' });
 
 //null value
-const schema7 = dsl({ value: 'null' });
+const schema7 = s({ value: 'null' });
 
 // any type
-const schema8 = dsl({ data: 'any' });
+const schema8 = s({ data: 'any' });
 ```
 
 ---
@@ -103,22 +105,22 @@ const schema8 = dsl({ data: 'any' });
 
 ```javascript
 //Mobile phone number (default cn)
-const schema1 = dsl({ mobile: 'phone:cn!' });
+const schema1 = s({ mobile: 'phone:cn!' });
 
 // ID card
-const schema2 = dsl({ idCard: 'idCard:cn!' });
+const schema2 = s({ idCard: 'idCard:cn!' });
 
 // credit card
-const schema3 = dsl({ card: 'creditCard:visa!' });
+const schema3 = s({ card: 'creditCard:visa!' });
 
 // license plate number
-const schema4 = dsl({ plate: 'licensePlate:cn!' });
+const schema4 = s({ plate: 'licensePlate:cn!' });
 
 // postal code
-const schema5 = dsl({ zip: 'postalCode:cn!' });
+const schema5 = s({ zip: 'postalCode:cn!' });
 
 // passport
-const schema6 = dsl({ passportNo: 'passport:cn!' });
+const schema6 = s({ passportNo: 'passport:cn!' });
 ```
 
 ---
@@ -127,25 +129,25 @@ const schema6 = dsl({ passportNo: 'passport:cn!' });
 
 ```javascript
 // Mail
-const schema1 = dsl({ email: 'email!' });
+const schema1 = s({ email: 'email!' });
 
 // URL
-const schema2 = dsl({ website: 'url' });
+const schema2 = s({ website: 'url' });
 
 // UUID
-const schema3 = dsl({ id: 'uuid!' });
+const schema3 = s({ id: 'uuid!' });
 
 // date
-const schema4 = dsl({ birthday: 'date' });
+const schema4 = s({ birthday: 'date' });
 
 // date time
-const schema5 = dsl({ created_at: 'datetime!' });
+const schema5 = s({ created_at: 'datetime!' });
 
 // time
-const schema6 = dsl({ start_time: 'time' });
+const schema6 = s({ start_time: 'time' });
 
 // IP address
-const schema7 = dsl({
+const schema7 = s({
   ipv4_addr: 'ipv4',
   ipv6_addr: 'ipv6'
 });
@@ -157,38 +159,36 @@ const schema7 = dsl({
 
 ```javascript
 //Binary data (Base64)
-const schema = dsl({
+const schema = s({
   avatar: 'binary' // Avatar image (Base64 encoding)
 });
 ```
 
 ---
 
-## Correspondence between 🔄 and joi
+## Authoring entry matrix
 
-### Complete comparison table
+| Goal | Recommended form | Example |
+|------|------------------|---------|
+| Shortest schema object | Plain DSL string | `s({ email: 'email!' })` |
+| DSL seed plus chain methods | `s('...')` | `s('string:3-32!').label('Username')` |
+| Full method discovery | `s.xxx()` factory | `s.email().label('Email').require()` |
+| Isolated framework runtime | `runtime.s` | `runtime.s({ email: 'email!' })` |
+| Direct string-chain source | String Extensions or transform | `'email!'.label('Email')` |
 
-| joi | schema-dsl DSL | Description |
-|-----|--------------|------|
-| `Joi.string()` | `'string'` | string |
-| `Joi.string().email()` | `'email'` | Mail |
-| `Joi.string().uri()` | `'url'` | URL |
-| `Joi.string().uuid()` | `'uuid'` | UUID |
-| `Joi.string().ip()` | `'ipv4'` or `'ipv6'` | IP address |
-| `Joi.string().min(3).max(32)` | `'string:3-32'` | length range |
-| `Joi.string().required()` | `'string!'` | Required |
-| `Joi.number()` | `'number'` | number |
-| `Joi.number().min(0).max(100)` | `'number:0-100'` | Number range |
-| `Joi.number().integer()` | `'integer'` | integer |
-| `Joi.boolean()` | `'boolean'` | Boolean |
-| `Joi.date()` | `'date'` or `'datetime'` | date |
-| `Joi.array()` | `'array'` | array |
-| `Joi.array().items(Joi.string())` | `'array<string>'` | string array |
-| `Joi.array().min(1).max(10)` | `'array:1-10'` | array length |
-| `Joi.object()` | `{ ... }` | object |
-| `Joi.any()` | `'any'` | any type |
-| `Joi.binary()` | `'binary'` | binary |
-| `Joi.valid('a','b','c')` | `'a\|b\|c'` | enumerate |
+Factory examples:
+
+```javascript
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
+  name: s.string().min(1).max(50).require(),
+  age: s.number().min(18).max(120),
+  email: s.email().label('Email').require(),
+  tags: s.array('string:1-30').min(1).max(10),
+  status: s.enum('active', 'inactive', 'pending').default('active')
+});
+```
 
 ---
 
@@ -202,18 +202,18 @@ const schema = dsl({
 
 ## ❓ FAQ
 
-### Q1: Why is there no API to call `Joi.alternatives()` directly?
+### Q1: How should I express alternative field types?
 
 A: schema-dsl splits this type of requirements into two categories:
 
 - Single field cross-type union: use `types:` syntax
-- Make conditional branches based on other fields: use `dsl.match()`
+- Make conditional branches based on other fields: use `s.match()`
 
 ```javascript
-const schema = dsl({
+const schema = s({
   value: 'types:string|number',
   contactType: 'email|phone',
-  contact: dsl.match('contactType', {
+  contact: s.match('contactType', {
     email: 'email!',
     phone: 'phone:cn!'
   })
@@ -230,7 +230,7 @@ A: Abbreviations such as `s`/`n`/`i`/`b` are not supported. Use the complete typ
 
 ---
 
-**Last updated**: 2026-05-08
+**Last updated**: 2026-06-18
 
 ---
 

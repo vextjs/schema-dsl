@@ -60,11 +60,11 @@ const orderZhCN = {
 
 ```javascript
 // app.js
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 // Automatically recursively scan all subdirectories under locales/ and merge the same language files into a complete language package
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales')
 });
 ```
@@ -76,7 +76,7 @@ dsl.config({
 ### Strict mode: Block startup when key conflicts (recommended for CI environment)
 
 ```javascript
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales'),
   strict: true // When keys with the same name conflict, an Error will be thrown directly to prevent silent overwriting.
 });
@@ -113,7 +113,7 @@ When multiple people develop, it is recommended to maintain a `locales/CODE-SEGM
 #### Step 1: Create language pack files
 
 ```bash
-# Project structure
+## Project structure
 my-project/
 ├── locales/ # Language pack directory
 │ ├── zh-CN.cjs # Chinese (CommonJS / ESM projects are stable)
@@ -124,8 +124,8 @@ my-project/
 
 #### Step 2: Define language package (`locales/pt-BR.json5`)
 
-```javascript
-module.exports = {
+```json5
+{
   // Generic validation error
   'required': '{{#label}} é obrigatório',
   'type': '{{#label}} deve ser do tipo {{#expected}}',
@@ -181,17 +181,17 @@ module.exports = {
   'pattern.macAddress': 'Endereço MAC inválido',
   'pattern.cron': 'Expressão Cron inválida',
   'pattern.slug': 'Slug deve conter apenas letras minúsculas, números e hífens'
-};
+}
 ```
 
 #### Step 3: Load all languages ​​at once when the app starts
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 // ========== Configuration when the application starts (only executed once) ==========
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales') // Automatically load all language files in the directory
 });
 
@@ -202,7 +202,7 @@ dsl.config({
 // 4. The user-defined language pack will be merged with the system default language pack, and the user’s will take precedence.
 
 // ========== Switch language directly during runtime (no need to reload) ==========
-const schema = dsl({ username: 'string:3-32!' });
+const schema = s({ username: 'string:3-32!' });
 
 // use Portuguese
 const result1 = validate(schema, { username: 'ab' }, { locale: 'pt-BR' });
@@ -245,14 +245,17 @@ const finalZhCN = {
 ### Method 2: Pass in the object directly (suitable for dynamic configuration)
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
+import ptBR from './locales/pt-BR.cjs';
+import deDE from './locales/de-DE.cjs';
+import koKR from './locales/ko-KR.cjs';
 
 // Configure when application starts
-dsl.config({
+s.config({
   i18n: {
-    'pt-BR': require('./locales/pt-BR'),
-    'de-DE': require('./locales/de-DE'),
-    'ko-KR': require('./locales/ko-KR')
+    'pt-BR': ptBR,
+    'de-DE': deDE,
+    'ko-KR': koKR
   }
 });
 
@@ -268,12 +271,13 @@ validate(schema, data, { locale: 'de-DE' });
 ### ❌ Error: Loading language packs individually at runtime
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 // ❌ Not recommended: dynamically load before each validation
-function validateUser(data, locale) {
+async function validateUser(data, locale) {
   if (locale === 'pt-BR') {
-    Locale.addLocale('pt-BR', require('./locales/pt-BR')); // Load every time, poor performance
+    const { default: ptBR } = await import('./locales/pt-BR.cjs');
+    Locale.addLocale('pt-BR', ptBR); // Load every time, poor performance
   }
   return validate(schema, data, { locale });
 }
@@ -282,7 +286,7 @@ function validateUser(data, locale) {
 ```javascript
 // ✅ Correct: Load once when the app starts
 // app.js startup entry
-dsl.config({ i18n: './locales' }); // Only load once
+s.config({ i18n: './locales' }); // Only load once
 
 //Switch directly during runtime without reloading
 function validateUser(data, locale) {
@@ -303,19 +307,19 @@ function validateUser(data, locale) {
 
 ```javascript
 // ========== app.js (application startup entrance) ==========
-const express = require('express');
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import express from 'express';
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 //Load all language packs at once when the application starts
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales')
 });
 
 const app = express();
 
 // ========== routes/user.js (business routing) ==========
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:18-120'
@@ -433,7 +437,7 @@ All error messages support the following template variables:
 You can refer to the built-in language pack as a template:
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 // View Chinese language pack
 const zhCN = Locale.getMessages('zh-CN');

@@ -1,20 +1,11 @@
 # schema-dsl 最佳实践
 
 > **用途**: 帮助你写出高质量、高性能的 Schema 代码  
-> **更新**: 2026-05-08  
+> **更新**: 2026-06-18
 
 ---
 
-## 📑 目录
-
-- [Schema 设计原则](#schema-设计原则)
-- [性能优化](#性能优化)
-- [安全性考虑](#安全性考虑)
-- [错误处理](#错误处理)
-- [代码组织](#代码组织)
-- [生产环境建议](#生产环境建议)
-
----
+当你已经有可用 schema，并希望进入生产级结构、性能和可维护性实践时阅读本页。项目组织方式请继续看 [项目结构最佳实践](best-practices-project-structure.md)。
 
 ## Schema 设计原则
 
@@ -22,7 +13,7 @@
 
 **推荐**:
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   age: 'number:18-120',
   email: 'email!',
@@ -32,13 +23,13 @@ const schema = dsl({
 
 **不推荐**（过度复杂）:
 ```javascript
-const schema = dsl({
-  username: dsl('string').min(3).max(32).required(),
+const schema = s({
+  username: s('string').min(3).max(32).require(),
   // 太冗长了！
 });
 ```
 
-**原则**: 能用 DSL 字符串表达的，就不要用链式调用。
+**原则**: 简单字段保持紧凑 DSL 字面量；只有需要 label、messages、自定义验证器或其他增强时再追加链式方法。
 
 ---
 
@@ -52,12 +43,12 @@ const schema = dsl({
 
 **示例**:
 ```javascript
-const schema = dsl({
+const schema = s({
   // 简单字段：纯 DSL
   age: 'number:18-120',
   
   // 复杂字段：链式调用
-  username: 'string:3-32!'
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .label('用户名')
     .messages({
@@ -66,7 +57,7 @@ const schema = dsl({
       'max': '最多32个字符'
     }),
   
-  email: 'email!'
+  email: s('email!')
     .custom((value) => {
       if (value.endsWith('@blocked.example')) return '该邮箱域名不允许注册';
     })
@@ -81,14 +72,14 @@ const schema = dsl({
 schema-dsl 提供了常用的预设验证器，开箱即用：
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // ✅ 使用预设验证器（推荐）
-  username: dsl('string!').username(),        // 自动设置 3-32 长度 + 正则
-  password: dsl('string!').password('strong'), // 强密码验证
-  phone: dsl('string!').phone('cn'),          // 中国手机号
+  username: s('string!').username(),        // 自动设置 3-32 长度 + 正则
+  password: s('string!').password('strong'), // 强密码验证
+  phone: s('string!').phone('cn'),          // 中国手机号
   
   // ❌ 手动实现（不推荐）
-  username: 'string:3-32!'
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z][a-zA-Z0-9_]*$/)
 });
 ```
@@ -105,7 +96,7 @@ const schema = dsl({
 
 **不推荐**（嵌套过深）:
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     profile: {
       personal: {
@@ -123,20 +114,20 @@ const schema = dsl({
 **推荐**（拆分或扁平化）:
 ```javascript
 // 方案1: 拆分为多个 Schema
-const addressSchema = dsl({
+const addressSchema = s({
   street: 'string!',
   city: 'string!',
   zipCode: 'string'
 });
 
-const userSchema = dsl({
+const userSchema = s({
   name: 'string!',
   email: 'email!',
   address: addressSchema
 });
 
 // 方案2: 扁平化
-const schema = dsl({
+const schema = s({
   'user_name': 'string!',
   'user_email': 'email!',
   'address_street': 'string!',
@@ -155,7 +146,7 @@ const schema = dsl({
 **不推荐**（每次都编译）:
 ```javascript
 app.post('/api/user', (req, res) => {
-  const schema = dsl({ username: 'string!' });
+  const schema = s({ username: 'string!' });
   const result = validate(schema, req.body); // 每次都编译
 });
 ```
@@ -164,7 +155,7 @@ app.post('/api/user', (req, res) => {
 ```javascript
 // 在应用启动时编译一次
 const validator = new Validator();
-const userSchema = dsl({ username: 'string!' });
+const userSchema = s({ username: 'string!' });
 const validateUser = validator.compile(userSchema);
 
 app.post('/api/user', (req, res) => {
@@ -193,7 +184,7 @@ const tunedValidator = new Validator({
 });
 
 // 或者使用全局单例（默认启用缓存）
-const { validate } = require('schema-dsl');
+import { validate } from 'schema-dsl/pure';
 validate(schema, data); // 自动缓存
 ```
 
@@ -214,7 +205,7 @@ records.forEach(record => {
 
 **推荐**（批量验证）:
 ```javascript
-const { SchemaUtils, Validator } = require('schema-dsl');
+import { SchemaUtils, Validator } from 'schema-dsl/pure';
 
 const validator = new Validator();
 const result = SchemaUtils.validateBatch(schema, records, validator.getAjv());
@@ -251,14 +242,14 @@ const result = SchemaUtils.validateBatch(schema, records, validator.getAjv());
 **不推荐**:
 ```javascript
 records.forEach(record => {
-  const schema = dsl({ name: 'string!' }); // 每次都创建
+  const schema = s({ name: 'string!' }); // 每次都创建
   validate(schema, record);
 });
 ```
 
 **推荐**:
 ```javascript
-const schema = dsl({ name: 'string!' }); // 创建一次
+const schema = s({ name: 'string!' }); // 创建一次
 records.forEach(record => {
   validate(schema, record); // 重复使用
 });
@@ -275,7 +266,7 @@ records.forEach(record => {
 // ❌ 用户控制的正则表达式
 app.post('/api/validate', (req, res) => {
   const pattern = req.body.pattern; // 用户输入
-  const schema = dsl('string').pattern(new RegExp(pattern)); // 危险！
+  const schema = s('string').pattern(new RegExp(pattern)); // 危险！
 });
 ```
 
@@ -295,7 +286,7 @@ app.post('/api/validate', (req, res) => {
   if (!pattern) {
     return res.status(400).json({ error: 'Invalid pattern' });
   }
-  const schema = dsl('string').pattern(pattern);
+  const schema = s('string').pattern(pattern);
 });
 ```
 
@@ -392,9 +383,8 @@ app.post('/api/user',
 
 **使用 label 和自定义消息**:
 ```javascript
-const schema = dsl({
-  username: 'string:3-32!'
-    .label('用户名')
+const schema = s({
+  username: s('string:3-32!').label('用户名')
     .messages({
       'required': '{{#label}}不能为空',
       'min': '{{#label}}至少需要{{#limit}}个字符',
@@ -402,7 +392,7 @@ const schema = dsl({
       'pattern': '{{#label}}格式不正确'
     }),
   
-  email: 'email!'
+  email: s('email!')
     .label('邮箱地址')
     .messages({
       'required': '请填写{{#label}}',
@@ -425,8 +415,8 @@ const schema = dsl({
 > `.custom()` 支持同步函数；涉及数据库、RPC、HTTP 等异步检查时，可返回 `Promise` 并通过 `validateAsync()` 执行，也可以在基础校验通过后于业务层单独执行。
 
 ```javascript
-const schema = dsl({
-  email: 'email!'.label('邮箱地址')
+const schema = s({
+  email: s('email!').label('邮箱地址')
 });
 
 async function validateUser(data) {
@@ -471,30 +461,30 @@ src/
 
 **schemas/user.schema.js**:
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // 可复用的字段
 const commonFields = {
-  username: dsl('string!').username().label('用户名'),
+  username: s('string!').username().label('用户名'),
   email: 'email!',
-  password: dsl('string!').password('strong').label('密码')
+  password: s('string!').password('strong').label('密码')
 };
 
 // 注册 Schema
-exports.registerSchema = dsl({
+export const registerSchema = s({
   ...commonFields,
   confirmPassword: 'string!',
   agreeTerms: 'boolean!'
 });
 
 // 登录 Schema
-exports.loginSchema = dsl({
+export const loginSchema = s({
   email: commonFields.email,
   password: commonFields.password
 });
 
 // 更新 Schema
-exports.updateSchema = dsl({
+export const updateSchema = s({
   username: commonFields.username,
   email: commonFields.email
   // 不包含密码
@@ -503,10 +493,10 @@ exports.updateSchema = dsl({
 
 **schemas/index.js**:
 ```javascript
-const userSchemas = require('./user.schema');
-const postSchemas = require('./post.schema');
+import * as userSchemas from './user.schema.js';
+import * as postSchemas from './post.schema.js';
 
-module.exports = {
+export default {
   user: userSchemas,
   post: postSchemas
 };
@@ -514,8 +504,8 @@ module.exports = {
 
 **routes/user.routes.js**:
 ```javascript
-const schemas = require('../schemas');
-const { validate } = require('schema-dsl');
+import schemas from '../schemas';
+import { validate } from 'schema-dsl/pure';
 
 router.post('/register', (req, res) => {
   const result = validate(schemas.user.registerSchema, req.body);
@@ -529,23 +519,23 @@ router.post('/register', (req, res) => {
 
 **使用 SchemaUtils**:
 ```javascript
-const { SchemaUtils, dsl } = require('schema-dsl');
+import { SchemaUtils, s } from 'schema-dsl/pure';
 
 // 创建可复用字段库
 const fields = SchemaUtils.createLibrary({
   email: () => 'email!',
-  phone: () => dsl('string!').phone('cn'),
-  password: () => dsl('string!').password('strong')
+  phone: () => s('string!').phone('cn'),
+  password: () => s('string!').password('strong')
 });
 
 // 在多个 Schema 中复用
-const registerSchema = dsl({
+const registerSchema = s({
   email: fields.email(),
   password: fields.password(),
   username: 'string:3-32!'
 });
 
-const profileSchema = dsl({
+const profileSchema = s({
   email: fields.email(),
   phone: fields.phone(),
   bio: 'string:500'
@@ -560,7 +550,7 @@ const profileSchema = dsl({
 
 ```javascript
 // config/validator.js
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
 
 const config = {
   development: {
@@ -579,7 +569,7 @@ const config = {
   }
 };
 
-module.exports = new Validator(
+export const validator = new Validator(
   config[process.env.NODE_ENV || 'development']
 );
 ```
@@ -621,12 +611,12 @@ validator.validate = function(schema, data, options) {
 
 ```javascript
 // routes/health.js
+import { validator } from '../config/validator.js';
+
 app.get('/health', (req, res) => {
-  const { validator } = require('../config/validator');
-  
   // 检查验证器是否正常
   try {
-    const testSchema = dsl({ test: 'string!' });
+    const testSchema = s({ test: 'string!' });
     const result = validator.validate(testSchema, { test: 'ok' });
     
     if (!result.valid) {
@@ -653,7 +643,7 @@ app.get('/health', (req, res) => {
 
 ```javascript
 // 定期清理缓存
-const cron = require('node-cron');
+import cron from 'node-cron';
 
 // 每天凌晨清理一次
 cron.schedule('0 0 * * *', () => {

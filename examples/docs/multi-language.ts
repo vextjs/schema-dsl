@@ -1,4 +1,4 @@
-import { Locale, dsl, validate } from '../../dist/index.js'
+import { Locale, s, validate } from '../../dist/pure.js'
 
 // ============================================================
 // Multi-language validation — using built-in + custom locales
@@ -17,9 +17,9 @@ console.log('multi-language.builtin.includes.ja    =', locales.includes('ja-JP')
 // 2. Per-request locale override
 // ============================================================
 
-const schema = dsl({
-  email:    dsl('email!').label('Email'),
-  username: dsl('string:3-32!').label('Username'),
+const schema = s({
+  email:    s('email!').label('Email'),
+  username: s('string:3-32!').label('Username'),
 })
 
 Locale.setLocale('zh-CN')

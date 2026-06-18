@@ -5,13 +5,6 @@
 
 ---
 
-## 📋 Table of Contents
-
-1. [How to use](#how-to-use)
-2. [Complete example](#complete-example)
-3. [FAQ](#faq)
-
----
 
 <a id="how-to-use"></a>
 
@@ -21,23 +14,23 @@
 
 ```javascript
 // server.js
-const express = require('express');
-const cors = require('cors');
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // ========== Configuration when the application starts (only executed once) ==========
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales') //Load all language packages at once
 });
 
 // Schema definition
 const schemas = {
-  user: dsl({
+  user: s({
     username: 'string:3-32!',
     email: 'email!',
     password: 'string:8-64!',
@@ -45,7 +38,7 @@ const schemas = {
     phone: 'string'
   }),
 
-  post: dsl({
+  post: s({
     title: 'string:1-200!',
     content: 'string:10-10000!',
     tags: 'array:1-5<string:1-20>'
@@ -245,7 +238,7 @@ app.post('/api/validate', (req, res) => {
 **A**: Use `Locale.addLocale()` to add a custom language pack.
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 Locale.addLocale('de-DE', {
   required: '{{#label}} ist erforderlich',
@@ -260,9 +253,9 @@ Locale.addLocale('de-DE', {
 
 ```javascript
 // The front end can reuse the same set of schema-dsl validation rules
-import { dsl, validate } from 'schema-dsl';
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({ /* ... */ });
+const schema = s({ /* ... */ });
 const result = validate(schema, formData, {
   locale: currentLocale
 });

@@ -5,16 +5,6 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Basic Principle](#basic-principles)
-- [Option 1: Specify language during validation (recommended)](#option-1-specify-language-during-validation-recommended)
-- [Option 2: Temporarily switch language](#option-2-temporarily-switch-language)
-- [Option 3: Express/Koa middleware](#option-3-expresskoa-middleware)
-- [Complete example](#complete-example)
-- [Best Practice](#best-practices)
-
----
 
 ## Basic principles
 
@@ -36,22 +26,22 @@ This is the **most recommended** solution. There is no need to modify the global
 
 ### 1.1 Configuration when the application starts (loading all languages ​​at once)
 
-Use `dsl.config` to load all custom language packs at once when the app starts.
+Use `s.config` to load all custom language packs at once when the app starts.
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 // ========== Configuration when the application starts (only executed once) ==========
 
 //Method 1: Pass in the directory path (recommended)⭐
 // Node >=18: Automatically scan.js (CommonJS),.cjs,.json,.jsonc,.json5 files in the directory
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales')
 });
 
 //Method 2: Directly pass in the object
-dsl.config({
+s.config({
   i18n: {
     'fr-FR': {
       'required': '{{#label}} est requis',
@@ -73,10 +63,10 @@ dsl.config({
 ### 1.2 Switch languages ​​directly during runtime (no need to reload)
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 //define Schema
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
@@ -107,19 +97,19 @@ const result3 = validate(schema, data, { locale: 'de-DE' });
 ### 1.3 Obtain the language from the request header (actual application scenario)
 
 ```javascript
-const express = require('express');
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import express from 'express';
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 const app = express();
 
 // ========== Configuration when the application starts (only executed once) ==========
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales')
 });
 
 //define Schema
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   password: 'string:8-32!'
@@ -229,7 +219,7 @@ Encapsulated as middleware to automatically handle language switching.
 Through one-time configuration of middleware, subsequent business code does not need to care about language parameters.
 
 ```javascript
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
 const validator = new Validator();
 
 const schemaIoMiddleware = (req, res, next) => {
@@ -269,7 +259,7 @@ For a complete example, please refer to [dynamic-locale.ts](https://github.com/v
 ### 3.2 Koa middleware
 
 ```javascript
-const { Locale, Validator } = require('schema-dsl');
+import { Locale, Validator } from 'schema-dsl/pure';
 
 const validator = new Validator();
 
@@ -318,8 +308,8 @@ router.post('/api/user/register', async (ctx) => {
 ### Express complete example
 
 ```javascript
-const express = require('express');
-const { dsl, Validator, Locale } = require('schema-dsl');
+import express from 'express';
+import { s, Validator, Locale } from 'schema-dsl/pure';
 
 const app = express();
 app.use(express.json());
@@ -384,16 +374,15 @@ app.use(localeMiddleware);
 
 // ========== 4. Define Schema ==========
 
-const userSchema = dsl({
-  username: 'string:3-32!'.label('username'),
-  email: 'email!'.label('email address'),
-  password: 'string:8-64!'
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
+const userSchema = s({
+  username: s('string:3-32!').label('username'),
+  email: s('email!').label('email address'),
+  password: s('string:8-64!').pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
     .label('password')
     .messages({
       'pattern': 'Password must contain uppercase and lowercase letters and numbers'
     }),
-  age: 'number:18-120'.label('age')
+  age: s('number:18-120').label('age')
 });
 
 // ========== 5. API routing ==========
@@ -443,10 +432,14 @@ app.listen(3000, () => {
 
 ```javascript
 // locales/index.js
-module.exports = {
-  'zh-CN': require('./zh-CN.json'),
-  'en-US': require('./en-US.json'),
-  'ja-JP': require('./ja-JP.json')
+import zhCN from './zh-CN.cjs';
+import enUS from './en-US.cjs';
+import jaJP from './ja-JP.cjs';
+
+export default {
+  'zh-CN': zhCN,
+  'en-US': enUS,
+  'ja-JP': jaJP
 };
 
 // locales/zh-CN.json
@@ -459,7 +452,7 @@ module.exports = {
 }
 
 // initialization
-const locales = require('./locales');
+import locales from './locales/index.js';
 Object.entries(locales).forEach(([locale, messages]) => {
   Locale.addLocale(locale, messages);
 });
@@ -571,9 +564,8 @@ app.use(async (req, res, next) => {
 **A**: Use `.messages()` method
 
 ```javascript
-const schema = dsl({
-  password: 'string:8-64!'
-    .label('password')
+const schema = s({
+  password: s('string:8-64!').label('password')
     .messages({
       'required': req.locale === 'zh-CN'
         ? 'Please enter password'

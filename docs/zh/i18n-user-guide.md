@@ -4,16 +4,6 @@
 
 ---
 
-## 📋 目录
-
-1. [快速开始](#快速开始)
-2. [配置方式](#配置方式)
-3. [Schema 定义](#schema-定义)
-4. [前端集成](#前端集成)
-5. [最佳实践](#最佳实践)
-6. [常见问题](#常见问题)
-
----
 
 ## 快速开始
 
@@ -25,10 +15,10 @@
 ### 5 分钟上手
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // 1. 配置用户语言包
-dsl.config({
+s.config({
   i18n: {
     'zh-CN': {
       'username': '用户名',
@@ -42,9 +32,9 @@ dsl.config({
 });
 
 // 2. 定义 Schema（使用 key）
-const schema = dsl({
-  username: 'string:3-32!'.label('username'),
-  email: 'email!'.label('email')
+const schema = s({
+  username: s('string:3-32!').label('username'),
+  email: s('email!').label('email')
 });
 
 // 3. 验证（动态切换语言）
@@ -63,7 +53,7 @@ const result = validate(schema, data, { locale: 'zh-CN' });
 - 简写形式：`{ i18n: { 'zh-CN': { ... }, 'en-US': { ... } } }`
 
 ```javascript
-dsl.config({
+s.config({
   i18n: {
     locales: {
       'zh-CN': {
@@ -84,7 +74,7 @@ dsl.config({
 **简写形式**:
 
 ```javascript
-dsl.config({
+s.config({
   i18n: {
     'zh-CN': {
       'username': '用户名',
@@ -125,9 +115,9 @@ project/
 
 **配置**:
 ```javascript
-const path = require('path');
+import path from 'path';
 
-dsl.config({
+s.config({
   i18n: {
     localesPath: path.join(__dirname, 'i18n/labels')
   }
@@ -163,7 +153,7 @@ module.exports = {
 ### 缓存配置（可选）
 
 ```javascript
-dsl.config({
+s.config({
   cache: {
     maxSize: 10000,   // 缓存最大条目数
     ttl: 7200000      // 缓存过期时间（ms）
@@ -187,13 +177,13 @@ dsl.config({
 ### 使用 key 引用语言包
 
 ```javascript
-const userSchema = dsl({
+const userSchema = s({
   // label 使用 key
-  username: 'string:3-32!'.label('username'),
-  email: 'email!'.label('email'),
+  username: s('string:3-32!').label('username'),
+  email: s('email!').label('email'),
   
   // messages 使用 key
-  password: 'string:8-32!'.label('password').messages({
+  password: s('string:8-32!').label('password').messages({
     'minLength': 'custom.passwordWeak'
   })
 });
@@ -202,11 +192,11 @@ const userSchema = dsl({
 ### 嵌套字段
 
 ```javascript
-const addressSchema = dsl({
-  address: dsl({
-    city: 'string!'.label('address.city'),
-    street: 'string!'.label('address.street'),
-    zipCode: 'string!'.label('address.zipCode')
+const addressSchema = s({
+  address: s({
+    city: s('string!').label('address.city'),
+    street: s('string!').label('address.street'),
+    zipCode: s('string!').label('address.zipCode')
   })
 });
 ```
@@ -227,8 +217,8 @@ const labels = {
 ### Express 中间件
 
 ```javascript
-const express = require('express');
-const { validate } = require('schema-dsl');
+import express from 'express';
+import { validate } from 'schema-dsl/pure';
 
 const app = express();
 app.use(express.json());
@@ -463,13 +453,13 @@ module.exports = {
 
 ### Q4: 是否支持动态加载语言包？
 
-**A**: 支持，在应用启动后调用 `dsl.config()`
+**A**: 支持，在应用启动后调用 `s.config()`
 
 ```javascript
 // 动态添加语言
-const frFR = require('./i18n/fr-FR.cjs');
+import frFR from './i18n/fr-FR.cjs';
 
-dsl.config({
+s.config({
   i18n: {
     locales: {
       'fr-FR': frFR
@@ -483,5 +473,5 @@ dsl.config({
 ## 对应示例文件
 
 **示例入口**: [i18n-user-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/i18n-user-guide.ts)  
-**说明**: 覆盖 `dsl.config({ i18n: { locales: ... } })` 的对象配置方式、已加载语言列表，以及不同 locale 的运行时切换。
+**说明**: 覆盖 `s.config({ i18n: { locales: ... } })` 的对象配置方式、已加载语言列表，以及不同 locale 的运行时切换。
 

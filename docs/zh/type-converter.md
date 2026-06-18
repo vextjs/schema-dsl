@@ -6,15 +6,6 @@
 
 ---
 
-## 📑 目录
-
-- [概述](#概述)
-- [快速开始](#快速开始)
-- [API 参考](#api-参考)
-- [类型映射表](#类型映射表)
-- [实用示例](#实用示例)
-
----
 
 ## 概述
 
@@ -34,7 +25,7 @@
 ## 快速开始
 
 ```javascript
-const { TypeConverter } = require('schema-dsl');
+import { TypeConverter } from 'schema-dsl/pure';
 
 // JSON Schema 类型转 MongoDB 类型
 const mongoType = TypeConverter.toMongoDBType('integer');
@@ -269,7 +260,7 @@ const constraints = TypeConverter.extractConstraints(schema);
 ### 批量类型转换
 
 ```javascript
-const { TypeConverter } = require('schema-dsl');
+import { TypeConverter } from 'schema-dsl/pure';
 
 const fields = ['string', 'number', 'integer', 'boolean', 'object', 'array'];
 

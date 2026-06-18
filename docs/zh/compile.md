@@ -18,9 +18,9 @@ validator.compile(schema, cacheKey?)
 返回 AJV 验证函数，可直接像普通函数一样调用；执行结果为 `true / false`，错误详情挂在 `validate.errors` 上。
 
 ```javascript
-const { Validator, dsl } = require('schema-dsl');
+import { Validator, s } from 'schema-dsl/pure';
 const validator = new Validator();
-const schema = dsl({ name: 'string!' });
+const schema = s({ name: 'string!' });
 const validate = validator.compile(schema, 'user-schema');
 console.log(validate({ name: 'Rocky' }));
 ```

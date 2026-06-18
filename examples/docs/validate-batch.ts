@@ -1,4 +1,4 @@
-import { dsl, validate, Validator } from '../../dist/index.js'
+import { s, validate, Validator } from '../../dist/pure.js'
 
 // ============================================================
 // validateBatch() — validate multiple records in one call
@@ -12,7 +12,7 @@ import { dsl, validate, Validator } from '../../dist/index.js'
 // 1. Basic batch validation
 // ============================================================
 
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email:    'email!',
   age:      'integer:18-120',
@@ -60,7 +60,7 @@ console.log('validateBatch.invalidIndices =', invalidIndexed.map(x => x.index).j
 // 4. Batch with coercion — string inputs normalized to numbers
 // ============================================================
 
-const productSchema = dsl({
+const productSchema = s({
   sku:   'alphanum:5-20!',
   price: 'number:0.01-!',
   stock: 'integer:0-!',

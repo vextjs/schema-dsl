@@ -1,17 +1,17 @@
-import { dsl, validate } from '../../dist/index.js'
+import { s, validate } from '../../dist/pure.js'
 
 // ============================================================
 // 1. String enum — pipe-separated values (most common form)
 // ============================================================
 
-const statusSchema = dsl({ status: 'active|inactive|pending|suspended!' })
+const statusSchema = s({ status: 'active|inactive|pending|suspended!' })
 
 console.log('enum.string.valid   =', validate(statusSchema, { status: 'active' }).valid)    // true
 console.log('enum.string.invalid =', validate(statusSchema, { status: 'deleted' }).valid)   // false
 console.log('enum.string.missing =', validate(statusSchema, {}).valid)                       // false — required
 
 // Optional enum: no '!' → field may be absent
-const optionalStatus = dsl({ status: 'active|inactive' })
+const optionalStatus = s({ status: 'active|inactive' })
 console.log('enum.string.optional.absent =', validate(optionalStatus, {}).valid)             // true
 console.log('enum.string.optional.null =',   validate(optionalStatus, { status: null }).valid) // false
 
@@ -19,7 +19,7 @@ console.log('enum.string.optional.null =',   validate(optionalStatus, { status: 
 // 2. Numeric enum — enum:number:v1|v2|...
 // ============================================================
 
-const prioritySchema = dsl({ priority: 'enum:number:1|2|3|4|5!' })
+const prioritySchema = s({ priority: 'enum:number:1|2|3|4|5!' })
 
 console.log('enum.number.valid   =', validate(prioritySchema, { priority: 3 }).valid)      // true
 console.log('enum.number.invalid =', validate(prioritySchema, { priority: 6 }).valid)      // false
@@ -33,7 +33,7 @@ console.log('enum.number.strict  =',
 // 3. Boolean enum — enum:boolean:true|false
 // ============================================================
 
-const flagSchema = dsl({ featureEnabled: 'enum:boolean:true|false' })
+const flagSchema = s({ featureEnabled: 'enum:boolean:true|false' })
 
 console.log('enum.boolean.true  =', validate(flagSchema, { featureEnabled: true }).valid)  // true
 console.log('enum.boolean.false =', validate(flagSchema, { featureEnabled: false }).valid) // true
@@ -43,8 +43,8 @@ console.log('enum.boolean.str   =', validate(flagSchema, { featureEnabled: 'yes'
 // 4. Enum with custom error message via .error()
 // ============================================================
 
-const roleSchema = dsl({
-  role: dsl('admin|user|guest!').label('Role').error({ enum: 'Role must be admin, user, or guest' }),
+const roleSchema = s({
+  role: s('admin|user|guest!').label('Role').error({ enum: 'Role must be admin, user, or guest' }),
 })
 
 const roleResult = validate(roleSchema, { role: 'superuser' })
@@ -55,7 +55,7 @@ console.log('enum.custom.error.message =', roleResult.errors?.[0]?.message)     
 // 5. Array of enum — array<enum:...>
 // ============================================================
 
-const tagsSchema = dsl({
+const tagsSchema = s({
   tags: 'array<enum:tech|design|business|lifestyle>!',
 })
 
@@ -70,8 +70,8 @@ console.log('enum.array.empty   =',
 // 6. Enum with default value — useDefaults option
 // ============================================================
 
-const defaultStatusSchema = dsl({
-  status: dsl('active|inactive|pending').label('Status').default('pending'),
+const defaultStatusSchema = s({
+  status: s('active|inactive|pending').label('Status').default('pending'),
 })
 
 const withDefault = validate(defaultStatusSchema, {}, { useDefaults: true })
@@ -81,13 +81,13 @@ console.log('enum.default.applied =', (withDefault.data as any)?.status) // 'pen
 // 7. Full form: combined schema with multiple enum fields
 // ============================================================
 
-const articleSchema = dsl({
+const articleSchema = s({
   title:       'string:5-200!',
   status:      'draft|review|published|archived!',
   priority:    'enum:number:1|2|3',
   category:    'tech|design|ops|marketing',
   tags:        'array<enum:news|tutorial|opinion|case-study>',
-  visibility:  dsl('public|private|unlisted').default('public'),
+  visibility:  s('public|private|unlisted').default('public'),
 })
 
 const article = validate(articleSchema, {

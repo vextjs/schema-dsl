@@ -28,16 +28,15 @@ email: 'email!'
 // Error message: "email is required" ❌ Unfriendly
 
 // use label
-email: 'email!'.label('email address')
+email: s('email!').label('email address')
 // Error message: "Email address cannot be empty" ✅ Friendly
 ```
 
 **Full example**:
 
 ```javascript
-const schema = dsl({
-  userEmail: 'email!'
-    .label('User Email')
+const schema = s({
+  userEmail: s('email!').label('User Email')
     .messages({
       'required': '{{#label}} cannot be empty', // use label value
       'format': '{{#label}} format is incorrect'
@@ -64,8 +63,7 @@ const schema = dsl({
 **Example**:
 
 ```javascript
-email: 'email!'
-  .label('email address')
+email: s('email!').label('email address')
   .description('Used to log in and receive system notifications')
 ```
 
@@ -101,11 +99,11 @@ email: 'email!'
 ### 1. label is required (user-visible field)
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // ✅ Good: all user-visible fields have labels
-  username: 'string:3-32!'.label('username'),
-  email: 'email!'.label('email address'),
-  password: 'string:8-64!'.label('password'),
+  username: s('string:3-32!').label('username'),
+  email: s('email!').label('email address'),
+  password: s('string:8-64!').label('password'),
 
   // ⚠️ Yes: internal fields do not need labels
   userId: 'uuid!',
@@ -116,18 +114,16 @@ const schema = dsl({
 ### 2. description is optional (used when description is needed)
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // ✅ Complex fields: add description
-  apiKey: 'string:32!'
-    .label('API key')
+  apiKey: s('string:32!').label('API key')
     .description('Used to call third-party API, please keep it properly'),
 
   // ✅ Simple field: no description required
-  name: 'string:1-50!'.label('name'),
+  name: s('string:1-50!').label('name'),
 
   // ✅ Fields with special requirements: add description
-  password: 'string:8-64!'
-    .label('password')
+  password: s('string:8-64!').label('password')
     .description('Must contain uppercase and lowercase letters and numbers')
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
 });
@@ -136,10 +132,9 @@ const schema = dsl({
 ### 3. Examples of combination use
 
 ```javascript
-const userSchema = dsl({
+const userSchema = s({
   // Complete field definition
-  email: 'email!'
-    .label('email address') // Displayed in error message
+  email: s('email!').label('email address') // Displayed in error message
     .description('Used to log in and receive notifications') // Form prompts/documentation
     .messages({
       'required': '{{#label}} cannot be empty',
@@ -147,11 +142,10 @@ const userSchema = dsl({
     }),
 
   // simple fields
-  age: 'number:18-120'.label('age'),
+  age: s('number:18-120').label('age'),
 
   //Complex fields
-  bio: 'string:500'
-    .label('personal profile')
+  bio: s('string:500').label('personal profile')
     .description('Introduce yourself, up to 500 words'),
 
   // Internal fields (no label/description required)
@@ -181,9 +175,8 @@ const userSchema = dsl({
 
 ```javascript
 // Schema definition
-const schema = dsl({
-  email: 'email!'
-    .label('email address')
+const schema = s({
+  email: s('email!').label('email address')
     .messages({
       'required': '{{#label}} cannot be empty',
       'format': '{{#label}} format is incorrect'
@@ -202,9 +195,8 @@ validator.validate(schema, { email: 'invalid' });
 ### form rendering
 
 ```javascript
-const schema = dsl({
-  password: 'string:8-64!'
-    .label('Login password')
+const schema = s({
+  password: s('string:8-64!').label('Login password')
     .description('8-64 bits, including uppercase and lowercase letters and numbers')
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
 });
@@ -239,16 +231,14 @@ const schema = dsl({
 
 ```javascript
 // Minimal configuration (simple fields)
-name: 'string:1-50!'.label('name')
+name: s('string:1-50!').label('name')
 
 //Standard configuration (regular fields)
-email: 'email!'
-  .label('email address')
+email: s('email!').label('email address')
   .messages({ 'format': 'Please enter a valid {{#label}}' })
 
 // Complete configuration (complex fields)
-apiKey: 'string:32!'
-  .label('API key')
+apiKey: s('string:32!').label('API key')
   .description('Used to call third-party API, please keep it properly')
   .pattern(/^[A-Za-z0-9]{32}$/)
   .messages({

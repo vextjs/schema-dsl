@@ -1,4 +1,4 @@
-import { dsl, validate, MarkdownExporter } from '../../dist/index.js'
+import { s, validate, MarkdownExporter } from '../../dist/pure.js'
 
 // ============================================================
 // MarkdownExporter — generate human-readable API docs from schemas
@@ -14,14 +14,14 @@ import { dsl, validate, MarkdownExporter } from '../../dist/index.js'
 // 1. User registration form — bilingual docs
 // ============================================================
 
-const userRegSchema = dsl({
-  username:    dsl('string:3-32!').label('Username').description('Unique username, letters/digits/underscore only'),
-  email:       dsl('email!').label('Email').description('Login email address'),
-  password:    dsl('string:8-64!').label('Password').description('At least 8 chars, mix of upper/lower/digit'),
-  displayName: dsl('string:1-50').label('Display Name').description('Shown on profile page, optional'),
-  age:         dsl('integer:18-120').label('Age'),
-  role:        dsl('admin|user|guest').label('Role').default('user'),
-  acceptTerms: dsl('boolean!').label('Accept Terms'),
+const userRegSchema = s({
+  username:    s('string:3-32!').label('Username').description('Unique username, letters/digits/underscore only'),
+  email:       s('email!').label('Email').description('Login email address'),
+  password:    s('string:8-64!').label('Password').description('At least 8 chars, mix of upper/lower/digit'),
+  displayName: s('string:1-50').label('Display Name').description('Shown on profile page, optional'),
+  age:         s('integer:18-120').label('Age'),
+  role:        s('admin|user|guest').label('Role').default('user'),
+  acceptTerms: s('boolean!').label('Accept Terms'),
 })
 
 const enDoc = MarkdownExporter.export(userRegSchema as any, {
@@ -44,13 +44,13 @@ console.log('markdown.zh.hasEmail    =', zhDoc.toLowerCase().includes('email')) 
 // 2. Product schema — export to Markdown for Swagger-like docs
 // ============================================================
 
-const productSchema = dsl({
-  sku:         dsl('alphanum:5-20!').label('SKU').description('Unique product SKU'),
-  name:        dsl('string:2-200!').label('Product Name'),
-  price:       dsl('number:0.01-!').label('Price').description('Unit price in CNY'),
-  stock:       dsl('integer:0-!').label('Stock'),
-  category:    dsl('electronics|clothing|books|home').label('Category'),
-  description: dsl('string:10-2000').label('Description').description('Product description (optional)'),
+const productSchema = s({
+  sku:         s('alphanum:5-20!').label('SKU').description('Unique product SKU'),
+  name:        s('string:2-200!').label('Product Name'),
+  price:       s('number:0.01-!').label('Price').description('Unit price in CNY'),
+  stock:       s('integer:0-!').label('Stock'),
+  category:    s('electronics|clothing|books|home').label('Category'),
+  description: s('string:10-2000').label('Description').description('Product description (optional)'),
 })
 
 const productDoc = MarkdownExporter.export(productSchema as any, {
@@ -66,11 +66,11 @@ console.log('markdown.product.length   =', productDoc.length > 200)             
 // 3. Nested object schema (via DslAdapter)
 // ============================================================
 
-const addressSchema = dsl({
-  street:  dsl('string:5-100!').label('Street'),
-  city:    dsl('string:2-50!').label('City'),
-  country: dsl('string:2-3!').label('Country Code'),
-  zipCode: dsl('string:3-10').label('Zip Code'),
+const addressSchema = s({
+  street:  s('string:5-100!').label('Street'),
+  city:    s('string:2-50!').label('City'),
+  country: s('string:2-3!').label('Country Code'),
+  zipCode: s('string:3-10').label('Zip Code'),
 })
 
 const addressDoc = MarkdownExporter.export(addressSchema as any, {
@@ -85,7 +85,7 @@ console.log('markdown.address.hasCountry =', addressDoc.includes('Country Code')
 // 4. Validate that exports are non-empty valid strings
 // ============================================================
 
-const simpleSchema = dsl({ id: 'uuid!', name: 'string!' })
+const simpleSchema = s({ id: 'uuid!', name: 'string!' })
 const out = MarkdownExporter.export(simpleSchema as any, { title: 'Simple', locale: 'en-US' })
 
 console.log('markdown.simple.isString  =', typeof out)              // 'string'

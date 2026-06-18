@@ -23,7 +23,7 @@ your-project/
 ### 1. Define Schema (schemas/user.js)
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 /**
  * All schemas related to the user
@@ -33,8 +33,8 @@ const { dsl } = require('schema-dsl');
  */
 const userSchemas = {
   //Register schema
-  register: dsl({
-    username: dsl('string:3-32!')
+  register: s({
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .label('username')
       .messages({
@@ -43,13 +43,13 @@ const userSchemas = {
         'string.max': 'Username can be up to 32 characters'
       }),
 
-    email: dsl('email!')
+    email: s('email!')
       .label('mailbox')
       .messages({
         'string.email': 'Please enter a valid email address'
       }),
 
-    password: dsl('string!').password('strong')
+    password: s('string!').password('strong')
       .label('password')
       .messages({
         'string.password': 'Password must contain uppercase and lowercase letters, numbers and special characters'
@@ -57,7 +57,7 @@ const userSchemas = {
 
     age: 'number:18-120',
 
-    phone: dsl('phone')
+    phone: s('phone')
       .label('Mobile phone number')
       .messages({
         'string.phone': 'Please enter a valid mobile phone number'
@@ -65,13 +65,13 @@ const userSchemas = {
   }),
 
   // Login schema
-  login: dsl({
+  login: s({
     username: 'string!',
     password: 'string!'
   }),
 
   //Update profile schema
-  updateProfile: dsl({
+  updateProfile: s({
     nickname: 'string:2-20',
     avatar: 'url',
     bio: 'string:0-500',
@@ -80,25 +80,25 @@ const userSchemas = {
   }),
 
   //Change password schema
-  changePassword: dsl({
+  changePassword: s({
     oldPassword: 'string!',
-    newPassword: dsl('string!').password('strong')
+    newPassword: s('string!').password('strong')
   })
 };
 
-module.exports = userSchemas;
+export default userSchemas;
 ```
 
 ### 2. Define Schema (schemas/order.js)
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 const orderSchemas = {
   //Create order
-  create: dsl({
+  create: s({
     items: 'array:1-100<object>!',
-    shippingAddress: dsl({
+    shippingAddress: s({
       name: 'string:2-50!',
       phone: 'phone!',
       address: 'string:10-200!',
@@ -109,13 +109,13 @@ const orderSchemas = {
   }),
 
   //Update order status
-  updateStatus: dsl({
+  updateStatus: s({
     status: 'pending|paid|shipped|completed|cancelled!',
     note: 'string:0-500'
   })
 };
 
-module.exports = orderSchemas;
+export default orderSchemas;
 ```
 
 ### 3. Unified export (schemas/index.js)
@@ -125,23 +125,27 @@ module.exports = orderSchemas;
  * Export all schemas uniformly
  *
  * How to use:
- *   const schemas = require('./schemas');
+ *   import schemas from './schemas/index.js';
  *   const result = validate(schemas.user.register, data);
  */
-module.exports = {
-  user: require('./user'),
-  order: require('./order'),
-  product: require('./product')
+import userSchemas from './user.js';
+import orderSchemas from './order.js';
+import productSchemas from './product.js';
+
+export default {
+  user: userSchemas,
+  order: orderSchemas,
+  product: productSchemas
 };
 ```
 
 ### 4. Use in routing (routes/user.js)
 
 ```javascript
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { validate } = require('schema-dsl');
-const userSchemas = require('../schemas/user');
+import { validate } from 'schema-dsl/pure';
+import userSchemas from '../schemas/user';
 
 /**
  * User registration
@@ -211,26 +215,30 @@ router.put('/profile', authenticate, async (req, res) => {
   // ...
 });
 
-module.exports = router;
+export default router;
 ```
 
 ### 5. Main application entrance (app.js)
 
 ```javascript
-const express = require('express');
+import express from 'express';
+import userRoutes from './routes/user.js';
+import orderRoutes from './routes/order.js';
+import productRoutes from './routes/product.js';
+
 const app = express();
 
 // ✅ Load all schemas on app startup (convert only once)
-const schemas = require('./schemas');
+import schemas from './schemas';
 console.log('✅ Schemas loaded:', Object.keys(schemas));
 
 // middleware
 app.use(express.json());
 
 // routing
-app.use('/api/user', require('./routes/user'));
-app.use('/api/order', require('./routes/order'));
-app.use('/api/product', require('./routes/product'));
+app.use('/api/user', userRoutes);
+app.use('/api/order', orderRoutes);
+app.use('/api/product', productRoutes);
 
 // Start service
 const PORT = process.env.PORT || 3000;
@@ -239,7 +247,7 @@ app.listen(PORT, () => {
   console.log('✅ All schemas are loaded and ready to validate');
 });
 
-module.exports = app;
+export default app;
 ```
 
 ---
@@ -255,7 +263,7 @@ router.post('/register', (req, res) => {
     { // ❌ Convert on every request
       username: 'string:3-32!',
       email: 'email!',
-      password: dsl('string!').password('strong')
+      password: s('string!').password('strong')
     },
     req.body
   );
@@ -273,7 +281,7 @@ router.post('/register', (req, res) => {
 
 ```javascript
 // ✅ Correct example
-const userSchemas = require('../schemas/user'); // ✅ Load at startup
+import userSchemas from '../schemas/user.js'; // ✅ Load at startup
 
 router.post('/register', (req, res) => {
   const result = validate(
@@ -298,7 +306,7 @@ The memory risk appears when a long-running service accepts or constructs an unb
 ```javascript
 // ❌ Avoid: request-specific field names create a new schema shape every time
 router.post('/dynamic', (req, res) => {
-  const schema = dsl({ [`field_${req.id}`]: 'string!' });
+  const schema = s({ [`field_${req.id}`]: 'string!' });
   const result = validate(schema, req.body);
   // ...
 });
@@ -314,7 +322,7 @@ Also avoid creating `new Validator()` inside normal request handlers. It is not 
 
 | scene | Recommended method | code example | reason |
 |------|---------|---------|------|
-| **Production API** | ✅ Configure when project starts | `const schemas = require('./schemas')` | Avoid converting every request |
+| **Production API** | ✅ Configure when project starts | `import schemas from './schemas/index.js'` | Avoid converting every request |
 | **High concurrency service** | ✅ Configure when project starts | Same as above | 3-5% performance loss will be magnified |
 | **Microservices** | ✅ Configure when project starts | Same as above | Ensure stable response time |
 | **Single shot script** | ✅ Use DSL objects directly (supported by the current version of convenience functions) | `validate({ email: 'email!' }, data)` | Only executed once, performance impact is negligible |
@@ -330,7 +338,7 @@ Also avoid creating `new Validator()` inside normal request handlers. It is not 
 ```javascript
 // ❌ Not recommended
 router.post('/register', (req, res) => {
-  const schema = dsl({ // ❌ Created on every request
+  const schema = s({ // ❌ Created on every request
     username: 'string:3-32!',
     email: 'email!'
   });
@@ -347,7 +355,7 @@ router.post('/register', (req, res) => {
 ```javascript
 // ❌ Not recommended
 function validateUser(data) {
-  const schema = dsl({ // ❌ Created with each call
+  const schema = s({ // ❌ Created with each call
     username: 'string:3-32!',
     email: 'email!'
   });
@@ -362,7 +370,7 @@ function validateUser(data) {
 
 ```javascript
 // ✅ Recommendation: Create once when the module is loaded
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
@@ -379,28 +387,28 @@ router.post('/register', (req, res) => {
 
 ```typescript
 // schemas/user.ts
-import { dsl } from 'schema-dsl';
+import { s } from 'schema-dsl/pure';
 
 export const userSchemas = {
-  register: dsl({
-    username: dsl('string:3-32!')
+  register: s({
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .error({ pattern: 'Can only contain letters, numbers and underscores' }),
     email: 'email!',
-    password: dsl('string:8-64!')
+    password: s('string:8-64!')
       .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
       .error({ pattern: 'Password must be at least 8 characters and must contain letters and numbers' }),
     age: 'number:18-120'
   }),
 
-  login: dsl({
+  login: s({
     username: 'string!',
     password: 'string!'
   })
 };
 
 // routes/user.ts
-import { validate } from 'schema-dsl';
+import { validate } from 'schema-dsl/pure';
 import { userSchemas } from '../schemas/user';
 
 router.post('/register', (req, res) => {

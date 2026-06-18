@@ -5,24 +5,7 @@
 
 ---
 
-## Table of Contents
-
-### Getting Started
-
-- [Installation](#installation)
-- [5-minute Quick Start](#5-minute-quick-start)
-  - [1. Hello World in 30 seconds](#1-hello-world-in-30-seconds)
-  - [2. DSL syntax cheat sheet in 1 minute](#2-dsl-syntax-cheat-sheet-in-1-minute)
-  - [3. Chainable fields in 2 minutes](#3-chainable-fields-in-2-minutes)
-  - [4. Complete example in 2 minutes](#4-complete-example-in-2-minutes)
-
-### Advanced Features
-
-- [Custom Validation](#custom-validation)
-- [Database Export](#database-export)
-- [Next Steps](#next-steps)
-
----
+Start here if you are new to schema-dsl. After this page, continue with [DSL Syntax](dsl-syntax.md) for authoring rules and [Validation Guide](validation-guide.md) for real validation flows.
 
 ## Installation
 
@@ -41,10 +24,10 @@ npm install schema-dsl
 ### 1. Hello World in 30 seconds
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // Define a schema
-const schema = dsl({
+const schema = s({
   name: 'string:1-50!',
   email: 'email!'
 });
@@ -109,25 +92,32 @@ console.log(result.valid); // true
 
 ### 3. Chainable fields in 2 minutes
 
-After importing `schema-dsl` in JavaScript, string literals can call `.label()` / `.pattern()` directly by default. If you do not want global String extensions, call `uninstallStringExtensions()` and wrap fields with `dsl()`. See [String Extensions](./string-extensions.md) for details.
+The recommended v2.1.0 authoring entry is `schema-dsl/pure` with the `s` namespace. Keep simple fields as DSL strings, wrap a DSL seed with `s('...')` when you need chain methods, and use `s.xxx()` factories when you want the strongest TypeScript method discovery.
 
 ```javascript
-const schema = dsl({
-  // Default: chain directly on DSL strings
-  email: 'email!'
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
+  // DSL seed + chain methods
+  email: s('email!')
     .pattern(/custom/)
     .label('email address'),
 
-  username: 'string:3-32!'
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .messages({
       pattern: 'Only letters, numbers, and underscores are allowed'
     })
     .label('username'),
 
-  // Simple fields can still use plain DSL
+  // Simple fields can stay as plain DSL strings
   age: 'number:18-120',
-  role: 'user|admin'
+  role: 'user|admin',
+
+  // Factory entry with full method discovery
+  recoveryEmail: s.email()
+    .label('recovery email')
+    .require()
 });
 ```
 
@@ -144,12 +134,12 @@ const schema = dsl({
 ### 4. Complete example in 2 minutes
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // Define a user registration schema
-const registerSchema = dsl({
+const registerSchema = s({
   // Username: regex validation
-  username: dsl('string:3-32!')
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .label('username')
     .error({
@@ -157,10 +147,10 @@ const registerSchema = dsl({
     }),
 
   // Email: label
-  email: dsl('email!').label('email address'),
+  email: s('email!').label('email address'),
 
   // Password: complex regex
-  password: dsl('string:8-64!')
+  password: s('string:8-64!')
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
     .label('password')
     .error({
@@ -197,31 +187,39 @@ if (result.valid) {
 ### 1. Use plain DSL for simple fields
 
 ```javascript
-const schema = dsl({
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
   name: 'string:1-50!',     // concise
   age: 'number:18-120',     // clear
   role: 'user|admin'        // direct
 });
 ```
 
-### 2. Use the `dsl()` chain API for complex fields
+### 2. Use chain APIs for complex fields
 
 ```javascript
-const schema = dsl({
-  email: dsl('email!')
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
+  email: s('email!')
     .pattern(/custom/)
     .messages({...})
     .label('email'),
 
-  username: dsl('string:3-32!')
+  username: s('string:3-32!')
     .pattern(/^\w+$/)
-    .custom(checkExists)
+    .custom(checkExists),
+
+  recoveryEmail: s.email()
+    .label('recovery email')
+    .require()
 });
 ```
 
 ### 3. The 80/20 rule
 
-**In JavaScript, use plain DSL for 80% of fields and direct string chaining for the more complex 20%. In TypeScript, wrap complex fields with `dsl()` first to get better type hints.**
+**Use plain DSL strings for simple fields. Use `s('...')` when a field needs labels, messages, regexes or custom validators. Use `s.xxx()` factories when you want the most complete TypeScript method discovery.**
 
 ---
 
@@ -230,10 +228,10 @@ const schema = dsl({
 ### Form validation
 
 ```javascript
-const formSchema = dsl({
-  email: dsl('email!').label('email address'),
-  password: dsl('string:8-64!').label('password'),
-  nickname: dsl('string:2-20').label('nickname'),
+const formSchema = s({
+  email: s('email!').label('email address'),
+  password: s('string:8-64!').label('password'),
+  nickname: s('string:2-20').label('nickname'),
   bio: 'string:500',
   website: 'url',
   age: 'number:18-120',
@@ -246,8 +244,8 @@ const formSchema = dsl({
 > `.custom()` supports synchronous functions. If it returns a `Promise`, use `validateAsync()`. Synchronous `validate()` returns an explicit error when it sees a Promise-returning custom validator.
 
 ```javascript
-const schema = dsl({
-  username: 'string:3-32!'
+const schema = s({
+  username: s('string:3-32!')
     .custom((value) => {
       if (value === 'admin') {
         return 'Username already exists';
@@ -259,14 +257,14 @@ const schema = dsl({
 ### Nested objects
 
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     profile: {
-      name: dsl('string:1-50!').label('name'),
-      avatar: dsl('url').label('avatar'),
+      name: s('string:1-50!').label('name'),
+      avatar: s('url').label('avatar'),
       social: {
-        twitter: dsl('url').pattern(/twitter\.com/),
-        github: dsl('url').pattern(/github\.com/)
+        twitter: s('url').pattern(/twitter\.com/),
+        github: s('url').pattern(/github\.com/)
       }
     }
   }
@@ -280,6 +278,8 @@ const schema = dsl({
 ### Learn more
 
 - [Complete DSL Syntax Guide](./dsl-syntax.md)
+- [Complete Type List](./type-reference.md)
+- [Chain Method List](./chain-methods.md)
 - [API Reference](./api-reference.md)
 - [String Extensions](./string-extensions.md)
 
@@ -299,96 +299,25 @@ Other topic examples are linked from the bottom of their own documents and use s
 
 ---
 
-## Design Philosophy and Performance
+## Entry choices
 
-### Why runtime parsing?
+Use `schema-dsl/pure` for ordinary application code. It gives you the same schema authoring API without installing global String methods.
 
-Schema-DSL uses **runtime DSL parsing** rather than compile-time construction, as libraries such as Zod do. This is an intentional design choice.
+Use `schema-dsl/runtime` when a framework, plugin host or multi-tenant app needs an isolated runtime instance:
 
-#### Runtime parsing advantages
+```javascript
+import { createRuntime } from 'schema-dsl/runtime';
 
-1. **Fully dynamic** - validation rules can be loaded dynamically from config files or a database.
+const runtime = createRuntime();
+const schema = runtime.s({
+  email: 'email!',
+  username: runtime.s('string:3-32!').label('username')
+});
+```
 
-   ```javascript
-   // Read rules from config
-   const rules = await db.findOne({ entity: 'user' });
-   const schema = dsl({
-     username: `string:${rules.min}-${rules.max}!`
-   });
-   ```
+Use String Extensions or the compile-time transform only when you intentionally want direct string-chain authoring such as `'email!'.label('Email')`. See [String Extensions](./string-extensions.md) and [Runtime Isolation](./runtime-isolation.md) for the boundary.
 
-2. **Multi-tenant support** - each tenant can use different validation rules.
-
-   ```javascript
-   // Tenant A: username 3-32 chars
-   // Tenant B: username 5-50 chars
-   function getTenantSchema(tenantId) {
-     const rules = tenantConfig[tenantId];
-     return dsl({
-       username: `string:${rules.min}-${rules.max}!`
-     });
-   }
-   ```
-
-3. **Serializable** - DSL strings can be stored, transported, and shared.
-
-   ```javascript
-   // Store in a database
-   await db.insert({
-     formId: 'register',
-     rules: { username: 'string:3-32!', email: 'email!' }
-   });
-
-   // Send through an API
-   res.json({ validationRules: rules });
-
-   // Share rules between frontend and backend
-   ```
-
-4. **Low-code foundation** - useful for visual form builders.
-
-   ```javascript
-   // Admin configures validation rules in the UI
-   const formBuilder = {
-     fields: [
-       { name: 'username', validation: 'string:3-32!' }
-     ]
-   };
-   ```
-
-#### Performance trade-offs
-
-S1 valid-data throughput is on par with Zod. S3 nested valid-data throughput is about 28% faster. Invalid-data fair comparison is about 89x faster:
-
-| Library | Performance | Scenario |
-|------|-----------|------|
-| Ajv (raw) | 4.732M ops/s | underlying engine, no DSL layer |
-| **Schema-DSL** | **1.301M ops/s** (S1 valid) | full feature set (DSL + i18n + coerce) |
-| **Schema-DSL** | **1.205M ops/s** (S2 invalid, both without i18n) | fair comparison, both without i18n |
-| Zod | 1.305M ops/s (S1 valid) / 13.49K (S2 invalid) | compile-time construction, exception-driven error path |
-| Joi | 154K ops/s | feature rich |
-
-**Conclusion**:
-
-- In S3 nested valid-data scenarios, Schema-DSL is about **28% faster** than Zod.
-- In simple S1 valid-data scenarios, it is essentially tied with Zod, with less than 1% difference.
-- In invalid-data fair comparison, both without i18n, it is about **89x faster** than Zod.
-- Built-in caching keeps hot paths from repeatedly parsing the DSL.
-
-### When to use Schema-DSL
-
-**Choose Schema-DSL when**:
-
-- You need dynamic validation rules, such as config-driven or multi-tenant rules.
-- You need database schema export.
-- You want to prototype quickly.
-- You are building a multilingual SaaS system.
-
-**Consider another library when**:
-
-- A TypeScript project needs strong static type inference -> **Zod**
-- Performance is the only top priority -> **Ajv** or **Zod**
-- Validation rules are fully static -> **Zod**
+For design background and benchmark data, continue with [Design Philosophy](./design-philosophy.md) and [Performance Guide](./performance-guide.md).
 
 ---
 
@@ -399,34 +328,42 @@ S1 valid-data throughput is on par with Zod. S3 nested valid-data throughput is 
 **A**:
 
 - **Plain DSL**: best for simple fields, concise syntax.
-- **`dsl()` chain API**: best for complex validation without relying on global prototype changes.
-- **String extensions**: good for JavaScript projects that want direct string literal chaining. The root entry enables it by default.
+- **`s('...')` chain API**: best for complex fields without relying on global prototype changes.
+- **`s.xxx()` factories**: best when you want the strongest TypeScript method discovery.
+- **String extensions**: available when you intentionally enable direct string-chain authoring.
 
 ```javascript
 // Plain DSL, simple
 name: 'string:1-50!'
 
-// dsl() chain API, complex and recommended
-email: dsl('email!')
+// s() chain API, complex and recommended
+email: s('email!')
   .pattern(/custom/)
   .messages({...})
 
-// String extensions, available by default after importing schema-dsl
-const { dsl } = require('schema-dsl');
-const schemaWithStringExtension = dsl({
+// String extensions, explicitly enabled
+import 'schema-dsl/register-string';
+import { s } from 'schema-dsl/pure';
+
+const schemaWithStringExtension = s({
   email: 'email!'.pattern(/custom/).messages({...})
 });
 ```
 
-### Q: How do I enable or uninstall String extensions?
+### Q: How do I explicitly enable String extensions?
 
 **A**:
 
 ```javascript
-const { installStringExtensions, uninstallStringExtensions } = require('schema-dsl');
-uninstallStringExtensions(); // actively disable
-installStringExtensions();   // enable again
+import 'schema-dsl/register-string';
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
+  email: 'email!'.label('Email')
+});
 ```
+
+For cleanup in tests or legacy compatibility details, see [String Extensions](./string-extensions.md).
 
 ### Q: Does schema-dsl support TypeScript?
 
@@ -441,9 +378,9 @@ You now know the core `schema-dsl` workflow.
 **Key takeaways**:
 
 1. DSL syntax is concise and readable.
-2. The `dsl()` chain API is powerful and flexible.
-3. Use plain DSL for 80% of fields and chain APIs for the complex 20%.
-4. JavaScript can use direct string chaining; TypeScript should wrap complex fields with `dsl()` first.
+2. `schema-dsl/pure` + `s` is the recommended default entry from v2.1.0.
+3. `s('...')` gives explicit DSL seeds plus builder hints.
+4. `s.xxx()` factories provide the strongest method discovery.
 
 **Start using it**: `npm install schema-dsl`
 
@@ -452,7 +389,7 @@ You now know the core `schema-dsl` workflow.
 ## Corresponding Example File
 
 **Example entry**: [quick-start.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/quick-start.ts)
-**Description**: Covers the Hello World flow, String extensions, a user registration example, and the basic `validate()` plus `Validator.compile()` reuse path from the quick start. It can be run directly as a reference.
+**Description**: Covers the Hello World flow, the `schema-dsl/pure` + `s` authoring path, a user registration example, and the basic `validate()` plus `Validator.compile()` reuse path from the quick start. It can be run directly as a reference.
 
 ---
 

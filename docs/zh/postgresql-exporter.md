@@ -6,17 +6,6 @@
 
 ---
 
-## 📑 目录
-
-- [概述](#概述)
-- [快速开始](#快速开始)
-- [API 参考](#api-参考)
-- [配置选项](#配置选项)
-- [完整示例](#完整示例)
-- [类型映射](#类型映射)
-- [CHECK 约束](#check-约束)
-
----
 
 ## 概述
 
@@ -36,10 +25,10 @@
 ## 快速开始
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // 1. 定义 Schema
-const userSchema = dsl({
+const userSchema = s({
   id: 'uuid!',
   username: 'string:3-32!',
   email: 'email!',
@@ -156,15 +145,13 @@ const ddl = exporter.export('users', userSchema);
 ### 用户表 DDL 生成
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // 定义用户 Schema（带描述）
-const userSchema = dsl({
+const userSchema = s({
   id: 'uuid!',
-  username: 'string:3-32!'
-    .description('用户登录名，3-32个字符'),
-  email: 'email!'
-    .description('用户邮箱地址'),
+  username: s('string:3-32!').description('用户登录名，3-32个字符'),
+  email: s('email!').description('用户邮箱地址'),
   password: 'string:8-64!',
   age: 'number:18-120',
   profile: {
@@ -288,7 +275,7 @@ exporter.generateIndex('users', 'metadata', { method: 'gin' });
 **PostgreSQL 不支持的特性**:
 - ❌ 正则表达式约束（`pattern`）
 - ❌ 嵌套对象约束（导出为 `JSONB`，内部约束丢失）
-- ❌ 条件验证逻辑（`dsl.match()`, `dsl.if()`）
+- ❌ 条件验证逻辑（`s.match()`, `s.if()`）
 
 **详细说明**: 请阅读 [导出限制说明文档](export-limitations.md)
 

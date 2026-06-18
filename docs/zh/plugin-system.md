@@ -1,9 +1,13 @@
-# 插件系统
+# 插件管理器（高级）
 
-> **更新**: 2026-05-01  
+> **更新**: 2026-05-01
 > **状态**: ✅ 稳定
 
 ---
+
+本页讲的是 `PluginManager`：生命周期、hook、安装/卸载和集成编排。
+
+如果你的目标只是添加可复用类型、factory 或 builder 方法，请先从 [扩展概览](extensions-overview.md)、[自定义 DSL 类型](plugin-type-registration.md)、[自定义 s.xxx() 工厂](custom-factories.md) 或 [自定义链式方法](custom-chain-methods.md) 开始。`PluginManager` 是把这些能力封装和协调起来的高级层。
 
 ## 概述
 
@@ -14,8 +18,8 @@
 - 提供 `EventEmitter` 兼容事件系统
 - 通过 `context` 暴露插件注册表和钩子表
 
-> **重要说明**  
-> `PluginManager` 本身不会自动接入 `dsl()`、`Validator`、各类 Exporter 的执行流程。  
+> **重要说明**
+> `PluginManager` 本身不会自动接入 `s()`、`Validator`、各类 Exporter 的执行流程。
 > 如果你希望在验证、编译或导出阶段运行某些 hook，需要由你的集成代码显式调用 `pluginManager.runHook(...)`。
 
 ---
@@ -23,8 +27,8 @@
 ## 快速开始
 
 ```javascript
-const { PluginManager } = require('schema-dsl');
-const schemaDsl = require('schema-dsl');
+import { PluginManager } from 'schema-dsl/pure';
+import * as schemaDsl from 'schema-dsl/pure';
 
 const pluginManager = new PluginManager();
 
@@ -53,7 +57,7 @@ pluginManager.uninstall('my-plugin', schemaDsl);
 ## 插件对象结构
 
 ```javascript
-module.exports = {
+export default {
   // 必填
   name: 'plugin-name',
   install(core, options, context) {
@@ -80,7 +84,7 @@ module.exports = {
 
 | 参数 | 说明 |
 |---|---|
-| `core` | 传给 `install()` / `uninstall()` 的核心对象，通常是 `require('schema-dsl')` 的结果或你自己的集成对象 |
+| `core` | 传给 `install()` / `uninstall()` 的核心对象，通常是 `import * as schemaDsl from 'schema-dsl/pure'` 的结果或你自己的集成对象 |
 | `options` | 安装时的合并配置：`{ ...plugin.options, ...installOptions }` |
 | `context.plugins` | 当前已注册插件的 `Map<string, Plugin>` |
 | `context.hooks` | 当前 hook 注册表的 `Map<string, Function[]>` |
@@ -342,9 +346,9 @@ pluginManager.list();
 - `schema-dsl/plugins/custom-type-example`
 
 ```javascript
-const { PluginManager } = require('schema-dsl');
-const schemaDsl = require('schema-dsl');
-const customFormat = require('schema-dsl/plugins/custom-format');
+import { PluginManager } from 'schema-dsl/pure';
+import * as schemaDsl from 'schema-dsl/pure';
+import customFormat from 'schema-dsl/plugins/custom-format';
 
 const pluginManager = new PluginManager();
 pluginManager.register(customFormat);
@@ -352,8 +356,8 @@ pluginManager.install(schemaDsl, 'custom-format');
 ```
 
 ```typescript
-import { PluginManager } from 'schema-dsl';
-import * as schemaDsl from 'schema-dsl';
+import { PluginManager } from 'schema-dsl/pure';
+import * as schemaDsl from 'schema-dsl/pure';
 import customTypeExample from 'schema-dsl/plugins/custom-type-example';
 
 const pluginManager = new PluginManager();
@@ -376,6 +380,6 @@ pluginManager.install(schemaDsl, 'custom-type-example');
 
 ## 对应示例文件
 
-**示例入口**: [plugin-system.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/plugin-system.ts)  
+**示例入口**: [plugin-system.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/plugin-system.ts)
 **说明**: 覆盖自定义插件的注册 / 安装 / 卸载、`runHook()` 执行结果，以及官方 `custom-format` 子路径插件的安装效果。
 

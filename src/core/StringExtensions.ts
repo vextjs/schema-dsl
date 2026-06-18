@@ -60,6 +60,8 @@ export const STRING_EXTENSION_METHODS = [
   'strict',
   'noSparse',
   'includesRequired',
+  'items',
+  'require',
   'required',
   'optional',
   'enum',
@@ -252,7 +254,7 @@ export function installStringExtensions(dslFunction: DslFn): void {
     'dateGreater', 'dateLess', 'after', 'before', 'dateFormat',
     'min', 'max', 'alphanum', 'lowercase', 'uppercase', 'json',
     'precision', 'multiple', 'port', 'requireAll', 'strict',
-    'noSparse', 'includesRequired', 'required', 'optional',
+    'noSparse', 'includesRequired', 'items', 'require', 'required', 'optional',
   ]
 
   for (const method of delegatedMethods) {

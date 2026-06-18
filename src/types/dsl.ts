@@ -1,6 +1,7 @@
 import type { JSONSchema, SchemaIOOptions } from './schema.js'
 import type { DslConfigOptions } from './config.js'
 import type { IConditionalBuilder } from './conditional.js'
+import type { I18nError } from '../errors/I18nError.js'
 
 /**
  * DslBuilder interface definition (chainable API shape).
@@ -15,6 +16,7 @@ export interface IDslBuilder {
   pattern(regex: RegExp | string, message?: string): this
   enum(...values: unknown[]): this
   optional(): this
+  require(): this
   required(): this
   default(value: unknown): this
   error(messages: Record<string, string>): this
@@ -61,6 +63,7 @@ export interface IDslBuilder {
   // ── Array validators ─────────────────────────────────────────
   noSparse(): this
   includesRequired(items: unknown[]): this
+  items(item: DslFactoryInput): this
 
   // ── Output ───────────────────────────────────────────────────
   toJsonSchema(): JSONSchema
@@ -103,6 +106,53 @@ export type DslField = string | IDslBuilder | DslDefinition | DslConditionMarker
  */
 export type DslInput = string | DslDefinition
 
+export type DslFactoryInput = string | IDslBuilder | JSONSchema
+
+export interface DslExtensionDefinition {
+  literal?: string
+  factoryName?: string
+  schema?: JSONSchema | (() => JSONSchema)
+  factory?: (...args: unknown[]) => string | IDslBuilder | JSONSchema
+  exposeFactory?: boolean
+  exposeStringChain?: boolean
+  transformMethods?: readonly string[]
+}
+
+export interface NormalizedDslExtensionDefinition extends DslExtensionDefinition {
+  readonly transformMethods: readonly string[]
+}
+
+export interface DslNamespaceFactories {
+  string(): IDslBuilder
+  number(): IDslBuilder
+  integer(): IDslBuilder
+  int(): IDslBuilder
+  boolean(): IDslBuilder
+  object(): IDslBuilder
+  array(item?: DslFactoryInput): IDslBuilder
+  any(): IDslBuilder
+  mixed(): IDslBuilder
+  email(): IDslBuilder
+  url(): IDslBuilder
+  uri(): IDslBuilder
+  uuid(): IDslBuilder
+  ip(): IDslBuilder
+  ipv4(): IDslBuilder
+  ipv6(): IDslBuilder
+  date(): IDslBuilder
+  datetime(): IDslBuilder
+  time(): IDslBuilder
+  slug(): IDslBuilder
+  phone(country?: string): IDslBuilder
+  username(preset?: string | { minLength?: number; maxLength?: number; allowUnderscore?: boolean; allowNumber?: boolean }): IDslBuilder
+  password(preset?: string): IDslBuilder
+  enum(values: readonly unknown[]): IDslBuilder
+  enum(...values: unknown[]): IDslBuilder
+  type(name: string): IDslBuilder
+  defineExtension(definition: DslExtensionDefinition): NormalizedDslExtensionDefinition
+  registerExtension(definition: DslExtensionDefinition): void
+}
+
 /**
  * if/conditional function types.
  */
@@ -113,14 +163,17 @@ export type DslFieldIfFn = (condition: string, thenSchema: unknown, elseSchema?:
  * dsl.error namespace.
  */
 export interface DslErrorNamespace {
-  readonly [code: string]: string
+  create(code: string, paramsOrLocale?: unknown, statusCode?: number, locale?: string): I18nError
+  throw(code: string, paramsOrLocale?: unknown, statusCode?: number, locale?: string): never
+  assert(condition: unknown, code: string, paramsOrLocale?: unknown, statusCode?: number, locale?: string): asserts condition
+  readonly [code: string]: unknown
 }
 
 /**
  * DslFn interface (function overloads + namespace attachments).
  * ⚠️ Uses function overloads rather than union return types to ensure TypeScript type narrowing works correctly.
  */
-export interface DslFn {
+export interface DslFn extends DslNamespaceFactories {
   (def: string, options?: SchemaIOOptions): IDslBuilder
   (def: DslDefinition, options?: SchemaIOOptions): JSONSchema
   config: (options?: Partial<DslConfigOptions>) => void

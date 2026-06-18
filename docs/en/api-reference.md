@@ -1,36 +1,28 @@
 # schema-dsl API Reference
 
-> **Updated**: 2026-06-17
+> **Updated**: 2026-06-18
 
 ---
 
-## Table of Contents
+Use this as the complete public API reference after you understand the task-oriented guides. For a shorter route into the API surface, see [API Overview](api.md).
 
-- [dsl() Function](#dsl-function)
-- [DslBuilder Class](#dslbuilder-class)
-- [String Extensions](#string-extensions)
-- [Package Entry Points and Compile-Time Transform](#package-entry-points-and-compile-time-transform)
-- [Runtime Adapter](#runtime-adapter)
-- [Validator Class](#validator-class)
-- [Exporters](#exporters)
-- [Utility Functions](#utility-functions)
-- [Constants](#constants)
-- [v1-Compatible Root Exports](#v1-compatible-root-exports)
-- [Complete Example](#complete-example)
-
----
-
-## dsl() Function
+## `dsl` / `s` Namespace
 
 ### Description
 
-The main DSL entry point. It supports both string definitions and object definitions.
+The main DSL namespace. `s` and `dsl` are the same function object: `s === dsl`. The callable form accepts string definitions and object definitions, while namespace factories provide a discoverable chain entry without maintaining a second grammar. From v2.1.0, public examples use `schema-dsl/pure` + `s` as the default no-prototype-mutation entry.
 
 ### Syntax
 
-```javascript
-dsl(definition: string | object): DslBuilder | JSONSchema
+```typescript
+s(definition: string | object): IDslBuilder | JSONSchema
+
+s.email(): IDslBuilder
+s.string(): IDslBuilder
+s.number(): IDslBuilder
 ```
+
+Because `s === dsl`, calling the shared object through either name remains compatible. The recommended documentation style is `s({ ... })` for schema objects, `s('...')` for DSL seed builders, and `s.xxx()` for discoverable factory entry points. The `dsl` name remains a compatibility and semantic alias.
 
 ### Parameters
 
@@ -40,21 +32,46 @@ dsl(definition: string | object): DslBuilder | JSONSchema
 
 ### Return Value
 
-- **DslBuilder** - returned when the input is a string.
+- **DslBuilder / IDslBuilder** - returned when the input is a string or namespace factory is used.
 - **Object** - returned when the input is an object, as a JSON Schema.
 
 ### Example
 
 ```javascript
-// String input: returns DslBuilder
-const builder = dsl('email!');
-builder.pattern(/custom/).label('email');
+import { s } from 'schema-dsl/pure';
 
-// Object input: returns JSON Schema
-const schema = dsl({
+// Plain DSL strings: shortest schema object
+const schema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
+
+// DSL seed: compact DSL plus builder chain methods
+s('email!').label('email').pattern(/custom/);
+
+// Factory form: strongest TypeScript method discovery
+s.email().label('email').pattern(/custom/).require();
+```
+
+### Namespace Factories
+
+Built-in factories are available on the shared `s` / `dsl` namespace:
+
+| Factory group | Methods |
+|---------------|---------|
+| Primitive and common types | `s.string()`, `s.number()`, `s.integer()`, `s.int()`, `s.boolean()`, `s.object()`, `s.array(item?)`, `s.any()`, `s.mixed()` |
+| Formats and presets | `s.email()`, `s.url()`, `s.uri()`, `s.uuid()`, `s.ip()`, `s.ipv4()`, `s.ipv6()`, `s.date()`, `s.datetime()`, `s.time()`, `s.slug()`, `s.phone(country?)`, `s.username(preset?)`, `s.password(preset?)` |
+| Enum and custom type bridge | `s.enum(...values)`, `s.enum(values)`, `s.type(name)` |
+| Extension helpers | `s.defineExtension(definition)`, `s.registerExtension(definition)` |
+
+Examples:
+
+```typescript
+s('email!').label('Email')
+s.email().label('Email').require()
+s.array(s.string().require()).min(1)
+s.enum('admin', 'user', 'guest')
+s.type('tenant-id').require()
 ```
 
 ---
@@ -77,6 +94,39 @@ new DslBuilder(dslString: string)
 
 ### Methods
 
+#### Complete chain method surface
+
+`s('...')`, callable namespace aliases, and namespace factories such as `s.email()` return a `DslBuilder` typed with the public `IDslBuilder` chain contract. Use `s('email!')` when you want compact DSL plus builder hints without relying on String prototype authoring, and use `s.email()` when you want the strongest TypeScript method discovery. Direct String chaining remains supported through String Extensions or transform, but it is no longer the default documentation entry. See [Chain Method List](chain-methods.md) for the complete method table and entry support.
+
+| Category | Methods | Applies to | Notes |
+|----------|---------|------------|-------|
+| Common metadata and messages | `.label(text)`, `.description(text)`, `.messages(map)`, `.error(map)` | All builders | Error labels, descriptions, and custom messages. |
+| Common constraints | `.pattern(regex, message?)`, `.format(fmt)`, `.enum(...values)`, `.default(value)`, `.custom(fn)`, `.require()`, `.required()`, `.optional()` | Mostly string/all builders depending on method | `.require()` is the field-required alias. Conditional `s.if(...).require(field)` remains a different API. |
+| Length/range rules | `.min(n)`, `.max(n)`, `.length(n)` | String, number/integer, array depending on base type | String maps to `minLength`/`maxLength`; number maps to `minimum`/`maximum`; array maps to `minItems`/`maxItems`. `.length(n)` is builder-only. |
+| String text rules | `.alphanum()`, `.trim()`, `.lowercase()`, `.uppercase()` | String builders | Text normalization and pattern helpers. |
+| String formats and patterns | `.slug()`, `.domain()`, `.ip()`, `.base64()`, `.jwt()`, `.json()`, `.dateFormat(fmt)`, `.after(date)`, `.before(date)`, `.dateGreater(date)`, `.dateLess(date)` | String builders | Adds JSON Schema formats, patterns, or schema-dsl custom keywords. |
+| Identity presets | `.username(preset?)`, `.password(strength?)`, `.phone(country?)`, `.phoneNumber(country?)`, `.idCard(country?)`, `.creditCard(type?)`, `.licensePlate(country?)`, `.postalCode(country?)`, `.passport(country?)` | String builders | Presets combine length, pattern, and localized pattern messages. |
+| Number helpers | `.precision(n)`, `.multiple(n)`, `.port()` | Number/integer builders | `.multiple(n)` maps to standard JSON Schema `multipleOf`. |
+| Object helpers | `.requireAll()`, `.strict()` | Object builders | Adds schema-dsl object custom keywords consumed by the validator. |
+| Array helpers | `.items(item)`, `.noSparse()`, `.includesRequired(items)` | Array builders | `items()` accepts a DSL string, builder, or JSON Schema and strips nested `_required` for array item schemas. |
+| Output and validation | `.toSchema()`, `.toJsonSchema()`, `.toString()`, `.validate(data)` | `DslBuilder` | Direct String chaining exposes `.toSchema()` and `.toJsonSchema()` only. |
+
+Examples:
+
+```javascript
+s('string').default('active')
+s.string().default('active')
+s.string().username('5-20').label('username').require()
+s.number().min(18).max(120).precision(2).multiple(0.5)
+s.object().strict().requireAll()
+s.array(s.string().require()).min(1).noSparse().includesRequired(['admin'])
+
+// Direct String chain compatibility path:
+// runtime requires schema-dsl/register-string, compat/root, or compile-time transform;
+// TypeScript declarations require schema-dsl/string-types.
+'string'.default('active')
+```
+
 #### `.pattern(regex, message?)`
 
 Adds regular expression validation.
@@ -91,7 +141,7 @@ Adds regular expression validation.
 **Example**:
 
 ```javascript
-dsl('string:3-32!')
+s('string:3-32!')
   .pattern(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscores are allowed')
 ```
 
@@ -110,7 +160,7 @@ Sets the field label used in error messages.
 **Example**:
 
 ```javascript
-dsl('email!').label('email address')
+s('email!').label('email address')
 ```
 
 ---
@@ -130,7 +180,7 @@ Sets custom error messages.
 **Example**:
 
 ```javascript
-dsl('string:3-32!')
+s('string:3-32!')
   .messages({
     min: 'At least {{#limit}} characters',
     max: 'At most {{#limit}} characters'
@@ -152,7 +202,7 @@ Sets a field description.
 **Example**:
 
 ```javascript
-dsl('url').description('Personal website URL')
+s('url').description('Personal website URL')
 ```
 
 ---
@@ -174,7 +224,7 @@ Adds a custom validator.
 **Example**:
 
 ```javascript
-dsl('string:3-32!')
+s('string:3-32!')
   .custom((value) => {
     if (value === 'admin') {
       return { error: 'username.exists', message: 'Username already exists' };
@@ -197,7 +247,7 @@ Sets a default value.
 **Example**:
 
 ```javascript
-dsl('string').default('guest')
+s('string').default('guest')
 ```
 
 ---
@@ -219,13 +269,13 @@ Username validation. It automatically sets length and regular expression rules.
 
 ```javascript
 // Default medium, 3-32 chars
-dsl('string!').username()
+s('string!').username()
 
 // Custom range
-dsl('string!').username('5-20')
+s('string!').username('5-20')
 
 // Preset
-dsl('string!').username('short')  // 3-16 chars
+s('string!').username('short')  // 3-16 chars
 ```
 
 ---
@@ -247,7 +297,7 @@ Password strength validation. It automatically sets length and regular expressio
 **Example**:
 
 ```javascript
-dsl('string!').password('strong')
+s('string!').password('strong')
 ```
 
 ---
@@ -268,13 +318,13 @@ Phone number validation. It automatically sets length and regular expression rul
 
 **Returns**: **DslBuilder**
 
-**Note**: `phone()` only applies to `string` schemas. Use `dsl('string!').phone('cn')`; number schemas throw to avoid mixed numeric and string constraints.
+**Note**: `phone()` only applies to `string` schemas. Use `s('string!').phone('cn')`; number schemas throw to avoid mixed numeric and string constraints.
 
 **Example**:
 
 ```javascript
 // Recommended
-dsl('string!').phone('cn')
+s('string!').phone('cn')
 ```
 
 ---
@@ -288,7 +338,7 @@ Converts the builder to a JSON Schema object with internal schema-dsl markers.
 **Example**:
 
 ```javascript
-const schema = dsl('email!').label('email').toSchema();
+const schema = s('email!').label('email').toSchema();
 // { type: 'string', format: 'email', _label: 'email', _required: true }
 ```
 
@@ -320,7 +370,7 @@ The returned object can be embedded directly in OpenAPI or standard JSON Schema 
 
 ```javascript
 // Compare toSchema() and toJsonSchema()
-const builder = dsl('string:3-32!').label('username').messages({ min: 'At least 3 chars' });
+const builder = s('string:3-32!').label('username').messages({ min: 'At least 3 chars' });
 
 builder.toSchema();
 // { type: 'string', minLength: 3, maxLength: 32, _required: true, _label: 'username', _customMessages: { min: 'At least 3 chars' } }
@@ -330,7 +380,7 @@ builder.toJsonSchema();
 // No _required, _label, _customMessages, or other internal fields.
 
 // string:N syntax, exactLength -> minLength + maxLength
-const exact = dsl('string:6!');
+const exact = s('string:6!');
 exact.toSchema();
 // { type: 'string', exactLength: 6, _required: true }
 exact.toJsonSchema();
@@ -338,12 +388,12 @@ exact.toJsonSchema();
 // exactLength is translated to standard JSON Schema minLength + maxLength.
 
 // enum example
-const enumBuilder = dsl('enum:admin,user,guest!');
+const enumBuilder = s('enum:admin,user,guest!');
 enumBuilder.toJsonSchema();
 // { type: 'string', enum: ['admin', 'user', 'guest'] }
 
 // OpenAPI generation
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:0-120'
@@ -369,7 +419,7 @@ Validates data with the builder convenience method.
 **Example**:
 
 ```javascript
-const result = await dsl('email!').validate('user@example.com');
+const result = await s('email!').validate('user@example.com');
 console.log(result.valid); // true
 ```
 
@@ -377,7 +427,7 @@ console.log(result.valid); // true
 
 ### Static Methods
 
-#### `dsl.match(field, map)`
+#### `s.match(field, map)`
 
 Creates a conditional validation rule similar to switch-case.
 
@@ -393,14 +443,14 @@ Creates a conditional validation rule similar to switch-case.
 **Example**:
 
 ```javascript
-dsl.match('type', {
+s.match('type', {
   email: 'email!',
   phone: 'string:11!',
   _default: 'string'
 })
 ```
 
-#### `dsl.if(condition, thenSchema, elseSchema)`
+#### `s.if(condition, thenSchema, elseSchema)`
 
 Creates a simple conditional validation rule.
 
@@ -415,7 +465,7 @@ Creates a simple conditional validation rule.
 **Example**:
 
 ```javascript
-dsl.if('isVip', 'number:0-50', 'number:0-10')
+s.if('isVip', 'number:0-50', 'number:0-10')
 ```
 
 ---
@@ -427,21 +477,21 @@ dsl.if('isVip', 'number:0-50', 'number:0-10')
 Current package version exported from the root module. It is read from `package.json`, so it stays aligned with the published package version.
 
 ```javascript
-const { VERSION } = require('schema-dsl');
+import { VERSION } from 'schema-dsl/pure';
 
 console.log(VERSION);
 ```
 
 ---
 
-### `dsl.config(options)`
+### `s.config(options)`
 
 Global configuration entry. Call it once during application startup to configure i18n, cache, custom patterns, and strict type parsing.
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-dsl.config({
+s.config({
   // i18n: built-in locale path, inline locale bundle, { localesPath }, or { locales }
   i18n: './locales',
 
@@ -479,7 +529,7 @@ dsl.config({
 Returns the default `Validator` singleton reused by top-level `validate()` / `validateAsync()`.
 
 ```javascript
-const { getDefaultValidator } = require('schema-dsl');
+import { getDefaultValidator } from 'schema-dsl/pure';
 
 const validator = getDefaultValidator();
 console.log(validator.getCacheStats());
@@ -492,7 +542,7 @@ console.log(validator.getCacheStats());
 Resets the default `Validator` singleton used by top-level `validate()` / `validateAsync()`.
 
 ```javascript
-const { resetDefaultValidator } = require('schema-dsl');
+import { resetDefaultValidator } from 'schema-dsl/pure';
 
 resetDefaultValidator();
 ```
@@ -504,7 +554,7 @@ resetDefaultValidator();
 Resets global runtime state used by tests, workers, or tenant-isolated processes: the default validator singleton, registered custom types, locale state, strict parser mode, and runtime-added pattern keys.
 
 ```javascript
-const { resetRuntimeState } = require('schema-dsl');
+import { resetRuntimeState } from 'schema-dsl/pure';
 
 resetRuntimeState();
 ```
@@ -515,10 +565,10 @@ resetRuntimeState();
 
 ### `installStringExtensions(dslFunction?)`
 
-Installs or reinstalls String extensions. The root entry installs them by default for v1.1.x compatibility with direct `'string!'.description(...)` chaining. Explicit calls are usually needed only after an active uninstall, or when passing a custom `dslFunction`.
+Installs or reinstalls String extensions for projects that intentionally use direct `'string!'.description(...)` chaining. Ordinary v2.1.0 documentation examples do not need this API because they start from `schema-dsl/pure` + `s`.
 
 ```javascript
-const { installStringExtensions } = require('schema-dsl');
+import { installStringExtensions } from 'schema-dsl/pure';
 
 installStringExtensions();
 ```
@@ -527,10 +577,10 @@ installStringExtensions();
 
 ### `uninstallStringExtensions()`
 
-Uninstalls extension methods attached to `String.prototype`. After uninstalling, wrap DSL strings with `dsl('...')` for chainable calls, or call `installStringExtensions()` again.
+Uninstalls extension methods attached to `String.prototype`. This is mainly useful for tests, cleanup, or legacy compatibility checks. Ordinary code that does not want prototype mutation should import from `schema-dsl/pure` in the first place and use `s('...')` or `s.xxx()` for chainable calls.
 
 ```javascript
-const { uninstallStringExtensions } = require('schema-dsl');
+import { uninstallStringExtensions } from 'schema-dsl/pure';
 
 uninstallStringExtensions();
 ```
@@ -541,15 +591,13 @@ uninstallStringExtensions();
 
 ### `schema-dsl/pure`
 
-Imports the same core API without installing `String.prototype` extensions. Use this entry when package import must not mutate global prototypes. It does not isolate Locale, TypeRegistry, PATTERNS or Validator/AJV state; use `schema-dsl/runtime` for runtime-state isolation.
+Imports the same core API without installing `String.prototype` extensions. Use this entry for ordinary application code when package import must not mutate global prototypes. It does not isolate Locale, TypeRegistry, PATTERNS or Validator state; use `schema-dsl/runtime` for runtime-state isolation.
 
 ```javascript
-import { dsl, validate, uninstallStringExtensions } from 'schema-dsl/pure';
+import { s, validate } from 'schema-dsl/pure';
 
-uninstallStringExtensions();
-
-const schema = dsl({
-  email: dsl('email!').description('Login email')
+const schema = s({
+  email: s.email().description('Login email').require()
 });
 
 const result = validate(schema, { email: 'user@example.com' });
@@ -563,9 +611,9 @@ const result = validate(schema, { email: 'user@example.com' });
 
 ```javascript
 import 'schema-dsl/register-string';
-import { dsl } from 'schema-dsl/pure';
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   email: 'email!'.description('Login email')
 });
 ```
@@ -577,18 +625,18 @@ const schema = dsl({
 Opt-in TypeScript declaration entry for String-chain authoring. Importing this entry only augments TypeScript's `String` interface; it does not install runtime `String.prototype` extensions.
 
 ```typescript
-import { dsl } from 'schema-dsl/pure';
+import { s } from 'schema-dsl/pure';
 import 'schema-dsl/string-types';
 
-const field = 'email!'.label('Email').required();
-const schema = dsl({ email: field });
+const field = 'email!'.label('Email').require();
+const schema = s({ email: field });
 ```
 
 ---
 
 ### `transformSchemaDsl(source, options?)`
 
-Rewrites static String-chain DSL calls at compile time and injects imports from `schema-dsl/pure`. By default, it transforms the complete built-in String-chain API on schema-dsl literals, including methods such as `.label()`, `.pattern()`, `.required()`, `.toJsonSchema()`, and naked pipe enums such as `"admin|user|guest".label("Role")`. Use `additionalMethods` for user-defined chain methods, and `additionalTypes` / `additionalTypePatterns` for registered custom DSL type literals such as `"tenant-id!".label("Tenant")`; `methods` remains a legacy replacement set when you intentionally need to override the built-in default list.
+Rewrites static String-chain DSL calls at compile time and injects imports from `schema-dsl/pure`. By default, it transforms the complete built-in String-chain API on schema-dsl literals, including methods such as `.label()`, `.pattern()`, `.require()`, `.required()`, `.toJsonSchema()`, and naked pipe enums such as `"admin|user|guest".label("Role")`. Use `additionalMethods` for user-defined chain methods, and `additionalTypes` / `additionalTypePatterns` for registered custom DSL type literals such as `"tenant-id!".label("Tenant")`; `methods` remains a legacy replacement set when you intentionally need to override the built-in default list.
 
 ```javascript
 import { transformSchemaDsl } from 'schema-dsl/transform';
@@ -652,7 +700,7 @@ The adapter transforms only `file` namespace JavaScript and TypeScript source fi
 
 ## Runtime Adapter
 
-`schema-dsl/runtime` provides an explicit adapter for frameworks and multi-tenant applications that need isolated runtime state. It does not install `String.prototype` extensions and it does not mutate the root `Locale`, `TypeRegistry`, `PATTERNS`, default `Validator`, or default AJV instances.
+`schema-dsl/runtime` provides an explicit adapter for frameworks and multi-tenant applications that need isolated runtime state. It does not install `String.prototype` extensions and it does not mutate the root `Locale`, `TypeRegistry`, `PATTERNS`, default `Validator`, or default validator-engine instances.
 
 The entry exports `createRuntime()` as the primary factory. `createSchemaDslRuntime()` and `createSchemaDslAdapter()` are equivalent aliases for integrations that prefer an explicit adapter name.
 
@@ -679,11 +727,13 @@ const runtime = createRuntime({
     key === 'number.min' ? `[${locale}] {{#label}} must be >= {{#limit}}` : fallback
 });
 
-const schema = runtime.dsl({
+const schema = runtime.s({
   id: 'tenantId!',
   phone: 'phone:zz',
   age: 'number:18-120'
 });
+
+const chainSchema = runtime.s.email().label('Login email').require().toSchema();
 
 const result = runtime.validate(schema, {
   id: 'tenant_demo',
@@ -694,22 +744,24 @@ const result = runtime.validate(schema, {
 
 | Method | Description |
 |--------|-------------|
-| `runtime.dsl(string)` | Returns an isolated `DslBuilder` with normal chain-method TypeScript hints. |
-| `runtime.dsl(object)` | Compiles an object DSL definition using the runtime's type and pattern scope. |
+| `runtime.s(string)` | Returns an isolated `DslBuilder` with normal chain-method TypeScript hints. |
+| `runtime.s(object)` | Compiles an object DSL definition using the runtime's type and pattern scope. |
+| `runtime.s` | Alias of `runtime.dsl`; `runtime.s === runtime.dsl` is true. Namespace factories such as `runtime.s.email()` use the same runtime scope. |
 | `runtime.compile(definition)` | Compiles a string or object DSL definition using the runtime scope. |
 | `runtime.compileField(string)` | Returns an isolated chainable field builder. |
 | `runtime.configure(options, control?)` | Updates runtime messages, type scope, patterns, strict mode or validator options. `merge` is incremental; `replace` swaps the full runtime-local profile; `reset` clears it before applying `options`. |
+| `runtime.registerExtension(definition)` | Registers a runtime-scoped custom DSL extension and optional namespace factory. |
 | `runtime.registerType(name, schema)` | Adds or replaces a runtime-local custom type. |
 | `runtime.registerDynamicType(name, factory)` | Adds or replaces a runtime-local dynamic type factory. |
 | `runtime.unregisterType(name)` | Removes a runtime-local custom or dynamic type. |
-| `runtime.clearCache()` | Clears runtime-owned Validator/AJV caches. |
+| `runtime.clearCache()` | Clears runtime-owned validator caches. |
 | `runtime.getStats()` | Returns lifecycle, message, type, pattern and validator cache counts. |
 | `runtime.dispose()` | Idempotently releases runtime-owned maps and caches; use-after-dispose throws a clear error. |
-| `runtime.validate(schema, data, options?)` | Validates with runtime-local messages, `messageProvider`, Validator/AJV instances and custom keyword messages. |
+| `runtime.validate(schema, data, options?)` | Validates with runtime-local messages, `messageProvider`, validator instances and custom keyword messages. |
 | `runtime.validateAsync(schema, data, options?)` | Async validation with the same runtime-local state. |
 | `runtime.createI18nError(key, params?, statusCode?, localeOrOptions?)` | Creates an `I18nError` without reading global `Locale` state. |
 
-`messageProvider` receives `{ key, params, locale, source, fallback }`, where `source` is one of `ajv`, `customKeyword`, `conditional`, `customValidator`, `i18nError` or `runtime`. It covers standard AJV messages, custom keyword messages, conditional validation messages, async custom validator fallback messages and runtime-created `I18nError` instances. Explicit `messages` still have priority over provider fallbacks.
+`messageProvider` receives `{ key, params, locale, source, fallback }`, where `source` is one of `ajv`, `customKeyword`, `conditional`, `customValidator`, `i18nError` or `runtime`. It covers standard validator messages, custom keyword messages, conditional validation messages, async custom validator fallback messages and runtime-created `I18nError` instances. Explicit `messages` still have priority over provider fallbacks.
 
 `runtime.validate()` and `runtime.validateAsync()` accept the same per-call error options as the root helpers. Pass `{ coerce: false }`, `{ smartCoerce: false }`, or `{ coerceTypes: false }` when a runtime call must reject numeric or boolean strings instead of using schema-dsl smart coercion.
 
@@ -717,7 +769,7 @@ Create runtimes at app, plugin or worker lifecycle boundaries. Request-level dif
 
 ### Boundary with `schema-dsl/pure`
 
-`schema-dsl/pure` only avoids automatic `String.prototype` installation. It keeps the same global runtime state as the root API. For isolated Locale, TypeRegistry, PATTERNS and Validator/AJV state, use `schema-dsl/runtime`.
+`schema-dsl/pure` only avoids automatic `String.prototype` installation. It keeps the same global runtime state as the root API. For isolated Locale, TypeRegistry, PATTERNS and validator state, use `schema-dsl/runtime`.
 
 ---
 
@@ -731,14 +783,14 @@ Create runtimes at app, plugin or worker lifecycle boundaries. Request-level dif
 
 #### `.compile(schema, cacheKey?)`
 
-Compiles a schema into an AJV validation function.
+Compiles a schema into a reusable validation function.
 
 **Parameters**:
 
 - `schema` (**Object**) - JSON Schema.
 - `cacheKey` (**string** | **null**, optional) - cache key.
 
-**Returns**: **Function** - AJV validation function.
+**Returns**: **Function** - reusable validation function.
 
 **Example**:
 
@@ -819,12 +871,12 @@ const results = validator.validateBatch(schema, records);
 
 #### `.addKeyword(keyword, definition)`
 
-Adds an AJV custom keyword.
+Adds a custom validator keyword.
 
 **Parameters**:
 
 - `keyword` (**string**) - keyword name.
-- `definition` (**Object**) - AJV keyword definition.
+- `definition` (**Object**) - validator keyword definition.
 
 **Returns**: **Validator**
 
@@ -842,12 +894,12 @@ validator.addKeyword('isEven', {
 
 #### `.addFormat(name, validator)`
 
-Adds an AJV custom format.
+Adds a custom validator format.
 
 **Parameters**:
 
 - `name` (**string**) - format name.
-- `validator` (**Function** | **Object**) - AJV format definition.
+- `validator` (**Function** | **Object**) - format definition.
 
 **Returns**: **Validator**
 
@@ -986,7 +1038,7 @@ const ok = Validator.quickValidate(schema, data);
 Abstract base class exported for custom exporter subclasses. Built-in exporters inherit its shared option storage and schema assertion helpers; application code usually uses `MongoDBExporter`, `MySQLExporter`, `PostgreSQLExporter`, or `MarkdownExporter` directly.
 
 ```javascript
-const { BaseExporter } = require('schema-dsl');
+import { BaseExporter } from 'schema-dsl/pure';
 
 console.log(typeof BaseExporter); // 'function'
 ```
@@ -998,7 +1050,7 @@ console.log(typeof BaseExporter); // 'function'
 Exports to MongoDB validation schema.
 
 ```javascript
-const { MongoDBExporter } = require('schema-dsl');
+import { MongoDBExporter } from 'schema-dsl/pure';
 
 const exporter = new MongoDBExporter({ strict: true });
 const mongoSchema = exporter.export(jsonSchema);
@@ -1017,7 +1069,7 @@ const command = exporter.generateCommand('users', jsonSchema);
 Exports to MySQL DDL.
 
 ```javascript
-const { MySQLExporter } = require('schema-dsl');
+import { MySQLExporter } from 'schema-dsl/pure';
 
 const exporter = new MySQLExporter();
 const ddl = exporter.export('users', jsonSchema);
@@ -1034,7 +1086,7 @@ const ddl = exporter.export('users', jsonSchema);
 Exports to PostgreSQL DDL.
 
 ```javascript
-const { PostgreSQLExporter } = require('schema-dsl');
+import { PostgreSQLExporter } from 'schema-dsl/pure';
 
 const exporter = new PostgreSQLExporter();
 const ddl = exporter.export('users', jsonSchema);
@@ -1053,7 +1105,7 @@ const ddl = exporter.export('users', jsonSchema);
 Type conversion utility.
 
 ```javascript
-const { TypeConverter } = require('schema-dsl');
+import { TypeConverter } from 'schema-dsl/pure';
 
 TypeConverter.toJSONSchemaType('string');
 TypeConverter.toMongoDBType('integer');
@@ -1066,7 +1118,7 @@ TypeConverter.toMongoDBType('integer');
 Schema helper utility.
 
 ```javascript
-const { SchemaHelper } = require('schema-dsl');
+import { SchemaHelper } from 'schema-dsl/pure';
 
 SchemaHelper.merge(schema1, schema2);
 SchemaHelper.clone(schema);
@@ -1076,10 +1128,10 @@ SchemaHelper.clone(schema);
 
 ### ErrorFormatter
 
-Validation error formatting utility. It converts AJV raw errors or simplified error objects into unified error item structures or message text.
+Validation error formatting utility. It converts raw validator errors or simplified error objects into unified error item structures or message text.
 
 ```javascript
-const { ErrorFormatter } = require('schema-dsl');
+import { ErrorFormatter } from 'schema-dsl/pure';
 
 const formatter = new ErrorFormatter('en-US');
 const errors = formatter.formatDetailed(ajvValidate.errors);
@@ -1099,7 +1151,7 @@ console.log(errors[0].message);
 Error message template wrapper. It delegates placeholder replacement to `renderTemplate()`.
 
 ```javascript
-const { MessageTemplate } = require('schema-dsl');
+import { MessageTemplate } from 'schema-dsl/pure';
 
 const template = new MessageTemplate('{{#label}} is required');
 console.log(template.render({ label: 'Email' }));
@@ -1119,7 +1171,7 @@ console.log(template.render({ label: 'Email' }));
 Low-level template rendering function. It supports both `{{#key}}` and `{key}` placeholder formats.
 
 ```javascript
-const { renderTemplate } = require('schema-dsl');
+import { renderTemplate } from 'schema-dsl/pure';
 
 const msg = renderTemplate('{field} must be {min}~{max}', {
   field: 'age',
@@ -1137,7 +1189,7 @@ console.log(msg); // age must be 18~65
 `JSONSchemaCore` is a v1-compatible facade class for building JSON Schema with a chainable API and running quick validation.
 
 ```javascript
-const { JSONSchemaCore } = require('schema-dsl');
+import { JSONSchemaCore } from 'schema-dsl/pure';
 
 const schema = new JSONSchemaCore()
   .type('object')
@@ -1162,7 +1214,7 @@ const schema = new JSONSchemaCore()
 
 ### Type Registration and Internal Parsing Boundaries
 
-The root API keeps only stable business-facing entries. DSL parser, constraint parser, schema compiler, and adapter modules are implementation details and are no longer documented as root API exports. Business code should prefer `dsl()`, `DslBuilder`, `Validator`, and `validate()`.
+The root API keeps only stable business-facing entries. DSL parser, constraint parser, schema compiler, and adapter modules are implementation details and are no longer documented as root API exports. Business code should prefer `s()`, `DslBuilder`, `Validator`, and `validate()`.
 
 #### TypeRegistry
 
@@ -1177,7 +1229,7 @@ Unified type registry. It is the public entry for custom type extension. If you 
 - `TypeRegistry.getInternalKeys()`
 - `TypeRegistry.toJsonSchema(schema)`
 - `TypeRegistry.clearCustomTypes()` - clears all custom types, including those registered through `TypeRegistry.register()` / `DslBuilder.registerType()`. Useful after tests.
-- `TypeRegistry.setStrict(flag)` - sets strict mode, equivalent to `dsl.config({ strict: flag })`.
+- `TypeRegistry.setStrict(flag)` - sets strict mode, equivalent to `s.config({ strict: flag })`.
 
 ---
 
@@ -1226,7 +1278,7 @@ array<string:1-50>  # constrained array items
 String export matching `package.json` version.
 
 ```javascript
-const { VERSION } = require('schema-dsl');
+import { VERSION } from 'schema-dsl/pure';
 
 console.log(VERSION);
 ```
@@ -1238,7 +1290,7 @@ console.log(VERSION);
 Named constants and the aggregate `CONSTANTS` namespace. Use named exports for common access; use `CONSTANTS` when iterating over all constant groups.
 
 ```javascript
-const { VALIDATION, CACHE, FORMATS, CONSTANTS } = require('schema-dsl');
+import { VALIDATION, CACHE, FORMATS, CONSTANTS } from 'schema-dsl/pure';
 
 console.log(VALIDATION.MAX_RECURSION_DEPTH);
 console.log(CACHE.ENABLED);
@@ -1253,7 +1305,7 @@ console.log(CONSTANTS.FORMATS === FORMATS);
 Reusable regular expression groups and IPv4/IPv6 helpers used by built-in formats and custom validation scenarios.
 
 ```javascript
-const { PATTERNS, PATTERN_IPV4, PATTERN_IPV6 } = require('schema-dsl');
+import { PATTERNS, PATTERN_IPV4, PATTERN_IPV6 } from 'schema-dsl/pure';
 
 console.log(Object.keys(PATTERNS.phone));
 console.log(PATTERN_IPV4.test('127.0.0.1'));
@@ -1267,7 +1319,7 @@ console.log(PATTERN_IPV6.test('::1'));
 Error code constants.
 
 ```javascript
-const { ErrorCodes } = require('schema-dsl');
+import { ErrorCodes } from 'schema-dsl/pure';
 
 console.log(ErrorCodes.STRING_MIN);     // 'string.min'
 console.log(ErrorCodes.NUMBER_RANGE);   // 'number.range'
@@ -1280,7 +1332,7 @@ console.log(ErrorCodes.NUMBER_RANGE);   // 'number.range'
 Internationalization support.
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 Locale.setLocale('zh-CN');  // set Chinese
 Locale.setLocale('en-US');  // set English
@@ -1290,7 +1342,7 @@ Locale.setLocale('en-US');  // set English
 
 ### ConditionalBuilder
 
-`dsl.if(conditionFn)` returns a chainable conditional builder for runtime dynamic conditional validation.
+`s.if(conditionFn)` returns a chainable conditional builder for runtime dynamic conditional validation.
 
 **Common methods**:
 
@@ -1322,7 +1374,7 @@ v2 is a TypeScript refactor of the v1 JavaScript line. These root exports remain
 | `CONSTANTS` | Namespace for validation, cache, format and plugin constants; named constants such as `VALIDATION`, `CACHE`, `FORMATS`, `PATTERNS`, `PATTERN_IPV4` and `PATTERN_IPV6` are also exported. | This page |
 | `BaseExporter` | Abstract base class for custom exporter subclasses. | This page |
 | `CacheManager` | LRU/TTL cache used by `Validator` and available for manual cache scenarios. | [cache-manager.md](./cache-manager.md) |
-| `CustomKeywords` | Registers schema-dsl custom AJV keywords. Most applications use it indirectly through `Validator`. | [add-keyword.md](./add-keyword.md) |
+| `CustomKeywords` | Registers schema-dsl custom validator keywords. Most applications use it indirectly through `Validator`. | [add-keyword.md](./add-keyword.md) |
 | `I18nError` | Internationalized application error helper with `create()`, `throw()`, `assert()`, `is()` and `toJSON()`. | [error-handling.md](./error-handling.md) |
 | `PluginManager` | Plugin registry and hook manager for v1-compatible plugin workflows. | [plugin-system.md](./plugin-system.md) |
 | `resetRuntimeState` | Test and worker cleanup helper for global runtime state. | This page |
@@ -1334,10 +1386,10 @@ The companion example [api-reference.ts](https://github.com/vextjs/schema-dsl/bl
 ## Complete Example
 
 ```javascript
-const { dsl, Validator } = require('schema-dsl');
+import { s, Validator } from 'schema-dsl/pure';
 
 // Define schema with String extensions
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!'
     .pattern(/^[a-zA-Z0-9_]+$/)
     .messages({
@@ -1383,7 +1435,7 @@ console.log(result.valid); // true
 ## Corresponding Example File
 
 **Example entry**: [api-reference.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/api-reference.ts)
-**Description**: Covers runnable call chains for `dsl()`, `validate()`, `validateAsync()`, the default `Validator` singleton, `CacheManager`, `CustomKeywords`, `I18nError`, `PluginManager`, `CONSTANTS`, template rendering, `JSONSchemaCore`, `ErrorFormatter`, `ObjectDslBuilder`, `TypeRegistry`, and other public APIs.
+**Description**: Covers runnable call chains for `s()`, `validate()`, `validateAsync()`, the default `Validator` singleton, `CacheManager`, `CustomKeywords`, `I18nError`, `PluginManager`, `CONSTANTS`, template rendering, `JSONSchemaCore`, `ErrorFormatter`, `ObjectDslBuilder`, `TypeRegistry`, and other public APIs.
 
 ---
 

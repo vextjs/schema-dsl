@@ -1,4 +1,4 @@
-import type { IDslBuilder } from './types/dsl.js'
+import type { DslFactoryInput, IDslBuilder } from './types/dsl.js'
 import type { JSONSchema } from './types/schema.js'
 
 export interface SchemaDslStringExtensions {
@@ -44,6 +44,8 @@ export interface SchemaDslStringExtensions {
   strict(): IDslBuilder
   noSparse(): IDslBuilder
   includesRequired(items: unknown[]): IDslBuilder
+  items(item: DslFactoryInput): IDslBuilder
+  require(): IDslBuilder
   required(): IDslBuilder
   optional(): IDslBuilder
   enum(...values: unknown[]): IDslBuilder

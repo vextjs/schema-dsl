@@ -1,4 +1,4 @@
-import { TypeConverter } from '../../dist/index.js'
+import { TypeConverter } from '../../dist/pure.js'
 
 // ============================================================
 // TypeConverter — map JSON Schema types to target DB/query types

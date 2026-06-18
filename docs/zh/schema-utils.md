@@ -4,38 +4,28 @@
 
 ---
 
-## 📑 目录
-
-- [Schema 复用](#schema-复用)
-- [Schema 合并](#schema-合并)
-- [Schema 筛选](#schema-筛选)
-- [Schema 导出](#schema-导出)
-- [性能监控](#性能监控)
-- [完整示例](#完整示例)
-
----
 
 ## Schema 复用
 
 ### 直接复用（最简单）✅
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // 定义可复用字段（就是普通对象）
 const commonFields = {
-  email: 'email!'.label('邮箱地址'),
-  phone: 'string:11!'.phone('cn').label('手机号'),
-  username: 'string:3-32!'.username().label('用户名')
+  email: s('email!').label('邮箱地址'),
+  phone: s('string:11!').phone('cn').label('手机号'),
+  username: s('string:3-32!').username().label('用户名')
 };
 
 // 直接使用
-const registerSchema = dsl({
+const registerSchema = s({
   ...commonFields,  // ✅ 直接展开
-  password: 'string:8-64!'.password('strong')
+  password: s('string:8-64!').password('strong')
 });
 
-const profileSchema = dsl({
+const profileSchema = s({
   ...commonFields,  // ✅ 重复使用
   bio: 'string:500',
   avatar: 'url'
@@ -51,13 +41,13 @@ const profileSchema = dsl({
 ```javascript
 // 定义可复用字段函数
 const createEmailField = (label = '邮箱地址') => 
-  'email!'.label(label);
+  s('email!').label(label);
 
 const createRangeField = (min, max) => 
-  `number:${min}-${max}`.label('数值范围');
+  s(`number:${min}-${max}`).label('数值范围');
 
 // 使用
-const schema = dsl({
+const schema = s({
   email: createEmailField('联系邮箱'),
   workEmail: createEmailField('工作邮箱'),
   age: createRangeField(18, 120),
@@ -73,34 +63,36 @@ const schema = dsl({
 
 ```javascript
 // fields/common.js - 定义字段库
-module.exports = {
-  email: () => 'email!'.label('邮箱地址'),
-  phone: (country = 'cn') => `string:11!`.phone(country).label('手机号'),
-  username: (range = '3-32') => `string:${range}!`.username(range).label('用户名'),
-  password: (strength = 'medium') => 'string:8-64!'.password(strength).label('密码'),
+import { s } from 'schema-dsl/pure';
+
+export default {
+  email: () => s('email!').label('邮箱地址'),
+  phone: (country = 'cn') => s(`string:11!`).phone(country).label('手机号'),
+  username: (range = '3-32') => s(`string:${range}!`).username(range).label('用户名'),
+  password: (strength = 'medium') => s('string:8-64!').password(strength).label('密码'),
   
   // 组合字段
   userAuth: () => ({
-    username: 'string:3-32!'.username().label('用户名'),
-    password: 'string:8-64!'.password('strong').label('密码')
+    username: s('string:3-32!').username().label('用户名'),
+    password: s('string:8-64!').password('strong').label('密码')
   }),
   
   userProfile: () => ({
-    nickname: 'string:2-20!'.label('昵称'),
+    nickname: s('string:2-20!').label('昵称'),
     bio: 'string:500',
     avatar: 'url'
   })
 };
 
 // 使用
-const fields = require('./fields/common');
+import fields from './fields/common.js';
 
-const loginSchema = dsl({
+const loginSchema = s({
   email: fields.email(),
   password: fields.password('strong')
 });
 
-const registerSchema = dsl({
+const registerSchema = s({
   ...fields.userAuth(),  // ✅ 展开组合字段
   email: fields.email(),
   phone: fields.phone('cn')
@@ -116,24 +108,24 @@ const registerSchema = dsl({
 ### createLibrary() - 创建片段库
 
 ```javascript
-const { SchemaUtils, dsl } = require('schema-dsl');
+import { SchemaUtils, s } from 'schema-dsl/pure';
 
 const fields = SchemaUtils.createLibrary({
-  email: () => 'email!'.label('邮箱地址'),
-  phone: () => dsl('string!').phone('cn').label('手机号'),
+  email: () => s('email!').label('邮箱地址'),
+  phone: () => s('string!').phone('cn').label('手机号'),
   profile: () => ({
     bio: 'string:500',
     avatar: 'url'
   })
 });
 
-const registerSchema = dsl({
+const registerSchema = s({
   email: fields.email(),
   phone: fields.phone(),
-  password: dsl('string!').password('strong')
+  password: s('string!').password('strong')
 });
 
-const profileSchema = dsl({
+const profileSchema = s({
   ...fields.profile(),
   email: fields.email()
 });
@@ -146,7 +138,7 @@ const profileSchema = dsl({
 ### extend() - 扩展Schema（继承）
 
 ```javascript
-const baseUser = dsl({
+const baseUser = s({
   name: 'string!',
   email: 'email!'
 });
@@ -169,7 +161,7 @@ const admin = SchemaUtils.extend(baseUser, {
 ### pick() - 选择字段
 
 ```javascript
-const fullUser = dsl({
+const fullUser = s({
   name: 'string!',
   email: 'email!',
   password: 'string:8-64!',
@@ -190,7 +182,7 @@ const publicUser = SchemaUtils.pick(fullUser, ['name', 'email']);
 ### omit() - 排除字段
 
 ```javascript
-const fullUser = dsl({
+const fullUser = s({
   name: 'string!',
   email: 'email!',
   password: 'string:8-64!',
@@ -210,7 +202,7 @@ const safeUser = SchemaUtils.omit(fullUser, ['password']);
 ### partial() - 将字段改为可选
 
 ```javascript
-const updateSchema = SchemaUtils.partial(dsl({
+const updateSchema = SchemaUtils.partial(s({
   name: 'string!',
   email: 'email!',
   age: 'number:18-120'
@@ -222,7 +214,7 @@ const updateSchema = SchemaUtils.partial(dsl({
 也可以只对部分字段做可选化：
 
 ```javascript
-const schema = dsl({
+const schema = s({
   name: 'string!',
   email: 'email!',
   age: 'number:18-120'
@@ -238,9 +230,9 @@ const partialContact = SchemaUtils.partial(schema, ['name', 'email']);
 ### toMarkdown() - 导出为Markdown文档
 
 ```javascript
-const schema = dsl({
-  username: 'string:3-32!'.label('用户名'),
-  email: 'email!'.label('邮箱地址'),
+const schema = s({
+  username: s('string:3-32!').label('用户名'),
+  email: s('email!').label('邮箱地址'),
   age: 'number:18-120'
 });
 
@@ -287,9 +279,9 @@ const html = SchemaUtils.toHTML(schema, {
 ### validateBatch() - 批量验证统计
 
 ```javascript
-const { SchemaUtils, Validator, dsl } = require('schema-dsl');
+import { SchemaUtils, Validator, s } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   email: 'email!',
   age: 'number:18-120'
 });
@@ -350,7 +342,7 @@ console.log(result.performance);
 ### clone() - 深度克隆Schema
 
 ```javascript
-const original = dsl({
+const original = s({
   user: {
     name: 'string!',
     profile: {
@@ -371,9 +363,9 @@ cloned.properties.user.properties.name.maxLength = 100;
 ### validateNestingDepth() - 检查嵌套深度
 
 ```javascript
-const { dsl, DslBuilder } = require('schema-dsl');
+import { s, DslBuilder } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   level1: {
     level2: {
       level3: {
@@ -401,25 +393,27 @@ if (result.depth > 5) {
 
 ```javascript
 // libs/fields/index.js
-module.exports = {
+import { s } from 'schema-dsl/pure';
+
+export default {
   // 基础字段
-  id: () => 'string!'.pattern(/^[a-zA-Z0-9_-]+$/).label('ID'),
-  email: () => 'email!'.label('邮箱地址'),
-  phone: (country = 'cn') => 'string:11!'.phone(country).label('手机号'),
+  id: () => s('string!').pattern(/^[a-zA-Z0-9_-]+$/).label('ID'),
+  email: () => s('email!').label('邮箱地址'),
+  phone: (country = 'cn') => s('string:11!').phone(country).label('手机号'),
   
   // 认证字段
   auth: {
-    username: () => 'string:3-32!'.username().label('用户名'),
+    username: () => s('string:3-32!').username().label('用户名'),
     password: (strength = 'strong') => 
-      'string:8-64!'.password(strength).label('密码')
+      s('string:8-64!').password(strength).label('密码')
   },
   
   // 个人信息
   profile: {
-    nickname: () => 'string:2-20!'.label('昵称'),
-    realName: () => 'string:2-50'.label('真实姓名'),
+    nickname: () => s('string:2-20!').label('昵称'),
+    realName: () => s('string:2-50').label('真实姓名'),
     bio: () => 'string:500',
-    avatar: () => 'url'.label('头像'),
+    avatar: () => s('url').label('头像'),
     birthday: () => 'date'
   },
   
@@ -439,10 +433,10 @@ module.exports = {
 };
 
 // 使用
-const fields = require('./libs/fields');
+import fields from './libs/fields/index.js';
 
 // 用户注册
-const registerSchema = dsl({
+const registerSchema = s({
   ...fields.auth,
   email: fields.email(),
   phone: fields.phone('cn'),
@@ -450,7 +444,7 @@ const registerSchema = dsl({
 });
 
 // 用户资料
-const profileSchema = dsl({
+const profileSchema = s({
   ...fields.profile,
   ...fields.timestamps()
 });
@@ -470,23 +464,23 @@ const userSchema = SchemaUtils.extend(
 
 ```javascript
 const commonFields = {
-  email: 'email!'.label('邮箱'),
-  phone: 'string:11!'.phone('cn')
+  email: s('email!').label('邮箱'),
+  phone: s('string:11!').phone('cn')
 };
 
-const schema1 = dsl({ ...commonFields, ... });
-const schema2 = dsl({ ...commonFields, ... });
+const schema1 = s({ ...commonFields, ... });
+const schema2 = s({ ...commonFields, ... });
 ```
 
 ### 2. 中型项目：函数复用
 
 ```javascript
 const createUserFields = (options = {}) => ({
-  email: 'email!'.label(options.emailLabel || '邮箱'),
-  phone: 'string:11!'.phone(options.country || 'cn')
+  email: s('email!').label(options.emailLabel || '邮箱'),
+  phone: s('string:11!').phone(options.country || 'cn')
 });
 
-const schema = dsl({
+const schema = s({
   ...createUserFields({ emailLabel: '联系邮箱' }),
   ...otherFields
 });
@@ -496,9 +490,9 @@ const schema = dsl({
 
 ```javascript
 // 统一管理在 fields/ 目录
-const fields = require('./fields');
+import fields from './fields/index.js';
 
-const schema = dsl({
+const schema = s({
   ...fields.auth,
   ...fields.profile
 });

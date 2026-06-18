@@ -6,16 +6,6 @@
 
 ---
 
-## 📑 目录
-
-- [概述](#概述)
-- [快速开始](#快速开始)
-- [API 参考](#api-参考)
-- [配置选项](#配置选项)
-- [完整示例](#完整示例)
-- [类型映射](#类型映射)
-
----
 
 ## 概述
 
@@ -35,10 +25,10 @@
 ## 快速开始
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // 1. 定义 Schema
-const userSchema = dsl({
+const userSchema = s({
   id: 'string!',
   username: 'string:3-32!',
   email: 'email!',
@@ -160,15 +150,13 @@ const exporter = new exporters.MySQLExporter({
 ### 用户表 DDL 生成
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // 定义用户 Schema（带描述）
-const userSchema = dsl({
+const userSchema = s({
   id: 'string!',
-  username: 'string:3-32!'
-    .description('用户登录名'),
-  email: 'email!'
-    .description('用户邮箱'),
+  username: s('string:3-32!').description('用户登录名'),
+  email: s('email!').description('用户邮箱'),
   password: 'string:8-64!',
   age: 'number:0-150',
   status: 'active|inactive|banned',
@@ -257,7 +245,7 @@ CREATE INDEX `idx_users_status` ON `users` (`status`);
 - ❌ 数值范围约束（`minimum/maximum`）
 - ❌ 枚举 CHECK 约束（导出为普通 `VARCHAR`）
 - ❌ 字符串最小长度（`minLength`）
-- ❌ 条件验证逻辑（`dsl.match()`, `dsl.if()`）
+- ❌ 条件验证逻辑（`s.match()`, `s.if()`）
 
 **详细说明**: 请阅读 [导出限制说明文档](export-limitations.md)
 

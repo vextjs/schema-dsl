@@ -6,15 +6,6 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-- [API Reference](#api-reference)
-- [Type mapping table](#type-mapping-table)
-- [Practical example](#practical-examples)
-
----
 
 ## Overview
 
@@ -34,7 +25,7 @@
 ## quick start
 
 ```javascript
-const { TypeConverter } = require('schema-dsl');
+import { TypeConverter } from 'schema-dsl/pure';
 
 // Convert JSON Schema type to MongoDB type
 const mongoType = TypeConverter.toMongoDBType('integer');
@@ -269,7 +260,7 @@ const constraints = TypeConverter.extractConstraints(schema);
 ### Batch type conversion
 
 ```javascript
-const { TypeConverter } = require('schema-dsl');
+import { TypeConverter } from 'schema-dsl/pure';
 
 const fields = ['string', 'number', 'integer', 'boolean', 'object', 'array'];
 

@@ -6,17 +6,6 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-- [API Reference](#api-reference)
-- [Configuration Options](#configuration-options)
-- [Complete example](#complete-example)
-- [Type mapping](#type-mapping)
-- [CHECK constraint](#check-constraints)
-
----
 
 ## Overview
 
@@ -36,10 +25,10 @@
 ## quick start
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // 1. Define Schema
-const userSchema = dsl({
+const userSchema = s({
   id: 'uuid!',
   username: 'string:3-32!',
   email: 'email!',
@@ -153,15 +142,13 @@ const ddl = exporter.export('users', userSchema);
 ### User table DDL generation
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 //Define user Schema (with description)
-const userSchema = dsl({
+const userSchema = s({
   id: 'uuid!',
-  username: 'string:3-32!'
-    .description('User login name, 3-32 characters'),
-  email: 'email!'
-    .description('User email address'),
+  username: s('string:3-32!').description('User login name, 3-32 characters'),
+  email: s('email!').description('User email address'),
   password: 'string:8-64!',
   age: 'number:18-120',
   profile: {
@@ -285,7 +272,7 @@ exporter.generateIndex('users', 'metadata', { method: 'gin' });
 **Features not supported by PostgreSQL**:
 - ❌ Regular expression constraints (`pattern`)
 - ❌ Nested object constraints (exported as `JSONB`, internal constraints are lost)
-- ❌ Conditional validation logic (`dsl.match()`, `dsl.if()`)
+- ❌ Conditional validation logic (`s.match()`, `s.if()`)
 
 **Detailed instructions**: Please read [Export restrictions document](export-limitations.md)
 

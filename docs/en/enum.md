@@ -62,10 +62,10 @@ The Enum feature allows you to define fields that can only take on a specific se
 ### 1. String enumeration
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // short form
-const schema = dsl({
+const schema = s({
   status: 'active|inactive|pending'
 });
 
@@ -78,7 +78,7 @@ validate(schema, { status: 'unknown' }); // ❌ failed
 
 ```javascript
 // Automatically recognized as a Boolean value
-const schema = dsl({
+const schema = s({
   isPublic: 'true|false',
   validated: 'true|false!' // required
 });
@@ -92,7 +92,7 @@ validate(schema, { isPublic: 'true' }); // ❌ failed (string)
 
 ```javascript
 // Automatically recognized as a number
-const schema = dsl({
+const schema = s({
   priority: '1|2|3',
   rating: '1.0|1.5|2.0|2.5' // Decimal
 });
@@ -109,7 +109,7 @@ validate(schema, { priority: '1' }); // ❌ failed (string)
 ### Required enumeration
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // String enum required
   role: 'admin|user|guest!',
 
@@ -127,7 +127,7 @@ validate(schema, {}); // ❌ failed
 ### Explicitly specify the type
 
 ```javascript
-const schema = dsl({
+const schema = s({
   //Explicitly specify the string
   status: 'enum:active|inactive',
 
@@ -145,8 +145,8 @@ const schema = dsl({
 ### Chained API
 
 ```javascript
-const schema = dsl({
-  status: dsl('active|inactive|archived')
+const schema = s({
+  status: s('active|inactive|archived')
     .label('article status')
     .messages({
       'string.enum': 'Status must be: draft, published or archived'
@@ -157,7 +157,7 @@ const schema = dsl({
 ### enum in array
 
 ```javascript
-const schema = dsl({
+const schema = s({
   tags: 'array<enum:tech|business|lifestyle>',
   permissions: 'array<enum:read|write|delete>'
 });
@@ -171,7 +171,7 @@ validate(schema, {
 ### Enums in nested objects
 
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     name: 'string!',
     role: 'admin|user|guest',
@@ -191,13 +191,13 @@ const schema = dsl({
 ### User management system
 
 ```javascript
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   role: 'admin|moderator|user|guest!',
   status: 'active|inactive|suspended|banned',
   emailVerified: 'true|false',
-  permissionLevel: '0|1|2|3|4|5'.default(0),
+  permissionLevel: s('0|1|2|3|4|5').default(0),
   preferences: {
     theme: 'light|dark|auto',
     language: 'en|zh-CN|zh-TW|ja|ko',
@@ -209,10 +209,10 @@ const userSchema = dsl({
 ### Order management
 
 ```javascript
-const orderSchema = dsl({
+const orderSchema = s({
   orderId: 'string!',
   status: 'pending|processing|completed|cancelled!',
-  priority: '1|2|3'.default(2),
+  priority: s('1|2|3').default(2),
   payment: {
     method: 'card|paypal|crypto!',
     status: 'pending|success|failed!'
@@ -223,7 +223,7 @@ const orderSchema = dsl({
 ### Content management
 
 ```javascript
-const postSchema = dsl({
+const postSchema = s({
   title: 'string:5-100!',
   status: 'draft|published|archived!',
   visibility: 'public|private|unlisted',
@@ -238,9 +238,9 @@ const postSchema = dsl({
 ### default value
 
 ```javascript
-const schema = dsl({
-  theme: 'light|dark|auto'.default('auto'),
-  language: 'en|zh-CN'.default('en')
+const schema = s({
+  theme: s('light|dark|auto').default('auto'),
+  language: s('en|zh-CN').default('en')
 });
 ```
 
@@ -252,29 +252,29 @@ All enumeration types use `'enum'` to define error messages, which is the simple
 
 ```javascript
 // String enumeration
-const schema = dsl({
-  status: dsl('active|inactive|pending').messages({
+const schema = s({
+  status: s('active|inactive|pending').messages({
     'enum': 'Status must be: activated, inactive or pending'
   })
 });
 
 //Boolean enumeration
-const schema = dsl({
-  isActive: dsl('true|false').messages({
+const schema = s({
+  isActive: s('true|false').messages({
     'enum': 'Must be true or false'
   })
 });
 
 //Number enumeration
-const schema = dsl({
-  priority: dsl('1|2|3').messages({
+const schema = s({
+  priority: s('1|2|3').messages({
     'enum': 'Priority must be 1, 2 or 3'
   })
 });
 
 //Integer enumeration
-const schema = dsl({
-  level: dsl('enum:integer:1|2|3').messages({
+const schema = s({
+  level: s('enum:integer:1|2|3').messages({
     'enum': 'Level must be 1, 2 or 3'
   })
 });
@@ -289,14 +289,14 @@ const schema = dsl({
 If you need to customize different error messages for different types of enumerations, you can use the `type.enum` format:
 
 ```javascript
-const schema = dsl({
-  status: dsl('active|inactive').messages({
+const schema = s({
+  status: s('active|inactive').messages({
     'string.enum': 'String enumeration error' // Special for string enumeration
   }),
-  priority: dsl('1|2|3').messages({
+  priority: s('1|2|3').messages({
     'number.enum': 'Number enumeration error' //Special for number enumeration
   }),
-  flag: dsl('true|false').messages({
+  flag: s('true|false').messages({
     'boolean.enum': 'Boolean enumeration error' //Special for Boolean enumeration
   })
 });
@@ -309,7 +309,7 @@ const schema = dsl({
 ### Multi-language support
 
 ```javascript
-dsl.config({
+s.config({
   i18n: {
     'zh-CN': {
       'field.status': 'status',
@@ -318,8 +318,8 @@ dsl.config({
   }
 });
 
-const schema = dsl({
-  status: dsl('active|inactive|pending').label('field.status')
+const schema = s({
+  status: s('active|inactive|pending').label('field.status')
 });
 ```
 
@@ -368,14 +368,14 @@ const schema = dsl({
 ```javascript
 // Boolean enum only accepts 'true' and 'false'
 try {
-  dsl({ flag: 'enum:boolean:true|false|maybe' });
+  s({ flag: 'enum:boolean:true|false|maybe' });
 } catch (error) {
   // Error: Invalid boolean enum value: maybe
 }
 
 //Number enum only accepts numbers
 try {
-  dsl({ value: 'enum:number:1|2|abc' });
+  s({ value: 'enum:number:1|2|abc' });
 } catch (error) {
   // Error: Invalid number enum value: abc
 }
@@ -386,7 +386,7 @@ try {
 Enumerations are type-validated automatically:
 
 ```javascript
-const schema = dsl({ priority: '1|2|3' });
+const schema = s({ priority: '1|2|3' });
 
 // Error: passed in string
 validate(schema, { priority: '1' });
@@ -407,7 +407,7 @@ validate(schema, { priority: 999 });
 Excellent enumeration validation performance:
 
 ```javascript
-const schema = dsl({
+const schema = s({
   status: 'active|inactive|pending',
   priority: '1|2|3',
   flag: 'true|false'
@@ -436,7 +436,7 @@ const schema = dsl({
 
 ```javascript
 // Other types with colon are not affected
-const schema = dsl({
+const schema = s({
   username: 'string:3-32', // ✅ working normally
   age: 'number:18-120', // ✅ working normally
   phone: 'phone:cn', // ✅ working normally

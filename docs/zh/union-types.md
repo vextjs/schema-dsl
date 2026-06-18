@@ -13,7 +13,7 @@
 
 ✅ **简洁语法** - `'types:string|number'` 一行搞定  
 ✅ **带约束** - `'types:string:3-10|number:0-100'`  
-✅ **插件扩展** - 支持自定义类型注册  
+✅ **自定义 DSL 类型** - 支持可复用类型注册
 ✅ **多语言** - 完整的i18n支持
 
 ---
@@ -23,10 +23,10 @@
 ### 基础用法
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // 定义联合类型
-const schema = dsl({
+const schema = s({
   value: 'types:string|number'
 });
 
@@ -39,7 +39,7 @@ validate(schema, { value: true });     // ❌ 失败
 ### 带约束
 
 ```javascript
-const schema = dsl({
+const schema = s({
   value: 'types:string:3-10|number:0-100!'
 });
 
@@ -86,7 +86,7 @@ types:type1:constraint1|type2:constraint2
 通过插件注册的自定义类型也可以使用：
 
 ```javascript
-const { DslBuilder, PluginManager } = require('schema-dsl');
+import { DslBuilder, PluginManager } from 'schema-dsl/pure';
 
 // 注册自定义类型
 DslBuilder.registerType('order-id', {
@@ -97,7 +97,7 @@ DslBuilder.registerType('order-id', {
 });
 
 // 在types:中使用
-const schema = dsl({
+const schema = s({
   identifier: 'types:uuid|order-id'
 });
 ```
@@ -109,7 +109,7 @@ const schema = dsl({
 ### 场景1：用户注册（邮箱或手机号）
 
 ```javascript
-const registerSchema = dsl({
+const registerSchema = s({
   username: 'string:3-20!',
   password: 'string:8-20!',
   contact: 'types:email|phone!'  // 邮箱或手机号
@@ -119,7 +119,7 @@ const registerSchema = dsl({
 ### 场景2：灵活的价格输入
 
 ```javascript
-const productSchema = dsl({
+const productSchema = s({
   price: 'types:number:0-|string:1-20'  // 数字价格或"面议"
 });
 
@@ -134,7 +134,7 @@ validate(productSchema, { price: '面议' });  // ✅ 字符串
 DslBuilder.registerType('order-id', { ... });
 DslBuilder.registerType('sku', { ... });
 
-const querySchema = dsl({
+const querySchema = s({
   identifier: 'types:order-id|sku!'
 });
 ```
@@ -269,8 +269,8 @@ DslBuilder.registerType('phone_cn', { ... });
 
 ## 相关文档
 
-- [插件系统](./plugin-system.md)
-- [自定义类型注册](./plugin-type-registration.md)
+- [扩展概览](./extensions-overview.md)
+- [自定义 DSL 类型](./plugin-type-registration.md)
 - [贡献指南](https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md)
 
 ---

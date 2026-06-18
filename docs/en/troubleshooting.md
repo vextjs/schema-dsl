@@ -5,16 +5,6 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Validation Issue](#validation-issues)
-- [Performance issue](#performance-issues)
-- [Multi-language issues](#validation-issues)
-- [Exporter issue](#exporter-issues)
-- [String expansion problem](#string-expansion-problem)
-- [Debugging Tips](#debugging-tips)
-
----
 
 ## Validation issues
 
@@ -43,7 +33,7 @@ const result = validator.validate(schema, data);
 
 3. **Use Schema Summary Tool**
 ```javascript
-const { SchemaHelper } = require('schema-dsl');
+import { SchemaHelper } from 'schema-dsl/pure';
 console.log(SchemaHelper.summarizeSchema(schema));
 ```
 
@@ -66,7 +56,7 @@ console.log(SchemaHelper.summarizeSchema(schema));
 
 **symptom**:
 ```javascript
-email: 'email!'.custom(async (value) => {
+email: s('email!').custom(async (value) => {
   //The code here is not executed
 })
 ```
@@ -83,7 +73,7 @@ const result = validate(schema, data); // Synchronous mode
 await validateAsync(schema, data);
 
 // ✅ Correct: use synchronous validator
-email: 'email!'.custom((value) => {
+email: s('email!').custom((value) => {
   // synchronization code
   if (checkSync(value)) return 'The mailbox has been occupied';
 })
@@ -118,7 +108,7 @@ if (result.valid) {
 
 **symptom**:
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     name: 'string!',
     email: 'email!'
@@ -131,7 +121,7 @@ const schema = dsl({
 **Solution**:
 ```javascript
 // ✅ Option 1: Mark the object itself as required
-const schema = dsl({
+const schema = s({
   'user!': { // Note the!
     name: 'string!',
     email: 'email!'
@@ -183,12 +173,12 @@ tags: 'array!1-10<string>'
 ```javascript
 // ❌ Cache is not used
 app.post('/api/user', (req, res) => {
-  const schema = dsl({ username: 'string!' }); // Create every time
+  const schema = s({ username: 'string!' }); // Create every time
   validate(schema, req.body);
 });
 
 // ✅ Use cache
-const userSchema = dsl({ username: 'string!' }); // Create once
+const userSchema = s({ username: 'string!' }); // Create once
 app.post('/api/user', (req, res) => {
   validate(userSchema, req.body); //reuse
 });
@@ -259,7 +249,7 @@ app.post('/admin/clear-cache', (req, res) => {
 
 #### 1. Check whether the language pack is loaded
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 console.log(Object.keys(Locale.locales));
 // Should contain: ['zh-CN', 'en-US', 'ja-JP',...]
 ```
@@ -291,12 +281,12 @@ const result = validator.validate(schema, data, {
 **Check for error keywords**:
 ```javascript
 // ❌ Error: Wrong keyword used
-username: 'string:3-32!'.messages({
+username: s('string:3-32!').messages({
   'length': 'Incorrect length' // Wrong keyword
 })
 
 // ✅ Correct: Use the correct keywords
-username: 'string:3-32!'.messages({
+username: s('string:3-32!').messages({
   'min': 'At least 3 characters',
   'max': 'Maximum 32 characters',
   'required': 'Username cannot be empty'
@@ -324,13 +314,13 @@ username: 'string:3-32!'.messages({
 #### 1. The field name contains reserved keywords
 ```javascript
 // ❌ Problem: SQL reserved words are used
-const schema = dsl({
+const schema = s({
   order: 'string!', // 'order' is a SQL reserved word
   group: 'string' // 'group' is a SQL reserved word
 });
 
 // ✅ Solution: Use backticks to wrap or rename
-const schema = dsl({
+const schema = s({
   order_id: 'string!',
   group_name: 'string'
 });
@@ -378,7 +368,7 @@ db.createCollection('users', {
 
 **symptom**:
 ```javascript
-'string!'.pattern(/test/);
+s('string!').pattern(/test/);
 // TypeError: "string!".pattern is not a function
 ```
 
@@ -387,12 +377,12 @@ db.createCollection('users', {
 **Solution**:
 ```javascript
 // Re-enable direct string chaining:
-const { installStringExtensions } = require('schema-dsl');
+import { installStringExtensions } from 'schema-dsl/pure';
 installStringExtensions();
 
-// Or use dsl() wrapper (non-intrusive)
-const schema = dsl({
-  username: dsl('string!').pattern(/test/)
+// Or use s() wrapper (non-intrusive)
+const schema = s({
+  username: s('string!').pattern(/test/)
 });
 ```
 
@@ -412,7 +402,7 @@ const schema = dsl({
 // Remove or rename the external extension of the same name before importing schema-dsl.
 delete String.prototype.label;
 
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 ```
 
 If conflicting methods come from other libraries, give priority to preventing both libraries from extending `String.prototype` methods with the same name at the same time in the application initialization sequence or dependency configuration.
@@ -424,7 +414,7 @@ If conflicting methods come from other libraries, give priority to preventing bo
 ### Tip 1: View the generated JSON Schema
 
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
@@ -436,7 +426,7 @@ console.log(JSON.stringify(schema, null, 2));
 ### Tip 2: Use the Schema summary tool
 
 ```javascript
-const { SchemaHelper } = require('schema-dsl');
+import { SchemaHelper } from 'schema-dsl/pure';
 
 // View Schema structure summary
 const summary = SchemaHelper.summarizeSchema(schema);

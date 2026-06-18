@@ -1,11 +1,11 @@
-# addKeyword method
+# Custom validation keywords
 
 `Validator.addKeyword(name, definition)` is used to register custom keywords with the underlying AJV instance.
 
 The current implementation is internally compatible with the object-based registration of AJV 8, so you can continue to use the two-parameter writing method of v1 without exposing deprecated warnings to the caller.
 
 ```javascript
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
 const validator = new Validator();
 validator.addKeyword('isEven', {
   type: 'number',

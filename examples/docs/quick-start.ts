@@ -1,10 +1,10 @@
-import { dsl, validate, validateAsync, Validator, ValidationError } from '../../dist/index.js'
+import { s, validate, validateAsync, Validator, ValidationError } from '../../dist/pure.js'
 
 // ============================================================
 // 1. Minimal schema — verify a single field
 // ============================================================
 
-const emailOnly = dsl({ email: 'email!' })
+const emailOnly = s({ email: 'email!' })
 console.log('quick-start.emailOnly.valid =',
   validate(emailOnly, { email: 'user@example.com' }).valid)
 console.log('quick-start.emailOnly.invalid =',
@@ -14,19 +14,19 @@ console.log('quick-start.emailOnly.invalid =',
 // 2. User registration schema — multiple field types + chain API
 // ============================================================
 
-const registerSchema = dsl({
-  username: dsl('string:3-32!')
+const registerSchema = s({
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .label('Username')
     .error({ pattern: 'Only letters, digits and underscores are allowed' }),
-  email: dsl('email!').label('Email address'),
-  password: dsl('string:8-64!')
+  email: s('email!').label('Email address'),
+  password: s('string:8-64!')
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
     .label('Password')
     .error({ pattern: 'Must contain uppercase, lowercase and a digit' }),
   age: 'number:18-120',
   role: 'user|admin',
-  newsletter: dsl('boolean').default(false),
+  newsletter: s.boolean().default(false),
 })
 
 const validUser = {
@@ -59,7 +59,7 @@ console.log('quick-start.invalidUser.errors =',
 // 3. String coercion — form/query-string data often arrives as strings
 // ============================================================
 
-const orderSchema = dsl({
+const orderSchema = s({
   quantity: 'integer:1-100!',
   price: 'number:0.01-',
   discount: 'number:0-100',
@@ -83,7 +83,7 @@ console.log('quick-start.noCoerce.valid =', strictResult.valid) // false — str
 // 4. Nested objects and arrays
 // ============================================================
 
-const postSchema = dsl({
+const postSchema = s({
   title: 'string:5-200!',
   content: 'string:10-50000!',
   tags: 'array:1-5<string:1-30>',

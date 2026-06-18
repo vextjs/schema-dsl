@@ -4,16 +4,6 @@
 
 ---
 
-## 📑 目录
-
-- [核心原则](#核心原则)
-- [不支持导出的特性](#不支持导出的特性)
-- [部分支持的特性](#部分支持的特性)
-- [完全支持的特性](#完全支持的特性)
-- [数据库特定限制](#数据库特定限制)
-- [最佳实践建议](#最佳实践建议)
-
----
 
 ## 核心原则
 
@@ -32,13 +22,13 @@
 
 ### 1. 条件验证逻辑 ❌
 
-#### `dsl.match()` - 条件字段映射
+#### `s.match()` - 条件字段映射
 
 ```javascript
 // ❌ 无法导出
-const schema = dsl({
+const schema = s({
   contactType: 'email|phone',
-  contact: dsl.match('contactType', {
+  contact: s.match('contactType', {
     email: 'email!',
     phone: 'phone:cn!'
   })
@@ -53,13 +43,13 @@ const schema = dsl({
 
 ---
 
-#### `dsl.if()` - 条件验证
+#### `s.if()` - 条件验证
 
 ```javascript
 // ❌ 无法导出
-const schema = dsl({
+const schema = s({
   isVip: 'boolean',
-  discount: dsl.if('isVip', 'number:10-100!', 'number:0-10')
+  discount: s.if('isVip', 'number:10-100!', 'number:0-10')
 });
 ```
 
@@ -108,7 +98,7 @@ const schema = {
 
 ```javascript
 // ❌ 自定义验证器无法导出
-const schema = dsl('string:3-32!')
+const schema = s('string:3-32!')
   .custom((value) => value.startsWith('USER_'))
   .messages({ 'string.custom': '必须以 USER_ 开头' });
 ```
@@ -125,7 +115,7 @@ const schema = dsl('string:3-32!')
 
 ```javascript
 // ❌ 错误消息无法导出
-const schema = dsl('email!')
+const schema = s('email!')
   .messages({
     'string.format': '请输入有效的邮箱地址'
   })
@@ -142,7 +132,7 @@ const schema = dsl('email!')
 
 ```javascript
 // ⚠️ 嵌套对象会简化为 JSON/JSONB 类型
-const schema = dsl({
+const schema = s({
   profile: {
     bio: 'string:500',
     avatar: 'url',
@@ -168,7 +158,7 @@ const schema = dsl({
 ### 1. 正则表达式约束 ⚠️
 
 ```javascript
-const schema = dsl('string!')
+const schema = s('string!')
   .pattern(/^[A-Z][a-z]+$/);
 ```
 
@@ -185,7 +175,7 @@ const schema = dsl('string!')
 ### 2. 数值范围约束 ⚠️
 
 ```javascript
-const schema = dsl('number:18-120');
+const schema = s('number:18-120');
 ```
 
 | 数据库 | 支持程度 | 导出结果 |
@@ -199,7 +189,7 @@ const schema = dsl('number:18-120');
 ### 3. 字符串长度约束 ⚠️
 
 ```javascript
-const schema = dsl('string:3-32');
+const schema = s('string:3-32');
 ```
 
 | 数据库 | 支持程度 | 导出结果 |
@@ -213,7 +203,7 @@ const schema = dsl('string:3-32');
 ### 4. 枚举约束 ⚠️
 
 ```javascript
-const schema = dsl('active|inactive|banned');
+const schema = s('active|inactive|banned');
 ```
 
 | 数据库 | 支持程度 | 导出结果 |
@@ -227,7 +217,7 @@ const schema = dsl('active|inactive|banned');
 ### 5. 数组约束 ⚠️
 
 ```javascript
-const schema = dsl('array!1-10<string:3-32>');
+const schema = s('array!1-10<string:3-32>');
 ```
 
 | 数据库 | 支持程度 | 导出结果 |
@@ -245,7 +235,7 @@ const schema = dsl('array!1-10<string:3-32>');
 ### ✅ 基础类型
 
 ```javascript
-dsl({
+s({
   name: 'string!',
   age: 'number',
   active: 'boolean',
@@ -260,7 +250,7 @@ dsl({
 ### ✅ 必填约束
 
 ```javascript
-dsl({
+s({
   email: 'email!',   // 必填
   phone: 'phone:cn'  // 可选
 })
@@ -275,7 +265,7 @@ dsl({
 ### ✅ 默认值（仅 MySQL/PostgreSQL）
 
 ```javascript
-const schema = dsl('boolean')
+const schema = s('boolean')
   .default(false);
 ```
 
@@ -288,7 +278,7 @@ const schema = dsl('boolean')
 ### ✅ 字段描述
 
 ```javascript
-const schema = dsl('string!')
+const schema = s('string!')
   .description('用户登录名');
 ```
 
@@ -367,19 +357,19 @@ const schema = dsl('string!')
 在使用导出功能前，请先检查 Schema 是否包含不支持的特性：
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // ❌ 不适合导出的 Schema（包含条件逻辑）
-const conditionalSchema = dsl({
+const conditionalSchema = s({
   type: 'email|phone',
-  value: dsl.match('type', {
+  value: s.match('type', {
     email: 'email!',
     phone: 'phone:cn!'
   })
 });
 
 // ✅ 适合导出的 Schema（静态定义）
-const staticSchema = dsl({
+const staticSchema = s({
   id: 'uuid!',
   email: 'email!',
   phone: 'string:11',
@@ -399,7 +389,7 @@ const ddl = exporter.export('users', staticSchema);
 对于无法导出的约束，使用 `description()` 在数据库中留下说明：
 
 ```javascript
-const schema = dsl('string!')
+const schema = s('string!')
   .pattern(/^[A-Z][a-z]+$/)
   .description('首字母大写，其余小写（正则：^[A-Z][a-z]+$）');
 ```
@@ -420,31 +410,30 @@ COMMENT ON COLUMN users.name IS '首字母大写，其余小写（正则：^[A-Z
 
 ```javascript
 // schemas/user.js
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // 完整定义（包含所有验证逻辑）
-const userSchema = dsl({
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
+const userSchema = s({
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/)
     .messages({ 'string.pattern': '只能包含字母数字下划线' })
     .description('用户登录名'),
   
   contactType: 'email|phone',
-  contact: dsl.match('contactType', {
+  contact: s.match('contactType', {
     email: 'email!',
     phone: 'phone:cn!'
   })
 });
 
-module.exports = {
+export const userSchemas = {
   // 应用层使用完整 Schema
   full: userSchema,
   
   // 数据库导出使用简化 Schema
-  db: dsl({
-    username: 'string:3-32!'.description('用户登录名'),
+  db: s({
+    username: s('string:3-32!').description('用户登录名'),
     contactType: 'email|phone',
-    contact: 'string!'.description('邮箱或手机号（根据 contactType）')
+    contact: s('string!').description('邮箱或手机号（根据 contactType）')
   })
 };
 ```
@@ -474,7 +463,7 @@ module.exports = {
 
 ## 常见问题
 
-### Q1: 为什么 `dsl.match()` 不能导出？
+### Q1: 为什么 `s.match()` 不能导出？
 
 **A**: 数据库不支持"根据字段 A 的值决定字段 B 的类型"这种动态约束。数据库 Schema 在创建时就固定了，无法运行时改变。
 
@@ -511,8 +500,8 @@ module.exports = {
 
 ```javascript
 // ❌ 包含条件逻辑
-dsl.match(...)
-dsl.if(...)
+s.match(...)
+s.if(...)
 
 // ❌ 包含自定义验证器
 .custom(...)
@@ -525,10 +514,10 @@ dsl.if(...)
 
 ```javascript
 // ✅ 基础类型 + 简单约束
-dsl('string:3-32!')
-dsl('number:0-100')
-dsl('email!')
-dsl('active|inactive|banned')
+s('string:3-32!')
+s('number:0-100')
+s('email!')
+s('active|inactive|banned')
 ```
 
 ---

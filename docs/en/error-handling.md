@@ -6,28 +6,6 @@
 
 ---
 
-## 📋 Table of Contents
-
-1. [Error object structure](#error-object-structure)
-2. [I18nError - Multi-language error thrown](#i18nerror---multilingual-error-thrown) 🆕
-   - [📖 Overview](#-overview)
-   - [🚀 Quick start](#-quick-start)
-   - [📚 Core API](#-core-api)
-   - [🔧 Configure language pack](#-configure-language-pack)
-   - [🌐Default language mechanism](#default-language-mechanism)
-   - [Intelligent parameter recognition (v1.1.8)](#intelligent-parameter-recognition-v118)
-   - [🌐 Actual scene](#-actual-scene)
-   - [📦 Error object structure](#-error-object-structure)
-   - [❓ FAQ](#-faq)
-3. [Error message customization](#error-message-customization)
-4. [Error code system](#error-code-system)
-5. [Multi-level error handling](#multi-level-error-handling)
-6. [API response design](#api-responsive-design)
-7. [Front-end error display](#front-end-error-display)
-8. [Error logging](#error-logging)
-9. [Best Practice](#best-practices)
-
----
 
 ## I18nError - Multilingual error thrown
 
@@ -62,7 +40,7 @@
 #### Get started in 5 minutes
 
 ```javascript
-const { I18nError, Locale } = require('schema-dsl');
+import { I18nError, Locale } from 'schema-dsl/pure';
 
 // Step 1: Configure language pack
 Locale.addLocale('zh-CN', {
@@ -198,25 +176,25 @@ function getAccount(id) {
 
 ---
 
-#### dsl.error shortcut method
+#### s.error shortcut method
 
-`dsl.error` is a shortcut to `I18nError`, providing the same three methods:
+`s.error` is a shortcut to `I18nError`, providing the same three methods:
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // Equivalent to I18nError.create()
-dsl.error.create('account.notFound');
+s.error.create('account.notFound');
 
 // Equivalent to I18nError.throw()
-dsl.error.throw('order.notPaid');
+s.error.throw('order.notPaid');
 
 // Equivalent to I18nError.assert()
-dsl.error.assert(order, 'order.notFound');
+s.error.assert(order, 'order.notFound');
 ```
 
 **Recommended usage scenarios**:
-- ✅ When used with `dsl()` function (unified style)
+- ✅ When used with `s()` function (unified style)
 - ✅ When importing fewer dependencies (only `dsl` is required)
 
 ---
@@ -228,7 +206,7 @@ dsl.error.assert(order, 'order.notFound');
 #### Method 1: Use Locale.addLocale() (recommended)
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 Locale.addLocale('zh-CN', {
   //String format (simple scenario)
@@ -260,12 +238,12 @@ Locale.addLocale('en-US', {
 
 ---
 
-#### Method 2: Use dsl.config() (batch configuration)
+#### Method 2: Use s.config() (batch configuration)
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-dsl.config({
+s.config({
   i18n: {
     'zh-CN': {
       'payment.failed': {
@@ -300,9 +278,9 @@ project/
 
 **Configuration**:
 ```javascript
-const path = require('path');
+import path from 'path';
 
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'i18n/errors')
 });
 ```
@@ -335,7 +313,7 @@ module.exports = {
 
 **Global settings**:
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 //Switch the default language as needed by the application
 Locale.setLocale('zh-CN');
@@ -375,8 +353,8 @@ I18nError.throw('account.insufficientBalance',
 #### Practical Application - API Multilingual Response
 
 ```javascript
-const express = require('express');
-const { I18nError } = require('schema-dsl');
+import express from 'express';
+import { I18nError } from 'schema-dsl/pure';
 
 const app = express();
 
@@ -419,7 +397,7 @@ app.get('/api/account/:id', async (req, res) => {
 #### Simplified syntax
 
 ```javascript
-const { dsl, Locale } = require('schema-dsl');
+import { s, Locale } from 'schema-dsl/pure';
 
 //Configure language pack
 Locale.addLocale('zh-CN', {
@@ -437,12 +415,12 @@ Locale.addLocale('en-US', {
 });
 
 // ✅ New: Simplified syntax (recommended)
-dsl.error.throw('account.notFound', 'zh-CN');
-dsl.error.throw('account.notFound', 'zh-CN', 404);
+s.error.throw('account.notFound', 'zh-CN');
+s.error.throw('account.notFound', 'zh-CN', 404);
 
 // ✅ Standard syntax (fully compatible)
-dsl.error.throw('account.notFound', {}, 404, 'zh-CN');
-dsl.error.throw('account.notFound', { id: '123' }, 404, 'zh-CN');
+s.error.throw('account.notFound', {}, 404, 'zh-CN');
+s.error.throw('account.notFound', { id: '123' }, 404, 'zh-CN');
 ```
 
 #### Intelligent recognition rules
@@ -458,23 +436,23 @@ params === null/undefined → use default value
 
 ```javascript
 // 1. Simplified syntax - only pass the language
-dsl.error.throw('account.notFound', 'zh-CN');
-dsl.error.create('account.notFound', 'en-US');
-dsl.error.assert(account, 'account.notFound', 'zh-CN');
+s.error.throw('account.notFound', 'zh-CN');
+s.error.create('account.notFound', 'en-US');
+s.error.assert(account, 'account.notFound', 'zh-CN');
 
 // 2. Simplified syntax - language + status code
-dsl.error.throw('account.notFound', 'zh-CN', 404);
-dsl.error.assert(account, 'account.notFound', 'zh-CN', 404);
+s.error.throw('account.notFound', 'zh-CN', 404);
+s.error.assert(account, 'account.notFound', 'zh-CN', 404);
 
 // 3. Standard syntax - object with parameters
-dsl.error.throw('account.insufficientBalance',
+s.error.throw('account.insufficientBalance',
   { balance: 50, required: 100 },
   400,
   'zh-CN'
 );
 
 // 4. Omit all parameters - use global language
-dsl.error.throw('account.notFound');
+s.error.throw('account.notFound');
 ```
 
 #### Practical application
@@ -487,7 +465,7 @@ app.get('/api/account/:id', async (req, res) => {
     const locale = req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN';
 
     // 🎯 Simplified syntax: only 2 parameters
-    dsl.error.assert(account, 'account.notFound', locale);
+    s.error.assert(account, 'account.notFound', locale);
 
     res.json(account);
   } catch (error) {
@@ -505,8 +483,8 @@ app.get('/api/account/:id', async (req, res) => {
 #### Express full integration
 
 ```javascript
-const express = require('express');
-const { I18nError, Locale } = require('schema-dsl');
+import express from 'express';
+import { I18nError, Locale } from 'schema-dsl/pure';
 
 const app = express();
 app.use(express.json());
@@ -597,8 +575,8 @@ app.post('/api/account/transfer', async (req, res, next) => {
 #### Koa full integration
 
 ```javascript
-const Koa = require('koa');
-const { I18nError, Locale } = require('schema-dsl');
+import Koa from 'koa';
+import { I18nError, Locale } from 'schema-dsl/pure';
 
 const app = new Koa();
 
@@ -651,8 +629,8 @@ app.use(async (ctx) => {
 #### Native Node.js HTTP Server
 
 ```javascript
-const http = require('http');
-const { I18nError, Locale } = require('schema-dsl');
+import http from 'http';
+import { I18nError, Locale } from 'schema-dsl/pure';
 
 //Configure language pack
 Locale.addLocale('zh-CN', {
@@ -695,7 +673,7 @@ server.listen(3000);
 #### TypeScript support
 
 ```typescript
-import { I18nError, Locale } from 'schema-dsl';
+import { I18nError, Locale } from 'schema-dsl/pure';
 
 // Type-safe language pack configuration
 interface ErrorMessages {
@@ -890,16 +868,16 @@ I18nError.throw('account.insufficientBalance', {
 
 ---
 
-#### Q4: What is the difference with message() of dsl.if?
+#### Q4: What is the difference with message() of s.if?
 
 **A**:
 
-- `dsl.if().message()`: Used for **data validation errors** (Schema validation)
+- `s.if().message()`: Used for **data validation errors** (Schema validation)
 - `I18nError`: used for **business logic error** (API business logic)
 
 ```javascript
-// dsl.if - data validation
-dsl.if(d => !d).message('user.notFound').assert(user);
+// s.if - data validation
+s.if(d => !d).message('user.notFound').assert(user);
 
 // I18nError - business logic
 I18nError.assert(user.role === 'admin', 'user.noPermission');
@@ -908,8 +886,8 @@ I18nError.assert(user.role === 'admin', 'user.noPermission');
 **Can be mixed**:
 ```javascript
 function validateAndProcess(user) {
-  // Step 1: Data validation (using dsl.if)
-  dsl.if(d => !d).message('user.notFound').assert(user);
+  // Step 1: Data validation (using s.if)
+  s.if(d => !d).message('user.notFound').assert(user);
 
   // Step 2: Business logic validation (using I18nError)
   I18nError.assert(user.role === 'admin', 'user.noPermission');
@@ -923,7 +901,7 @@ function validateAndProcess(user) {
 **A**:
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 const locales = Locale.getAvailableLocales();
 console.log(locales);  // ['en-US', 'zh-CN', 'ja-JP', ...]
@@ -972,7 +950,7 @@ async function apiCall() {
 - **Modification method**:
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 //Set the default language according to the application needs at startup
 Locale.setLocale('zh-CN');
@@ -1022,7 +1000,7 @@ I18nError.throw('custom.error');
 **A**:
 
 ```javascript
-const winston = require('winston');
+import winston from 'winston';
 
 app.use((error, req, res, next) => {
   if (error instanceof I18nError) {
@@ -1056,10 +1034,10 @@ app.use((error, req, res, next) => {
 The error object structure returned by schema-dsl validation:
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
-  username: 'string:3-32!'.label('username')
+const schema = s({
+  username: s('string:3-32!').label('username')
 });
 
 const result = validate(schema, { username: 'ab' });
@@ -1082,9 +1060,9 @@ const result = validate(schema, { username: 'ab' });
 ### Nested object error
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   user: {
     profile: {
       email: 'email!'
@@ -1108,9 +1086,9 @@ console.log(result.errors[0].message); // 'The email must be a valid email addre
 ### array item error
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   items: 'array<string:3->!'
 });
 
@@ -1129,12 +1107,11 @@ console.log(result.errors[0].path); // 'items/0'
 ### Single field customization
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 //Use String to extend custom messages
-const schema = dsl({
-  username: 'string:3-32!'
-    .label('username')
+const schema = s({
+  username: s('string:3-32!').label('username')
     .messages({
       'min': 'Too short! At least 3 characters'
     })
@@ -1144,11 +1121,10 @@ const schema = dsl({
 ### Multi-rule customization
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
-  email: 'email!'
-    .label('email address')
+const schema = s({
+  email: s('email!').label('email address')
     .messages({
       'format': 'The email format is wrong',
       'required': 'The mailbox cannot be empty'
@@ -1159,18 +1135,16 @@ const schema = dsl({
 ### Object level customization
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
-  username: 'string:3-32!'
-    .label('username')
+const schema = s({
+  username: s('string:3-32!').label('username')
     .messages({
       'min': '{{#label}}at least {{#limit}} characters',
       'max': '{{#label}} is at most {{#limit}} characters'
     }),
 
-  email: 'email!'
-    .label('mailbox')
+  email: s('email!').label('mailbox')
     .messages({
       'format': '{{#label}} format is invalid'
     })
@@ -1180,7 +1154,7 @@ const schema = dsl({
 ### Global customization
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 //Set global message
 Locale.setMessages({
@@ -1235,7 +1209,7 @@ Locale.addLocale('zh-CN', {
 });
 
 // Schema
-const schema = dsl({
+const schema = s({
   username: 'string!' // Automatically find label.username
 });
 
@@ -1245,11 +1219,10 @@ const schema = dsl({
 ### Custom validation errors
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
-  username: 'string:3-32!'
-    .custom((value) => {
+const schema = s({
+  username: s('string:3-32!').custom((value) => {
       if (value.includes('forbidden')) {
         return 'The content contains prohibited words';
       }
@@ -1266,15 +1239,15 @@ const schema = dsl({
 ### Nested object validation
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   user: {
     name: 'string:1-100!',
     address: {
-      country: 'string!'.label('country'),
-      city: 'string!'.label('city'),
-      street: 'string!'.label('street')
+      country: s('string!').label('country'),
+      city: s('string!').label('city'),
+      street: s('string!').label('street')
     }
   }
 });
@@ -1297,11 +1270,10 @@ const result = validate(schema, {
 ### Array validation
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({
-  items: 'array:1-<string:3->!'
-    .label('Product List')
+const schema = s({
+  items: s('array:1-<string:3->!').label('Product List')
 });
 
 const result = validate(schema, {
@@ -1352,7 +1324,7 @@ console.log(result.errors[0].path); // 'items/0'
 ### Express middleware
 
 ```javascript
-const { dsl, Validator } = require('schema-dsl');
+import { s, Validator } from 'schema-dsl/pure';
 
 //Authentication middleware
 function validateBody(schema) {
@@ -1381,7 +1353,7 @@ function validateBody(schema) {
 }
 
 // Usage example
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   password: 'string:8-64!'
@@ -1399,7 +1371,7 @@ app.post('/api/users',
 ### Koa middleware
 
 ```javascript
-const { dsl, Validator } = require('schema-dsl');
+import { s, Validator } from 'schema-dsl/pure';
 
 function validateBody(schema) {
   const validator = new Validator();
@@ -1427,10 +1399,10 @@ function validateBody(schema) {
 }
 
 // Usage example
-const registerSchema = dsl({
-  username: 'string:3-32!'.username(),
+const registerSchema = s({
+  username: s('string:3-32!').username(),
   email: 'email!',
-  password: 'string!'.password('strong')
+  password: s('string!').password('strong')
 });
 
 router.post('/register', validateBody(registerSchema), async (ctx) => {
@@ -1592,7 +1564,7 @@ app.post('/api/register', async (req, res) => {
 ### Structured log
 
 ```javascript
-const logger = require('winston');
+import logger from 'winston';
 
 function logValidationError(req, result) {
   logger.warn({
@@ -1620,16 +1592,16 @@ function logValidationError(req, result) {
 ### 1. Use labels to make error messages clearer
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // ✅ Recommendation: use label
-const schema = dsl({
-  username: 'string:3-32!'.label('username')
+const schema = s({
+  username: s('string:3-32!').label('username')
 });
 // The error message will contain the "username" tag
 
 // ❌ Not recommended: do not use label
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!'
 });
 // The error message only displays the field name "username"
@@ -1638,12 +1610,11 @@ const schema = dsl({
 ### 2. Provide friendly Chinese error messages
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // ✅ Recommended: Customized Chinese message
-const schema = dsl({
-  username: 'string:3-32!'
-    .label('username')
+const schema = s({
+  username: s('string:3-32!').label('username')
     .messages({
       'minLength': '{{#label}} requires at least {{#limit}} characters',
       'maxLength': '{{#label}} is at most {{#limit}} characters'
@@ -1651,7 +1622,7 @@ const schema = dsl({
 });
 
 // ❌ Not recommended: use the default English message
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!'
 });
 ```
@@ -1659,12 +1630,11 @@ const schema = dsl({
 ### 3. Use custom validation to implement business logic
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // ✅ Recommended: Return error message string
-const schema = dsl({
-  username: 'string:3-32!'
-    .custom((value) => {
+const schema = s({
+  username: s('string:3-32!').custom((value) => {
       if (value === 'admin') {
         return 'Username has been occupied';
       }
@@ -1751,10 +1721,10 @@ module.exports = {
 
 **Usage Example**:
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 try {
-  dsl.error.throw('account.notFound');
+  s.error.throw('account.notFound');
 } catch (error) {
   console.log(error.originalKey);  // 'account.notFound'
   console.log(error.code); // 40001 ✨ Numeric error code
@@ -1770,7 +1740,7 @@ Keep the original key for easy debugging and log tracking:
 
 ```javascript
 try {
-  dsl.error.throw('account.notFound');
+  s.error.throw('account.notFound');
 } catch (error) {
   error.originalKey // 'account.notFound' (original key)
   error.code // 40001 (numeric error code)
@@ -1814,7 +1784,7 @@ Supports `originalKey` and digital `code` judgments at the same time:
 
 ```javascript
 try {
-  dsl.error.throw('account.notFound');
+  s.error.throw('account.notFound');
 } catch (error) {
   // Both methods are available
   if (error.is('account.notFound')) { } // ✅ Use originalKey
@@ -1846,7 +1816,7 @@ const json = error.toJSON();
 'user.notFound': 'User does not exist'
 
 // Automatically convert to object
-dsl.error.throw('user.notFound');
+s.error.throw('user.notFound');
 // error.code = 'user.notFound' (use key as code)
 // error.originalKey = 'user.notFound'
 // error.message = 'User does not exist'

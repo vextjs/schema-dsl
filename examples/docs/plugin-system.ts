@@ -1,17 +1,9 @@
-import * as schemaDsl from '../../dist/index.js'
-import {
-  DslBuilder,
-  ObjectDslBuilder,
-  PluginManager,
-  dsl,
-  validate,
-  type DslDefinition,
-  type JSONSchema,
-} from '../../dist/index.js'
+import * as schemaDsl from '../../dist/pure.js'
+import { DslBuilder, ObjectDslBuilder, PluginManager, s, validate, type DslDefinition, type JSONSchema } from '../../dist/pure.js'
 import customFormatPlugin from '../../dist/plugins/custom-format.js'
 
 function objectDsl(definition: DslDefinition): ObjectDslBuilder {
-  return new ObjectDslBuilder(dsl(definition) as JSONSchema)
+  return new ObjectDslBuilder(s(definition) as JSONSchema)
 }
 
 // ============================================================
@@ -92,7 +84,7 @@ DslBuilder.registerType('score', {
 console.log('plugin-system.registerType.hasSku   =', DslBuilder.hasType('sku'))    // true
 console.log('plugin-system.registerType.hasScore =', DslBuilder.hasType('score'))  // true
 
-const productSchema = dsl({ sku: 'sku!', qualityScore: 'score', name: 'string:2-100!' })
+const productSchema = s({ sku: 'sku!', qualityScore: 'score', name: 'string:2-100!' })
 
 console.log('plugin-system.custom.type.valid   =',
   validate(productSchema, { sku: 'PROD-001234', qualityScore: 85, name: 'Widget Pro' }).valid) // true
@@ -116,7 +108,7 @@ pm2.install(schemaDsl, 'custom-format')
 console.log('plugin-system.customFormat.installed =', pm2.has('custom-format'))  // true
 console.log('plugin-system.customFormat.hasSku   =', DslBuilder.hasType('phone-cn'))  // true — registered by plugin
 
-const phoneSchema = dsl({ phone: 'phone-cn!' })
+const phoneSchema = s({ phone: 'phone-cn!' })
 console.log('plugin-system.customFormat.phone.valid   =',
   validate(phoneSchema, { phone: '13800138000' }).valid)   // true
 console.log('plugin-system.customFormat.phone.invalid =',
@@ -156,7 +148,7 @@ const pm3 = new PluginManager()
 pm3.register(geoTypesPlugin)
 pm3.install(schemaDsl, 'geo-types')
 
-const locationSchema = dsl({ lat: 'latitude!', lng: 'longitude!', label: 'string:1-100' })
+const locationSchema = s({ lat: 'latitude!', lng: 'longitude!', label: 'string:1-100' })
 
 console.log('plugin-system.geo.valid =',
   validate(locationSchema, { lat: 37.7749, lng: -122.4194, label: 'San Francisco' }).valid)  // true
@@ -189,7 +181,7 @@ const depthResult = DslBuilder.validateNestingDepth(deepObjSchema as any, 3)
 console.log('plugin-system.nestingDepth.tooDeep =', !depthResult.valid)   // true
 
 // depth 2 — within limit
-const shallowObjSchema = objectDsl({ a: dsl({ b: 'string' }) }).toSchema()
+const shallowObjSchema = objectDsl({ a: s({ b: 'string' }) }).toSchema()
 const shallowResult = DslBuilder.validateNestingDepth(shallowObjSchema as any, 4)
 console.log('plugin-system.nestingDepth.allowed =', shallowResult.valid)  // true
 

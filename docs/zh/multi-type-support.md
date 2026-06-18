@@ -89,12 +89,12 @@ String扩展**只支持字符串类型**，这是设计决定：
 
 ```javascript
 // ✅ 正确：字符串类型使用String扩展
-email: 'email!'.pattern(/custom/).label('邮箱')
-username: 'string:3-32!'.pattern(/^\w+$/).label('用户名')
+email: s('email!').pattern(/custom/).label('邮箱')
+username: s('string:3-32!').pattern(/^\w+$/).label('用户名')
 
 // ❌ 不适用：数字类型不应使用String扩展
-age: 'number:18-120'.label('年龄')  // ✅ 可以用label
-age: 'number:18-120'.pattern(/\d/)   // ⚠️ 会被忽略（数字不支持pattern）
+age: s('number:18-120').label('年龄')  // ✅ 可以用label
+age: s('number:18-120').pattern(/\d/)   // ⚠️ 会被忽略（数字不支持pattern）
 ```
 
 ### 为什么这样设计？
@@ -110,18 +110,16 @@ age: 'number:18-120'.pattern(/\d/)   // ⚠️ 会被忽略（数字不支持pat
 ### 字符串类型（支持链式）
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // ✨ 简单字段：纯DSL
   name: 'string:1-50!',
   
   // ✨ 复杂字段：String扩展链式
-  email: 'email!'
-    .pattern(/custom/)
+  email: s('email!').pattern(/custom/)
     .messages({ 'format': '邮箱格式不正确' })
     .label('邮箱地址'),
   
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/)
     .messages({ 'pattern': '只能包含字母、数字、下划线' })
     .label('用户名')
 });
@@ -130,18 +128,17 @@ const schema = dsl({
 ### 数字类型（纯DSL）
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // 简洁的约束表达
   age: 'number:18-120',      // 范围
   price: 'number:0-999999!', // 必填 + 范围
   count: 'integer:1-100',    // 整数
   
   // 需要label时
-  score: 'number:0-100'.label('分数'),
+  score: s('number:0-100').label('分数'),
   
   // ⚠️ 数字类型很少需要复杂验证，如需要可用custom
-  amount: 'number:0-10000'
-    .custom(value => value % 100 === 0) // 必须是100的倍数
+  amount: s('number:0-10000').custom(value => value % 100 === 0) // 必须是100的倍数
     .label('金额')
 });
 ```
@@ -149,27 +146,26 @@ const schema = dsl({
 ### 布尔类型（纯DSL）
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // 布尔类型非常简单
   isActive: 'boolean',
   agreeTerms: 'boolean!',
   
   // 需要label时
-  emailNotification: 'boolean'.label('邮件通知')
+  emailNotification: s('boolean').label('邮件通知')
 });
 ```
 
 ### 日期类型（纯DSL）
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // 日期约束
   birthday: 'date',
   createdAt: 'date!',
   
   // 需要验证范围可用custom
-  appointmentDate: 'date!'
-    .custom(value => {
+  appointmentDate: s('date!').custom(value => {
       const date = new Date(value);
       return date > new Date(); // 必须是未来日期
     })
@@ -180,20 +176,20 @@ const schema = dsl({
 ### 枚举类型（纯DSL）
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // 枚举值用 | 分隔
   status: 'active|inactive|pending',
   role: 'user|admin|moderator',
   
   // 需要label时
-  gender: 'male|female|other'.label('性别')
+  gender: s('male|female|other').label('性别')
 });
 ```
 
 ### 数组类型（纯DSL）
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // 数组元素类型
   tags: 'array<string>',
   scores: 'array<number>',
@@ -221,7 +217,7 @@ const schema = dsl({
 ### 推荐入口
 
 ```javascript
-const { DslBuilder, TypeRegistry } = require('schema-dsl');
+import { DslBuilder, TypeRegistry } from 'schema-dsl/pure';
 
 TypeRegistry.register('evenNumber', {
   baseSchema: { type: 'number', multipleOf: 2 }
@@ -238,7 +234,7 @@ DslBuilder.registerType('phone-cn-lite', {
 ### 使用方式
 
 ```javascript
-const schema = dsl({
+const schema = s({
   phone: 'phone-cn-lite!',
   luckyNumber: 'evenNumber'
 });
@@ -257,7 +253,7 @@ const schema = dsl({
 | `.custom()` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `.default()` | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-**条件验证**: 使用 `dsl.match()` 或 `dsl.if()` 静态方法。
+**条件验证**: 使用 `s.match()` 或 `s.if()` 静态方法。
 
 **说明**:
 - ✅ 完全支持
@@ -271,7 +267,7 @@ const schema = dsl({
 
 ```javascript
 // ✅ 字符串：复杂验证用链式
-username: 'string:3-32!'.pattern(/^\w+$/).label('用户名')
+username: s('string:3-32!').pattern(/^\w+$/).label('用户名')
 
 // ✅ 数字：简单约束用DSL
 age: 'number:18-120'
@@ -284,18 +280,17 @@ status: 'active|inactive'
 
 ```javascript
 // ✅ 正确
-email: 'email!'.pattern(/custom/)
+email: s('email!').pattern(/custom/)
 
 // ❌ 不推荐（虽然不会报错，但pattern会被忽略）
-age: 'number:18-120'.pattern(/\d+/)
+age: s('number:18-120').pattern(/\d+/)
 ```
 
 ### 3. 复杂验证用custom
 
 ```javascript
 // 对于任何类型，复杂验证都用custom
-amount: 'number:0-10000'
-  .custom(value => value % 100 === 0)
+amount: s('number:0-10000').custom(value => value % 100 === 0)
   .label('金额')
 ```
 

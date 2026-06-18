@@ -1,6 +1,8 @@
-# schema-dsl 类型参考
+# schema-dsl 完整类型列表
 
-> **更新时间**: 2026-05-08  
+> **更新时间**: 2026-06-18
+
+本页列出内置 DSL 类型，并说明同一种类型在 v2.1.0 推荐写法中的三种调用方式：纯 DSL 字符串、`s('...')` builder seed、`s.xxx()` factory。
 
 ---
 
@@ -65,22 +67,22 @@
 ### 基本类型
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // 字符串
-const schema1 = dsl({ name: 'string' });
+const schema1 = s({ name: 'string' });
 
 // 数字
-const schema2 = dsl({ age: 'number' });
+const schema2 = s({ age: 'number' });
 
 // 整数
-const schema3 = dsl({ count: 'integer' });
+const schema3 = s({ count: 'integer' });
 
 // 布尔
-const schema4 = dsl({ active: 'boolean' });
+const schema4 = s({ active: 'boolean' });
 
 // 对象
-const schema5 = dsl({ 
+const schema5 = s({
   user: {
     name: 'string',
     age: 'number'
@@ -88,13 +90,13 @@ const schema5 = dsl({
 });
 
 // 数组
-const schema6 = dsl({ tags: 'array<string>' });
+const schema6 = s({ tags: 'array<string>' });
 
 // 空值
-const schema7 = dsl({ value: 'null' });
+const schema7 = s({ value: 'null' });
 
 // 任意类型
-const schema8 = dsl({ data: 'any' });
+const schema8 = s({ data: 'any' });
 ```
 
 ---
@@ -103,22 +105,22 @@ const schema8 = dsl({ data: 'any' });
 
 ```javascript
 // 手机号（默认 cn）
-const schema1 = dsl({ mobile: 'phone:cn!' });
+const schema1 = s({ mobile: 'phone:cn!' });
 
 // 身份证
-const schema2 = dsl({ idCard: 'idCard:cn!' });
+const schema2 = s({ idCard: 'idCard:cn!' });
 
 // 信用卡
-const schema3 = dsl({ card: 'creditCard:visa!' });
+const schema3 = s({ card: 'creditCard:visa!' });
 
 // 车牌号
-const schema4 = dsl({ plate: 'licensePlate:cn!' });
+const schema4 = s({ plate: 'licensePlate:cn!' });
 
 // 邮政编码
-const schema5 = dsl({ zip: 'postalCode:cn!' });
+const schema5 = s({ zip: 'postalCode:cn!' });
 
 // 护照
-const schema6 = dsl({ passportNo: 'passport:cn!' });
+const schema6 = s({ passportNo: 'passport:cn!' });
 ```
 
 ---
@@ -127,25 +129,25 @@ const schema6 = dsl({ passportNo: 'passport:cn!' });
 
 ```javascript
 // 邮箱
-const schema1 = dsl({ email: 'email!' });
+const schema1 = s({ email: 'email!' });
 
 // URL
-const schema2 = dsl({ website: 'url' });
+const schema2 = s({ website: 'url' });
 
 // UUID
-const schema3 = dsl({ id: 'uuid!' });
+const schema3 = s({ id: 'uuid!' });
 
 // 日期
-const schema4 = dsl({ birthday: 'date' });
+const schema4 = s({ birthday: 'date' });
 
 // 日期时间
-const schema5 = dsl({ created_at: 'datetime!' });
+const schema5 = s({ created_at: 'datetime!' });
 
 // 时间
-const schema6 = dsl({ start_time: 'time' });
+const schema6 = s({ start_time: 'time' });
 
 // IP地址
-const schema7 = dsl({ 
+const schema7 = s({
   ipv4_addr: 'ipv4',
   ipv6_addr: 'ipv6'
 });
@@ -157,38 +159,36 @@ const schema7 = dsl({
 
 ```javascript
 // 二进制数据（Base64）
-const schema = dsl({ 
+const schema = s({
   avatar: 'binary'  // 头像图片（Base64编码）
 });
 ```
 
 ---
 
-## 🔄 与 joi 的对应关系
+## 调用方式矩阵
 
-### 完整对照表
+| 目标 | 推荐写法 | 示例 |
+|------|----------|------|
+| 最短 schema object | 纯 DSL 字符串 | `s({ email: 'email!' })` |
+| DSL seed + 链式增强 | `s('...')` | `s('string:3-32!').label('用户名')` |
+| 完整方法发现 | `s.xxx()` factory | `s.email().label('邮箱').require()` |
+| 框架隔离运行时 | `runtime.s` | `runtime.s({ email: 'email!' })` |
+| 直接字符串链式源码 | String Extensions 或 transform | `'email!'.label('邮箱')` |
 
-| joi | schema-dsl DSL | 说明 |
-|-----|--------------|------|
-| `Joi.string()` | `'string'` | 字符串 |
-| `Joi.string().email()` | `'email'` | 邮箱 |
-| `Joi.string().uri()` | `'url'` | URL |
-| `Joi.string().uuid()` | `'uuid'` | UUID |
-| `Joi.string().ip()` | `'ipv4'` 或 `'ipv6'` | IP地址 |
-| `Joi.string().min(3).max(32)` | `'string:3-32'` | 长度范围 |
-| `Joi.string().required()` | `'string!'` | 必填 |
-| `Joi.number()` | `'number'` | 数字 |
-| `Joi.number().min(0).max(100)` | `'number:0-100'` | 数字范围 |
-| `Joi.number().integer()` | `'integer'` | 整数 |
-| `Joi.boolean()` | `'boolean'` | 布尔 |
-| `Joi.date()` | `'date'` 或 `'datetime'` | 日期 |
-| `Joi.array()` | `'array'` | 数组 |
-| `Joi.array().items(Joi.string())` | `'array<string>'` | 字符串数组 |
-| `Joi.array().min(1).max(10)` | `'array:1-10'` | 数组长度 |
-| `Joi.object()` | `{ ... }` | 对象 |
-| `Joi.any()` | `'any'` | 任意类型 |
-| `Joi.binary()` | `'binary'` | 二进制 |
-| `Joi.valid('a','b','c')` | `'a\|b\|c'` | 枚举 |
+Factory 示例：
+
+```javascript
+import { s } from 'schema-dsl/pure';
+
+const schema = s({
+  name: s.string().min(1).max(50).require(),
+  age: s.number().min(18).max(120),
+  email: s.email().label('邮箱').require(),
+  tags: s.array('string:1-30').min(1).max(10),
+  status: s.enum('active', 'inactive', 'pending').default('active')
+});
+```
 
 ---
 
@@ -202,18 +202,18 @@ const schema = dsl({
 
 ## ❓ 常见问题
 
-### Q1: 为什么没有直接叫 `Joi.alternatives()` 的 API？
+### Q1: 如何表达字段可选类型？
 
 A: schema-dsl 把这类需求拆成两类：
 
 - 单字段跨类型联合: 使用 `types:` 语法
-- 根据其他字段做条件分支: 使用 `dsl.match()`
+- 根据其他字段做条件分支: 使用 `s.match()`
 
 ```javascript
-const schema = dsl({
+const schema = s({
   value: 'types:string|number',
   contactType: 'email|phone',
-  contact: dsl.match('contactType', {
+  contact: s.match('contactType', {
     email: 'email!',
     phone: 'phone:cn!'
   })
@@ -230,13 +230,13 @@ A: 不支持 `s`/`n`/`i`/`b` 等简写，统一使用完整类型名（`string`/
 
 ---
 
-**最后更新**: 2026-05-08
+**最后更新**: 2026-06-18
 
 ---
 
 ## 对应示例文件
 
-**示例入口**: [type-reference.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/type-reference.ts)  
+**示例入口**: [type-reference.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/type-reference.ts)
 **说明**: 用一份 schema 串起常用内置类型、参数化 DSL 类型和运行时错误路径，方便快速核对实际支持范围。
 
 

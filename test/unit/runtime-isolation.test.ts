@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { createRuntime, createSchemaDslAdapter, createSchemaDslRuntime } from '../../src/runtime.js'
-import { dsl, Locale, PATTERNS, resetRuntimeState, TypeRegistry } from '../../src/index.js'
+import { dsl, Locale, PATTERNS, resetRuntimeState, s as globalS, TypeRegistry } from '../../src/index.js'
 import { DslBuilder } from '../../src/core/DslBuilder.js'
 
 afterEach(() => {
@@ -169,6 +169,70 @@ describe('schema-dsl/runtime isolation', () => {
     expect(strict.errors?.[0]?.keyword).toBe('type')
   })
 
+  it('exposes scoped s and dsl namespace factories without leaking to global namespace', () => {
+    const runtime = createRuntime()
+
+    expect(runtime.s).toBe(runtime.dsl)
+    expect(runtime.s.email().require().toSchema()).toMatchObject({
+      type: 'string',
+      format: 'email',
+      _required: true,
+    })
+    expect(runtime.dsl.number().min(1).max(5).toSchema()).toMatchObject({
+      type: 'number',
+      minimum: 1,
+      maximum: 5,
+    })
+
+    runtime.registerExtension({
+      literal: 'tenant-runtime-id',
+      factoryName: 'tenantRuntimeId',
+      schema: { type: 'string', pattern: '^runtime_[a-z0-9]+$' },
+    })
+
+    expect(runtime.s('tenant-runtime-id!').toSchema()).toMatchObject({
+      type: 'string',
+      pattern: '^runtime_[a-z0-9]+$',
+      _required: true,
+    })
+    expect((runtime.s as unknown as { tenantRuntimeId(): DslBuilder }).tenantRuntimeId().require().toSchema()).toMatchObject(
+      runtime.s('tenant-runtime-id!').toSchema()
+    )
+    expect((globalS as unknown as { tenantRuntimeId?: unknown }).tenantRuntimeId).toBeUndefined()
+    expect(TypeRegistry.has('tenant-runtime-id')).toBe(false)
+  })
+
+  it('clears scoped namespace extension factories on runtime reset and replace', () => {
+    const runtime = createRuntime({ strict: true })
+
+    runtime.registerExtension({
+      literal: 'tenant-runtime-id',
+      factoryName: 'tenantRuntimeId',
+      schema: { type: 'string', pattern: '^runtime_[a-z0-9]+$' },
+    })
+
+    expect((runtime.s as unknown as { tenantRuntimeId(): DslBuilder }).tenantRuntimeId().toSchema()).toMatchObject({
+      type: 'string',
+      pattern: '^runtime_[a-z0-9]+$',
+    })
+
+    runtime.configure({ strict: true }, { mode: 'replace' })
+
+    expect((runtime.s as unknown as { tenantRuntimeId?: unknown }).tenantRuntimeId).toBeUndefined()
+    expect(() => runtime.compile('tenant-runtime-id')).toThrow(/Unknown type "tenant-runtime-id"/)
+
+    runtime.registerExtension({
+      literal: 'tenant-runtime-id',
+      factoryName: 'tenantRuntimeId',
+      schema: { type: 'string', pattern: '^runtime_[a-z0-9]+$' },
+    })
+
+    runtime.configure({ strict: true }, { mode: 'reset' })
+
+    expect((runtime.s as unknown as { tenantRuntimeId?: unknown }).tenantRuntimeId).toBeUndefined()
+    expect(() => runtime.compile('tenant-runtime-id')).toThrow(/Unknown type "tenant-runtime-id"/)
+  })
+
   it('supports runtime configure, registration, cache stats and reset lifecycle', () => {
     const runtime = createRuntime({
       strict: true,
@@ -259,6 +323,7 @@ describe('schema-dsl/runtime isolation', () => {
       patternEntryCount: 0,
     })
     expect(() => runtime.compile('string')).toThrow('[schema-dsl/runtime] Runtime has been disposed')
+    expect(() => runtime.s.email()).toThrow('[schema-dsl/runtime] Runtime has been disposed')
     expect(() => runtime.validate({ type: 'string' }, 'ok')).toThrow('[schema-dsl/runtime] Runtime has been disposed')
     expect(() => runtime.clearCache()).toThrow('[schema-dsl/runtime] Runtime has been disposed')
     await expect(builder.validate('ok')).rejects.toThrow('[schema-dsl/runtime] Runtime has been disposed')

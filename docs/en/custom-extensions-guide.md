@@ -1,30 +1,33 @@
-# Custom extension guide
+# Advanced extension recipes
 
 > **Version**: 2.0.11
-> **Updated date**: 2026-06-17
-> **Purpose**: Explain the runtime extension method recommended by the current version, and how to continue to extend it in depth when maintaining the source code of schema-dsl itself.
+> **Updated date**: 2026-06-18
+> **Purpose**: Combine custom types, factories, chain methods, keywords, locale messages, runtime isolation, and plugins after you understand each focused extension path.
 
 ---
 
-## 📑 Table of Contents
 
-- [Quick Start](#quick-start)
-- [Add custom AJV keyword](#add-custom-ajv-keyword)
-- [Register custom DSL type](#register-a-custom-dsl-type)
-- [Packaging predefined mode](#packaging-predefined-mode)
-- [Multi-language support](#multi-language-support)
-- [Complete example](#complete-example)
+## Before using this page
 
----
+For most projects, start with the focused pages:
 
-## quick start
+- [Extension Overview](extensions-overview.md) - choose the right extension path.
+- [Custom DSL Types](plugin-type-registration.md) - register reusable DSL literals.
+- [Custom s.xxx() Factories](custom-factories.md) - expose discoverable namespace factories.
+- [Custom Chain Methods](custom-chain-methods.md) - add methods to existing builders.
+- [Custom Validation Keywords](add-keyword.md) - add AJV keywords.
+- [Framework Integration](framework-extension-setup.md) - organize reusable extension modules.
 
-schema-dsl adopts modular design, you can easily extend:
+Use this page only when an extension package combines several of those capabilities.
+
+## Quick start
+
+schema-dsl adopts modular design. Advanced extensions can combine:
 
 1. **`Validator.addKeyword()`** - Runtime registration of custom AJV keywords
-2. **`TypeRegistry.register()` / `DslBuilder.registerType()`** - Register a custom DSL type
+2. **`registerExtension()` / `s.registerExtension()` / `TypeRegistry.register()` / `DslBuilder.registerType()`** - Register a custom DSL type and optional namespace factory
 3. **`PluginManager` + `schema-dsl/plugins/*`** - Combination plug-in, hook and official plug-in entrance
-4. **`Locale.addLocale()` / `dsl.config({ i18n })`** - Extended multi-language messages
+4. **`Locale.addLocale()` / `s.config({ i18n })`** - Extended multi-language messages
 5. **`transformSchemaDsl({ additionalMethods })` + `schema-dsl/string-types`** - Compile-time String-chain custom methods and opt-in TypeScript hints
 6. **`createRuntime()` from `schema-dsl/runtime`** - Isolated custom types, patterns and messages for frameworks or tenants
 
@@ -34,10 +37,11 @@ schema-dsl adopts modular design, you can easily extend:
 > Only when you maintain `schema-dsl`'s own source code, you need to continue reading the "Modify Internal Module" class example below.
 
 - Custom keywords: priority is given to `new Validator().addKeyword(name, definition)`
-- Custom type: priority is given to `TypeRegistry.register()` or `DslBuilder.registerType()`
+- Custom type and namespace factory: prefer `registerExtension()` / `s.registerExtension()` when you want the DSL literal and `s.tenantId()` to exist together; use `TypeRegistry.register()` or `DslBuilder.registerType()` when only the literal type is needed.
+- `factoryName` must be a valid JavaScript/TypeScript identifier, such as `tenantId`, because it becomes a dot-call namespace method and a module-augmentation method name.
 - Official plug-in: give priority to `PluginManager` with `schema-dsl/plugins/custom-format`, `schema-dsl/plugins/custom-validator`, `schema-dsl/plugins/custom-type-example`
-- Custom language: priority is given to `Locale.addLocale()` or `dsl.config({ i18n: { locales } })`
-- Custom String-chain authoring: configure `additionalMethods` in the transform, configure `additionalTypes` or `additionalTypePatterns` when chaining from registered custom DSL type literals, and augment `schema-dsl/string-types` for IDE hints. The transform only rewrites source code; the actual `dsl('...').yourMethod()` runtime method must still be provided by your extension.
+- Custom language: priority is given to `Locale.addLocale()` or `s.config({ i18n: { locales } })`
+- Custom String-chain authoring: configure `additionalMethods` in the transform, configure `additionalTypes` or `additionalTypePatterns` when chaining from registered custom DSL type literals, and augment `schema-dsl/string-types` for IDE hints. The transform only rewrites source code; the actual `s('...').yourMethod()` runtime method must still be provided by your extension.
 - Framework or tenant isolation: prefer `createRuntime()` from `schema-dsl/runtime` so custom types, pattern overrides, messages, message providers and Validator/AJV caches stay inside one runtime instance.
 - Register runtime custom types and dynamic type factories at app/plugin startup. Avoid request-scoped factories that capture request objects or large app containers; pass request-level locale/messages via `validate(..., options)` instead.
 
@@ -66,7 +70,7 @@ const runtime = createRuntime({
     key === 'number.min' ? `[${locale}] {{#label}} must be >= {{#limit}}` : fallback
 });
 
-const schema = runtime.dsl({
+const schema = runtime.s({
   id: 'tenantId!',
   phone: 'phone:zz',
   age: 'number:18-120'
@@ -75,13 +79,25 @@ const schema = runtime.dsl({
 
 For hot reload, prefer `runtime.configure(nextOptions, { mode: 'replace' })` or `runtime.configure({}, { mode: 'reset' })` before loading the next extension set. Use `runtime.dispose()` when an app/plugin instance is unloaded.
 
-Built-in chain methods keep their TypeScript hints through `runtime.dsl('string')` / `runtime.compileField('string')`. Custom chain methods still need normal builder interface augmentation plus a runtime method implementation in your extension code.
+Built-in chain methods keep their TypeScript hints through `runtime.s('string')` / `runtime.compileField('string')`. Custom chain methods still need normal builder interface augmentation plus a runtime method implementation in your extension code.
+
+Runtime namespace factories are scoped too:
+
+```typescript
+runtime.registerExtension({
+  literal: 'tenant-id',
+  factoryName: 'tenantId',
+  schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
+});
+
+const tenant = runtime.s.tenantId().require().toSchema();
+```
 
 ---
 
 ## Compile-time String-chain custom methods
 
-When a project has its own builder method, add the method name to `additionalMethods` so static String chains are rewritten to `dsl(...)` calls:
+When a project has its own builder method, add the method name to `additionalMethods` so static String chains are rewritten to `s(...)` calls:
 
 ```typescript
 import { transformSchemaDsl } from 'schema-dsl/transform';
@@ -95,13 +111,36 @@ const result = transformSchemaDsl(
 );
 ```
 
-For TypeScript hints, import `schema-dsl/string-types` and augment its extension interface:
+For TypeScript hints, import `schema-dsl/string-types` and augment its extension interface. The direct-string line below is meant for code that is transformed before runtime; without the transform, use `s('...')` or `s.xxx()`:
 
 ```typescript
 import 'schema-dsl/string-types';
-import { dsl, type IDslBuilder } from 'schema-dsl/pure';
+import { DslBuilder, s, registerExtension, type IDslBuilder } from 'schema-dsl/pure';
+
+registerExtension({
+  literal: 'tenant-id',
+  factoryName: 'tenantId',
+  exposeStringChain: true,
+  schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
+});
+
+function installTenantIdBuilderMethod() {
+  const proto = DslBuilder.prototype as unknown as {
+    tenantId?: (this: IDslBuilder) => IDslBuilder;
+  };
+
+  proto.tenantId ??= function tenantId(this: IDslBuilder) {
+    return this.pattern(/^tenant_[a-z0-9]+$/);
+  };
+}
+
+installTenantIdBuilderMethod();
 
 declare module 'schema-dsl/pure' {
+  interface DslNamespaceFactories {
+    tenantId(): IDslBuilder;
+  }
+
   interface IDslBuilder {
     tenantId(): this;
   }
@@ -114,8 +153,11 @@ declare module 'schema-dsl/string-types' {
 }
 
 const tenantFromString = 'string!'.tenantId().label('Tenant');
-const tenantFromDsl = dsl('string!').tenantId().label('Tenant');
+const tenantFromDsl = s('string!').tenantId().label('Tenant');
+const tenantFromNamespace = s.tenantId().label('Tenant');
 ```
+
+`exposeStringChain: true` lets `defineExtension()` derive `transformMethods: ['tenantId']` from the factory name. It does not install a runtime builder method or TypeScript declarations by itself; keep providing both the runtime method implementation and the module augmentation shown above.
 
 Use `methods` only when intentionally replacing the full built-in transform method set; for normal user extensions, prefer `additionalMethods`.
 
@@ -141,7 +183,7 @@ For generated type names, use `additionalTypePatterns`, for example `{ additiona
 ### Step 1: Register keywords via public API
 
 ```javascript
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
 
 const validator = new Validator();
 
@@ -175,20 +217,20 @@ const plugin = {
 ### Recommended writing method at runtime
 
 ```javascript
-const { DslBuilder, dsl } = require('schema-dsl');
+import { DslBuilder, s } from 'schema-dsl/pure';
 
 DslBuilder.registerType('invoice-id', {
   type: 'string',
   pattern: '^INV-\\d{4}$'
 });
 
-const schema = dsl({ id: 'invoice-id!' });
+const schema = s({ id: 'invoice-id!' });
 ```
 
 ### Lower level entrance
 
 ```javascript
-const { TypeRegistry } = require('schema-dsl');
+import { TypeRegistry } from 'schema-dsl/pure';
 
 TypeRegistry.register('evenNumber', {
   baseSchema: { type: 'number', multipleOf: 2 }
@@ -206,7 +248,7 @@ TypeRegistry.register('evenNumber', {
 The current version recommends using "custom type + existing constraints" or "plug-in" to encapsulate the predefined pattern, instead of directly requiring the business side to modify `src/config/patterns/*` in the package.
 
 ```typescript
-import { DslBuilder } from 'schema-dsl';
+import { DslBuilder } from 'schema-dsl/pure';
 
 DslBuilder.registerType('wechat-id', {
   type: 'string',
@@ -223,7 +265,7 @@ DslBuilder.registerType('wechat-id', {
 1. **Append language at runtime**
 
 ```typescript
-import { Locale } from 'schema-dsl';
+import { Locale } from 'schema-dsl/pure';
 
 Locale.addLocale('fr-FR', {
   required: '{{#label}} est obligatoire',
@@ -234,7 +276,7 @@ Locale.addLocale('fr-FR', {
 2. **Or centrally inject through configuration object**
 
 ```javascript
-dsl.config({
+s.config({
   i18n: {
     locales: {
       'fr-FR': {
@@ -255,7 +297,7 @@ validate(schema, data, { locale: 'fr-FR' });
 
 ```javascript
 //Global configuration
-dsl.config({
+s.config({
   i18n: {
     'zh-CN': {
       'custom.emailTaken': 'This email address has been registered',
@@ -265,7 +307,7 @@ dsl.config({
 });
 
 // use
-const schema = dsl({ email: 'email!' });
+const schema = s({ email: 'email!' });
 schema.properties.email._customMessages = {
   'format': 'custom.emailTaken'
 };
@@ -273,13 +315,23 @@ schema.properties.email._customMessages = {
 
 ---
 
-## Complete example
+## Combined recipe examples
 
-### Example 1: Bank card number validator
+### Recipe 1: Bank card validation concept
+
+The following outline shows the moving parts of a combined keyword + builder-method + message extension. Keep production code in separate modules as shown in [Framework Integration](framework-extension-setup.md).
+
+```text
+1. Register an AJV keyword named bankCard.
+2. Add a builder method named bankCard().
+3. Add locale messages for pattern.bankCard.
+4. Use s('string!').bankCard() in field definitions.
+```
+
+Runtime keyword shape:
 
 ```javascript
-// 1. Add AJV keyword
-static registerBankCard Validator(ajv) {
+function registerBankCardKeyword(ajv) {
   ajv.addKeyword({
     keyword: 'bankCard',
     type: 'string',
@@ -317,29 +369,12 @@ static registerBankCard Validator(ajv) {
     errors: true
   });
 }
-
-// 2. Add DslBuilder method
-bankCard() {
-  if (this._baseSchema.type !== 'string') {
-    throw new Error('bankCard() only applies to string type');
-  }
-  this._baseSchema.bankCard = true;
-  return this;
-}
-
-// 3. Add multiple languages
-'pattern.bankCard': '{{#label}} must be a valid bank card number'
-
-// 4. Use
-const schema = dsl({ cardNumber: dsl('string!').bankCard() });
-validate(schema, { cardNumber: '6222026006956145' });
 ```
 
-### Example 2: IP segment validator
+### Recipe 2: IP range keyword
 
 ```javascript
-// 1. Add AJV keyword
-static registerIPRange(ajv) {
+function registerIPRangeKeyword(ajv) {
   ajv.addKeyword({
     keyword: 'ipRange',
     type: 'string',
@@ -370,13 +405,6 @@ static registerIPRange(ajv) {
     errors: true
   });
 }
-
-// 2. Use
-const schema = {
-  type: 'string',
-  format: 'ipv4',
-  ipRange: ['192.168.1.1', '192.168.1.255']
-};
 ```
 
 ---
@@ -406,12 +434,12 @@ const schema = {
 ```javascript
 describe('Custom Validator - bankCard', function() {
   it('A valid bank card number should be validated', function() {
-    const schema = dsl({ card: dsl('string!').bankCard() });
+    const schema = s({ card: s('string!').bankCard() });
     expect(validate(schema, { card: '6222026006956145' }).valid).to.be.true;
   });
 
   it('Invalid bank card numbers should be rejected', function() {
-    const schema = dsl({ card: dsl('string!').bankCard() });
+    const schema = s({ card: s('string!').bankCard() });
     expect(validate(schema, { card: '1234567890123456' }).valid).to.be.false;
   });
 });
@@ -435,4 +463,4 @@ describe('Custom Validator - bankCard', function() {
 ## Corresponding sample file
 
 **Example entry**: [custom-extensions-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/custom-extensions-guide.ts)
-**Description**: Mainly focuses on the runtime public API, covering four expansion paths `Validator.addKeyword()`, `DslBuilder.registerType()`, `Locale.addLocale()` and the official plug-in entrance.
+**Description**: Combines custom keywords, custom DSL types, namespace factories, chain-method runtime setup, locale messages, transform options, and plugin installation in one advanced example.

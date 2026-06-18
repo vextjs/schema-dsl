@@ -1,37 +1,27 @@
 # DSL 语法完整指南
 
-> **更新时间**: 2026-05-22  
+> **更新时间**: 2026-06-18
 
 ---
 
-## 📑 目录
-
-- [快速开始](#快速开始)
-- [完整类型列表](#完整类型列表)
-- [基础语法](#基础语法)
-- [约束语法](#约束语法)
-- [数组语法](#数组语法)
-- [对象语法](#对象语法)
-- [条件验证 (Match)](#条件验证-match)
-- [高级用法](#高级用法)
-- [实现方案对比](#实现方案对比)
-- [完整示例](#完整示例)
-
----
+本页是编写 schema 规则的主参考。建议在 [快速上手](quick-start.md) 之后阅读，再结合 [类型参考](type-reference.md) 和 [验证指南](validation-guide.md) 理解更细的行为。
 
 ## 快速开始
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // 基本类型
-const schema = dsl({
+const schema = s({
   name: 'string!',                // 必填字符串
   age: 'number',                  // 可选数字
   email: 'email!',                // 必填邮箱
   active: 'boolean',              // 布尔值
   tags: 'array<string>'           // 字符串数组
 });
+
+// 需要更强方法发现时使用 factory 入口：
+const emailField = s.email().label('邮箱').require();
 ```
 
 ---
@@ -112,7 +102,7 @@ const schema = dsl({
 使用 `!` 标记必填字段，使用 `?` 显式标记可选字段：
 
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string!',      // 必填
   nickname: 'string',       // 可选（默认）
   bio: 'string?',           // 显式可选（等价于 string）
@@ -135,7 +125,7 @@ const schema = dsl({
 
 ```javascript
 // 方式1: 字段内部必填
-const schema1 = dsl({
+const schema1 = s({
   user: {
     name: 'string!',        // name 必填（user 可选）
     email: 'email!'         // email 必填
@@ -143,7 +133,7 @@ const schema1 = dsl({
 });
 
 // 方式2: 对象本身必填 ✅ 推荐
-const schema2 = dsl({
+const schema2 = s({
   'user!': {                // user 本身必填
     name: 'string',         // name 可选
     email: 'email'          // email 可选
@@ -166,7 +156,7 @@ const schema2 = dsl({
 
 **示例**:
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',     // 3-32字符，必填
   bio: 'string:500',            // 最大500字符
   password: 'string:8-'         // 最少8字符
@@ -183,7 +173,7 @@ const schema = dsl({
 
 **示例**:
 ```javascript
-const schema = dsl({
+const schema = s({
   age: 'number:18-120',         // 18-120
   score: 'number:100',          // 0-100
   price: 'number:0-'            // ≥0
@@ -195,7 +185,7 @@ const schema = dsl({
 使用 `|` 分隔枚举值：
 
 ```javascript
-const schema = dsl({
+const schema = s({
   status: 'active|inactive|pending',
   gender: 'male|female|other!',
   role: 'admin|user|guest'
@@ -207,7 +197,7 @@ const schema = dsl({
 当一个字段需要接受多种不同类型时，可以使用 `types:` 前缀生成联合类型：
 
 ```javascript
-const schema = dsl({
+const schema = s({
   contact: 'types:email|phone',
   price: 'types:number:0-|string:1-20',
   payload: 'types:object|array<object>'
@@ -236,7 +226,7 @@ const schema = dsl({
 
 **示例**:
 ```javascript
-const schema = dsl({
+const schema = s({
   mobile: 'phone:cn!',
   id: 'idCard:cn',
   card: 'creditCard:mastercard'
@@ -268,7 +258,7 @@ const schema = dsl({
 
 **示例**:
 ```javascript
-const schema = dsl({
+const schema = s({
   tags: 'array!1-10<string>',      // 必填，1-10个字符串
   scores: 'array:1-5<number>',     // 可选，1-5个数字
   items: 'array:1-<string>'        // 至少1个字符串
@@ -278,7 +268,7 @@ const schema = dsl({
 ### 3. 数组元素约束
 
 ```javascript
-const schema = dsl({
+const schema = s({
   tags: 'array<string:1-20>',          // 每个字符串1-20字符
   scores: 'array<number:0-100>',       // 每个数字0-100
   ids: 'array<integer:1->'             // 每个整数≥1
@@ -289,12 +279,12 @@ const schema = dsl({
 
 ```javascript
 // 二维数组
-const schema = dsl({
+const schema = s({
   matrix: 'array<array<number>>'
 });
 
 // 对象数组
-const schema = dsl({
+const schema = s({
   users: 'array<object>',
   // 或更详细定义
   items: {
@@ -314,7 +304,7 @@ const schema = dsl({
 ### 1. 基础对象
 
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     name: 'string!',
     email: 'email!',
@@ -326,7 +316,7 @@ const schema = dsl({
 ### 2. 嵌套对象
 
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     profile: {
       bio: 'string:500',
@@ -342,7 +332,7 @@ const schema = dsl({
 ### 3. 混合嵌套
 
 ```javascript
-const schema = dsl({
+const schema = s({
   'user!': {                    // user 必填
     name: 'string!',            // name 必填
     contacts: 'array!1-5<object>',  // 1-5个联系方式
@@ -355,15 +345,15 @@ const schema = dsl({
 
 ## 条件验证 (Match)
 
-支持更优雅的条件验证语法 `dsl.match` 和 `dsl.if`。
+支持更优雅的条件验证语法 `s.match` 和 `s.if`。
 
-### 1. dsl.match (推荐)
+### 1. s.match (推荐)
 
 类似于 `switch-case`，根据某个字段的值决定当前字段的验证规则。
 
 **语法**:
 ```javascript
-dsl.match(field, {
+s.match(field, {
   value1: 'schema1',
   value2: 'schema2',
   _default: 'defaultSchema' // 可选
@@ -372,11 +362,11 @@ dsl.match(field, {
 
 **示例**:
 ```javascript
-const schema = dsl({
+const schema = s({
   contactType: 'email|phone',
   
   // 根据 contactType 的值决定 contact 的规则
-  contact: dsl.match('contactType', {
+  contact: s.match('contactType', {
     email: 'email!',      // contactType=email 时
     phone: 'string:11!',  // contactType=phone 时
     _default: 'string'    // 其他情况
@@ -388,29 +378,29 @@ const schema = dsl({
 如果条件值包含中文、数字或特殊字符，给键名加上引号即可：
 
 ```javascript
-discount: dsl.match('level', {
+discount: s.match('level', {
   '普通用户': 'number:0-5',
   'VIP-1':   'number:0-20',
   '100':     'number:0-50'
 })
 ```
 
-### 2. dsl.if (简单条件)
+### 2. s.if (简单条件)
 
 适用于简单的二选一场景。
 
 **语法**:
 ```javascript
-dsl.if(conditionField, thenSchema, elseSchema)
+s.if(conditionField, thenSchema, elseSchema)
 ```
 
 **示例**:
 ```javascript
-const schema = dsl({
+const schema = s({
   isVip: 'boolean',
   
   // 如果是VIP，折扣0-50，否则0-10
-  discount: dsl.if('isVip', 'number:0-50', 'number:0-10')
+  discount: s.if('isVip', 'number:0-50', 'number:0-10')
 });
 ```
 
@@ -423,16 +413,14 @@ const schema = dsl({
 > ⚠️ `.custom()` 支持同步自定义逻辑；返回 `Promise` 的异步 custom validator 请通过 `validateAsync()` 执行。
 
 ```javascript
-const schema = dsl({
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
+const schema = s({
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/)
     .label('用户名')
     .messages({
       'pattern': '只能包含字母、数字和下划线'
     }),
   
-  email: 'email!'
-    .label('邮箱地址')
+  email: s('email!').label('邮箱地址')
     .description('用于登录和接收通知')
     .custom((value) => {
       if (value.endsWith('@blocked.example')) return '该邮箱域名不允许注册';
@@ -443,10 +431,10 @@ const schema = dsl({
 ### 2. 默认验证器
 
 ```javascript
-const schema = dsl({
-  username: 'string!'.username('5-20'),     // 自动正则+长度
-  phone: 'string!'.phone('cn'),             // 中国手机号
-  password: 'string!'.password('strong')    // 强密码
+const schema = s({
+  username: s('string!').username('5-20'),     // 自动正则+长度
+  phone: s('string!').phone('cn'),             // 中国手机号
+  password: s('string!').password('strong')    // 强密码
 });
 ```
 
@@ -464,13 +452,13 @@ const schema = dsl({
 'string | number'  // ❌ 不支持
 ```
 
-**解决方案**: 使用 `dsl.match` (推荐)
+**解决方案**: 使用 `s.match` (推荐)
 
 ```javascript
-// ✅ 推荐：使用 dsl.match
-const schema = dsl({
+// ✅ 推荐：使用 s.match
+const schema = s({
   vipLevel: 'string',
-  discount: dsl.match('vipLevel', {
+  discount: s.match('vipLevel', {
     gold:   'number:0-50',
     silver: 'number:0-20',
     normal: 'number:0-5'
@@ -509,7 +497,7 @@ const schema = dsl({
 
 **解决方案**: 使用 `.pattern()` 方法
 ```javascript
-'string!'.pattern(/^[a-z]+$/)  // ✅ 推荐
+s('string!').pattern(/^[a-z]+$/)  // ✅ 推荐
 ```
 
 ---
@@ -524,7 +512,7 @@ const schema = dsl({
 
 **解决方案**: 使用 `.custom()` 方法承载自定义逻辑；同步逻辑可用 `validate()` / `validateAsync()`，Promise-returning 逻辑必须用 `validateAsync()`
 ```javascript
-'string!'.custom((value) => {
+s('string!').custom((value) => {
   // 自定义同步逻辑
   if (value === 'reserved') {
     return '该值不可用';
@@ -546,7 +534,7 @@ const schema = dsl({
 
 **解决方案**: 使用完整对象定义
 ```javascript
-const schema = dsl({
+const schema = s({
   users: {
     type: 'array',
     items: {
@@ -564,14 +552,14 @@ const schema = dsl({
 ### 用户注册表单
 
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-const schema = dsl({
+const schema = s({
   // 基本信息
-  username: 'string:3-32!'.username().label('用户名'),
-  password: 'string!'.password('strong').label('密码'),
-  email: 'email!'.label('邮箱'),
-  phone: 'string!'.phone('cn').label('手机号'),
+  username: s('string:3-32!').username().label('用户名'),
+  password: s('string!').password('strong').label('密码'),
+  email: s('email!').label('邮箱'),
+  phone: s('string!').phone('cn').label('手机号'),
   
   // 个人资料
   'profile!': {
@@ -595,7 +583,7 @@ const schema = dsl({
 ### 电商商品 Schema
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // 商品基本信息
   title: 'string:1-100!',
   price: 'number:0-!',
@@ -626,7 +614,7 @@ const schema = dsl({
 ### API 请求验证
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // 查询参数
   page: 'integer:1-',
   pageSize: 'integer:10-100',
@@ -669,7 +657,7 @@ const schema = dsl({
 
 **A**: 使用完整对象定义：
 ```javascript
-const schema = dsl({
+const schema = s({
   users: {
     type: 'array',
     items: {
@@ -682,16 +670,16 @@ const schema = dsl({
 
 ### Q4: 不支持条件验证吗？
 
-**A**: 支持。推荐使用 `dsl.match`：
+**A**: 支持。推荐使用 `s.match`：
 ```javascript
-dsl.match('vipLevel', { gold: 'number:0-50', silver: 'number:0-20' })
+s.match('vipLevel', { gold: 'number:0-50', silver: 'number:0-20' })
 ```
 
 ### Q5: 能用正则验证吗？
 
 **A**: 能，使用 `.pattern()` 方法：
 ```javascript
-'string!'.pattern(/^[a-z]+$/)
+s('string!').pattern(/^[a-z]+$/)
 ```
 
 ---

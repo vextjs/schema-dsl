@@ -16,7 +16,7 @@ schema-dsl 生成的是 JSON Schema Draft 7 风格的对象，并额外保留少
 对外输出纯净 JSON Schema 时，请使用 `toJsonSchema()`。
 
 ```javascript
-const emailField = dsl('email!').label('邮箱');
+const emailField = s('email!').label('邮箱');
 
 emailField.toSchema();
 // 含 _label / _customMessages 等内部字段
@@ -24,11 +24,11 @@ emailField.toSchema();
 emailField.toJsonSchema();
 // 纯净 JSON Schema，适合导出到外部系统
 
-const objectSchema = dsl({
+const objectSchema = s({
 	email: emailField,
-	age: dsl('number:18-100')
+	age: s('number:18-100')
 });
-// dsl({ ... }) 入口直接返回 Draft 7 风格对象
+// s({ ... }) 入口直接返回 Draft 7 风格对象
 ```
 
 ---

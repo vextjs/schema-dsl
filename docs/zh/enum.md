@@ -62,10 +62,10 @@
 ### 1. 字符串枚举
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // 简写形式
-const schema = dsl({
+const schema = s({
   status: 'active|inactive|pending'
 });
 
@@ -78,7 +78,7 @@ validate(schema, { status: 'unknown' });  // ❌ 失败
 
 ```javascript
 // 自动识别为布尔值
-const schema = dsl({
+const schema = s({
   isPublic: 'true|false',
   verified: 'true|false!'  // 必填
 });
@@ -92,7 +92,7 @@ validate(schema, { isPublic: 'true' });  // ❌ 失败（字符串）
 
 ```javascript
 // 自动识别为数字
-const schema = dsl({
+const schema = s({
   priority: '1|2|3',
   rating: '1.0|1.5|2.0|2.5'  // 小数
 });
@@ -109,7 +109,7 @@ validate(schema, { priority: '1' });  // ❌ 失败（字符串）
 ### 必填枚举
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // 字符串枚举必填
   role: 'admin|user|guest!',
   
@@ -127,7 +127,7 @@ validate(schema, {});  // ❌ 失败
 ### 显式指定类型
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // 显式指定字符串
   status: 'enum:active|inactive',
   
@@ -145,8 +145,8 @@ const schema = dsl({
 ### 链式 API
 
 ```javascript
-const schema = dsl({
-  status: dsl('active|inactive|archived')
+const schema = s({
+  status: s('active|inactive|archived')
     .label('文章状态')
     .messages({
       'string.enum': '状态必须是: 草稿、已发布或已归档'
@@ -157,7 +157,7 @@ const schema = dsl({
 ### 数组中的枚举
 
 ```javascript
-const schema = dsl({
+const schema = s({
   tags: 'array<enum:tech|business|lifestyle>',
   permissions: 'array<enum:read|write|delete>'
 });
@@ -171,7 +171,7 @@ validate(schema, {
 ### 嵌套对象中的枚举
 
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     name: 'string!',
     role: 'admin|user|guest',
@@ -191,13 +191,13 @@ const schema = dsl({
 ### 用户管理系统
 
 ```javascript
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   role: 'admin|moderator|user|guest!',
   status: 'active|inactive|suspended|banned',
   emailVerified: 'true|false',
-  permissionLevel: '0|1|2|3|4|5'.default(0),
+  permissionLevel: s('0|1|2|3|4|5').default(0),
   preferences: {
     theme: 'light|dark|auto',
     language: 'en|zh-CN|zh-TW|ja|ko',
@@ -209,10 +209,10 @@ const userSchema = dsl({
 ### 订单管理
 
 ```javascript
-const orderSchema = dsl({
+const orderSchema = s({
   orderId: 'string!',
   status: 'pending|processing|completed|cancelled!',
-  priority: '1|2|3'.default(2),
+  priority: s('1|2|3').default(2),
   payment: {
     method: 'card|paypal|crypto!',
     status: 'pending|success|failed!'
@@ -223,7 +223,7 @@ const orderSchema = dsl({
 ### 内容管理
 
 ```javascript
-const postSchema = dsl({
+const postSchema = s({
   title: 'string:5-100!',
   status: 'draft|published|archived!',
   visibility: 'public|private|unlisted',
@@ -238,9 +238,9 @@ const postSchema = dsl({
 ### 默认值
 
 ```javascript
-const schema = dsl({
-  theme: 'light|dark|auto'.default('auto'),
-  language: 'en|zh-CN'.default('en')
+const schema = s({
+  theme: s('light|dark|auto').default('auto'),
+  language: s('en|zh-CN').default('en')
 });
 ```
 
@@ -252,29 +252,29 @@ const schema = dsl({
 
 ```javascript
 // 字符串枚举
-const schema = dsl({
-  status: dsl('active|inactive|pending').messages({
+const schema = s({
+  status: s('active|inactive|pending').messages({
     'enum': '状态必须是: 激活、未激活或待处理'
   })
 });
 
 // 布尔值枚举
-const schema = dsl({
-  isActive: dsl('true|false').messages({
+const schema = s({
+  isActive: s('true|false').messages({
     'enum': '必须是 true 或 false'
   })
 });
 
 // 数字枚举
-const schema = dsl({
-  priority: dsl('1|2|3').messages({
+const schema = s({
+  priority: s('1|2|3').messages({
     'enum': '优先级必须是 1、2 或 3'
   })
 });
 
 // 整数枚举
-const schema = dsl({
-  level: dsl('enum:integer:1|2|3').messages({
+const schema = s({
+  level: s('enum:integer:1|2|3').messages({
     'enum': '等级必须是 1、2 或 3'
   })
 });
@@ -290,14 +290,14 @@ const schema = dsl({
 如果需要为不同类型的枚举定制不同的错误消息，可以使用 `type.enum` 格式：
 
 ```javascript
-const schema = dsl({
-  status: dsl('active|inactive').messages({
+const schema = s({
+  status: s('active|inactive').messages({
     'string.enum': '字符串枚举错误'  // 字符串枚举专用
   }),
-  priority: dsl('1|2|3').messages({
+  priority: s('1|2|3').messages({
     'number.enum': '数字枚举错误'    // 数字枚举专用
   }),
-  flag: dsl('true|false').messages({
+  flag: s('true|false').messages({
     'boolean.enum': '布尔枚举错误'   // 布尔枚举专用
   })
 });
@@ -310,7 +310,7 @@ const schema = dsl({
 ### 多语言支持
 
 ```javascript
-dsl.config({
+s.config({
   i18n: {
     'zh-CN': {
       'field.status': '状态',
@@ -319,8 +319,8 @@ dsl.config({
   }
 });
 
-const schema = dsl({
-  status: dsl('active|inactive|pending').label('field.status')
+const schema = s({
+  status: s('active|inactive|pending').label('field.status')
 });
 ```
 
@@ -369,14 +369,14 @@ const schema = dsl({
 ```javascript
 // 布尔值枚举只接受 'true' 和 'false'
 try {
-  dsl({ flag: 'enum:boolean:true|false|maybe' });
+  s({ flag: 'enum:boolean:true|false|maybe' });
 } catch (error) {
   // Error: Invalid boolean enum value: maybe
 }
 
 // 数字枚举只接受数字
 try {
-  dsl({ value: 'enum:number:1|2|abc' });
+  s({ value: 'enum:number:1|2|abc' });
 } catch (error) {
   // Error: Invalid number enum value: abc
 }
@@ -387,7 +387,7 @@ try {
 枚举会自动进行类型验证：
 
 ```javascript
-const schema = dsl({ priority: '1|2|3' });
+const schema = s({ priority: '1|2|3' });
 
 // 错误：传入字符串
 validate(schema, { priority: '1' });
@@ -409,7 +409,7 @@ validate(schema, { priority: 999 });
 枚举验证性能优异：
 
 ```javascript
-const schema = dsl({
+const schema = s({
   status: 'active|inactive|pending',
   priority: '1|2|3',
   flag: 'true|false'
@@ -438,7 +438,7 @@ const schema = dsl({
 
 ```javascript
 // 带冒号的其他类型不受影响
-const schema = dsl({
+const schema = s({
   username: 'string:3-32',     // ✅ 正常工作
   age: 'number:18-120',        // ✅ 正常工作
   phone: 'phone:cn',           // ✅ 正常工作

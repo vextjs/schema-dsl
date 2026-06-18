@@ -1,16 +1,16 @@
-import { dsl, validate, Locale } from '../../dist/index.js'
+import { s, validate, Locale } from '../../dist/pure.js'
 
 // ============================================================
-// i18n user guide — dsl.config() for custom locale messages
+// i18n user guide — s.config() for custom locale messages
 // ============================================================
 
 Locale.reset()
 
 // ============================================================
-// 1. Register locales via dsl.config()
+// 1. Register locales via s.config()
 // ============================================================
 
-dsl.config({
+s.config({
   i18n: {
     locales: {
       'pt-BR': {
@@ -44,9 +44,9 @@ dsl.config({
 // 2. Validate with per-locale errors
 // ============================================================
 
-const schema = dsl({
-  username: dsl('string:3-32!').label('username'),
-  email:    dsl('email!').label('email'),
+const schema = s({
+  username: s('string:3-32!').label('username'),
+  email:    s('email!').label('email'),
 })
 
 const ptResult = validate(schema, { username: 'ab', email: 'bad-email' }, { locale: 'pt-BR' })

@@ -1,4 +1,4 @@
-import { dsl, validate, Validator, SchemaUtils } from '../../dist/index.js'
+import { s, validate, Validator, SchemaUtils } from '../../dist/pure.js'
 
 // ============================================================
 // SchemaUtils — schema composition, transformation, and performance
@@ -20,15 +20,15 @@ import { dsl, validate, Validator, SchemaUtils } from '../../dist/index.js'
 // ============================================================
 
 const fields = SchemaUtils.createLibrary({
-  email:    () => dsl('email!').label('Email').error({ required: 'Email is required' }),
-  username: () => dsl('string:3-32!').label('Username').pattern(/^[a-zA-Z0-9_]+$/),
-  password: () => dsl('string:8-64!').label('Password'),
-  phone:    () => dsl('string').label('Phone'),
+  email:    () => s('email!').label('Email').error({ required: 'Email is required' }),
+  username: () => s('string:3-32!').label('Username').pattern(/^[a-zA-Z0-9_]+$/),
+  password: () => s('string:8-64!').label('Password'),
+  phone:    () => s('string').label('Phone'),
 })
 
 // Each call returns a fresh builder — safe to reuse
-const schema1 = dsl({ email: fields.email(), username: fields.username() })
-const schema2 = dsl({ email: fields.email(), phone: fields.phone() })
+const schema1 = s({ email: fields.email(), username: fields.username() })
+const schema2 = s({ email: fields.email(), phone: fields.phone() })
 
 console.log('schema-utils.library.schema1.valid =',
   validate(schema1, { email: 'a@b.com', username: 'alice_99' }).valid)   // true
@@ -39,16 +39,16 @@ console.log('schema-utils.library.schema2.valid =',
 // 2. extend() — inherit base schema fields
 // ============================================================
 
-const baseEntitySchema = dsl({
+const baseEntitySchema = s({
   id:        'objectId!',
   createdAt: 'date',
   updatedAt: 'date',
 })
 
-const userSchema = SchemaUtils.extend(baseEntitySchema, dsl({
+const userSchema = SchemaUtils.extend(baseEntitySchema, s({
   username: fields.username(),
   email:    fields.email(),
-  role:     dsl('admin|user|guest').default('user'),
+  role:     s('admin|user|guest').default('user'),
 }))
 
 const r1 = validate(userSchema, {
@@ -99,7 +99,7 @@ console.log('schema-utils.partial.singleField   =', r6.valid)   // true
 // 6. clone() — independent deep copy
 // ============================================================
 
-const original = dsl({ name: 'string!', age: 'integer' })
+const original = s({ name: 'string!', age: 'integer' })
 const cloned   = SchemaUtils.clone(original)
 console.log('schema-utils.clone.independent     =', cloned !== original)          // true
 console.log('schema-utils.clone.stillValid      =',

@@ -37,10 +37,10 @@
 **说明**: 值必须大于指定值（不包括边界值本身）
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // 基础用法
-const schema = dsl({ value: 'number:>0' });
+const schema = s({ value: 'number:>0' });
 
 validate(schema, { value: 1 });    // ✅ true
 validate(schema, { value: 0.1 });  // ✅ true
@@ -48,17 +48,17 @@ validate(schema, { value: 0 });    // ❌ false (0 不满足 >0)
 validate(schema, { value: -1 });   // ❌ false
 
 // 支持小数
-const schema2 = dsl({ value: 'number:>0.5' });
+const schema2 = s({ value: 'number:>0.5' });
 validate(schema2, { value: 0.6 }); // ✅ true
 validate(schema2, { value: 0.5 }); // ❌ false (0.5 不满足 >0.5)
 
 // 支持负数
-const schema3 = dsl({ value: 'number:>-10' });
+const schema3 = s({ value: 'number:>-10' });
 validate(schema3, { value: -9 });  // ✅ true
 validate(schema3, { value: -10 }); // ❌ false
 
 // 配合必填
-const schema4 = dsl({ value: 'number:>0!' });
+const schema4 = s({ value: 'number:>0!' });
 validate(schema4, { value: 1 });   // ✅ true
 validate(schema4, {});             // ❌ false (必填)
 ```
@@ -75,14 +75,14 @@ validate(schema4, {});             // ❌ false (必填)
 
 ```javascript
 // 基础用法
-const schema = dsl({ age: 'number:>=18' });
+const schema = s({ age: 'number:>=18' });
 
 validate(schema, { age: 18 });  // ✅ true (包括18)
 validate(schema, { age: 19 });  // ✅ true
 validate(schema, { age: 17 });  // ❌ false
 
 // 实际应用：年龄验证
-const schema2 = dsl({ age: 'number:>=18!' });
+const schema2 = s({ age: 'number:>=18!' });
 
 validate(schema2, { age: 20 }); // ✅ true
 validate(schema2, { age: 17 }); // ❌ false
@@ -101,7 +101,7 @@ validate(schema2, {});          // ❌ false (必填)
 
 ```javascript
 // 基础用法
-const schema = dsl({ value: 'number:<100' });
+const schema = s({ value: 'number:<100' });
 
 validate(schema, { value: 99 });   // ✅ true
 validate(schema, { value: 99.9 }); // ✅ true
@@ -109,7 +109,7 @@ validate(schema, { value: 100 });  // ❌ false (100 不满足 <100)
 validate(schema, { value: 101 });  // ❌ false
 
 // 实际应用：温度上限
-const schema2 = dsl({ temperature: 'number:<100' });
+const schema2 = s({ temperature: 'number:<100' });
 
 validate(schema2, { temperature: 99.9 }); // ✅ true
 validate(schema2, { temperature: 100 });  // ❌ false
@@ -127,14 +127,14 @@ validate(schema2, { temperature: 100 });  // ❌ false
 
 ```javascript
 // 基础用法
-const schema = dsl({ score: 'number:<=100' });
+const schema = s({ score: 'number:<=100' });
 
 validate(schema, { score: 100 }); // ✅ true (包括100)
 validate(schema, { score: 99 });  // ✅ true
 validate(schema, { score: 101 }); // ❌ false
 
 // 实际应用：评分系统
-const schema2 = dsl({ score: 'number:<=100!' });
+const schema2 = s({ score: 'number:<=100!' });
 
 validate(schema2, { score: 100 }); // ✅ true
 validate(schema2, { score: 101 }); // ❌ false
@@ -152,14 +152,14 @@ validate(schema2, { score: 101 }); // ❌ false
 
 ```javascript
 // 基础用法
-const schema = dsl({ level: 'number:=5' });
+const schema = s({ level: 'number:=5' });
 
 validate(schema, { level: 5 });  // ✅ true
 validate(schema, { level: 4 });  // ❌ false
 validate(schema, { level: 6 });  // ❌ false
 
 // 支持小数精确匹配
-const schema2 = dsl({ price: 'number:=99.99' });
+const schema2 = s({ price: 'number:=99.99' });
 
 validate(schema2, { price: 99.99 }); // ✅ true
 validate(schema2, { price: 99.98 }); // ❌ false
@@ -186,7 +186,7 @@ validate(schema2, { price: 100 });   // ❌ false
 ### 场景 1：用户注册 - 年龄限制
 
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:>=18!',  // 必须年满18岁
@@ -214,7 +214,7 @@ validate(schema, {
 ### 场景 2：电商系统 - 价格验证
 
 ```javascript
-const schema = dsl({
+const schema = s({
   productName: 'string:1-100!',
   price: 'number:>0!',      // 价格必须大于0
   discount: 'number:0-100'  // 折扣 0-100
@@ -239,7 +239,7 @@ validate(schema, {
 ### 场景 3：考试系统 - 评分
 
 ```javascript
-const schema = dsl({
+const schema = s({
   studentId: 'string!',
   score: 'number:>=0!',       // 分数 ≥ 0
   bonus: 'number:<=20'        // 额外加分 ≤ 20
@@ -263,7 +263,7 @@ validate(schema, {
 ### 场景 4：温度监控 - 范围限制
 
 ```javascript
-const schema = dsl({
+const schema = s({
   deviceId: 'string!',
   temperature: 'number:>0',   // 温度 > 0
   humidity: 'number:<=100'    // 湿度 ≤ 100
@@ -288,7 +288,7 @@ validate(schema, {
 ### 场景 5：游戏系统 - 等级验证
 
 ```javascript
-const schema = dsl({
+const schema = s({
   playerId: 'string!',
   level: 'number:=5!',        // 必须是5级
   experience: 'number:>=1000' // 经验 >= 1000
@@ -316,7 +316,7 @@ validate(schema, {
 
 ```javascript
 // DSL → JSON Schema
-dsl({ value: 'number:>0' })
+s({ value: 'number:>0' })
 // 生成:
 {
   type: 'object',
@@ -329,7 +329,7 @@ dsl({ value: 'number:>0' })
 }
 
 // DSL → JSON Schema
-dsl({ age: 'number:>=18' })
+s({ age: 'number:>=18' })
 // 生成:
 {
   type: 'object',
@@ -349,7 +349,7 @@ dsl({ age: 'number:>=18' })
 所有比较运算符同样适用于 `integer` 类型：
 
 ```javascript
-const schema = dsl({
+const schema = s({
   count: 'integer:>0',      // 整数且大于0
   level: 'integer:>=1',     // 整数且大于等于1
   maxValue: 'integer:<=100' // 整数且小于等于100
@@ -376,17 +376,17 @@ validate(schema, {
 
 ```javascript
 // ✅ 原有语法继续有效
-dsl({ age: 'number:18-120' })  // 范围
-dsl({ age: 'number:18-' })     // 最小值
-dsl({ score: 'number:-100' })  // 最大值
-dsl({ count: 'number:100' })   // 最大值
+s({ age: 'number:18-120' })  // 范围
+s({ age: 'number:18-' })     // 最小值
+s({ score: 'number:-100' })  // 最大值
+s({ count: 'number:100' })   // 最大值
 
 // ✅ 新增语法
-dsl({ age: 'number:>=18' })    // 大于等于
-dsl({ value: 'number:>0' })    // 大于
-dsl({ score: 'number:<=100' }) // 小于等于
-dsl({ temp: 'number:<100' })   // 小于
-dsl({ level: 'number:=5' })    // 等于
+s({ age: 'number:>=18' })    // 大于等于
+s({ value: 'number:>0' })    // 大于
+s({ score: 'number:<=100' }) // 小于等于
+s({ temp: 'number:<100' })   // 小于
+s({ level: 'number:=5' })    // 等于
 ```
 
 ---

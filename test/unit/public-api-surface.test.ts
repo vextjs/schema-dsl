@@ -14,5 +14,8 @@ describe('public API surface', () => {
         expect(schemaDsl).toHaveProperty('Validator')
         expect(schemaDsl).toHaveProperty('DslBuilder')
         expect(schemaDsl).toHaveProperty('TypeRegistry')
+        expect(schemaDsl.s).toBe(schemaDsl.dsl)
+        expect(schemaDsl).toHaveProperty('registerExtension')
+        expect(schemaDsl).toHaveProperty('defineExtension')
     })
 })

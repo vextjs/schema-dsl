@@ -1,13 +1,7 @@
-import {
-  dsl,
-  validate,
-  ObjectDslBuilder,
-  type DslDefinition,
-  type JSONSchema,
-} from '../../dist/index.js'
+import { s, validate, ObjectDslBuilder, type DslDefinition, type JSONSchema } from '../../dist/pure.js'
 
 function objectDsl(definition: DslDefinition): ObjectDslBuilder {
-  return new ObjectDslBuilder(dsl(definition) as JSONSchema)
+  return new ObjectDslBuilder(s(definition) as JSONSchema)
 }
 
 // ============================================================
@@ -21,7 +15,7 @@ function objectDsl(definition: DslDefinition): ObjectDslBuilder {
 // ============================================================
 
 // ============================================================
-// 1. Basic usage — wrap dsl(object) in ObjectDslBuilder
+// 1. Basic usage — wrap s(object) in ObjectDslBuilder
 // ============================================================
 
 const builder = objectDsl({
@@ -198,10 +192,10 @@ const failResult = validateCreateUser({ username: 'x', email: 'bad' })
 console.log('object-dsl-builder.api.fail.ok        =', failResult.ok)         // false
 console.log('object-dsl-builder.api.fail.errors    =', (failResult.errors?.length ?? 0) >= 1) // true
 
-// Using dsl({...}) as shorthand — functionally equivalent
-const schemaViaShorthand = dsl({
+// Using s({...}) as shorthand — functionally equivalent
+const schemaViaShorthand = s({
   productId: 'uuid!',
   quantity:  'integer:1-999!',
   price:     'number:0.01-!',
 })
-console.log('object-dsl-builder.dsl.shorthand.type =', typeof schemaViaShorthand)  // 'object'
+console.log('object-dsl-builder.s.shorthand.type =', typeof schemaViaShorthand)  // 'object'

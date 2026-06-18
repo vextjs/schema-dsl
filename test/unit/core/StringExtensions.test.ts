@@ -54,6 +54,28 @@ describe('StringExtensions - Complete Tests', () => {
       expect(typeof ('email!' as any).label).toBe('function')
     })
 
+    it('should support require() as a direct string chain method', () => {
+      const schema = dsl({
+        email: ('email' as any).require().label('Email'),
+      })
+
+      expect((schema as any).required).toEqual(['email'])
+      expect((schema as any).properties.email.format).toBe('email')
+    })
+
+    it('should support items() as a direct string chain method', () => {
+      const schema = dsl({
+        tags: ('array' as any).items(('string!' as any).label('Tag')).require(),
+      })
+
+      expect((schema as any).required).toEqual(['tags'])
+      expect((schema as any).properties.tags.items).toMatchObject({
+        type: 'string',
+        _label: 'Tag',
+      })
+      expect((schema as any).properties.tags.items._required).toBeUndefined()
+    })
+
     it('should support strings with constraints', () => {
       expect(typeof ('string:3-32' as any).pattern).toBe('function')
       expect(typeof ('string:10-!' as any).label).toBe('function')

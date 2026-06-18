@@ -104,6 +104,10 @@ function _isRawJsonSchema(obj: Record<string, unknown>): boolean {
 
 function _cleanRequiredMarks(schema: unknown): void {
   if (!schema || typeof schema !== 'object') return
+  if (Array.isArray(schema)) {
+    for (const item of schema) _cleanRequiredMarks(item)
+    return
+  }
   delete (schema as Record<string, unknown>)['_required']
   const obj = schema as JSONSchema
   if (obj.properties) {

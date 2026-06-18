@@ -5,13 +5,6 @@
 
 ---
 
-## 📋 目录
-
-1. [使用方法](#使用方法)
-2. [完整示例](#完整示例)
-3. [常见问题](#常见问题)
-
----
 
 <a id="使用方法"></a>
 
@@ -21,23 +14,23 @@
 
 ```javascript
 // server.js
-const express = require('express');
-const cors = require('cors');
-const { dsl, validate } = require('schema-dsl');
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+import { s, validate } from 'schema-dsl/pure';
+import path from 'path';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // ========== 应用启动时配置（只执行一次）==========
-dsl.config({
+s.config({
   i18n: path.join(__dirname, 'locales')  // 一次性加载所有语言包
 });
 
 // Schema 定义
 const schemas = {
-  user: dsl({
+  user: s({
     username: 'string:3-32!',
     email: 'email!',
     password: 'string:8-64!',
@@ -45,7 +38,7 @@ const schemas = {
     phone: 'string'
   }),
   
-  post: dsl({
+  post: s({
     title: 'string:1-200!',
     content: 'string:10-10000!',
     tags: 'array:1-5<string:1-20>'
@@ -245,7 +238,7 @@ app.post('/api/validate', (req, res) => {
 **A**: 使用 `Locale.addLocale()` 添加自定义语言包。
 
 ```javascript
-const { Locale } = require('schema-dsl');
+import { Locale } from 'schema-dsl/pure';
 
 Locale.addLocale('de-DE', {
   required: '{{#label}} ist erforderlich',
@@ -260,9 +253,9 @@ Locale.addLocale('de-DE', {
 
 ```javascript
 // 前端可以复用同一套 schema-dsl 校验规则
-import { dsl, validate } from 'schema-dsl';
+import { s, validate } from 'schema-dsl/pure';
 
-const schema = dsl({ /* ... */ });
+const schema = s({ /* ... */ });
 const result = validate(schema, formData, { 
   locale: currentLocale 
 });

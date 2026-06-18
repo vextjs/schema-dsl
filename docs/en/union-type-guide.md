@@ -10,11 +10,11 @@
 ## Basic usage
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // Email or mobile phone number
-const schema = dsl({
-  contact: dsl('string!')
+const schema = s({
+  contact: s('string!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|1[3-9]\d{9})$/)
     .messages({ pattern: 'Must be email or mobile phone number' })
 });
@@ -34,8 +34,8 @@ validate(schema, { contact: 'invalid' });           // ❌
 ### User login (username or email)
 
 ```javascript
-const loginSchema = dsl({
-  username: dsl('string:3-32!')
+const loginSchema = s({
+  username: s('string:3-32!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|[a-zA-Z0-9_]+)$/)
     .messages({ pattern: 'Must be email or username' }),
   password: 'string:8-32!'
@@ -45,8 +45,8 @@ const loginSchema = dsl({
 ### Contact information (email or mobile phone number)
 
 ```javascript
-const schema = dsl({
-  contact: dsl('string!')
+const schema = s({
+  contact: s('string!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|1[3-9]\d{9})$/)
     .messages({ pattern: 'Must be email or mobile phone number' })
 });
@@ -55,8 +55,8 @@ const schema = dsl({
 ### URL (http or https)
 
 ```javascript
-const schema = dsl({
-  website: dsl('string!')
+const schema = s({
+  website: s('string!')
     .pattern(/^https?:\/\/.+$/)
     .messages({ pattern: 'Must be a URL starting with http or https' })
 });
@@ -68,8 +68,8 @@ const schema = dsl({
 
 ```javascript
 //Use multi-language key
-const schema = dsl({
-  contact: dsl('string!')
+const schema = s({
+  contact: s('string!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|1[3-9]\d{9})$/)
     .messages({ pattern: 'pattern.emailOrPhone' }) // Multi-language key
 });
@@ -114,11 +114,11 @@ validate(schema, { contact: 'invalid' }, { locale: 'en-US' }); // English: Must 
 ## Complete example
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
-const registerSchema = dsl({
+const registerSchema = s({
   name: 'string:1-50!',
-  contact: dsl('string!')
+  contact: s('string!')
     .pattern(/^([^\s@]+@[^\s@]+\.[^\s@]+|1[3-9]\d{9})$/)
     .messages({ pattern: 'Must be email or mobile phone number' })
 });

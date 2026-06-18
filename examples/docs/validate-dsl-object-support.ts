@@ -1,4 +1,4 @@
-import { dsl, validate, validateAsync, ValidationError } from '../../dist/index.js'
+import { s, validate, validateAsync, ValidationError } from '../../dist/pure.js'
 
 // ============================================================
 // Raw DSL object support — pass plain { field: 'dsl-string' }
@@ -10,7 +10,7 @@ import { dsl, validate, validateAsync, ValidationError } from '../../dist/index.
 // ============================================================
 
 const rawDslSchema = {
-  username: dsl('string:3-32!')
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .error({ pattern: 'Letters, digits and underscores only' }),
   email: 'email!',
@@ -29,9 +29,9 @@ const invalidSyncResult = validate(rawDslSchema, {
   age:       15,             // below minimum
 })
 
-console.log('raw-dsl.syncResult.valid         =', syncResult.valid)        // true
-console.log('raw-dsl.invalidSyncResult.valid  =', invalidSyncResult.valid) // false
-console.log('raw-dsl.invalidSyncResult.errors =', (invalidSyncResult.errors?.length ?? 0) > 0)  // true
+console.log('raw-s.syncResult.valid         =', syncResult.valid)        // true
+console.log('raw-s.invalidSyncResult.valid  =', invalidSyncResult.valid) // false
+console.log('raw-s.invalidSyncResult.errors =', (invalidSyncResult.errors?.length ?? 0) > 0)  // true
 
 // ============================================================
 // 2. String DSL values (auto-parsed)
@@ -47,17 +47,17 @@ const stringOnlySchema = {
 const r1 = validate(stringOnlySchema, { name: 'Alice', email: 'alice@example.com', role: 'admin' })
 const r2 = validate(stringOnlySchema, { name: '', email: 'alice@example.com', role: 'admin' })
 
-console.log('raw-dsl.string.valid             =', r1.valid)   // true
-console.log('raw-dsl.string.empty.valid       =', r2.valid)   // false (empty name)
+console.log('raw-s.string.valid             =', r1.valid)   // true
+console.log('raw-s.string.empty.valid       =', r2.valid)   // false (empty name)
 
 // ============================================================
 // 3. Mix of builders and string values (most common pattern)
 // ============================================================
 
 const mixedSchema = {
-  username: dsl('string:3-32!').label('Username'),
+  username: s('string:3-32!').label('Username'),
   email:    'email!',
-  password: dsl('string:8!').label('Password'),
+  password: s('string:8!').label('Password'),
   terms:    'boolean!',
 }
 
@@ -68,7 +68,7 @@ const mixedValid = validate(mixedSchema, {
   terms:     true,
 })
 
-console.log('raw-dsl.mixed.valid              =', mixedValid.valid)   // true
+console.log('raw-s.mixed.valid              =', mixedValid.valid)   // true
 
 // ============================================================
 // 4. Async validation with raw DSL object
@@ -81,7 +81,7 @@ async function main(): Promise<void> {
     age:       30,
   })
 
-  console.log('raw-dsl.validateAsync(valid)     =', asyncData.username)   // 'alice_01'
+  console.log('raw-s.validateAsync(valid)     =', asyncData.username)   // 'alice_01'
 
   try {
     await validateAsync(rawDslSchema, {
@@ -91,7 +91,7 @@ async function main(): Promise<void> {
     })
   } catch (error) {
     if (error instanceof ValidationError) {
-      console.log('raw-dsl.validateAsync.errCount =', error.getErrorCount())
+      console.log('raw-s.validateAsync.errCount =', error.getErrorCount())
       return
     }
     throw error
@@ -120,4 +120,4 @@ const nestedResult = validate(nestedRaw, {
   post: { title: 'Hello', content: 'World' },
 })
 
-console.log('raw-dsl.nested.valid             =', nestedResult.valid)   // true
+console.log('raw-s.nested.valid             =', nestedResult.valid)   // true

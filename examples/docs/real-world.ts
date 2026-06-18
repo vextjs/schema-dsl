@@ -1,16 +1,7 @@
-import {
-  dsl,
-  validate,
-  validateAsync,
-  ObjectDslBuilder,
-  ValidationError,
-  DslBuilder,
-  type DslDefinition,
-  type JSONSchema,
-} from '../../dist/index.js'
+import { s, validate, validateAsync, ObjectDslBuilder, ValidationError, DslBuilder, type DslDefinition, type JSONSchema } from '../../dist/pure.js'
 
 function objectDsl(definition: DslDefinition): ObjectDslBuilder {
-  return new ObjectDslBuilder(dsl(definition) as JSONSchema)
+  return new ObjectDslBuilder(s(definition) as JSONSchema)
 }
 
 // ============================================================
@@ -25,12 +16,12 @@ function objectDsl(definition: DslDefinition): ObjectDslBuilder {
 // 1. User schema
 // ============================================================
 
-const userSchema = dsl({
+const userSchema = s({
   id:          'uuid!',
-  username:    dsl('string:3-32!').label('Username'),
-  email:       dsl('email!').label('Email'),
-  password:    dsl('string:8-64!').label('Password'),
-  role:        dsl('customer|seller|admin').default('customer'),
+  username:    s('string:3-32!').label('Username'),
+  email:       s('email!').label('Email'),
+  password:    s('string:8-64!').label('Password'),
+  role:        s('customer|seller|admin').default('customer'),
   profile: {
     firstName: 'string:1-50',
     lastName:  'string:1-50',
@@ -44,7 +35,7 @@ const userSchema = dsl({
     zip:     'string:3-10',
     country: 'string:2-3',
   },
-  isVerified:  dsl('boolean').default(false),
+  isVerified:  s('boolean').default(false),
   createdAt:   'datetime!',
   updatedAt:   'datetime',
 })
@@ -74,25 +65,25 @@ console.log('real-world.user.invalid.errors   =', (invalidUser.errors?.length ??
 // 2. Product schema with conditional pricing fields
 // ============================================================
 
-const productSchema = dsl({
+const productSchema = s({
   id:          'uuid!',
-  sku:         dsl('alphanum:5-20!').label('SKU'),
-  name:        dsl('string:2-200!').label('Product Name'),
+  sku:         s('alphanum:5-20!').label('SKU'),
+  name:        s('string:2-200!').label('Product Name'),
   description: 'string:5000',
   category:    'electronics|apparel|home|books|sports|food!',
   price:       'number:0.01-!',
   salePrice:   'number:0.01-',         // optional, must be less than price (business rule)
-  currency:    dsl('USD|EUR|CNY|GBP').default('USD'),
+  currency:    s('USD|EUR|CNY|GBP').default('USD'),
   stock:       'integer:0-!',
   weight:      'number:0-',
   dimensions: {
     width:  'number:0-',
     height: 'number:0-',
     depth:  'number:0-',
-    unit:   dsl('cm|in|mm').default('cm'),
+    unit:   s('cm|in|mm').default('cm'),
   },
   images:      'array<url>',
-  isPublished: dsl('boolean').default(false),
+  isPublished: s('boolean').default(false),
   tags:        'array<string>',
 })
 
@@ -114,7 +105,7 @@ console.log('real-world.product.currency.def  =', (validProduct.data as any)?.cu
 // 3. Cart item schema with product reference
 // ============================================================
 
-const cartItemSchema = dsl({
+const cartItemSchema = s({
   productId:  'uuid!',
   variantId:  'uuid',
   quantity:   'integer:1-999!',
@@ -127,10 +118,10 @@ const cartItemSchema = dsl({
 // 4. Order schema — complex with nested items and shipping
 // ============================================================
 
-const orderSchema = dsl({
+const orderSchema = s({
   id:          'uuid!',
   userId:      'uuid!',
-  status:      dsl('pending|confirmed|processing|shipped|delivered|cancelled|refunded')
+  status:      s('pending|confirmed|processing|shipped|delivered|cancelled|refunded')
                  .default('pending'),
   items:       'array<object>!',   // CartItem array — validated separately
   shipping: {
@@ -144,15 +135,15 @@ const orderSchema = dsl({
   },
   payment: {
     method:    'card|paypal|crypto|bank_transfer!',
-    status:    dsl('pending|processing|completed|failed|refunded').default('pending'),
+    status:    s('pending|processing|completed|failed|refunded').default('pending'),
     paidAt:    'datetime',
     refundedAt: 'datetime',
   },
   subtotal:    'number:0-!',
-  shippingFee: dsl('number:0-').default(0),
-  discount:    dsl('number:0-').default(0),
+  shippingFee: s('number:0-').default(0),
+  discount:    s('number:0-').default(0),
   total:       'number:0.01-!',
-  currency:    dsl('USD|EUR|CNY|GBP').default('USD'),
+  currency:    s('USD|EUR|CNY|GBP').default('USD'),
   notes:       'string:1000',
   createdAt:   'datetime!',
   updatedAt:   'datetime',
@@ -206,7 +197,7 @@ console.log('real-world.create.strict.extra   =', createWithExtra.valid)  // fal
 
 const existingSkus = new Set(['ELEC12345', 'WTCH001', 'BOOK999X'])
 
-const productAsyncSchema = dsl({
+const productAsyncSchema = s({
   sku:   new DslBuilder('alphanum:5-20!').custom(async (value: unknown) => {
     // Simulate async database lookup
     const taken = existingSkus.has(value as string)
@@ -237,9 +228,9 @@ try {
 // 7. Coercion of query parameters (typical HTTP endpoint input)
 // ============================================================
 
-const searchQuerySchema = dsl({
-  page:     dsl('integer:1-').default(1),
-  limit:    dsl('integer:1-100').default(20),
+const searchQuerySchema = s({
+  page:     s('integer:1-').default(1),
+  limit:    s('integer:1-100').default(20),
   minPrice: 'number:0-',
   maxPrice: 'number:0-',
   category: 'electronics|apparel|home|books|sports|food',

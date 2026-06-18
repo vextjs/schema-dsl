@@ -1,4 +1,4 @@
-import { DslBuilder, TypeRegistry, dsl, validate } from '../../dist/index.js'
+import { DslBuilder, TypeRegistry, s, validate } from '../../dist/pure.js'
 
 // ============================================================
 // Plugin type registration — TypeRegistry + DslBuilder.registerType()
@@ -26,8 +26,8 @@ TypeRegistry.register('zipCode', {
   baseSchema: { type: 'string', pattern: '^\\d{5}(-\\d{4})?$' },
 })
 
-const evenSchema = dsl({ value: 'evenNumber!' })
-const userSchema = dsl({ username: 'username!', zip: 'zipCode' })
+const evenSchema = s({ value: 'evenNumber!' })
+const userSchema = s({ username: 'username!', zip: 'zipCode' })
 
 console.log('type-reg.even.valid              =', validate(evenSchema, { value: 4 }).valid)   // true
 console.log('type-reg.even.invalid            =', validate(evenSchema, { value: 3 }).valid)   // false
@@ -50,7 +50,7 @@ DslBuilder.registerType('sku', {
   pattern: '^[A-Z]{3}-\\d{4}$',
 } as any)
 
-const orderSchema = dsl({ id: 'orderCode!', sku: 'sku' })
+const orderSchema = s({ id: 'orderCode!', sku: 'sku' })
 
 console.log('type-reg.order.valid             =',
   validate(orderSchema, { id: 'ORD123456' }).valid)        // true

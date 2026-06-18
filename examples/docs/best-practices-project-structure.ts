@@ -1,4 +1,4 @@
-import { dsl, validate } from '../../dist/index.js'
+import { s, validate } from '../../dist/pure.js'
 
 // ============================================================
 // Best practices — project structure
@@ -18,33 +18,33 @@ import { dsl, validate } from '../../dist/index.js'
 // ============================================================
 
 const userSchemas = {
-  register: dsl({
-    username: dsl('string:3-32!')
+  register: s({
+    username: s('string:3-32!')
       .pattern(/^[a-zA-Z0-9_]+$/)
       .label('Username')
       .error({ pattern: 'Username may only contain letters, digits and underscores' }),
-    email:    dsl('email!').label('Email'),
-    password: dsl('string:8-64!')
+    email:    s('email!').label('Email'),
+    password: s('string:8-64!')
       .pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/)
       .label('Password')
       .error({ pattern: 'Password must be at least 8 chars and include letters and digits' }),
   }),
 
-  login: dsl({
+  login: s({
     username: 'string!',
     password: 'string!',
   }),
 
-  profile: dsl({
-    displayName: dsl('string:2-48').label('Display Name'),
-    bio:         dsl('string:0-300').label('Bio'),
-    website:     dsl('url').label('Website'),
+  profile: s({
+    displayName: s('string:2-48').label('Display Name'),
+    bio:         s('string:0-300').label('Bio'),
+    website:     s('url').label('Website'),
   }),
 
-  admin: dsl({
-    username: dsl('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/),
-    email:    dsl('email!'),
-    password: dsl('string:8-64!').pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/),
+  admin: s({
+    username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/),
+    email:    s('email!'),
+    password: s('string:8-64!').pattern(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/),
     role:     'admin|super-admin',
   }),
 }
@@ -54,7 +54,7 @@ const userSchemas = {
 // ============================================================
 
 const orderSchemas = {
-  create: dsl({
+  create: s({
     productId: 'string:1-64!',
     quantity:  'integer:1-999!',
     shippingAddress: {
@@ -64,7 +64,7 @@ const orderSchemas = {
     },
   }),
 
-  update: dsl({
+  update: s({
     orderId: 'string!',
     status:  'pending|confirmed|shipped|delivered|cancelled',
   }),

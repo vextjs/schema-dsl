@@ -1,7 +1,4 @@
-import {
-  dsl, validate, validateAsync,
-  I18nError, Locale, ErrorFormatter, ValidationError,
-} from '../../dist/index.js'
+import { s, validate, validateAsync, I18nError, Locale, ErrorFormatter, ValidationError } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`error-handling expectation failed: ${label}`)
@@ -11,12 +8,12 @@ function expect(label: string, condition: boolean): void {
 // 1. ValidationErrorItem structure — path, keyword, message
 // ============================================================
 
-const profileSchema = dsl({
-  username: dsl('string:3-32!').label('Username'),
-  email:    dsl('email!').label('Email'),
-  age:      dsl('integer:18-120').label('Age'),
-  role:     dsl('admin|user|guest!').label('Role'),
-  website:  dsl('url').label('Website'),
+const profileSchema = s({
+  username: s('string:3-32!').label('Username'),
+  email:    s('email!').label('Email'),
+  age:      s('integer:18-120').label('Age'),
+  role:     s('admin|user|guest!').label('Role'),
+  website:  s('url').label('Website'),
 })
 
 const invalidData = {
@@ -43,8 +40,8 @@ console.log('error-handling.errorMessage =', result.errorMessage)
 // 2. Custom error messages via .error() and .messages()
 // ============================================================
 
-const formSchema = dsl({
-  username: dsl('string:3-32!')
+const formSchema = s({
+  username: s('string:3-32!')
     .label('Username')
     .error({
       minLength: 'Username must be at least 3 characters',
@@ -52,7 +49,7 @@ const formSchema = dsl({
       required:  'Username is required',
     }),
 
-  password: dsl('string:8-64!')
+  password: s('string:8-64!')
     .label('Password')
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .error({
@@ -60,7 +57,7 @@ const formSchema = dsl({
       pattern:   'Password must contain uppercase, lowercase and digit',
     }),
 
-  role: dsl('admin|user|guest')
+  role: s('admin|user|guest')
     .label('Role')
     .default('user')
     .error({ enum: 'Role must be admin, user or guest' }),
@@ -166,7 +163,7 @@ console.log('error-handling.i18n.assert.noThrow =', threw) // false
 // 7. ValidationError — thrown by validateAsync on failure
 // ============================================================
 
-const strictSchema = dsl({ email: 'email!', username: 'string:3-20!' })
+const strictSchema = s({ email: 'email!', username: 'string:3-20!' })
 
 async function tryValidateAsync(): Promise<ValidationError | null> {
   try {
@@ -204,28 +201,28 @@ if (asyncValidationError) {
 }
 
 // ============================================================
-// 8. dsl.error facade — create / throw / assert without importing I18nError
+// 8. s.error facade — create / throw / assert without importing I18nError
 // ============================================================
 
-const facadeError = dsl.error.create('auth.tokenExpired', {}, 40101, 'zh-CN')
-console.log('error-handling.dsl.error.create =', facadeError instanceof I18nError)
-expect('dsl.error.create returns I18nError', facadeError instanceof I18nError)
+const facadeError = s.error.create('auth.tokenExpired', {}, 40101, 'zh-CN')
+console.log('error-handling.s.error.create =', facadeError instanceof I18nError)
+expect('s.error.create returns I18nError', facadeError instanceof I18nError)
 
 try {
-  dsl.error.assert(false, 'payment.insufficientBalance', { balance: 1, required: 10 }, 40210, 'zh-CN')
+  s.error.assert(false, 'payment.insufficientBalance', { balance: 1, required: 10 }, 40210, 'zh-CN')
 } catch (err) {
   if (err instanceof I18nError) {
-    console.log('error-handling.dsl.error.assert.caught =', err.code)
-    expect('dsl.error.assert resolves locale code', err.code === 40210)
-    expect('dsl.error.assert preserves status code', err.statusCode === 40210)
+    console.log('error-handling.s.error.assert.caught =', err.code)
+    expect('s.error.assert resolves locale code', err.code === 40210)
+    expect('s.error.assert preserves status code', err.statusCode === 40210)
   }
 }
 
 try {
-  dsl.error.throw('auth.tokenExpired', {}, 40101, 'zh-CN')
+  s.error.throw('auth.tokenExpired', {}, 40101, 'zh-CN')
 } catch (err) {
   if (err instanceof I18nError) {
-    console.log('error-handling.dsl.error.throw.caught =', err.is('auth.tokenExpired'))
-    expect('dsl.error.throw preserves key', err.is('auth.tokenExpired'))
+    console.log('error-handling.s.error.throw.caught =', err.is('auth.tokenExpired'))
+    expect('s.error.throw preserves key', err.is('auth.tokenExpired'))
   }
 }

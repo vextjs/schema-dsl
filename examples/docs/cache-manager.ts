@@ -1,4 +1,4 @@
-import { CacheManager, Validator, dsl } from '../../dist/index.js'
+import { CacheManager, Validator, s } from '../../dist/pure.js'
 
 // ============================================================
 // 1. CacheManager basics — LRU eviction, TTL, stats
@@ -72,7 +72,7 @@ console.log('cache-manager.manual.clearSize =', cache2.getStats().size)         
 // 4. Validator with built-in cache integration
 // ============================================================
 
-const schema = dsl({ email: 'email!', age: 'integer:18-120' })
+const schema = s({ email: 'email!', age: 'integer:18-120' })
 
 // Pass cache options directly to the Validator constructor
 const validator = new Validator({

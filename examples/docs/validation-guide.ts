@@ -1,4 +1,4 @@
-import { dsl, validate, validateAsync, ValidationError, Validator } from '../../dist/index.js'
+import { s, validate, validateAsync, ValidationError, Validator } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`validation-guide expectation failed: ${label}`)
@@ -12,7 +12,7 @@ function expect(label: string, condition: boolean): void {
 // 1. Quick one-liner: validate()
 // ============================================================
 
-const quickSchema = dsl({
+const quickSchema = s({
   username: 'string:3-32!',
   email:    'email!',
   age:      'integer:18-120',
@@ -48,12 +48,12 @@ const validator = new Validator({
   cache:       true,
 })
 
-const fullSchema = dsl({
-  username: dsl('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/).label('Username')
+const fullSchema = s({
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/).label('Username')
     .error({ pattern: 'Username may only contain letters, digits, and underscores' }),
-  email:    dsl('email!').label('Email'),
-  age:      dsl('integer:18-120').label('Age'),
-  country:  dsl('string').default('US'),
+  email:    s('email!').label('Email'),
+  age:      s('integer:18-120').label('Age'),
+  country:  s('string').default('US'),
 })
 
 // Coercion: '28' → 28 — valid with defaults
@@ -133,8 +133,8 @@ expect('api error formatter keeps field names', apiErrors.some(e => e.field === 
 // 9. Async validation — run Promise-returning custom validators
 // ============================================================
 
-const signupSchema = dsl({
-  email: dsl('email!').custom(async value =>
+const signupSchema = s({
+  email: s('email!').custom(async value =>
     value !== 'taken@example.com' || 'Email has already been taken'),
   username: 'string:3-32!',
 })

@@ -5,27 +5,17 @@
 
 ---
 
-## 📑 目录
-
-- [快速入门](#快速入门)
-- [DSL 语法速查](#dsl-语法速查)
-- [验证模式](#验证模式)
-- [错误处理](#错误处理)
-- [性能优化](#性能优化)
-- [常见场景](#常见场景)
-- [最佳实践](#最佳实践)
-
----
+当你已经有 schema，需要理解验证选项、失败路径和结果处理时阅读本页。API 细节请配合 [validate()](validate.md)、[validateAsync()](validate-async.md) 和 [Validator](validator.md)。
 
 ## 快速入门
 
 ### 基本验证流程
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // 1. 定义 Schema
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:18-120'
@@ -102,7 +92,7 @@ if (result.valid) {
 最简单的验证方式，使用内置单例 Validator：
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 const result = validate(schema, data);
 ```
@@ -112,7 +102,7 @@ const result = validate(schema, data);
 需要自定义配置（如类型转换、自定义关键字）时使用：
 
 ```javascript
-const { dsl, Validator } = require('schema-dsl');
+import { s, Validator } from 'schema-dsl/pure';
 
 // 创建自定义配置的 Validator
 const validator = new Validator({
@@ -149,7 +139,7 @@ const result3 = validateUser(data3);
 验证多条数据时使用：
 
 ```javascript
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
 const validator = new Validator();
 
 const dataList = [
@@ -184,9 +174,8 @@ const results = validator.validateBatch(schema, dataList);
 ### 自定义错误消息
 
 ```javascript
-const schema = dsl({
-  username: 'string:3-32!'
-    .label('用户名')
+const schema = s({
+  username: s('string:3-32!').label('用户名')
     .messages({
       'min': '{{#label}}太短了，至少{{#limit}}个字符',
       'max': '{{#label}}太长了，最多{{#limit}}个字符',
@@ -198,7 +187,7 @@ const schema = dsl({
 ### 多语言错误消息
 
 ```javascript
-const { Locale, Validator } = require('schema-dsl');
+import { Locale, Validator } from 'schema-dsl/pure';
 
 // 添加语言包
 Locale.addLocale('zh-CN', {
@@ -251,14 +240,14 @@ const validateUser = validator.compile(userSchema);
 ```javascript
 // ❌ 每次都创建 Schema
 function getSchema() {
-  return dsl({
+  return s({
     username: 'string:3-32!',
     email: 'email!'
   });
 }
 
 // ✅ 缓存 Schema
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
@@ -289,28 +278,23 @@ console.timeEnd('schema-dsl.validate');
 ### 用户注册表单
 
 ```javascript
-const registerSchema = dsl({
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
+const registerSchema = s({
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/)
     .label('用户名')
     .messages({
       'pattern': '{{#label}}只能包含字母、数字和下划线'
     }),
 
-  email: 'email!'
-    .label('邮箱地址'),
+  email: s('email!').label('邮箱地址'),
 
-  password: 'string:8-64!'
-    .password('strong')
+  password: s('string:8-64!').password('strong')
     .label('密码'),
 
-  age: 'number:18-120'
-    .label('年龄'),
+  age: s('number:18-120').label('年龄'),
 
   gender: 'male|female|other',
 
-  terms: 'boolean!'
-    .label('服务条款')
+  terms: s('boolean!').label('服务条款')
     .messages({
       'required': '请同意{{#label}}'
     })
@@ -320,7 +304,7 @@ const registerSchema = dsl({
 ### API 请求验证
 
 ```javascript
-const createOrderSchema = dsl({
+const createOrderSchema = s({
   userId: 'string!',
   items: 'array!1-100',
   shippingAddress: {
@@ -351,7 +335,9 @@ app.post('/orders', validateRequest(createOrderSchema), createOrder);
 ### 配置文件验证
 
 ```javascript
-const configSchema = dsl({
+import { readFile } from 'node:fs/promises';
+
+const configSchema = s({
   server: {
     host: 'string!',
     port: 'integer:1-65535!',
@@ -368,8 +354,8 @@ const configSchema = dsl({
   }
 });
 
-function loadConfig(configPath) {
-  const config = require(configPath);
+async function loadConfig(configPath) {
+  const config = JSON.parse(await readFile(configPath, 'utf8'));
   const result = validate(configSchema, config);
 
   if (!result.valid) {
@@ -392,7 +378,7 @@ email: 'email!'
 // 错误: "email is required"
 
 // ✅ 使用 label
-email: 'email!'.label('邮箱地址')
+email: s('email!').label('邮箱地址')
 // 错误: "邮箱地址不能为空"
 ```
 
@@ -400,14 +386,14 @@ email: 'email!'.label('邮箱地址')
 
 ```javascript
 // schemas/index.js
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-exports.userSchema = dsl({
+export const userSchema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
 
-exports.orderSchema = dsl({
+export const orderSchema = s({
   userId: 'string!',
   items: 'array!1-100'
 });
@@ -416,30 +402,30 @@ exports.orderSchema = dsl({
 ### 3. 使用 SchemaUtils 复用字段
 
 ```javascript
-const { SchemaUtils, dsl } = require('schema-dsl');
+import { SchemaUtils, s } from 'schema-dsl/pure';
 
 // 创建可复用字段
 const emailField = SchemaUtils.reusable(() =>
-  dsl('email!').label('邮箱地址')
+  s('email!').label('邮箱地址')
 );
 
 // 在多个 Schema 中复用
-const loginSchema = dsl({ email: emailField() });
-const registerSchema = dsl({ email: emailField(), name: 'string!' });
+const loginSchema = s({ email: emailField() });
+const registerSchema = s({ email: emailField(), name: 'string!' });
 ```
 
 ### 4. 分层验证
 
 ```javascript
 // 基础验证（快速）
-const quickSchema = dsl({
+const quickSchema = s({
   username: 'string!',
   email: 'string!'
 });
 
 // 完整验证（详细）
-const fullSchema = dsl({
-  username: 'string:3-32!'.pattern(/^[a-z]+$/),
+const fullSchema = s({
+  username: s('string:3-32!').pattern(/^[a-z]+$/),
   email: 'email!'
 });
 

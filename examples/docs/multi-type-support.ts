@@ -1,4 +1,4 @@
-import { dsl, validate, Validator } from '../../dist/index.js'
+import { s, validate, Validator } from '../../dist/pure.js'
 
 // ============================================================
 // Multi-type support — all primitive and format types in one place
@@ -15,15 +15,15 @@ import { dsl, validate, Validator } from '../../dist/index.js'
 // 1. Core type demo
 // ============================================================
 
-const coreSchema = dsl({
-  name:      dsl('string:1-50!').label('Name'),
-  age:       dsl('integer:0-150').label('Age'),
-  score:     dsl('number:0-100').label('Score'),
-  active:    dsl('boolean!').label('Active'),
-  birthday:  dsl('date?').label('Birthday'),
-  tags:      dsl('array<string:1-20>?').label('Tags'),
-  status:    dsl('active|inactive').label('Status'),
-  meta:      dsl('object?').label('Meta'),
+const coreSchema = s({
+  name:      s('string:1-50!').label('Name'),
+  age:       s('integer:0-150').label('Age'),
+  score:     s('number:0-100').label('Score'),
+  active:    s('boolean!').label('Active'),
+  birthday:  s('date?').label('Birthday'),
+  tags:      s('array<string:1-20>?').label('Tags'),
+  status:    s('active|inactive').label('Status'),
+  meta:      s('object?').label('Meta'),
 })
 
 const coreValid = validate(coreSchema, {
@@ -37,7 +37,7 @@ console.log('multi-type.core.valid            =', coreValid.valid)   // true
 // 2. Format types
 // ============================================================
 
-const formatSchema = dsl({
+const formatSchema = s({
   email:    'email!',
   website:  'url',
   uuid:     'uuid',
@@ -66,7 +66,7 @@ console.log('multi-type.format.valid          =', formatValid.valid)  // true
 // 3. Special strings
 // ============================================================
 
-const specialSchema = dsl({
+const specialSchema = s({
   hex:     'hexColor',
   slug:    'slug',
   port:    'port',
@@ -87,7 +87,7 @@ console.log('multi-type.special.valid         =', specialValid.valid)  // true
 // 4. Array types
 // ============================================================
 
-const arrSchema = dsl({
+const arrSchema = s({
   emails:  'array<email>!',
   scores:  'array<number:0-100>',
   ids:     'array<uuid>',
@@ -124,7 +124,7 @@ console.log('multi-type.coerce.age            =', (coerced.data as any)?.age)  /
 // 6. any type — passes any non-null value
 // ============================================================
 
-const anySchema = dsl({ data: 'any!', meta: 'any' })
+const anySchema = s({ data: 'any!', meta: 'any' })
 console.log('multi-type.any.obj.valid         =', validate(anySchema, { data: { x: 1 } }).valid)        // true
 console.log('multi-type.any.str.valid         =', validate(anySchema, { data: 'hello' }).valid)          // true
 console.log('multi-type.any.num.valid         =', validate(anySchema, { data: 42 }).valid)               // true

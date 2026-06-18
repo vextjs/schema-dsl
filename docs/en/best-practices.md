@@ -1,20 +1,11 @@
 # schema-dsl best practices
 
 > **Purpose**: Help you write high-quality, high-performance Schema code
-> **Update**: 2026-05-08
+> **Update**: 2026-06-18
 
 ---
 
-## 📑 Table of Contents
-
-- [Schema design principles](#schema-design-principles)
-- [Performance optimization](#performance-optimization)
-- [Safety considerations](#security-considerations)
-- [Error handling](#error-handling)
-- [Code Organization](#code-organization)
-- [Production environment suggestions](#production-environment-recommendations)
-
----
+Use this after you have working schemas and want production-ready structure, performance, and maintainability patterns. For project layout, continue with [Project Structure Best Practices](best-practices-project-structure.md).
 
 ## Schema design principles
 
@@ -22,7 +13,7 @@
 
 **recommend**:
 ```javascript
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   age: 'number:18-120',
   email: 'email!',
@@ -32,13 +23,14 @@ const schema = dsl({
 
 **Not recommended** (overly complex):
 ```javascript
-const schema = dsl({
-  username: dsl('string').min(3).max(32).required(),
+const schema = s({
+  username: s('string').min(3).max(32).require(),
   // Too verbose!
 });
 ```
 
-**Principle**: If it can be expressed using DSL strings, do not use chained calls.
+**Principle**: Keep simple fields as compact DSL literals. Add chain methods only
+when you need labels, messages, custom validators, or other refinements.
 
 ---
 
@@ -52,12 +44,12 @@ const schema = dsl({
 
 **Example**:
 ```javascript
-const schema = dsl({
+const schema = s({
   // Simple fields: pure DSL
   age: 'number:18-120',
 
   // Complex fields: chain calls
-  username: 'string:3-32!'
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .label('username')
     .messages({
@@ -66,7 +58,7 @@ const schema = dsl({
       'max': 'Maximum 32 characters'
     }),
 
-  email: 'email!'
+  email: s('email!')
     .custom((value) => {
       if (value.endsWith('@blocked.example')) return 'This email domain name is not allowed to be registered';
     })
@@ -81,14 +73,14 @@ const schema = dsl({
 schema-dsl provides commonly used preset validators, available out of the box:
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // ✅ Use the default validator (recommended)
-  username: dsl('string!').username(), // Automatically set 3-32 length + regular
-  password: dsl('string!').password('strong'), // Strong password validation
-  phone: dsl('string!').phone('cn'), // China mobile phone number
+  username: s('string!').username(), // Automatically set 3-32 length + regular
+  password: s('string!').password('strong'), // Strong password validation
+  phone: s('string!').phone('cn'), // China mobile phone number
 
   // ❌ Manual implementation (not recommended)
-  username: 'string:3-32!'
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z][a-zA-Z0-9_]*$/)
 });
 ```
@@ -105,7 +97,7 @@ const schema = dsl({
 
 **Not recommended** (nested too deeply):
 ```javascript
-const schema = dsl({
+const schema = s({
   user: {
     profile: {
       personal: {
@@ -123,20 +115,20 @@ const schema = dsl({
 **Recommended** (Split or Flatten):
 ```javascript
 // Option 1: Split into multiple Schema
-const addressSchema = dsl({
+const addressSchema = s({
   street: 'string!',
   city: 'string!',
   zipCode: 'string'
 });
 
-const userSchema = dsl({
+const userSchema = s({
   name: 'string!',
   email: 'email!',
   address: addressSchema
 });
 
 // Option 2: Flatten
-const schema = dsl({
+const schema = s({
   'user_name': 'string!',
   'user_email': 'email!',
   'address_street': 'string!',
@@ -155,7 +147,7 @@ const schema = dsl({
 **Not recommended** (compile every time):
 ```javascript
 app.post('/api/user', (req, res) => {
-  const schema = dsl({ username: 'string!' });
+  const schema = s({ username: 'string!' });
   const result = validate(schema, req.body); // Compile every time
 });
 ```
@@ -164,7 +156,7 @@ app.post('/api/user', (req, res) => {
 ```javascript
 // Compile once when the application starts
 const validator = new Validator();
-const userSchema = dsl({ username: 'string!' });
+const userSchema = s({ username: 'string!' });
 const validateUser = validator.compile(userSchema);
 
 app.post('/api/user', (req, res) => {
@@ -193,7 +185,7 @@ const tunedValidator = new Validator({
 });
 
 // Or use a global singleton (caching is enabled by default)
-const { validate } = require('schema-dsl');
+import { validate } from 'schema-dsl/pure';
 validate(schema, data); // automatic caching
 ```
 
@@ -214,7 +206,7 @@ records.forEach(record => {
 
 **Recommended** (batch validation):
 ```javascript
-const { SchemaUtils, Validator } = require('schema-dsl');
+import { SchemaUtils, Validator } from 'schema-dsl/pure';
 
 const validator = new Validator();
 const result = SchemaUtils.validateBatch(schema, records, validator.getAjv());
@@ -251,14 +243,14 @@ const result = SchemaUtils.validateBatch(schema, records, validator.getAjv());
 **Not recommended**:
 ```javascript
 records.forEach(record => {
-  const schema = dsl({ name: 'string!' }); // Create every time
+  const schema = s({ name: 'string!' }); // Create every time
   validate(schema, record);
 });
 ```
 
 **recommend**:
 ```javascript
-const schema = dsl({ name: 'string!' }); // Create once
+const schema = s({ name: 'string!' }); // Create once
 records.forEach(record => {
   validate(schema, record); //reuse
 });
@@ -275,7 +267,7 @@ records.forEach(record => {
 // ❌ User-controlled regular expression
 app.post('/api/validate', (req, res) => {
   const pattern = req.body.pattern; // User input
-  const schema = dsl('string').pattern(new RegExp(pattern)); // Danger!
+  const schema = s('string').pattern(new RegExp(pattern)); // Danger!
 });
 ```
 
@@ -295,7 +287,7 @@ app.post('/api/validate', (req, res) => {
   if (!pattern) {
     return res.status(400).json({ error: 'Invalid pattern' });
   }
-  const schema = dsl('string').pattern(pattern);
+  const schema = s('string').pattern(pattern);
 });
 ```
 
@@ -392,9 +384,8 @@ app.post('/api/user',
 
 **Use labels and custom messages**:
 ```javascript
-const schema = dsl({
-  username: 'string:3-32!'
-    .label('username')
+const schema = s({
+  username: s('string:3-32!').label('username')
     .messages({
       'required': '{{#label}} cannot be empty',
       'min': '{{#label}} requires at least {{#limit}} characters',
@@ -402,7 +393,7 @@ const schema = dsl({
       'pattern': '{{#label}} format is incorrect'
     }),
 
-  email: 'email!'
+  email: s('email!')
     .label('email address')
     .messages({
       'required': 'Please fill in {{#label}}',
@@ -425,8 +416,8 @@ const schema = dsl({
 > `.custom()` supports synchronous functions; when asynchronous checks such as database, RPC, HTTP, etc. are involved, `Promise` can be returned and executed through `validateAsync()`, or it can be executed separately in the business layer after the basic validation is passed.
 
 ```javascript
-const schema = dsl({
-  email: 'email!'.label('email address')
+const schema = s({
+  email: s('email!').label('email address')
 });
 
 async function validateUser(data) {
@@ -471,30 +462,30 @@ src/
 
 **schemas/user.schema.js**:
 ```javascript
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 //Reusable fields
 const commonFields = {
-  username: dsl('string!').username().label('username'),
+  username: s('string!').username().label('username'),
   email: 'email!',
-  password: dsl('string!').password('strong').label('password')
+  password: s('string!').password('strong').label('password')
 };
 
-//Register Schema
-exports.registerSchema = dsl({
+// Register Schema
+export const registerSchema = s({
   ...commonFields,
   confirmPassword: 'string!',
   agreeTerms: 'boolean!'
 });
 
 // Login Schema
-exports.loginSchema = dsl({
+export const loginSchema = s({
   email: commonFields.email,
   password: commonFields.password
 });
 
-//Update Schema
-exports.updateSchema = dsl({
+// Update Schema
+export const updateSchema = s({
   username: commonFields.username,
   email: commonFields.email
   // Does not contain password
@@ -503,10 +494,10 @@ exports.updateSchema = dsl({
 
 **schemas/index.js**:
 ```javascript
-const userSchemas = require('./user.schema');
-const postSchemas = require('./post.schema');
+import * as userSchemas from './user.schema.js';
+import * as postSchemas from './post.schema.js';
 
-module.exports = {
+export default {
   user: userSchemas,
   post: postSchemas
 };
@@ -514,8 +505,8 @@ module.exports = {
 
 **routes/user.routes.js**:
 ```javascript
-const schemas = require('../schemas');
-const { validate } = require('schema-dsl');
+import schemas from '../schemas';
+import { validate } from 'schema-dsl/pure';
 
 router.post('/register', (req, res) => {
   const result = validate(schemas.user.registerSchema, req.body);
@@ -529,23 +520,23 @@ router.post('/register', (req, res) => {
 
 **Using SchemaUtils**:
 ```javascript
-const { SchemaUtils, dsl } = require('schema-dsl');
+import { SchemaUtils, s } from 'schema-dsl/pure';
 
 //Create a reusable field library
 const fields = SchemaUtils.createLibrary({
   email: () => 'email!',
-  phone: () => dsl('string!').phone('cn'),
-  password: () => dsl('string!').password('strong')
+  phone: () => s('string!').phone('cn'),
+  password: () => s('string!').password('strong')
 });
 
 //Reuse in multiple Schema
-const registerSchema = dsl({
+const registerSchema = s({
   email: fields.email(),
   password: fields.password(),
   username: 'string:3-32!'
 });
 
-const profileSchema = dsl({
+const profileSchema = s({
   email: fields.email(),
   phone: fields.phone(),
   bio: 'string:500'
@@ -560,7 +551,7 @@ const profileSchema = dsl({
 
 ```javascript
 // config/validator.js
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
 
 const config = {
   development: {
@@ -579,7 +570,7 @@ const config = {
   }
 };
 
-module.exports = new Validator(
+export const validator = new Validator(
   config[process.env.NODE_ENV || 'development']
 );
 ```
@@ -621,12 +612,12 @@ validator.validate = function(schema, data, options) {
 
 ```javascript
 // routes/health.js
-app.get('/health', (req, res) => {
-  const { validator } = require('../config/validator');
+import { validator } from '../config/validator.js';
 
+app.get('/health', (req, res) => {
   // Check if the validator is normal
   try {
-    const testSchema = dsl({ test: 'string!' });
+    const testSchema = s({ test: 'string!' });
     const result = validator.validate(testSchema, { test: 'ok' });
 
     if (!result.valid) {
@@ -653,7 +644,7 @@ app.get('/health', (req, res) => {
 
 ```javascript
 // Clean the cache regularly
-const cron = require('node-cron');
+import cron from 'node-cron';
 
 // Clean up once every morning
 cron.schedule('0 0 * * *', () => {

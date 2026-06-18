@@ -1,4 +1,4 @@
-import { dsl, validate, MongoDBExporter, MySQLExporter, PostgreSQLExporter } from '../../dist/index.js'
+import { s, validate, MongoDBExporter, MySQLExporter, PostgreSQLExporter } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`export-limitations expectation failed: ${label}`)
@@ -13,25 +13,25 @@ function expect(label: string, condition: boolean): void {
 // ============================================================
 
 // ============================================================
-// 1. Conditional schemas (dsl.match / dsl.if) → dropped by SQL exporters
+// 1. Conditional schemas (s.match / s.if) → dropped by SQL exporters
 // ============================================================
 
 // This schema uses runtime-conditional logic based on contactType.
 // It validates perfectly, but SQL exporters cannot express if/then.
-const fullSchema = dsl({
-  username:     dsl('string:3-32!').description('Login handle'),
+const fullSchema = s({
+  username:     s('string:3-32!').description('Login handle'),
   contactType:  'email|phone',
-  contact:      dsl.match('contactType', {
+  contact:      s.match('contactType', {
     email: 'email!',
     phone: 'phone:cn!',
   }),
 })
 
 // For DB export, use a simplified version without conditions
-const dbSchema = dsl({
-  username:     dsl('string:3-32!').description('Login handle'),
+const dbSchema = s({
+  username:     s('string:3-32!').description('Login handle'),
   contactType:  'email|phone',
-  contact:      dsl('string!').description('Email or phone number'),
+  contact:      s('string!').description('Email or phone number'),
 })
 
 const mysqlDdl    = MySQLExporter.export('users', dbSchema)
@@ -54,9 +54,9 @@ expect('db schema can be exported to MySQL', mysqlDdl.includes('CREATE TABLE'))
 // 2. Regex patterns — dropped in SQL DDL, kept in MongoDB
 // ============================================================
 
-const patternSchema = dsl({
-  slug: dsl('string:3-50!').pattern(/^[a-z0-9-]+$/).description('URL-safe slug'),
-  code: dsl('string:6!').pattern(/^[A-Z0-9]{6}$/).description('6-char uppercase code'),
+const patternSchema = s({
+  slug: s('string:3-50!').pattern(/^[a-z0-9-]+$/).description('URL-safe slug'),
+  code: s('string:6!').pattern(/^[A-Z0-9]{6}$/).description('6-char uppercase code'),
 })
 
 const mysqlPattern = MySQLExporter.export('items', patternSchema)
@@ -75,9 +75,9 @@ expect('MongoDB exporter keeps regex pattern', JSON.stringify(mongoPattern).incl
 // 3. Array item types — simplified in SQL, kept in MongoDB
 // ============================================================
 
-const arraySchema = dsl({
-  tags: dsl('array<slug>!').description('URL slugs'),
-  nums: dsl('array<integer:1-100>').description('Scores'),
+const arraySchema = s({
+  tags: s('array<slug>!').description('URL slugs'),
+  nums: s('array<integer:1-100>').description('Scores'),
 })
 
 const mysqlArray = MySQLExporter.export('posts', arraySchema)
@@ -93,7 +93,7 @@ expect('SQL array export cannot preserve item integer keyword', !mysqlArray.incl
 // 4. Enum types — VARCHAR in SQL, enum in MongoDB
 // ============================================================
 
-const enumSchema = dsl({
+const enumSchema = s({
   role:   'admin|user|guest',
   status: 'active|inactive|banned',
 })
@@ -153,8 +153,8 @@ expect('mixed-type anyOf throws instead of guessing', mixedTypeError.includes('c
 // 6. Custom validators — keep application validation as source of truth
 // ============================================================
 
-const scoreSchema = dsl({
-  score: dsl('integer:0-100!').custom((value: unknown) =>
+const scoreSchema = s({
+  score: s('integer:0-100!').custom((value: unknown) =>
     Number(value) % 2 === 0 || 'Score must be an even number'),
 })
 

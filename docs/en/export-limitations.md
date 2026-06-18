@@ -4,16 +4,6 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Core Principles](#core-principles)
-- [Exported features not supported](#exported-features-are-not-supported)
-- [Partially supported features](#partially-supported-features)
-- [Fully supported features](#fully-supported-features)
-- [Database specific restrictions](#database-specific-restrictions)
-- [Best Practice Suggestions](#best-practice-recommendations)
-
----
 
 ## core principles
 
@@ -32,13 +22,13 @@ The following schema-dsl attributes cannot be exported to a database schema (wil
 
 ### 1. Conditional validation logic ❌
 
-#### `dsl.match()` - ​​conditional field mapping
+#### `s.match()` - ​​conditional field mapping
 
 ```javascript
 // ❌ Unable to export
-const schema = dsl({
+const schema = s({
   contactType: 'email|phone',
-  contact: dsl.match('contactType', {
+  contact: s.match('contactType', {
     email: 'email!',
     phone: 'phone:cn!'
   })
@@ -53,13 +43,13 @@ const schema = dsl({
 
 ---
 
-#### `dsl.if()` - ​​Conditional validation
+#### `s.if()` - ​​Conditional validation
 
 ```javascript
 // ❌ Unable to export
-const schema = dsl({
+const schema = s({
   isVip: 'boolean',
-  discount: dsl.if('isVip', 'number:10-100!', 'number:0-10')
+  discount: s.if('isVip', 'number:10-100!', 'number:0-10')
 });
 ```
 
@@ -108,7 +98,7 @@ const schema = {
 
 ```javascript
 // ❌ Custom validator cannot be exported
-const schema = dsl('string:3-32!')
+const schema = s('string:3-32!')
   .custom((value) => value.startsWith('USER_'))
   .messages({ 'string.custom': 'Must start with USER_' });
 ```
@@ -125,7 +115,7 @@ const schema = dsl('string:3-32!')
 
 ```javascript
 // ❌ Error message cannot be exported
-const schema = dsl('email!')
+const schema = s('email!')
   .messages({
     'string.format': 'Please enter a valid email address'
   })
@@ -142,7 +132,7 @@ const schema = dsl('email!')
 
 ```javascript
 // ⚠️ Nested objects will be simplified to JSON/JSONB types
-const schema = dsl({
+const schema = s({
   profile: {
     bio: 'string:500',
     avatar: 'url',
@@ -168,7 +158,7 @@ The following features are supported to varying degrees in different databases:
 ### 1. Regular expression constraints ⚠️
 
 ```javascript
-const schema = dsl('string!')
+const schema = s('string!')
   .pattern(/^[A-Z][a-z]+$/);
 ```
 
@@ -185,7 +175,7 @@ const schema = dsl('string!')
 ### 2. Numerical range constraints ⚠️
 
 ```javascript
-const schema = dsl('number:18-120');
+const schema = s('number:18-120');
 ```
 
 | database | level of support | Export results |
@@ -199,7 +189,7 @@ const schema = dsl('number:18-120');
 ### 3. String length constraint ⚠️
 
 ```javascript
-const schema = dsl('string:3-32');
+const schema = s('string:3-32');
 ```
 
 | database | level of support | Export results |
@@ -213,7 +203,7 @@ const schema = dsl('string:3-32');
 ### 4. Enumeration constraints ⚠️
 
 ```javascript
-const schema = dsl('active|inactive|banned');
+const schema = s('active|inactive|banned');
 ```
 
 | database | level of support | Export results |
@@ -227,7 +217,7 @@ const schema = dsl('active|inactive|banned');
 ### 5. Array constraints ⚠️
 
 ```javascript
-const schema = dsl('array!1-10<string:3-32>');
+const schema = s('array!1-10<string:3-32>');
 ```
 
 | database | level of support | Export results |
@@ -245,7 +235,7 @@ The following properties export well in all databases:
 ### ✅ Basic type
 
 ```javascript
-dsl({
+s({
   name: 'string!',
   age: 'number',
   active: 'boolean',
@@ -260,7 +250,7 @@ dsl({
 ### ✅Required constraints
 
 ```javascript
-dsl({
+s({
   email: 'email!', // required
   phone: 'phone:cn' // optional
 })
@@ -275,7 +265,7 @@ dsl({
 ### ✅ Default value (MySQL/PostgreSQL only)
 
 ```javascript
-const schema = dsl('boolean')
+const schema = s('boolean')
   .default(false);
 ```
 
@@ -288,7 +278,7 @@ const schema = dsl('boolean')
 ### ✅ Field description
 
 ```javascript
-const schema = dsl('string!')
+const schema = s('string!')
   .description('User login name');
 ```
 
@@ -367,19 +357,19 @@ const schema = dsl('string!')
 Before using the export function, please check whether the Schema contains unsupported features:
 
 ```javascript
-const { dsl, exporters } = require('schema-dsl');
+import { s, exporters } from 'schema-dsl/pure';
 
 // ❌ Schema not suitable for export (contains conditional logic)
-const conditionalSchema = dsl({
+const conditionalSchema = s({
   type: 'email|phone',
-  value: dsl.match('type', {
+  value: s.match('type', {
     email: 'email!',
     phone: 'phone:cn!'
   })
 });
 
 // ✅ Schema suitable for export (static definition)
-const staticSchema = dsl({
+const staticSchema = s({
   id: 'uuid!',
   email: 'email!',
   phone: 'string:11',
@@ -399,7 +389,7 @@ const ddl = exporter.export('users', staticSchema);
 For constraints that cannot be exported, use `description()` to leave a description in the database:
 
 ```javascript
-const schema = dsl('string!')
+const schema = s('string!')
   .pattern(/^[A-Z][a-z]+$/)
   .description('The first letter is capitalized, the rest are lowercase (regular: ^[A-Z][a-z]+$)');
 ```
@@ -420,31 +410,30 @@ COMMENT ON COLUMN users.name IS 'The first letter is capitalized, the rest are l
 
 ```javascript
 // schemas/user.js
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
 // Complete definition (including all validation logic)
-const userSchema = dsl({
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
+const userSchema = s({
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/)
     .messages({ 'string.pattern': 'Can only contain alphanumeric underscores' })
     .description('User login name'),
 
   contactType: 'email|phone',
-  contact: dsl.match('contactType', {
+  contact: s.match('contactType', {
     email: 'email!',
     phone: 'phone:cn!'
   })
 });
 
-module.exports = {
+export const userSchemas = {
   // The application layer uses the complete Schema
   full: userSchema,
 
   // Database export uses simplified Schema
-  db: dsl({
-    username: 'string:3-32!'.description('User login name'),
+  db: s({
+    username: s('string:3-32!').description('User login name'),
     contactType: 'email|phone',
-    contact: 'string!'.description('Email or mobile phone number (according to contactType)')
+    contact: s('string!').description('Email or mobile phone number (according to contactType)')
   })
 };
 ```
@@ -474,7 +463,7 @@ Clearly state in the project documentation which validation logic does not take 
 
 ## FAQ
 
-### Q1: Why can't `dsl.match()` be exported?
+### Q1: Why can't `s.match()` be exported?
 
 **A**: The database does not support the dynamic constraint of "determining the type of field B based on the value of field A". The database schema is fixed when it is created and cannot be changed at runtime.
 
@@ -511,8 +500,8 @@ Clearly state in the project documentation which validation logic does not take 
 
 ```javascript
 // ❌ Contains conditional logic
-dsl.match(...)
-dsl.if(...)
+s.match(...)
+s.if(...)
 
 // ❌ Contains custom validators
 .custom(...)
@@ -525,10 +514,10 @@ dsl.if(...)
 
 ```javascript
 // ✅ Basic type + simple constraints
-dsl('string:3-32!')
-dsl('number:0-100')
-dsl('email!')
-dsl('active|inactive|banned')
+s('string:3-32!')
+s('number:0-100')
+s('email!')
+s('active|inactive|banned')
 ```
 
 ---

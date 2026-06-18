@@ -18,6 +18,7 @@ describe('transformSchemaDsl', () => {
       [
         'const email = "email!".label("Email")',
         'const name = "string!".pattern(/^[a-z]+$/).required()',
+        'const age = "number".require()',
         'const schema = "string!".toJsonSchema()',
       ].join('\n'),
       { filename: 'user.ts' },
@@ -26,6 +27,7 @@ describe('transformSchemaDsl', () => {
     expect(result.changed).toBe(true)
     expect(result.code).toContain('__schemaDslDsl("email!").label("Email")')
     expect(result.code).toContain('__schemaDslDsl("string!").pattern(/^[a-z]+$/).required()')
+    expect(result.code).toContain('__schemaDslDsl("number").require()')
     expect(result.code).toContain('__schemaDslDsl("string!").toJsonSchema()')
     expect(result.warnings).toHaveLength(0)
   })

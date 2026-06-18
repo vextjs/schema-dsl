@@ -89,12 +89,12 @@ The String extension only supports string types, which is a design decision:
 
 ```javascript
 // ✅ Correct: String type uses String extension
-email: 'email!'.pattern(/custom/).label('email')
-username: 'string:3-32!'.pattern(/^\w+$/).label('username')
+email: s('email!').pattern(/custom/).label('email')
+username: s('string:3-32!').pattern(/^\w+$/).label('username')
 
 // ❌ Not applicable: numeric types should not use String extension
-age: 'number:18-120'.label('age') // ✅ label can be used
-age: 'number:18-120'.pattern(/\d/) // ⚠️ will be ignored (numbers do not support pattern)
+age: s('number:18-120').label('age') // ✅ label can be used
+age: s('number:18-120').pattern(/\d/) // ⚠️ will be ignored (numbers do not support pattern)
 ```
 
 ### Why is it designed this way?
@@ -110,18 +110,16 @@ age: 'number:18-120'.pattern(/\d/) // ⚠️ will be ignored (numbers do not sup
 ### String type (supports chaining)
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // ✨ Simple fields: pure DSL
   name: 'string:1-50!',
 
   // ✨ Complex fields: String extended chaining
-  email: 'email!'
-    .pattern(/custom/)
+  email: s('email!').pattern(/custom/)
     .messages({ 'format': 'The email format is incorrect' })
     .label('email address'),
 
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/)
     .messages({ 'pattern': 'Can only contain letters, numbers, and underscores' })
     .label('username')
 });
@@ -130,18 +128,17 @@ const schema = dsl({
 ### Numeric type (pure DSL)
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // Concise constraint expression
   age: 'number:18-120', // range
   price: 'number:0-999999!', // required + range
   count: 'integer:1-100', // integer
 
   // When label is required
-  score: 'number:0-100'.label('score'),
+  score: s('number:0-100').label('score'),
 
   // ⚠️ Numeric types rarely require complex validation, if necessary, custom can be used
-  amount: 'number:0-10000'
-    .custom(value => value % 100 === 0) // Must be a multiple of 100
+  amount: s('number:0-10000').custom(value => value % 100 === 0) // Must be a multiple of 100
     .label('amount')
 });
 ```
@@ -149,27 +146,26 @@ const schema = dsl({
 ### Boolean type (pure DSL)
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // Boolean type is very simple
   isActive: 'boolean',
   agreeTerms: 'boolean!',
 
   // When label is required
-  emailNotification: 'boolean'.label('Email Notification')
+  emailNotification: s('boolean').label('Email Notification')
 });
 ```
 
 ### Date type (pure DSL)
 
 ```javascript
-const schema = dsl({
+const schema = s({
   //Date constraints
   birthday: 'date',
   createdAt: 'date!',
 
   // Need to verify the range available custom
-  appointmentDate: 'date!'
-    .custom(value => {
+  appointmentDate: s('date!').custom(value => {
       const date = new Date(value);
       return date > new Date(); // must be a future date
     })
@@ -180,20 +176,20 @@ const schema = dsl({
 ### Enumeration types (pure DSL)
 
 ```javascript
-const schema = dsl({
+const schema = s({
   // Enumeration values ​​are separated by |
   status: 'active|inactive|pending',
   role: 'user|admin|moderator',
 
   // When label is required
-  gender: 'male|female|other'.label('gender')
+  gender: s('male|female|other').label('gender')
 });
 ```
 
 ### Array types (pure DSL)
 
 ```javascript
-const schema = dsl({
+const schema = s({
   //Array element type
   tags: 'array<string>',
   scores: 'array<number>',
@@ -221,7 +217,7 @@ The current version gives priority to extending types by exposing runtime APIs, 
 ### Recommended entrance
 
 ```javascript
-const { DslBuilder, TypeRegistry } = require('schema-dsl');
+import { DslBuilder, TypeRegistry } from 'schema-dsl/pure';
 
 TypeRegistry.register('evenNumber', {
   baseSchema: { type: 'number', multipleOf: 2 }
@@ -238,7 +234,7 @@ DslBuilder.registerType('phone-cn-lite', {
 ### Usage
 
 ```javascript
-const schema = dsl({
+const schema = s({
   phone: 'phone-cn-lite!',
   luckyNumber: 'evenNumber'
 });
@@ -257,7 +253,7 @@ const schema = dsl({
 | `.custom()` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `.default()` | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-**Conditional validation**: Use `dsl.match()` or `dsl.if()` static method.
+**Conditional validation**: Use `s.match()` or `s.if()` static method.
 **Description**:
 - ✅ Fully supported
 - ❌ Not supported (will be ignored or warned)
@@ -270,7 +266,7 @@ const schema = dsl({
 
 ```javascript
 // ✅ String: chained for complex validation
-username: 'string:3-32!'.pattern(/^\w+$/).label('username')
+username: s('string:3-32!').pattern(/^\w+$/).label('username')
 
 // ✅ Numbers: DSL for simple constraints
 age: 'number:18-120'
@@ -283,18 +279,17 @@ status: 'active|inactive'
 
 ```javascript
 // ✅ Correct
-email: 'email!'.pattern(/custom/)
+email: s('email!').pattern(/custom/)
 
 // ❌ Not recommended (although no error will be reported, the pattern will be ignored)
-age: 'number:18-120'.pattern(/\d+/)
+age: s('number:18-120').pattern(/\d+/)
 ```
 
 ### 3. Use custom for complex validation
 
 ```javascript
 // For any type, use custom for complex validation
-amount: 'number:0-10000'
-  .custom(value => value % 100 === 0)
+amount: s('number:0-10000').custom(value => value % 100 === 0)
   .label('amount')
 ```
 

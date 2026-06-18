@@ -1,4 +1,4 @@
-import { dsl, validate, Validator, SchemaUtils } from '../../dist/index.js'
+import { s, validate, Validator, SchemaUtils } from '../../dist/pure.js'
 
 // ============================================================
 // 1. Pre-compiling schemas — avoid re-parsing DSL every call
@@ -10,9 +10,9 @@ import { dsl, validate, Validator, SchemaUtils } from '../../dist/index.js'
 // ============================================================
 
 // Define schemas once at module level (parsed once, reused many times)
-const userSchema   = dsl({ name: 'string:2-50!', email: 'email!', age: 'integer:18-120' })
-const productSchema = dsl({ sku: 'alphanum:5-20!', price: 'number:0.01-!', stock: 'integer:0-!' })
-const orderSchema   = dsl({ orderId: 'uuid!', items: 'array<string>!', total: 'number:0.01-!' })
+const userSchema   = s({ name: 'string:2-50!', email: 'email!', age: 'integer:18-120' })
+const productSchema = s({ sku: 'alphanum:5-20!', price: 'number:0.01-!', stock: 'integer:0-!' })
+const orderSchema   = s({ orderId: 'uuid!', items: 'array<string>!', total: 'number:0.01-!' })
 
 // ============================================================
 // 2. Validator with cache — compiled schemas stored in LRU cache
@@ -118,11 +118,11 @@ console.log('performance-guide.allErrors.errors =', (allErrors.errors?.length ??
 
 // ❌ Anti-pattern (slow): creates a new schema object on every iteration
 function validateSlow(records: unknown[]): boolean[] {
-  return records.map(r => validate(dsl({ name: 'string!', age: 'integer!' }), r).valid)
+  return records.map(r => validate(s({ name: 'string!', age: 'integer!' }), r).valid)
 }
 
 // ✅ Correct: schema defined once, reused
-const _hotSchema = dsl({ name: 'string!', age: 'integer!' })
+const _hotSchema = s({ name: 'string!', age: 'integer!' })
 function validateFast(records: unknown[]): boolean[] {
   return records.map(r => validate(_hotSchema, r).valid)
 }

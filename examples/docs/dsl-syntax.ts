@@ -1,4 +1,4 @@
-import { dsl, validate, validateAsync, ValidationError } from '../../dist/index.js'
+import { s, validate, validateAsync, ValidationError } from '../../dist/pure.js'
 
 function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`dsl-syntax expectation failed: ${label}`)
@@ -8,7 +8,7 @@ function expect(label: string, condition: boolean): void {
 // 1. Primitive types — all base types
 // ============================================================
 
-const primitives = dsl({
+const primitives = s({
   name:     'string',   // optional string (any length)
   count:    'number',   // optional number (float or int)
   qty:      'integer',  // optional integer (whole numbers only)
@@ -32,7 +32,7 @@ expect('primitive schema accepts valid data', validate(primitives, {
 // 2. Required (!) and optional (?) markers
 // ============================================================
 
-const markers = dsl({
+const markers = s({
   must:   'string!',   // required — validation fails when absent
   may:    'string',    // optional by default — absence is fine
   also:   'string?',   // explicitly optional (same as above)
@@ -46,7 +46,7 @@ expect('required marker rejects missing value', validate(markers, {}).valid === 
 // 3. String constraints — exact length, range, one-sided
 // ============================================================
 
-const strings = dsl({
+const strings = s({
   pin:      'string:6',       // exactly 6 characters
   username: 'string:3-20!',   // 3 to 20 characters, required
   bio:      'string:0-500',   // up to 500 characters
@@ -62,7 +62,7 @@ console.log('dsl-syntax.strings.pin.tooShort =',
 // 4. Number / integer constraints
 // ============================================================
 
-const numbers = dsl({
+const numbers = s({
   age:      'integer:18-120',   // integer in [18, 120]
   price:    'number:0.01-',     // any positive float
   score:    'number:0-100',     // 0–100 inclusive
@@ -78,7 +78,7 @@ console.log('dsl-syntax.numbers.age.outOfRange =',
 // 5. Enum types — pipe-separated values
 // ============================================================
 
-const enums = dsl({
+const enums = s({
   status:   'active|inactive|pending',          // string enum
   role:     'admin|user|guest!',                // required string enum
   priority: 'enum:number:1|2|3',               // numeric enum
@@ -94,7 +94,7 @@ console.log('dsl-syntax.enum.invalid.role =',
 // 6. Array types — typed items and length constraints
 // ============================================================
 
-const arrays = dsl({
+const arrays = s({
   any:      'array',                    // any items
   strings:  'array<string>',            // array of strings
   nums:     'array<integer:1->',        // array of positive integers
@@ -119,11 +119,11 @@ expect('array overflow is rejected', validate(arrays, { tags: ['a','b','c','d','
 const advancedArrays = {
   type: 'object',
   properties: {
-    matrix: dsl('array<array<number>>').toJsonSchema(),
+    matrix: s('array<array<number>>').toJsonSchema(),
     users: {
       type: 'array',
       minItems: 1,
-      items: dsl({
+      items: s({
         name: 'string:1-32!',
         age: 'integer:0-120',
       }),
@@ -145,7 +145,7 @@ expect('full object-array schema validates nested records',
 // 7. Union types — value can be one of several types
 // ============================================================
 
-const unions = dsl({
+const unions = s({
   id:    'types:string:1-36|integer:1-',     // string OR positive integer
   value: 'types:string:1-10|number:0-100',   // short string OR number in range
 })
@@ -159,7 +159,7 @@ expect('union rejects values outside every branch', validate(unions, { id: -1, v
 // 8. Nested objects
 // ============================================================
 
-const nested = dsl({
+const nested = s({
   user: {
     name: 'string:2-50!',
     contact: {
@@ -186,24 +186,24 @@ console.log('dsl-syntax.nested.valid =',
 // 9. DslBuilder chain methods — composable constraints
 // ============================================================
 
-const chainSchema = dsl({
-  username: dsl('string:3-32!')
+const chainSchema = s({
+  username: s('string:3-32!')
     .pattern(/^[a-z0-9_]+$/)
     .label('Username')
     .description('Lowercase letters, digits and underscores')
     .error({ pattern: 'Username: only a-z, 0-9 and _ allowed' }),
 
-  password: dsl('string:8-64!')
+  password: s('string:8-64!')
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
     .label('Password')
     .error({ pattern: 'Must contain upper, lower, digit and special char' }),
 
-  bio: dsl('string:0-200')
+  bio: s('string:0-200')
     .optional()
     .default('')
     .description('Short profile bio'),
 
-  score: dsl('number:0-100').default(0).label('User score'),
+  score: s('number:0-100').default(0).label('User score'),
 })
 
 const chainValid   = validate(chainSchema, { username: 'alice_01', password: 'Alice123@' })
@@ -216,8 +216,8 @@ console.log('dsl-syntax.chain.invalid.errors =', chainInvalid.errors?.map(e => `
 expect('chain schema applies defaults', (chainValid.data as Record<string, unknown>)?.bio === '')
 expect('chain schema rejects invalid username/password', chainInvalid.valid === false)
 
-const syncCustomSchema = dsl({
-  username: dsl('string:3-32!')
+const syncCustomSchema = s({
+  username: s('string:3-32!')
     .custom(value => value !== 'admin' || 'Reserved username'),
 })
 console.log('dsl-syntax.custom.sync.valid =',
@@ -227,8 +227,8 @@ console.log('dsl-syntax.custom.sync.invalid =',
 expect('sync custom validator rejects reserved value',
   validate(syncCustomSchema, { username: 'admin' }).valid === false)
 
-const asyncCustomSchema = dsl({
-  email: dsl('email!').custom(async value =>
+const asyncCustomSchema = s({
+  email: s('email!').custom(async value =>
     value !== 'taken@example.com' || 'Email already exists'),
 })
 
@@ -242,15 +242,15 @@ console.log('dsl-syntax.custom.async.invalid =', asyncCustomRejected)
 expect('async custom validator requires validateAsync', asyncCustomRejected)
 
 // ============================================================
-// 10. Conditional fields — dsl.if and dsl.match
+// 10. Conditional fields — s.if and s.match
 // ============================================================
 
-// dsl.if(fieldName, thenSchema, elseSchema)
+// s.if(fieldName, thenSchema, elseSchema)
 // When the named field is truthy, use thenSchema; else use elseSchema
-const subscriptionSchema = dsl({
+const subscriptionSchema = s({
   premium: 'boolean!',
-  maxDownloads: dsl.if('premium', 'integer:0-', 'integer:0-5'),
-  badge:        dsl.if('premium', 'string:1-20'),
+  maxDownloads: s.if('premium', 'integer:0-', 'integer:0-5'),
+  badge:        s.if('premium', 'string:1-20'),
 })
 
 console.log('dsl-syntax.if.premium.true =',
@@ -259,14 +259,14 @@ console.log('dsl-syntax.if.premium.false.underLimit =',
   validate(subscriptionSchema, { premium: false, maxDownloads: 3 }).valid)
 console.log('dsl-syntax.if.premium.false.overLimit =',
   validate(subscriptionSchema, { premium: false, maxDownloads: 10 }).valid) // false
-expect('dsl.if rejects false branch over limit',
+expect('s.if rejects false branch over limit',
   validate(subscriptionSchema, { premium: false, maxDownloads: 10 }).valid === false)
 
-// dsl.match(fieldName, { value: schema, ... })
+// s.match(fieldName, { value: schema, ... })
 // Selects the schema based on the value of the named field
-const contactSchema = dsl({
+const contactSchema = s({
   type:  'email|phone!',
-  value: dsl.match('type', {
+  value: s.match('type', {
     email: 'email!',
     phone: 'phone:cn!',
   }),
@@ -278,5 +278,5 @@ console.log('dsl-syntax.match.phone =',
   validate(contactSchema, { type: 'phone', value: '13800138000' }).valid)
 console.log('dsl-syntax.match.mismatch =',
   validate(contactSchema, { type: 'email', value: '13800138000' }).valid)
-expect('dsl.match rejects branch mismatch',
+expect('s.match rejects branch mismatch',
   validate(contactSchema, { type: 'email', value: '13800138000' }).valid === false)

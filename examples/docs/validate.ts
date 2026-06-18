@@ -1,10 +1,10 @@
-import { dsl, validate, Validator, Locale } from '../../dist/index.js'
+import { s, validate, Validator, Locale } from '../../dist/pure.js'
 
 // ============================================================
 // 1. Basic validation and ValidationResult structure
 // ============================================================
 
-const userSchema = dsl({
+const userSchema = s({
   username:   'string:3-32!',
   email:      'email!',
   age:        'integer:18-120',
@@ -111,11 +111,11 @@ console.log('validate.customMessages.errors =',
 // 6. useDefaults — populate missing fields from schema defaults
 // ============================================================
 
-const schemaWithDefaults = dsl({
+const schemaWithDefaults = s({
   username: 'string!',
-  theme:    dsl('light|dark').default('dark'),
-  pageSize: dsl('integer:1-100').default(20),
-  active:   dsl('boolean').default(true),
+  theme:    s('light|dark').default('dark'),
+  pageSize: s('integer:1-100').default(20),
+  active:   s('boolean').default(true),
 })
 
 // Without useDefaults: missing fields remain missing

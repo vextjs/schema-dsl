@@ -1,43 +1,4 @@
-import {
-  BaseExporter,
-  CACHE,
-  CONSTANTS,
-  CacheManager,
-  CustomKeywords,
-  ErrorFormatter,
-  FORMATS,
-  I18nError,
-  JSONSchemaCore,
-  MessageTemplate,
-  MarkdownExporter,
-  MongoDBExporter,
-  MySQLExporter,
-  ObjectDslBuilder,
-  PATTERNS,
-  PATTERN_IPV4,
-  PATTERN_IPV6,
-  PluginManager,
-  PostgreSQLExporter,
-  SchemaHelper,
-  SchemaUtils,
-  TypeConverter,
-  TypeRegistry,
-  VALIDATION,
-  ValidationError,
-  VERSION,
-  Validator,
-  config,
-  dsl,
-  exporters,
-  getDefaultValidator,
-  installStringExtensions,
-  renderTemplate,
-  resetDefaultValidator,
-  resetRuntimeState,
-  uninstallStringExtensions,
-  validate,
-  validateAsync,
-} from '../../dist/index.js'
+import { BaseExporter, CACHE, CONSTANTS, CacheManager, CustomKeywords, ErrorFormatter, FORMATS, I18nError, JSONSchemaCore, MessageTemplate, MarkdownExporter, MongoDBExporter, MySQLExporter, ObjectDslBuilder, PATTERNS, PATTERN_IPV4, PATTERN_IPV6, PluginManager, PostgreSQLExporter, SchemaHelper, SchemaUtils, TypeConverter, TypeRegistry, VALIDATION, ValidationError, VERSION, Validator, config, defineExtension, s, exporters, getDefaultValidator, installStringExtensions, registerExtension, renderTemplate, resetDefaultValidator, resetRuntimeState, uninstallStringExtensions, validate, validateAsync } from '../../dist/pure.js'
 import { schemaDslEsbuildPlugin } from '../../dist/esbuild.js'
 import { dsl as pureDsl } from '../../dist/pure.js'
 import { transformSchemaDsl } from '../../dist/transform.js'
@@ -48,7 +9,7 @@ function expect(label: string, condition: boolean): void {
   if (!condition) throw new Error(`api-reference expectation failed: ${label}`)
 }
 
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!',
   role: 'user|admin|moderator',
@@ -208,8 +169,20 @@ const batchedTemplates = MessageTemplate.renderBatch(
 )
 
 const resolvedEmailType = TypeRegistry.resolve('email')
-const builderStringSchema = dsl('string:3-32!').label('Username').toSchema()
-const objectBuilder = new ObjectDslBuilder(dsl({
+const builderStringSchema = s.string().min(3).max(32).label('Username').require().toSchema()
+const namespaceEmailSchema = s.email().label('Email').require().toSchema()
+const explicitDslSeedSchema = s('email!').label('Email').toSchema()
+const normalizedExtension = defineExtension({
+  literal: 'tenant-id',
+  factoryName: 'tenantId',
+})
+registerExtension({
+  literal: 'tenant-id',
+  factoryName: 'tenantId',
+  schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' },
+})
+const tenantFactorySchema = (s as typeof s & { tenantId(): ReturnType<typeof s.string> }).tenantId().require().toSchema()
+const objectBuilder = new ObjectDslBuilder(s({
   email: 'email!',
   age: 'number:18-65',
 }))
@@ -298,6 +271,11 @@ console.log('api-reference.renderTemplate =', rendered)
 console.log('api-reference.messageTemplate.render =', messageTemplate.render({ label: 'Email' }))
 console.log('api-reference.messageTemplate.batch =', batchedTemplates)
 console.log('api-reference.dslBuilder.string.required =', builderStringSchema._required)
+console.log('api-reference.namespace.identity =', s === pureDsl)
+console.log('api-reference.namespace.email =', namespaceEmailSchema.format)
+console.log('api-reference.namespace.dslSeed =', explicitDslSeedSchema._required)
+console.log('api-reference.namespace.defineExtension =', normalizedExtension.factoryName)
+console.log('api-reference.namespace.customFactory =', tenantFactorySchema.pattern)
 console.log('api-reference.objectDslBuilder.required =', objectBuilderSchema.requiredAll)
 console.log('api-reference.typeRegistry.email =', resolvedEmailType.baseSchema.format)
 console.log('api-reference.schemaUtils.pick.fields =', publicSummary.fields)
@@ -346,5 +324,10 @@ expect('esbuild plugin should expose schema-dsl name', esbuildPlugin.name === 's
 expect('register-string entry should install extensions', afterRegisterStringEntry === 'function' && typeof registerStringEntry.installStringExtensions === 'function' && registerEntrySchema.description === 'Login email')
 expect('string extensions can be reinstalled', afterInstall === 'function')
 expect('string extensions produce schema constraints', extensionSchema.minLength === 2 && extensionSchema.maxLength === 8)
+expect('shared namespace identity should hold', s === pureDsl)
+expect('namespace factories should produce required email fields', namespaceEmailSchema.format === 'email' && namespaceEmailSchema._required === true)
+expect('explicit dsl seed should preserve DSL literal required flag', explicitDslSeedSchema._required === true)
+expect('defineExtension should normalize extension metadata', normalizedExtension.factoryName === 'tenantId')
+expect('registerExtension should expose a namespace factory', tenantFactorySchema.pattern === '^tenant_[a-z0-9]+$')
 
 resetRuntimeState()

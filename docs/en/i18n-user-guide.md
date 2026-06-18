@@ -4,16 +4,6 @@
 
 ---
 
-## 📋 Table of Contents
-
-1. [Quick Start](#quick-start)
-2. [Configuration method](#configuration-method)
-3. [Schema Definition](#schema-definition)
-4. [Front-end integration](#front-end-integration)
-5. [Best Practice](#best-practices)
-6. [FAQ](#faq)
-
----
 
 ## quick start
 
@@ -25,10 +15,10 @@
 ### Get started in 5 minutes
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // 1. Configure user language pack
-dsl.config({
+s.config({
   i18n: {
     'zh-CN': {
       'username': 'username',
@@ -42,9 +32,9 @@ dsl.config({
 });
 
 // 2. Define Schema (using key)
-const schema = dsl({
-  username: 'string:3-32!'.label('username'),
-  email: 'email!'.label('email')
+const schema = s({
+  username: s('string:3-32!').label('username'),
+  email: s('email!').label('email')
 });
 
 // 3. Validation (dynamically switch language)
@@ -63,7 +53,7 @@ const result = validate(schema, data, { locale: 'zh-CN' });
 - Abbreviated form: `{ i18n: { 'zh-CN': {... }, 'en-US': {... } } }`
 
 ```javascript
-dsl.config({
+s.config({
   i18n: {
     locales: {
       'zh-CN': {
@@ -84,7 +74,7 @@ dsl.config({
 **Abbreviated form**:
 
 ```javascript
-dsl.config({
+s.config({
   i18n: {
     'zh-CN': {
       'username': 'username',
@@ -125,9 +115,9 @@ project/
 
 **Configuration**:
 ```javascript
-const path = require('path');
+import path from 'path';
 
-dsl.config({
+s.config({
   i18n: {
     localesPath: path.join(__dirname, 'i18n/labels')
   }
@@ -163,7 +153,7 @@ module.exports = {
 ### Cache configuration (optional)
 
 ```javascript
-dsl.config({
+s.config({
   cache: {
     maxSize: 10000, // Maximum number of cached entries
     ttl: 7200000 // Cache expiration time (ms)
@@ -187,13 +177,13 @@ dsl.config({
 ### Use key to reference the language pack
 
 ```javascript
-const userSchema = dsl({
+const userSchema = s({
   // label uses key
-  username: 'string:3-32!'.label('username'),
-  email: 'email!'.label('email'),
+  username: s('string:3-32!').label('username'),
+  email: s('email!').label('email'),
 
   // messages use key
-  password: 'string:8-32!'.label('password').messages({
+  password: s('string:8-32!').label('password').messages({
     'minLength': 'custom.passwordWeak'
   })
 });
@@ -202,11 +192,11 @@ const userSchema = dsl({
 ### Nested fields
 
 ```javascript
-const addressSchema = dsl({
-  address: dsl({
-    city: 'string!'.label('address.city'),
-    street: 'string!'.label('address.street'),
-    zipCode: 'string!'.label('address.zipCode')
+const addressSchema = s({
+  address: s({
+    city: s('string!').label('address.city'),
+    street: s('string!').label('address.street'),
+    zipCode: s('string!').label('address.zipCode')
   })
 });
 ```
@@ -227,8 +217,8 @@ const labels = {
 ### Express middleware
 
 ```javascript
-const express = require('express');
-const { validate } = require('schema-dsl');
+import express from 'express';
+import { validate } from 'schema-dsl/pure';
 
 const app = express();
 app.use(express.json());
@@ -463,13 +453,13 @@ Performance improvement: 3x
 
 ### Q4: Does it support dynamic loading of language packs?
 
-**A**: Supported, call `dsl.config()` after the application starts
+**A**: Supported, call `s.config()` after the application starts
 
 ```javascript
 //Dynamicly add languages
-const frFR = require('./i18n/fr-FR.cjs');
+import frFR from './i18n/fr-FR.cjs';
 
-dsl.config({
+s.config({
   i18n: {
     locales: {
       'fr-FR': frFR
@@ -483,4 +473,4 @@ dsl.config({
 ## Corresponding sample file
 
 **Example entry**: [i18n-user-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/i18n-user-guide.ts)
-**Description**: Overrides `dsl.config({ i18n: { locales:... } })`’s object configuration method, loaded language list, and runtime switching of different locales.
+**Description**: Overrides `s.config({ i18n: { locales:... } })`’s object configuration method, loaded language list, and runtime switching of different locales.

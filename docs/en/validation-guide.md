@@ -5,27 +5,17 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Quick Start](#quick-start)
-- [DSL syntax quick check](#dsl-syntax-quick-check)
-- [Authentication Mode](#authentication-mode)
-- [Error handling](#error-handling)
-- [Performance optimization](#performance-optimization)
-- [Common scenarios](#common-scenarios)
-- [Best Practice](#best-practices)
-
----
+Use this page when you already have a schema and need to understand validation options, failure paths, and result handling. For the API surface, see [validate()](validate.md), [validateAsync()](validate-async.md), and [Validator](validator.md).
 
 ## Quick Start
 
 ### Basic validation process
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 // 1. Define Schema
-const schema = dsl({
+const schema = s({
   username: 'string:3-32!',
   email: 'email!',
   age: 'number:18-120'
@@ -102,7 +92,7 @@ if (result.valid) {
 The simplest way to verify, use the built-in singleton Validator:
 
 ```javascript
-const { dsl, validate } = require('schema-dsl');
+import { s, validate } from 'schema-dsl/pure';
 
 const result = validate(schema, data);
 ```
@@ -112,7 +102,7 @@ const result = validate(schema, data);
 Use when custom configuration (such as type conversion, custom keywords) is needed:
 
 ```javascript
-const { dsl, Validator } = require('schema-dsl');
+import { s, Validator } from 'schema-dsl/pure';
 
 //Create a custom configured Validator
 const validator = new Validator({
@@ -149,7 +139,7 @@ const result3 = validateUser(data3);
 Use when verifying multiple pieces of data:
 
 ```javascript
-const { Validator } = require('schema-dsl');
+import { Validator } from 'schema-dsl/pure';
 const validator = new Validator();
 
 const dataList = [
@@ -184,9 +174,8 @@ const results = validator.validateBatch(schema, dataList);
 ### Custom error message
 
 ```javascript
-const schema = dsl({
-  username: 'string:3-32!'
-    .label('username')
+const schema = s({
+  username: s('string:3-32!').label('username')
     .messages({
       'min': '{{#label}} is too short, at least {{#limit}} characters',
       'max': '{{#label}} is too long, at most {{#limit}} characters',
@@ -198,7 +187,7 @@ const schema = dsl({
 ### Multilingual error messages
 
 ```javascript
-const { Locale, Validator } = require('schema-dsl');
+import { Locale, Validator } from 'schema-dsl/pure';
 
 //Add language pack
 Locale.addLocale('zh-CN', {
@@ -251,14 +240,14 @@ const validateUser = validator.compile(userSchema);
 ```javascript
 // ❌ Create Schema every time
 function getSchema() {
-  return dsl({
+  return s({
     username: 'string:3-32!',
     email: 'email!'
   });
 }
 
 // ✅ Cache Schema
-const userSchema = dsl({
+const userSchema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
@@ -289,28 +278,23 @@ console.timeEnd('schema-dsl.validate');
 ### User registration form
 
 ```javascript
-const registerSchema = dsl({
-  username: 'string:3-32!'
-    .pattern(/^[a-zA-Z0-9_]+$/)
+const registerSchema = s({
+  username: s('string:3-32!').pattern(/^[a-zA-Z0-9_]+$/)
     .label('username')
     .messages({
       'pattern': '{{#label}} can only contain letters, numbers and underscores'
     }),
 
-  email: 'email!'
-    .label('email address'),
+  email: s('email!').label('email address'),
 
-  password: 'string:8-64!'
-    .password('strong')
+  password: s('string:8-64!').password('strong')
     .label('password'),
 
-  age: 'number:18-120'
-    .label('age'),
+  age: s('number:18-120').label('age'),
 
   gender: 'male|female|other',
 
-  terms: 'boolean!'
-    .label('Terms of Service')
+  terms: s('boolean!').label('Terms of Service')
     .messages({
       'required': 'Please agree{{#label}}'
     })
@@ -320,7 +304,7 @@ const registerSchema = dsl({
 ### API request validation
 
 ```javascript
-const createOrderSchema = dsl({
+const createOrderSchema = s({
   userId: 'string!',
   items: 'array!1-100',
   shippingAddress: {
@@ -351,7 +335,9 @@ app.post('/orders', validateRequest(createOrderSchema), createOrder);
 ### Profile validation
 
 ```javascript
-const configSchema = dsl({
+import { readFile } from 'node:fs/promises';
+
+const configSchema = s({
   server: {
     host: 'string!',
     port: 'integer:1-65535!',
@@ -368,8 +354,8 @@ const configSchema = dsl({
   }
 });
 
-function loadConfig(configPath) {
-  const config = require(configPath);
+async function loadConfig(configPath) {
+  const config = JSON.parse(await readFile(configPath, 'utf8'));
   const result = validate(configSchema, config);
 
   if (!result.valid) {
@@ -392,7 +378,7 @@ email: 'email!'
 // Error: "email is required"
 
 // ✅ Use label
-email: 'email!'.label('email address')
+email: s('email!').label('email address')
 // Error: "Email address cannot be empty"
 ```
 
@@ -400,14 +386,14 @@ email: 'email!'.label('email address')
 
 ```javascript
 // schemas/index.js
-const { dsl } = require('schema-dsl');
+import { s } from 'schema-dsl/pure';
 
-exports.userSchema = dsl({
+export const userSchema = s({
   username: 'string:3-32!',
   email: 'email!'
 });
 
-exports.orderSchema = dsl({
+export const orderSchema = s({
   userId: 'string!',
   items: 'array!1-100'
 });
@@ -416,30 +402,30 @@ exports.orderSchema = dsl({
 ### 3. Use SchemaUtils to reuse fields
 
 ```javascript
-const { SchemaUtils, dsl } = require('schema-dsl');
+import { SchemaUtils, s } from 'schema-dsl/pure';
 
 //Create reusable fields
 const emailField = SchemaUtils.reusable(() =>
-  dsl('email!').label('email address')
+  s('email!').label('email address')
 );
 
 //Reuse in multiple Schema
-const loginSchema = dsl({ email: emailField() });
-const registerSchema = dsl({ email: emailField(), name: 'string!' });
+const loginSchema = s({ email: emailField() });
+const registerSchema = s({ email: emailField(), name: 'string!' });
 ```
 
 ### 4. Layered validation
 
 ```javascript
 //Basic validation (fast)
-const quickSchema = dsl({
+const quickSchema = s({
   username: 'string!',
   email: 'string!'
 });
 
 // Complete validation (detailed)
-const fullSchema = dsl({
-  username: 'string:3-32!'.pattern(/^[a-z]+$/),
+const fullSchema = s({
+  username: s('string:3-32!').pattern(/^[a-z]+$/),
   email: 'email!'
 });
 

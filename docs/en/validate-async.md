@@ -7,9 +7,9 @@
 ## quick start
 
 ```javascript
-const { dsl, validateAsync } = require('schema-dsl');
+import { s, validateAsync } from 'schema-dsl/pure';
 
-const userSchema = dsl({
+const userSchema = s({
   name: 'string!',
   email: 'email!',
   age: 'integer:18-120'
@@ -135,14 +135,14 @@ try {
 ### Basic integration
 
 ```javascript
-const express = require('express');
-const { dsl, validateAsync, ValidationError } = require('schema-dsl');
+import express from 'express';
+import { s, validateAsync, ValidationError } from 'schema-dsl/pure';
 
 const app = express();
 app.use(express.json());
 
 //define Schema
-const userSchema = dsl({
+const userSchema = s({
   name: 'string:1-50!',
   email: 'email!',
   age: 'integer:18-120'
@@ -179,10 +179,10 @@ app.listen(3000);
 ### Complete CRUD example
 
 ```javascript
-const { SchemaUtils } = require('schema-dsl');
+import { SchemaUtils } from 'schema-dsl/pure';
 
 // Define complete Schema
-const fullUserSchema = dsl({
+const fullUserSchema = s({
   id: 'objectId!',
   name: 'string:1-50!',
   email: 'email!',
@@ -218,7 +218,7 @@ app.get('/users/:id', async (req, res, next) => {
   try {
     const user = await db.users.findById(req.params.id);
     const { password, ...publicUser } = user;
-    const { validate } = require('schema-dsl');
+    import { validate } from 'schema-dsl/pure';
     const result = validate(publicSchema, publicUser);
     res.json(result.data);
   } catch (error) {
@@ -337,15 +337,15 @@ app.use((error, req, res, next) => {
 ### User Registration API
 
 ```javascript
-const express = require('express');
-const bcrypt = require('bcrypt');
-const { dsl, validateAsync, ValidationError, SchemaUtils } = require('schema-dsl');
+import express from 'express';
+import bcrypt from 'bcrypt';
+import { s, validateAsync, ValidationError, SchemaUtils } from 'schema-dsl/pure';
 
 const app = express();
 app.use(express.json());
 
 //Basic user Schema
-const baseUserSchema = dsl({
+const baseUserSchema = s({
   id: 'objectId!',
   username: 'string:3-32!',
   email: 'email!',
@@ -391,7 +391,7 @@ app.post('/register', async (req, res, next) => {
 
     const { password, ...publicUser } = user;
 
-    const { validate } = require('schema-dsl');
+    import { validate } from 'schema-dsl/pure';
     const result = validate(publicSchema, publicUser);
 
     res.status(201).json({

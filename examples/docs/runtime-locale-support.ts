@@ -1,4 +1,4 @@
-import { dsl, Locale, I18nError } from '../../dist/index.js'
+import { s, Locale, I18nError } from '../../dist/pure.js'
 
 // ============================================================
 // Runtime locale support — custom business error messages
@@ -46,7 +46,7 @@ Locale.addLocale('en-US', {
 Locale.setLocale('zh-CN')
 
 // ============================================================
-// 2. Create I18nError instances (correct API — NOT dsl.error.create)
+// 2. Create I18nError instances (correct API — NOT s.error.create)
 // ============================================================
 
 const zhNotFound = I18nError.create('account.notFound', 'zh-CN')

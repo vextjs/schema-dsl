@@ -1,4 +1,4 @@
-import { DslBuilder, dsl, validate } from '../../dist/index.js'
+import { DslBuilder, s, validate } from '../../dist/pure.js'
 
 // Register a custom type used in later examples
 DslBuilder.clearCustomTypes()
@@ -14,7 +14,7 @@ DslBuilder.registerType('order-id', {
 // ============================================================
 
 // Pipe-separated DSL is a string-value enum (not a type union)
-const statusSchema = dsl({ status: 'active|inactive|pending!' })
+const statusSchema = s({ status: 'active|inactive|pending!' })
 console.log('union-types.pipe.active  =', validate(statusSchema, { status: 'active' }).valid)   // true
 console.log('union-types.pipe.missing =', validate(statusSchema, { status: 'gone' }).valid)     // false
 
@@ -23,7 +23,7 @@ console.log('union-types.pipe.missing =', validate(statusSchema, { status: 'gone
 // ============================================================
 
 // A field that accepts either a string or a number
-const flexSchema = dsl({ value: 'types:string:3-10|number:0-100!' })
+const flexSchema = s({ value: 'types:string:3-10|number:0-100!' })
 const rawFlex = ((flexSchema as any).toSchema?.() ?? flexSchema) as any
 
 console.log('union-types.types.oneOf.count =', rawFlex.properties.value.oneOf?.length)  // 2
@@ -42,7 +42,7 @@ console.log('union-types.types.boolean.invalid =',
 // 3. Built-in type union — uuid or custom order-id
 // ============================================================
 
-const identifierSchema = dsl({ id: 'types:uuid|order-id!' })
+const identifierSchema = s({ id: 'types:uuid|order-id!' })
 
 console.log('union-types.custom.uuid.valid =',
   validate(identifierSchema, { id: '123e4567-e89b-12d3-a456-426614174000' }).valid)  // true
@@ -55,7 +55,7 @@ console.log('union-types.custom.invalid =',
 // 4. Nested object with union fields
 // ============================================================
 
-const eventSchema = dsl({
+const eventSchema = s({
   id:        'types:uuid|order-id!',
   payload:   'types:string:1-500|object!',       // can be raw string or structured object
   timestamp: 'types:datetime|number:0-!',        // ISO string or Unix epoch
@@ -82,7 +82,7 @@ console.log('union-types.nested.objPayload =',
 // 5. Array of union types
 // ============================================================
 
-const mixedListSchema = dsl({
+const mixedListSchema = s({
   items: 'array<types:string:1-50|integer:0->!',
 })
 
@@ -99,8 +99,8 @@ console.log('union-types.array.invalid =',
 // 6. Union field with custom error message
 // ============================================================
 
-const paymentSchema = dsl({
-  amount: dsl('types:integer:1-|number:0.01-!')
+const paymentSchema = s({
+  amount: s('types:integer:1-|number:0.01-!')
     .label('Payment Amount')
     .error({ oneOf: 'Amount must be a positive integer or decimal number' }),
 })
@@ -113,9 +113,9 @@ console.log('union-types.custom.error.message =', paymentResult.errors?.[0]?.mes
 // 7. Optional union type with default
 // ============================================================
 
-const configSchema = dsl({
-  timeout: dsl('types:integer:100-60000|string:1-10').default(5000),
-  retries: dsl('types:integer:0-10|string:1-5').default(3),
+const configSchema = s({
+  timeout: s('types:integer:100-60000|string:1-10').default(5000),
+  retries: s('types:integer:0-10|string:1-5').default(3),
 })
 
 const withDefaults = validate(configSchema, {}, { useDefaults: true })

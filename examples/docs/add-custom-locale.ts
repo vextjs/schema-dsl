@@ -1,4 +1,4 @@
-import { dsl, validate, Locale } from '../../dist/index.js'
+import { s, validate, Locale } from '../../dist/pure.js'
 
 // ============================================================
 // Adding a custom locale — define your own error messages
@@ -30,11 +30,11 @@ Locale.addLocale('pt-BR', {
 // 2. Use the custom locale in validation
 // ============================================================
 
-const signupSchema = dsl({
-  username: dsl('string:3-32!').label('Nome de usuário'),
-  email:    dsl('email!').label('Endereço de e-mail'),
-  age:      dsl('integer:18-120').label('Idade'),
-  role:     dsl('admin|user|guest').label('Cargo'),
+const signupSchema = s({
+  username: s('string:3-32!').label('Nome de usuário'),
+  email:    s('email!').label('Endereço de e-mail'),
+  age:      s('integer:18-120').label('Idade'),
+  role:     s('admin|user|guest').label('Cargo'),
 })
 
 const ptResult = validate(signupSchema, { username: 'ab', email: 'bad', age: 15, role: 'invalid' }, {
@@ -75,8 +75,8 @@ console.log('add-custom-locale.available.enUS =', available.includes('en-US'))  
 // 6. Override single messages — field-level .error() wins
 // ============================================================
 
-const strictForm = dsl({
-  password: dsl('string:8-64!')
+const strictForm = s({
+  password: s('string:8-64!')
     .label('Senha')
     .error({ minLength: 'A senha precisa ter no mínimo 8 caracteres.' }),
 })

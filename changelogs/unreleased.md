@@ -1,5 +1,17 @@
 # Unreleased
 
+## 2026-06-18
+
+- Added the shared `s` / `dsl` namespace API: `s === dsl`, `dsl('email!')` remains the explicit DSL seed entry, and built-in factories such as `s.email()`, `s.string()`, `s.number()`, `s.array(item)`, `s.enum(...)`, and `s.type(name)` map to the same builder/schema implementation.
+- Added field-level `.require()` as an alias of `.required()` while preserving the existing conditional `dsl.if(...).require(field)` API.
+- Added custom DSL extension registration with optional namespace factories through `defineExtension()` / `registerExtension()` and runtime-scoped `runtime.registerExtension()`, including declaration-merging friendly `DslNamespaceFactories` types.
+- Expanded chain semantics so `.min()` / `.max()` map to string length, number range, or array item count according to the current builder type, and added array `.items(item)`.
+- Aligned String extension and runtime namespace contracts: direct String chains now include `.items(item)`, while `runtime.s` / `runtime.dsl` typings expose callable DSL seeds and factories without root-only helpers such as `config()`, `if()`, `match()` and `error`.
+- Tightened namespace extension validation so custom factory names must be valid JavaScript/TypeScript identifiers, cannot collide with builder chain methods, runtime reset/replace clears scoped factories, tuple-style nested `_required` markers are stripped, and `dsl.error.create()` keeps its `I18nError` type.
+- Added tests and type fixtures covering no-opt-in String type behavior, opt-in direct String chains, `s`/`dsl` package exports, custom namespace augmentation, runtime-scoped namespace isolation, and transform support for `.require()`.
+- Updated README, API reference, TypeScript guide, String extension docs, DSL syntax docs, runtime isolation docs, custom extension docs, runnable examples, and website-facing documentation for the unified chain API.
+- Reorganized the extension documentation into an "Extensions and Integration" path with focused pages for extension overview, custom DSL types, custom `s.xxx()` factories, custom chain methods, validation keywords, framework setup, and advanced plugin lifecycle usage.
+
 ## 2026-06-17
 
 - Added `schema-dsl/runtime` with `createRuntime()` plus `createSchemaDslRuntime()` / `createSchemaDslAdapter()` aliases for instance-scoped Locale messages, per-call `messageProvider`, TypeRegistry scope, PATTERNS overrides, Validator/AJV instances, custom keyword messages, conditional branch parsing, async custom validator fallback messages, `I18nError` creation, runtime lifecycle configuration, cache clearing, stats and disposal.
