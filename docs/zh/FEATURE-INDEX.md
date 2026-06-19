@@ -100,3 +100,5 @@
 | [feature-index.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/feature-index.ts) | 串联 DSL、String 扩展和导出器的代表性示例。 |
 | [chain-methods.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/chain-methods.ts) | 覆盖字段 builder 链式方法的可运行示例。 |
 | [extensions-overview.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/extensions-overview.ts) | 覆盖扩展路径总览的可运行示例。 |
+| [object-dsl-builder.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/object-dsl-builder.ts) | 覆盖对象 builder 链式写法、必填字段控制和对象 schema 转换。 |
+| [real-world.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/real-world.ts) | 覆盖用户、商品、订单、查询、默认值和异步校验的生产式组合示例。 |

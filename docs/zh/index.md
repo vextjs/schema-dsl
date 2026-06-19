@@ -28,8 +28,8 @@ features:
     details: 同一份 schema 可导出到 MongoDB、MySQL、PostgreSQL 和 Markdown 文档。
   - title: 国际化
     details: 内置多语言错误消息与动态 locale 切换，适合服务端和前端共享校验规则。
-  - title: 插件系统
-    details: 支持扩展关键字、格式和类型注册，兼容 v1 常见插件用法。
+  - title: 扩展与插件
+    details: 支持自定义 DSL 类型、命名空间 factory、链式方法、格式和插件封装。
   - title: TypeScript 友好
     details: 提供完整类型声明，便于在现代 Node.js 与 TypeScript 项目中直接集成。
 ---

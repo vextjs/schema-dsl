@@ -72,7 +72,7 @@ Per-call validation options follow the root helper conventions. Use `{ coerce: f
 
 ## TypeScript hints
 
-`runtime.s.email()`, `runtime.s('string')`, `runtime.s('string')`, and `runtime.compileField('string')` return the same chainable builder shape as the normal namespace path, so built-in chain methods keep their existing TypeScript hints.
+`runtime.s.email()`, `runtime.s('string')`, `runtime.dsl('string')`, and `runtime.compileField('string')` return the same chainable builder shape as the normal namespace path, so built-in chain methods keep their existing TypeScript hints.
 
 For custom runtime DSL types, pass `types`, `dynamicTypes` or `typeResolver` to `createRuntime()`. For custom namespace factories, call `runtime.registerExtension({ literal, factoryName, schema })`. For custom chain methods, keep using TypeScript module augmentation for the builder interface and provide the runtime method implementation in your extension code.
 

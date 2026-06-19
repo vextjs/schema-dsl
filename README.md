@@ -132,7 +132,7 @@ const schema = s({
 | **Database export** | ✅ | MongoDB / MySQL / PostgreSQL schema generation |
 | **Documentation generation** | ✅ | Markdown field docs auto-generated |
 | **TypeScript** | ✅ | Written in native TypeScript with full type inference |
-| **Plugin system** | ✅ | Custom types / formats / validators |
+| **Extension system** | ✅ | Custom DSL types / factories / chain methods / formats / validators |
 | **Schema reuse** | ✅ | pick / omit / partial / extend |
 | **Side-effect-controlled entries** | ✅ | root compatibility, `schema-dsl/pure` for no `String.prototype` installation, and `schema-dsl/runtime` for isolated runtime state |
 | **Compile-time transform** | ✅ | `schema-dsl/transform` core and optional `schema-dsl/esbuild` adapter |
@@ -546,7 +546,9 @@ try {
 
 ---
 
-## 🔌 Plugin System
+## 🔌 Extensions and Plugin Packaging
+
+Use direct extension APIs for simple custom DSL types, factories, and chain methods. Use `PluginManager` when you want to package several extension hooks together.
 
 ```typescript
 import { PluginManager, Validator, s } from 'schema-dsl/pure';
@@ -691,6 +693,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 - [validate-async.ts](./examples/docs/validate-async.ts) — async validation and `ValidationError` handling
 - [export-guide.ts](./examples/docs/export-guide.ts) — database export overview
 - [error-handling.ts](./examples/docs/error-handling.ts) — field errors and business error handling
+- [object-dsl-builder.ts](./examples/docs/object-dsl-builder.ts) — object builder chaining and required-field control
+- [real-world.ts](./examples/docs/real-world.ts) — combined production-style schemas for users, products, orders, and queries
 - [plugin-system.ts](./examples/docs/plugin-system.ts) — plugin system and hooks
 
 ### 📝 Changelog & contributing

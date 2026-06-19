@@ -28,8 +28,8 @@ features:
     details: The same schema can be exported to MongoDB, MySQL, PostgreSQL and Markdown documents.
   - title: Internationalization
     details: Built-in multi-language error messages and dynamic locale switching, suitable for sharing validation rules between the server and front-end.
-  - title: Plugin system
-    details: Supports extended keyword, format and type registration, compatible with v1 common plug-in usage.
+  - title: Extensions and plugins
+    details: Add custom DSL types, namespace factories, chain methods, formats and packaged plugins.
   - title: TypeScript friendly
     details: Provides complete type declarations for direct integration in modern Node.js and TypeScript projects.
 ---

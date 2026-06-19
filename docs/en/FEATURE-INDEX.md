@@ -100,3 +100,5 @@ Use this page when you know the capability you need but not the document name. F
 | [feature-index.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/feature-index.ts) | Representative example connecting DSL, String extensions, and exporters. |
 | [chain-methods.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/chain-methods.ts) | Runnable coverage for field builder chain methods. |
 | [extensions-overview.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/extensions-overview.ts) | Runnable overview of extension paths. |
+| [object-dsl-builder.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/object-dsl-builder.ts) | Object builder chaining, required-field control, and object schema conversion. |
+| [real-world.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/real-world.ts) | Production-style composition for users, products, orders, queries, defaults, and async validation. |
