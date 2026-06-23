@@ -1,5 +1,5 @@
 // --- Core types ---
-export type { JSONSchema, SchemaIOOptions } from './schema.js'
+export type { JSONSchema, JSONSchemaInput, SchemaIOOptions } from './schema.js'
 export type {
   DslFn,
   DslField,

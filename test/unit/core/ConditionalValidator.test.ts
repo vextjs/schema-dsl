@@ -62,6 +62,13 @@ describe('ConditionalValidator', () => {
         },
       },
     } as ConditionalInternalSchema)).toBe(true)
+    expect(validator.hasAnyConditional({
+      type: 'array',
+      items: { _isConditional: true },
+    } as ConditionalInternalSchema)).toBe(true)
+    expect(validator.hasAnyConditional({
+      allOf: [{ properties: { code: { _isConditional: true } } }],
+    } as ConditionalInternalSchema)).toBe(true)
   })
 
   it('aggregates base, field and nested conditional errors with normalized paths', () => {
@@ -138,6 +145,34 @@ describe('ConditionalValidator', () => {
 
     expect(result.valid).toBe(false)
     expect(result.errors).toEqual([nestedMissing])
+  })
+
+  it('runs conditional schemas in array items and composite branches', () => {
+    const { validator } = createValidator()
+    const conditionalNumber: ConditionalInternalSchema = {
+      _isConditional: true,
+      conditions: [{ then: { type: 'number' } }],
+      _evaluateCondition: () => ({ result: true }),
+    }
+
+    const arrayResult = validator.validateWithConditionals({
+      type: 'array',
+      items: conditionalNumber,
+    } as ConditionalInternalSchema, ['bad'], {})
+
+    const compositeResult = validator.validateWithConditionals({
+      type: 'object',
+      allOf: [{
+        properties: {
+          score: conditionalNumber,
+        },
+      }],
+    } as ConditionalInternalSchema, { score: 'bad' }, {})
+
+    expect(arrayResult.valid).toBe(false)
+    expect(arrayResult.errors?.[0]?.path).toBe('0')
+    expect(compositeResult.valid).toBe(false)
+    expect(compositeResult.errors?.[0]?.path).toBe('score')
   })
 
   it('reports serialized runtime-only conditional schemas explicitly', () => {

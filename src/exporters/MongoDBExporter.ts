@@ -3,7 +3,7 @@
  */
 
 import type { JSONSchema } from '../types/schema.js'
-import { BaseExporter, type ExporterOptions } from './BaseExporter.js'
+import { BaseExporter, type ExporterOptions, type ExportReport, type ExportReportOptions } from './BaseExporter.js'
 import { TypeConverter } from '../utils/TypeConverter.js'
 
 // ==================== Type definitions ====================
@@ -26,6 +26,37 @@ export interface MongoDBCreateCommand {
   }
 }
 
+const MONGODB_UNSUPPORTED_REPORT_KEYWORDS = [
+  '$ref',
+  '$defs',
+  'definitions',
+  'allOf',
+  'anyOf',
+  'oneOf',
+  'not',
+  'if',
+  'then',
+  'else',
+  'const',
+  'format',
+  'multipleOf',
+  'exclusiveMinimum',
+  'exclusiveMaximum',
+  'uniqueItems',
+  'minProperties',
+  'maxProperties',
+  'additionalProperties',
+  'patternProperties',
+  'propertyNames',
+  'dependentRequired',
+  'dependencies',
+  'dependentSchemas',
+  'contains',
+  'prefixItems',
+  'unevaluatedItems',
+  'unevaluatedProperties',
+] as const
+
 // ==================== MongoDBExporter ====================
 
 export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
@@ -42,6 +73,10 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
     }
     const mongoSchema = this._convertSchema(jsonSchema as JSONSchema)
     return { $jsonSchema: mongoSchema }
+  }
+
+  exportWithReport(jsonSchema: JSONSchema, options: ExportReportOptions = {}): ExportReport<MongoDBValidationSchema> {
+    return this._createExportReport(this.export(jsonSchema), jsonSchema, options, MONGODB_UNSUPPORTED_REPORT_KEYWORDS)
   }
 
   /**

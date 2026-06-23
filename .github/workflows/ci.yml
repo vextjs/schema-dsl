@@ -31,10 +31,41 @@ jobs:
     - name: Build
       run: npm run build
 
+    - name: Lint
+      run: npm run lint
+
     - name: Type check
       run: npm run typecheck
 
-    - name: Run tests
-      run: npm test
+    - name: Type contract tests
+      run: npm run test:types
 
+    - name: Run tests with coverage
+      run: npm run test:coverage
+
+    - name: Examples type check
+      run: npm run examples:typecheck
+
+    - name: Examples run
+      run: npm run examples:run
+
+    - name: Install website dependencies
+      working-directory: website
+      run: npm ci
+
+    - name: Website build
+      working-directory: website
+      run: npm run build
+
+    - name: ESM/CJS interop
+      run: npm run test:interop
+
+    - name: Version smoke
+      run: npm run test:version
+
+    - name: Production dependency audit
+      run: npm run test:audit
+
+    - name: Pack dry run
+      run: npm pack --dry-run
 

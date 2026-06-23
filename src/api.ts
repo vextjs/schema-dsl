@@ -9,6 +9,7 @@
 
 // ==================== Version (fix IX-01) ====================
 import pkg from '../package.json' with { type: 'json' }
+import { isRawJsonSchemaLike as _isRawJsonSchemaLike } from './utils/schemaInput.js'
 export const VERSION: string = (pkg as { version: string }).version
 
 // ==================== Core classes ====================
@@ -36,6 +37,7 @@ export type {
 // ==================== Error classes ====================
 export { ValidationError } from './errors/ValidationError.js'
 export { I18nError } from './errors/I18nError.js'
+export { SchemaCompileError } from './errors/SchemaCompileError.js'
 
 // ==================== String extensions ====================
 export { uninstallStringExtensions } from './core/StringExtensions.js'
@@ -61,7 +63,7 @@ export { ErrorCodes } from './core/ErrorCodes.js'
 export { PATTERNS } from './config/patterns.js'
 
 // ==================== Type exports ====================
-export type { JSONSchema, SchemaIOOptions } from './types/schema.js'
+export type { JSONSchema, JSONSchemaInput, SchemaIOOptions } from './types/schema.js'
 export type { ErrorMessages, ErrorCodeMap, ErrorMessageConfig, LocaleMessages } from './types/error.js'
 
 export type {
@@ -134,7 +136,7 @@ import * as _exporters from './exporters/index.js'
 import { Validator as _Validator, SCHEMA_DSL_CACHE_KEY as _SCHEMA_DSL_CACHE_KEY, createSchemaCacheKey as _createSchemaCacheKey } from './core/Validator.js'
 import { I18nError as _I18nError } from './errors/I18nError.js'
 import type { LocaleMessage as _LocaleMessage } from './locales/types.js'
-import type { JSONSchema as _JSONSchema } from './types/schema.js'
+import type { JSONSchema as _JSONSchema, JSONSchemaInput as _JSONSchemaInput } from './types/schema.js'
 import type { SchemaIOOptions as _SchemaIOOptions } from './types/schema.js'
 import type {
   DslConditionMarker as _DslConditionMarker,
@@ -304,29 +306,6 @@ function smartCoerceTypes(data: unknown, schema: _JSONSchema): unknown {
 
 // ==================== Top-level schema normalization (raw DSL object support) ====================
 
-const _JSON_SCHEMA_TYPES = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'])
-
-function _isRawJsonSchemaLike(obj: Record<string, unknown>): boolean {
-  if (typeof obj['type'] === 'string' && _JSON_SCHEMA_TYPES.has(obj['type'] as string)) return true
-  if ('anyOf' in obj || 'oneOf' in obj || 'allOf' in obj || '$ref' in obj || '$defs' in obj || 'definitions' in obj) return true
-
-  const props = obj['properties']
-  if (props && typeof props === 'object' && !Array.isArray(props)) {
-    const values = Object.values(props as Record<string, unknown>)
-    if (values.length === 0) return true
-    if (values.every(value => value && typeof value === 'object' && !Array.isArray(value) && _isRawJsonSchemaLike(value as Record<string, unknown>))) {
-      return true
-    }
-  }
-
-  const items = obj['items']
-  if (items && typeof items === 'object' && !Array.isArray(items)) {
-    return _isRawJsonSchemaLike(items as Record<string, unknown>)
-  }
-
-  return false
-}
-
 function _isDslObject(schema: unknown): schema is _DslDefinition {
   if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return false
 
@@ -359,8 +338,8 @@ function _markSchemaCacheKey(schema: _JSONSchema): _JSONSchema {
   return schema
 }
 
-function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuilder | _IConditionalBuilder): _JSONSchema {
-  if (!schema || typeof schema !== 'object') return schema as _JSONSchema
+function _normalizeSchemaInput(schema: _JSONSchemaInput | _DslDefinition | _IDslBuilder | _IConditionalBuilder): _JSONSchemaInput {
+  if (!schema || typeof schema !== 'object') return schema as _JSONSchemaInput
 
   const obj = schema as Record<string, unknown>
   if (typeof obj['toSchema'] === 'function') {
@@ -604,14 +583,14 @@ function _restorePatternGroup<T>(target: Record<string, T>, snapshot: Record<str
  * Automatically coerces string → number when options.coerce !== false.
  */
 export function validate<T = unknown>(
-  schema: _JSONSchema | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
+  schema: _JSONSchemaInput | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
   data: unknown,
   options: Record<string, unknown> = {},
 ): _ValidationResult<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = options['coerce'] !== false
   // O5b: use candidate-field cache instead of _hasCoercibleFields + Object.keys scan
-  const coercedData = shouldCoerce && _getCoerceCandidates(normalizedSchema)
+  const coercedData = shouldCoerce && typeof normalizedSchema === 'object' && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
   const validator = shouldCoerce ? _getDefaultValidator() : _getNoCoerceValidator()
@@ -622,14 +601,14 @@ export function validate<T = unknown>(
  * Convenience async validate function
  */
 export async function validateAsync<T = unknown>(
-  schema: _JSONSchema | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
+  schema: _JSONSchemaInput | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
   data: unknown,
   options: Record<string, unknown> = {},
 ): Promise<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = options['coerce'] !== false
   // O5b: use candidate-field cache instead of _hasCoercibleFields + Object.keys scan
-  const coercedData = shouldCoerce && _getCoerceCandidates(normalizedSchema)
+  const coercedData = shouldCoerce && typeof normalizedSchema === 'object' && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
   const validator = shouldCoerce ? _getDefaultValidator() : _getNoCoerceValidator()

@@ -175,10 +175,6 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@babel/generator": "^7.29.7",
-    "@babel/parser": "^7.29.7",
-    "@babel/traverse": "^7.29.7",
-    "@babel/types": "^7.29.7",
     "ajv": "8.18.0",
     "ajv-formats": "2.1.1",
     "cache-hub": "2.2.4",
@@ -186,14 +182,34 @@
     "safe-regex": "2.1.1"
   },
   "peerDependencies": {
+    "@babel/generator": "^7.29.7",
+    "@babel/parser": "^7.29.7",
+    "@babel/traverse": "^7.29.7",
+    "@babel/types": "^7.29.7",
     "esbuild": "^0.28.1"
   },
   "peerDependenciesMeta": {
+    "@babel/generator": {
+      "optional": true
+    },
+    "@babel/parser": {
+      "optional": true
+    },
+    "@babel/traverse": {
+      "optional": true
+    },
+    "@babel/types": {
+      "optional": true
+    },
     "esbuild": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@babel/generator": "^7.29.7",
+    "@babel/parser": "^7.29.7",
+    "@babel/traverse": "^7.29.7",
+    "@babel/types": "^7.29.7",
     "@types/babel__generator": "^7.27.0",
     "@types/babel__traverse": "^7.28.0",
     "@types/node": "25.6.0",
@@ -216,11 +232,8 @@
     "dist/**/*.cjs",
     "dist/**/*.d.ts",
     "dist/**/*.d.cts",
-    "plugins",
-    "changelogs",
-    "src",
-    "docs",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ]
 }

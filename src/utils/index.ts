@@ -10,3 +10,8 @@ export { SchemaHelper } from './SchemaHelper.js'
 export { SchemaUtils } from './SchemaUtils.js'
 
 export { cloneSchemaValue } from './schemaClone.js'
+export {
+  isJsonSchemaFactoryInputLike,
+  isJsonSchemaTypeValue,
+  isRawJsonSchemaLike,
+} from './schemaInput.js'

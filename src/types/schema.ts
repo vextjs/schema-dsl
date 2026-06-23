@@ -52,6 +52,8 @@ export interface JSONSchema {
   [key: string]: unknown
 }
 
+export type JSONSchemaInput = JSONSchema | boolean
+
 /**
  * SchemaIO configuration options (backwards-compatible with v1).
  */

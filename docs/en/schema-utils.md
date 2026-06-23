@@ -196,7 +196,7 @@ const safeUser = SchemaUtils.omit(fullUser, ['password']);
 
 ---
 
-### partial() - Make a field optional
+### partial() - Make fields optional
 
 ```javascript
 const updateSchema = SchemaUtils.partial(s({
@@ -208,7 +208,7 @@ const updateSchema = SchemaUtils.partial(s({
 // required will be removed from the results, suitable for PATCH / partial update scenarios
 ```
 
-You can also make only some fields optional:
+You can also make only some fields optional while preserving the rest of the schema:
 
 ```javascript
 const schema = s({
@@ -219,6 +219,8 @@ const schema = s({
 
 const partialContact = SchemaUtils.partial(schema, ['name', 'email']);
 ```
+
+`partialContact` still contains `age`; only `name` and `email` are removed from the top-level `required` list. Use `SchemaUtils.pick(schema, fields).partial()` when you want a schema that contains only those fields.
 
 ---
 

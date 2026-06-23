@@ -45,22 +45,7 @@ export class SchemaUtils {
    * Extend a schema (like inheritance) — merges extension fields into the base schema.
    */
   static extend(baseSchema: JSONSchema, extensions: JSONSchema | Record<string, unknown>): ChainableSchema {
-    const result: Record<string, unknown> = {
-      type: 'object',
-      properties: {} as Record<string, unknown>,
-      required: [] as string[],
-    }
-
-    // Copy base schema
-    if (baseSchema.properties) {
-      result['properties'] = this._mergeProperties(
-        result['properties'] as Record<string, unknown>,
-        baseSchema.properties as Record<string, unknown>,
-      )
-    }
-    if (baseSchema.required) {
-      result['required'] = [...baseSchema.required]
-    }
+    const result = this._clone(baseSchema)
 
     // Detect flat DSL definition: if no 'properties' key but has string values, treat as DSL
     let extSchema: JSONSchema
@@ -70,18 +55,27 @@ export class SchemaUtils {
       extSchema = extensions as JSONSchema
     }
 
+    for (const [key, value] of Object.entries(extSchema)) {
+      if (key !== 'properties' && key !== 'required') {
+        result[key] = cloneSchemaValue(value)
+      }
+    }
+
     // Merge extension schema (deep-merge same-name nested objects instead of replacing)
     if (extSchema.properties) {
       result['properties'] = this._mergeProperties(
-        result['properties'] as Record<string, unknown>,
+        (result['properties'] as Record<string, unknown> | undefined) ?? {},
         extSchema.properties as Record<string, unknown>,
       )
     }
     if (extSchema.required) {
       result['required'] = [...new Set([
-        ...(result['required'] as string[]),
+        ...(Array.isArray(result['required']) ? result['required'] as string[] : []),
         ...extSchema.required,
       ])]
+    }
+    if (Array.isArray(result['required']) && result['required'].length === 0) {
+      delete result['required']
     }
 
     return this._makeChainable(result as JSONSchema)
@@ -137,16 +131,13 @@ export class SchemaUtils {
    * @param fields - optional; only process these fields (others remain unchanged)
    */
   static partial(schema: JSONSchema, fields?: string[] | null): ChainableSchema {
-    let raw: Record<string, unknown>
+    const raw = this._clone(schema)
 
-    if (fields) {
-      const picked = this.pick(schema, fields)
-      raw = this._extractSchema(picked)
+    if (Array.isArray(fields)) {
+      this._deleteRequiredFields(raw, fields)
     } else {
-      raw = this._clone(schema)
+      this._deleteRequired(raw)
     }
-
-    this._deleteRequired(raw)
 
     return this._makeChainable(raw as JSONSchema)
   }
@@ -414,6 +405,15 @@ export class SchemaUtils {
           this._deleteRequired(prop as Record<string, unknown>)
         }
       }
+    }
+  }
+
+  private static _deleteRequiredFields(obj: Record<string, unknown>, fields: string[]): void {
+    if (!Array.isArray(obj['required'])) return
+    const optional = new Set(fields)
+    obj['required'] = (obj['required'] as string[]).filter(field => !optional.has(field))
+    if ((obj['required'] as string[]).length === 0) {
+      delete obj['required']
     }
   }
 

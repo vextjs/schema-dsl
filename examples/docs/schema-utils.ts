@@ -95,6 +95,12 @@ console.log('schema-utils.partial.emptyValid    =', r5.valid)   // true
 const r6 = validate(patchSchema, { email: 'alice@example.com' })
 console.log('schema-utils.partial.singleField   =', r6.valid)   // true
 
+const contactPatchSchema = SchemaUtils.partial(userSchema, ['username', 'email'])
+console.log('schema-utils.partial.fields.keepAll =',
+  'password' in (contactPatchSchema.properties ?? {}))           // true
+console.log('schema-utils.partial.fields.emailOptional =',
+  !contactPatchSchema.required?.includes('email'))                // true
+
 // ============================================================
 // 6. clone() — independent deep copy
 // ============================================================

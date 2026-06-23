@@ -39,6 +39,7 @@ const createSchema = SchemaUtils.omit(baseSchema, ['id'])
 const readSchema   = SchemaUtils.omit(baseSchema, ['password'])
 const updateSchema = SchemaUtils.pick(baseSchema, ['username', 'email', 'bio']).partial()
 const patchSchema  = SchemaUtils.partial(baseSchema)
+const contactPatchSchema = SchemaUtils.partial(baseSchema, ['username', 'email'])
 
 // create requires username + email + password
 console.log('chaining.create.valid   =',
@@ -55,6 +56,10 @@ console.log('chaining.update.req      =', updateSchema.required)   // undefined
 
 // patch makes every field optional
 console.log('chaining.patch.hasReq    =', !!patchSchema.required && patchSchema.required.length > 0)  // false
+
+// partial(fields) keeps the full schema and only makes selected fields optional
+console.log('chaining.contact.hasPassword =', 'password' in (contactPatchSchema.properties ?? {}))  // true
+console.log('chaining.contact.emailOptional =', !contactPatchSchema.required?.includes('email'))    // true
 
 // ============================================================
 // 4. Chain immutability — base schema is never modified

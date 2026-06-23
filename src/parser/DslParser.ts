@@ -12,6 +12,10 @@ import {
   DslExtensionError,
   normalizeDslExtensionParams,
 } from './DslExtensionRegistry.js'
+import {
+  isJsonSchemaFactoryInputLike,
+  isRawJsonSchemaLike as isRawJsonSchemaInputLike,
+} from '../utils/schemaInput.js'
 
 /**
  * DslParser — unified entry point for parsing DSL strings and object definitions
@@ -20,9 +24,6 @@ import {
  * All parsing flows through a single pipeline:
  *   parseString() → TypeRegistry.resolve() → ConstraintParser.parse() → SchemaCompiler.compile()
  */
-
-/** Set of standard JSON Schema types used to distinguish native JSON Schema objects from DSL definition objects. */
-const JSON_SCHEMA_TYPES = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'])
 
 export interface DslParseOptions {
   unknownType?: SchemaDslUnknownTypeMode
@@ -198,64 +199,11 @@ function _parseRegisteredExtension(
  *   - `{ street: 'string!', city: 'string!' }` → DSL definition ✅
  */
 export function isRawJsonSchemaLike(obj: Record<string, unknown>): boolean {
-  if (typeof obj['type'] === 'string' && JSON_SCHEMA_TYPES.has(obj['type'] as string)) return true
-  if ('anyOf' in obj || 'oneOf' in obj || 'allOf' in obj || '$ref' in obj || '$defs' in obj || 'definitions' in obj) return true
-
-  const props = obj['properties']
-  if (props && typeof props === 'object' && !Array.isArray(props)) {
-    const values = Object.values(props as Record<string, unknown>)
-    if (values.length === 0) return true
-    if (values.every(value => value && typeof value === 'object' && !Array.isArray(value) && isRawJsonSchemaLike(value as Record<string, unknown>))) {
-      return true
-    }
-  }
-
-  const items = obj['items']
-  if (items && typeof items === 'object' && !Array.isArray(items)) {
-    return isRawJsonSchemaLike(items as Record<string, unknown>)
-  }
-
-  return false
+  return isRawJsonSchemaInputLike(obj)
 }
 
-const JSON_SCHEMA_FACTORY_INPUT_KEYS: ReadonlySet<string> = new Set([
-  'enum',
-  'const',
-  'format',
-  'pattern',
-  'minLength',
-  'maxLength',
-  'minimum',
-  'maximum',
-  'exclusiveMinimum',
-  'exclusiveMaximum',
-  'multipleOf',
-  'minItems',
-  'maxItems',
-  'uniqueItems',
-  'contains',
-  'minContains',
-  'maxContains',
-  'minProperties',
-  'maxProperties',
-  'required',
-  'additionalProperties',
-  'patternProperties',
-  'propertyNames',
-  'dependencies',
-  'dependentRequired',
-  'dependentSchemas',
-  'unevaluatedProperties',
-  'unevaluatedItems',
-  'not',
-  'if',
-  'then',
-  'else',
-])
-
 export function isRawJsonSchemaFactoryInput(obj: Record<string, unknown>): boolean {
-  if (isRawJsonSchemaLike(obj)) return true
-  return Object.keys(obj).some(key => JSON_SCHEMA_FACTORY_INPUT_KEYS.has(key))
+  return isRawJsonSchemaInputLike(obj) || isJsonSchemaFactoryInputLike(obj)
 }
 
 function _cleanRequiredMarks(schema: unknown): void {

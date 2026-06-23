@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Validator } from '../../../src/core/Validator.js'
+import { SchemaCompileError } from '../../../src/errors/SchemaCompileError.js'
 import type { ValidationResult } from '../../../src/types/validate.js'
 
 describe('Validator', () => {
@@ -33,6 +34,25 @@ describe('Validator', () => {
   describe('compile() and extension APIs', () => {
     it('wraps schema compilation failures with context', () => {
       expect(() => validator.compile({ type: 'definitely-not-json-schema' as any })).toThrow('Schema compilation failed')
+      expect(() => validator.compile({ type: 'definitely-not-json-schema' as any })).toThrow(SchemaCompileError)
+
+      const error = new SchemaCompileError(new Error('bad schema'), { type: 'bad' })
+      expect(error.toJSON()).toEqual({
+        error: 'SchemaCompileError',
+        code: 'SCHEMA_COMPILE_ERROR',
+        message: 'Schema compilation failed: bad schema',
+      })
+    })
+
+    it('returns structured schema errors from validate() without throwing', () => {
+      const result = validator.validate({ type: 'definitely-not-json-schema' as any }, 'value')
+
+      expect(result.valid).toBe(false)
+      expect(result.errors?.[0]).toMatchObject({
+        keyword: 'schema',
+        kind: 'schema',
+        code: 'SCHEMA_COMPILE_ERROR',
+      })
     })
 
     it('adds custom keywords, formats and schema references', () => {
@@ -259,6 +279,86 @@ describe('Validator', () => {
       } as any
       await expect(validator.validateAsync(conditionalSchema, 'value')).rejects.toThrow('then rejected')
       await expect(validator.validateAsync(conditionalSchema, 1)).rejects.toThrow('else rejected')
+    })
+
+    it('runs custom validators in object and array schema applicator paths', async () => {
+      await expect(validator.validateAsync({
+        type: 'object',
+        patternProperties: {
+          '^x_': { type: 'string', _customValidators: [() => 'pattern rejected'] },
+        },
+      } as any, { x_name: 'Ada' })).rejects.toThrow('pattern rejected')
+
+      await expect(validator.validateAsync({
+        type: 'object',
+        properties: { known: { type: 'string' } },
+        additionalProperties: { type: 'string', _customValidators: [() => 'additional rejected'] },
+      } as any, { known: 'ok', extra: 'bad' })).rejects.toThrow('additional rejected')
+
+      await expect(validator.validateAsync({
+        type: 'object',
+        propertyNames: { _customValidators: [(key: unknown) => key !== 'blocked' || 'property name rejected'] },
+      } as any, { blocked: 'value' })).rejects.toThrow('property name rejected')
+
+      await expect(validator.validateAsync({
+        type: 'object',
+        properties: { creditCard: { type: 'string' } },
+        dependencies: {
+          creditCard: { _customValidators: [() => 'dependent schema rejected'] },
+        },
+      } as any, { creditCard: '4111111111111111' })).rejects.toThrow('dependent schema rejected')
+
+      await expect(validator.validateAsync({
+        type: 'array',
+        contains: { type: 'number', _customValidators: [() => 'contains rejected'] },
+      } as any, ['ok', 1])).rejects.toThrow('contains rejected')
+    })
+
+    it('treats anyOf and contains custom validators as at-least-one passing semantics', async () => {
+      await expect(validator.validateAsync({
+        anyOf: [
+          { type: 'string', _customValidators: [() => 'first branch rejected'] },
+          { type: 'string', minLength: 1, _customValidators: [() => true] },
+        ],
+      } as any, 'ok')).resolves.toBe('ok')
+
+      await expect(validator.validateAsync({
+        type: 'array',
+        contains: {
+          type: 'number',
+          _customValidators: [(value: unknown) => value === 2 || 'not the accepted item'],
+        },
+      } as any, [1, 2])).resolves.toEqual([1, 2])
+
+      await expect(validator.validateAsync({
+        anyOf: [
+          { type: 'string', _customValidators: [() => 'first branch rejected'] },
+          { type: 'string', minLength: 1, _customValidators: [() => 'second branch rejected'] },
+        ],
+      } as any, 'ok')).rejects.toThrow('first branch rejected')
+    })
+
+    it('runs both dependencies and dependentSchemas custom validators when both are present', async () => {
+      const relaxedValidator = new Validator({ strictSchema: false })
+
+      await expect(relaxedValidator.validateAsync({
+        type: 'object',
+        properties: {
+          creditCard: { type: 'string' },
+          billingAddress: { type: 'string' },
+        },
+        dependencies: {
+          creditCard: ['billingAddress'],
+        },
+        dependentSchemas: {
+          creditCard: {
+            _customValidators: [() => 'dependent schema rejected'],
+          },
+        },
+      } as any, {
+        creditCard: '4111111111111111',
+        billingAddress: 'No.1 Example Road',
+      })).rejects.toThrow('dependent schema rejected')
     })
 
     it('preserves custom validator errors from thrown non-Error values', async () => {

@@ -7,7 +7,7 @@
  */
 
 import type { JSONSchema } from '../types/schema.js'
-import { BaseExporter, type ExporterOptions } from './BaseExporter.js'
+import { BaseExporter, type ExporterOptions, type ExportReport, type ExportReportOptions } from './BaseExporter.js'
 import { TypeConverter } from '../utils/TypeConverter.js'
 
 // ==================== Type definitions ====================
@@ -26,6 +26,38 @@ export interface GeneratePgIndexOptions {
 }
 
 const POSTGRESQL_INDEX_METHODS = new Set(['btree', 'hash', 'gin', 'gist'])
+const POSTGRESQL_UNSUPPORTED_REPORT_KEYWORDS = [
+  '$ref',
+  '$defs',
+  'definitions',
+  'allOf',
+  'anyOf',
+  'oneOf',
+  'not',
+  'if',
+  'then',
+  'else',
+  'const',
+  'pattern',
+  'multipleOf',
+  'exclusiveMinimum',
+  'exclusiveMaximum',
+  'minItems',
+  'maxItems',
+  'uniqueItems',
+  'minProperties',
+  'maxProperties',
+  'additionalProperties',
+  'patternProperties',
+  'propertyNames',
+  'dependentRequired',
+  'dependencies',
+  'dependentSchemas',
+  'contains',
+  'prefixItems',
+  'unevaluatedItems',
+  'unevaluatedProperties',
+] as const
 
 // ==================== PostgreSQLExporter ====================
 
@@ -70,6 +102,10 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
     }
 
     return ddl
+  }
+
+  exportWithReport(tableName: string, jsonSchema: JSONSchema, options: ExportReportOptions = {}): ExportReport<string> {
+    return this._createExportReport(this.export(tableName, jsonSchema), jsonSchema, options, POSTGRESQL_UNSUPPORTED_REPORT_KEYWORDS)
   }
 
   /**

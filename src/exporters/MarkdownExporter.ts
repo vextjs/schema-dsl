@@ -9,7 +9,7 @@
  */
 
 import type { JSONSchema } from '../types/schema.js'
-import { BaseExporter, type ExporterOptions } from './BaseExporter.js'
+import { BaseExporter, type ExporterOptions, type ExportReport, type ExportReportOptions } from './BaseExporter.js'
 
 // ==================== Type definitions ====================
 
@@ -40,6 +40,14 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
    */
   export(schema: JSONSchema, options?: Partial<MarkdownExporterOptions>): string {
     return MarkdownExporter.export(schema, { ...this.options, ...options })
+  }
+
+  exportWithReport(
+    schema: JSONSchema,
+    options?: Partial<MarkdownExporterOptions>,
+    reportOptions: ExportReportOptions = {},
+  ): ExportReport<string> {
+    return this._createExportReport(this.export(schema, options), schema, reportOptions, [])
   }
 
   /**

@@ -37,13 +37,16 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
       expect(partialSchema.required).toBeUndefined();
     });
 
-    it('should validate only the specified fields', () => {
+    it('should make only the specified fields optional while preserving the full schema', () => {
       const partialSchema = SchemaUtils.partial(baseSchema, ['name', 'age']);
 
-      expect(Object.keys(partialSchema.properties!)).toHaveLength(2);
+      expect(Object.keys(partialSchema.properties!)).toHaveLength(Object.keys(baseSchema.properties!).length);
       expect(partialSchema.properties!).toHaveProperty('name');
       expect(partialSchema.properties!).toHaveProperty('age');
-      expect(partialSchema.required).toBeUndefined();
+      expect(partialSchema.required).not.toContain('name');
+      expect(partialSchema.required).toContain('id');
+      expect(partialSchema.required).toContain('email');
+      expect(partialSchema.required).toContain('password');
     });
 
     it('should validate the provided field values', () => {
@@ -51,8 +54,10 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
 
       // invalid email format should be caught
       const result = validate(partialSchema, {
+        id: '507f1f77bcf86cd799439011',
         name: 'John',
-        email: 'invalid'
+        email: 'invalid',
+        password: 'password123'
       });
 
       expect(result.valid).toBe(false);
@@ -253,6 +258,27 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
       } as any)
 
       expect(extended.properties!.field).toEqual({ type: 'number', minimum: 1 })
+    })
+
+    it('should preserve base schema metadata while merging extension fields', () => {
+      const extended = SchemaUtils.extend({
+        type: 'object',
+        title: 'Base user',
+        additionalProperties: false,
+        properties: { name: { type: 'string' } },
+        required: ['name'],
+      } as any, {
+        properties: { role: { type: 'string' } },
+        required: ['role'],
+      } as any)
+
+      expect(extended.title).toBe('Base user')
+      expect(extended.additionalProperties).toBe(false)
+      expect(extended.properties).toMatchObject({
+        name: { type: 'string' },
+        role: { type: 'string' },
+      })
+      expect(extended.required).toEqual(['name', 'role'])
     })
   });
 

@@ -12,6 +12,23 @@ export interface ExporterOptions {
   [key: string]: unknown
 }
 
+export interface ExportLossItem {
+  path: string
+  keyword: string
+  severity: 'warning' | 'error'
+  message: string
+}
+
+export interface ExportReport<TOutput> {
+  output: TOutput
+  losses: ExportLossItem[]
+}
+
+export interface ExportReportOptions {
+  strict?: boolean
+  onLoss?: (loss: ExportLossItem) => void
+}
+
 // ==================== BaseExporter ====================
 
 export abstract class BaseExporter<TOptions extends ExporterOptions = ExporterOptions> {
@@ -56,5 +73,63 @@ export abstract class BaseExporter<TOptions extends ExporterOptions = ExporterOp
     if (schema.properties['id']) return 'id'
     if (schema.properties['_id']) return '_id'
     return null
+  }
+
+  protected _createExportReport<TOutput>(
+    output: TOutput,
+    schema: JSONSchema,
+    options: ExportReportOptions | undefined,
+    unsupportedKeywords: readonly string[],
+  ): ExportReport<TOutput> {
+    const losses = this._collectUnsupportedKeywordLosses(schema, unsupportedKeywords)
+    for (const loss of losses) options?.onLoss?.(loss)
+    if (options?.strict && losses.length > 0) {
+      throw new Error(`[schema-dsl] Export would lose unsupported JSON Schema keywords: ${losses.map(loss => `${loss.path}:${loss.keyword}`).join(', ')}`)
+    }
+    return { output, losses }
+  }
+
+  private _collectUnsupportedKeywordLosses(
+    schema: JSONSchema,
+    unsupportedKeywords: readonly string[],
+    path = '$',
+  ): ExportLossItem[] {
+    const unsupported = new Set(unsupportedKeywords)
+    const losses: ExportLossItem[] = []
+    const record = schema as Record<string, unknown>
+
+    for (const keyword of unsupported) {
+      if (record[keyword] !== undefined) {
+        losses.push({
+          path,
+          keyword,
+          severity: 'warning',
+          message: `Keyword "${keyword}" is not represented by this exporter.`,
+        })
+      }
+    }
+
+    if (schema.properties) {
+      for (const [key, child] of Object.entries(schema.properties)) {
+        losses.push(...this._collectUnsupportedKeywordLosses(child, unsupportedKeywords, `${path}.properties.${key}`))
+      }
+    }
+
+    if (schema.items && !Array.isArray(schema.items)) {
+      losses.push(...this._collectUnsupportedKeywordLosses(schema.items, unsupportedKeywords, `${path}.items`))
+    }
+
+    for (const key of ['allOf', 'anyOf', 'oneOf']) {
+      const children = record[key]
+      if (Array.isArray(children)) {
+        children.forEach((child, index) => {
+          if (child && typeof child === 'object' && !Array.isArray(child)) {
+            losses.push(...this._collectUnsupportedKeywordLosses(child as JSONSchema, unsupportedKeywords, `${path}.${key}[${index}]`))
+          }
+        })
+      }
+    }
+
+    return losses
   }
 }

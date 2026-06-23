@@ -1,10 +1,10 @@
 import { Buffer } from 'node:buffer'
-import * as generatorModule from '@babel/generator'
+import { createRequire } from 'node:module'
+import { join } from 'node:path'
 import type { GeneratorOptions, GeneratorResult } from '@babel/generator'
-import { parse, type ParserOptions } from '@babel/parser'
-import * as traverseModule from '@babel/traverse'
+import type { parse, ParserOptions } from '@babel/parser'
 import type { NodePath, TraverseOptions } from '@babel/traverse'
-import * as t from '@babel/types'
+import type * as BabelTypes from '@babel/types'
 
 import { STRING_EXTENSION_METHODS } from './core/StringExtensions.js'
 
@@ -63,10 +63,73 @@ export class TransformSchemaDslError extends Error {
 
 const DEFAULT_IMPORT_FROM = 'schema-dsl/pure'
 const DEFAULT_METHODS = STRING_EXTENSION_METHODS
-type GenerateFunction = (ast: t.Node, options?: GeneratorOptions, code?: string | Record<string, string>) => GeneratorResult
-type TraverseFunction = (parent: t.Node, options?: TraverseOptions) => void
-const generateCode = resolveCallableExport<GenerateFunction>(generatorModule, 'generate', '@babel/generator')
-const traverseAst = resolveCallableExport<TraverseFunction>(traverseModule, 'default', '@babel/traverse')
+type ParseFunction = typeof parse
+type GenerateFunction = (ast: BabelTypes.Node, options?: GeneratorOptions, code?: string | Record<string, string>) => GeneratorResult
+type TraverseFunction = (parent: BabelTypes.Node, options?: TraverseOptions) => void
+type BabelTypesModule = typeof BabelTypes
+
+interface BabelRuntime {
+  parse: ParseFunction
+  generateCode: GenerateFunction
+  traverseAst: TraverseFunction
+  types: BabelTypesModule
+}
+
+const packageRequire = createRequire(
+  typeof __filename === 'string' ? __filename : join(process.cwd(), 'schema-dsl-transform-runtime.js')
+)
+const cwdRequire = createRequire(join(process.cwd(), 'schema-dsl-transform-runtime.js'))
+let babelRuntime: BabelRuntime | null = null
+
+const BABEL_PEER_MESSAGE = [
+  '[schema-dsl] schema-dsl/transform requires optional Babel peer dependencies.',
+  'Install @babel/parser, @babel/traverse, @babel/generator and @babel/types to use transformSchemaDsl().',
+].join(' ')
+
+function loadBabelRuntime(): BabelRuntime {
+  if (babelRuntime) return babelRuntime
+  try {
+    const parserModule = requireBabelPeer('@babel/parser')
+    const generatorModule = requireBabelPeer('@babel/generator')
+    const traverseModule = requireBabelPeer('@babel/traverse')
+    const typesModule = requireBabelPeer('@babel/types') as BabelTypesModule
+    babelRuntime = {
+      parse: resolveCallableExport<ParseFunction>(parserModule, 'parse', '@babel/parser'),
+      generateCode: resolveCallableExport<GenerateFunction>(generatorModule, 'generate', '@babel/generator'),
+      traverseAst: resolveCallableExport<TraverseFunction>(traverseModule, 'default', '@babel/traverse'),
+      types: typesModule,
+    }
+    return babelRuntime
+  } catch (error) {
+    throw new Error(`${BABEL_PEER_MESSAGE} Cause: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+function requireBabelPeer(moduleName: string): unknown {
+  try {
+    return packageRequire(moduleName)
+  } catch (packageError) {
+    try {
+      return cwdRequire(moduleName)
+    } catch (cwdError) {
+      const packageMessage = packageError instanceof Error ? packageError.message : String(packageError)
+      const cwdMessage = cwdError instanceof Error ? cwdError.message : String(cwdError)
+      throw new Error(
+        `Unable to resolve ${moduleName} from the schema-dsl package location or process cwd. package: ${packageMessage}; cwd: ${cwdMessage}`
+      )
+    }
+  }
+}
+
+const t = new Proxy({}, {
+  get(_target, prop) {
+    return (loadBabelRuntime().types as unknown as Record<PropertyKey, unknown>)[prop]
+  },
+}) as BabelTypesModule
+
+const parseCode: ParseFunction = (...args) => loadBabelRuntime().parse(...args)
+const generateCode: GenerateFunction = (...args) => loadBabelRuntime().generateCode(...args)
+const traverseAst: TraverseFunction = (...args) => loadBabelRuntime().traverseAst(...args)
 
 const BUILTIN_DSL_TYPES = new Set([
   'string',
@@ -124,9 +187,9 @@ export function transformSchemaDsl(source: string, options: TransformSchemaDslOp
     }
   }
 
-  let ast: t.File
+  let ast: BabelTypes.File
   try {
-    ast = parse(source, createParserOptions(filename))
+    ast = parseCode(source, createParserOptions(filename))
   } catch (error) {
     const warning = createWarning('parse-error', error instanceof Error ? error.message : String(error), filename)
     warn(warning)
@@ -146,7 +209,7 @@ export function transformSchemaDsl(source: string, options: TransformSchemaDslOp
   }
 
   traverseAst(ast, {
-    CallExpression(path: NodePath<t.CallExpression>) {
+    CallExpression(path: NodePath<BabelTypes.CallExpression>) {
       warnIfUnconfiguredExtensionMethod(path, methods, filename, warn)
 
       const dslLocalName = existingDslLocalName && isImportedBindingVisible(path, existingDslLocalName)
@@ -319,7 +382,7 @@ function formatStrictErrorMessage(warning: TransformSchemaDslWarning): string {
   return `[schema-dsl] Transform strict mode failed (${warning.code}) at ${location}: ${warning.message}`
 }
 
-function findRootImportWarnings(ast: t.File, filename: string): TransformSchemaDslWarning[] {
+function findRootImportWarnings(ast: BabelTypes.File, filename: string): TransformSchemaDslWarning[] {
   const warnings: TransformSchemaDslWarning[] = []
 
   for (const statement of ast.program.body) {
@@ -347,7 +410,7 @@ function findRootImportWarnings(ast: t.File, filename: string): TransformSchemaD
   }
 
   traverseAst(ast, {
-    CallExpression(path: NodePath<t.CallExpression>) {
+    CallExpression(path: NodePath<BabelTypes.CallExpression>) {
       const firstArg = path.node.arguments[0]
       if (t.isIdentifier(path.node.callee, { name: 'require' })
         && t.isStringLiteral(firstArg)
@@ -360,7 +423,7 @@ function findRootImportWarnings(ast: t.File, filename: string): TransformSchemaD
         ))
       }
     },
-    Import(path: NodePath<t.Import>) {
+    Import(path: NodePath<BabelTypes.Import>) {
       const parent = path.parentPath.node
       if (!t.isCallExpression(parent)) {
         return
@@ -383,7 +446,7 @@ function findRootImportWarnings(ast: t.File, filename: string): TransformSchemaD
   return warnings
 }
 
-function isTypeOnlyImportDeclaration(statement: t.ImportDeclaration): boolean {
+function isTypeOnlyImportDeclaration(statement: BabelTypes.ImportDeclaration): boolean {
   return statement.importKind === 'type'
     || (
       statement.specifiers.length > 0
@@ -391,7 +454,7 @@ function isTypeOnlyImportDeclaration(statement: t.ImportDeclaration): boolean {
     )
 }
 
-function isTypeOnlyExportNamedDeclaration(statement: t.ExportNamedDeclaration): boolean {
+function isTypeOnlyExportNamedDeclaration(statement: BabelTypes.ExportNamedDeclaration): boolean {
   return statement.exportKind === 'type'
     || (
       statement.specifiers.length > 0
@@ -400,7 +463,7 @@ function isTypeOnlyExportNamedDeclaration(statement: t.ExportNamedDeclaration): 
 }
 
 function warnIfUnconfiguredExtensionMethod(
-  path: NodePath<t.CallExpression>,
+  path: NodePath<BabelTypes.CallExpression>,
   methods: ReadonlySet<string>,
   filename: string,
   warn: (warning: TransformSchemaDslWarning) => void,
@@ -430,15 +493,15 @@ function warnIfUnconfiguredExtensionMethod(
 interface StaticStringCallChain {
   literalValue: string
   methods: string[]
-  loc: t.SourceLocation | null | undefined
+  loc: BabelTypes.SourceLocation | null | undefined
 }
 
-function getStaticStringCallChain(node: t.CallExpression): StaticStringCallChain | undefined {
+function getStaticStringCallChain(node: BabelTypes.CallExpression): StaticStringCallChain | undefined {
   const methods: string[] = []
-  let current: t.Expression | t.Super = node
+  let current: BabelTypes.Expression | BabelTypes.Super = node
 
   while (t.isCallExpression(current)) {
-    const currentCall: t.CallExpression = current
+    const currentCall: BabelTypes.CallExpression = current
     const callee = currentCall.callee
     if (!t.isMemberExpression(callee) || callee.computed || !t.isIdentifier(callee.property)) {
       return undefined
@@ -455,7 +518,7 @@ function getStaticStringCallChain(node: t.CallExpression): StaticStringCallChain
 }
 
 function shouldTransformCall(
-  path: NodePath<t.CallExpression>,
+  path: NodePath<BabelTypes.CallExpression>,
   methods: ReadonlySet<string>,
   dslLocalName: string | undefined,
 ): boolean {
@@ -475,7 +538,7 @@ function shouldTransformCall(
   return getStaticStringValue(callee.object) !== undefined
 }
 
-function isAlreadyDslCall(node: t.Expression | t.Super, dslLocalName: string | undefined): boolean {
+function isAlreadyDslCall(node: BabelTypes.Expression | BabelTypes.Super, dslLocalName: string | undefined): boolean {
   if (!t.isCallExpression(node)) {
     return false
   }
@@ -484,7 +547,7 @@ function isAlreadyDslCall(node: t.Expression | t.Super, dslLocalName: string | u
   return t.isIdentifier(callee) && dslLocalName !== undefined && callee.name === dslLocalName
 }
 
-function getStaticStringValue(node: t.Expression | t.Super): string | undefined {
+function getStaticStringValue(node: BabelTypes.Expression | BabelTypes.Super): string | undefined {
   if (t.isStringLiteral(node)) {
     return node.value
   }
@@ -527,7 +590,7 @@ function looksLikePipeEnumLiteral(value: string): boolean {
   return parts.length > 1 && parts.every(part => part.length > 0 && !part.includes(','))
 }
 
-function findExistingDslImport(ast: t.File, importFrom: string): string | undefined {
+function findExistingDslImport(ast: BabelTypes.File, importFrom: string): string | undefined {
   for (const statement of ast.program.body) {
     if (!t.isImportDeclaration(statement) || statement.source.value !== importFrom) {
       continue
@@ -555,7 +618,7 @@ function isImportedBindingVisible(path: NodePath, localName: string): boolean {
   return t.isImportSpecifier(bindingNode) || t.isImportDefaultSpecifier(bindingNode)
 }
 
-function createDslImport(ast: t.File, importFrom: string, reservedLocalNames: Set<string>): string {
+function createDslImport(ast: BabelTypes.File, importFrom: string, reservedLocalNames: Set<string>): string {
   const localName = createUniqueImportName(reservedLocalNames)
   const importDeclaration = t.importDeclaration(
     [t.importSpecifier(t.identifier(localName), t.identifier('dsl'))],
@@ -579,7 +642,7 @@ function createUniqueImportName(reservedLocalNames: Set<string>): string {
   return candidate
 }
 
-function collectBindingNames(ast: t.File): Set<string> {
+function collectBindingNames(ast: BabelTypes.File): Set<string> {
   const names = new Set<string>()
 
   traverseAst(ast, {
@@ -630,7 +693,7 @@ function collectBindingNames(ast: t.File): Set<string> {
   return names
 }
 
-function collectPatternNames(pattern: t.Node | null | undefined, names: Set<string>): void {
+function collectPatternNames(pattern: BabelTypes.Node | null | undefined, names: Set<string>): void {
   if (!pattern) {
     return
   }
@@ -671,7 +734,7 @@ function createWarning(
   code: TransformSchemaDslWarningCode,
   message: string,
   filename: string,
-  loc?: t.SourceLocation | null,
+  loc?: BabelTypes.SourceLocation | null,
 ): TransformSchemaDslWarning {
   const warning: TransformSchemaDslWarning = {
     code,

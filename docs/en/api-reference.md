@@ -635,6 +635,8 @@ const schema = s({ email: field });
 
 Rewrites static String-chain DSL calls at compile time and injects imports from `schema-dsl/pure`. By default, it transforms the complete built-in String-chain API on schema-dsl literals, including methods such as `.label()`, `.pattern()`, `.require()`, `.required()`, `.toJsonSchema()`, and naked pipe enums such as `"admin|user|guest".label("Role")`. Use `additionalMethods` for user-defined chain methods, and `additionalTypes` / `additionalTypePatterns` for registered custom DSL type literals such as `"tenant-id!".label("Tenant")`; `methods` remains a legacy replacement set when you intentionally need to override the built-in default list.
 
+This entry loads Babel AST packages lazily. Install `@babel/parser`, `@babel/traverse`, `@babel/generator`, and `@babel/types` in projects that call `transformSchemaDsl()`.
+
 ```javascript
 import { transformSchemaDsl } from 'schema-dsl/transform';
 
@@ -1058,7 +1060,10 @@ const command = exporter.generateCommand('users', jsonSchema);
 **Methods**:
 
 - `export(schema)` - exports MongoDB schema.
+- `exportWithReport(schema, options?)` - exports MongoDB schema and reports JSON Schema keywords that are not represented by the target format.
 - `generateCommand(collection, schema)` - generates a `createCollection` command.
+
+`exportWithReport()` returns `{ output, losses }`; each loss includes `path`, `keyword`, `severity`, and `message`. Pass `{ strict: true }` to throw instead of returning lossy output.
 
 ---
 
@@ -1076,6 +1081,9 @@ const ddl = exporter.export('users', jsonSchema);
 **Methods**:
 
 - `export(tableName, schema)` - exports MySQL DDL.
+- `exportWithReport(tableName, schema, options?)` - exports DDL and returns `{ output, losses }`; set `strict: true` to throw when unsupported keywords would be omitted.
+
+Each loss includes `path`, `keyword`, `severity`, and `message`.
 
 ---
 
@@ -1093,6 +1101,9 @@ const ddl = exporter.export('users', jsonSchema);
 **Methods**:
 
 - `export(tableName, schema)` - exports PostgreSQL DDL.
+- `exportWithReport(tableName, schema, options?)` - exports DDL and returns `{ output, losses }`; set `strict: true` to throw when unsupported keywords would be omitted.
+
+Each loss includes `path`, `keyword`, `severity`, and `message`.
 
 ---
 

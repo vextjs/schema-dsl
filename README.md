@@ -192,7 +192,7 @@ npm install schema-dsl
 | `schema-dsl/compat` | Explicit compatibility entry that installs String extensions on import. |
 | `schema-dsl/register-string` | Side-effect entry for explicitly registering String extensions during application startup. |
 | `schema-dsl/string-types` | Opt-in TypeScript declarations for String-chain authoring; no runtime prototype installation. |
-| `schema-dsl/transform` | Babel AST transform core that rewrites static string-chain calls into helper calls imported from `schema-dsl/pure`. |
+| `schema-dsl/transform` | Babel AST transform core that rewrites static string-chain calls into helper calls imported from `schema-dsl/pure`. Babel AST packages are optional peer dependencies for projects that use this entry. |
 | `schema-dsl/esbuild` | Optional esbuild plugin adapter around the transform core. `esbuild` is an optional peer dependency. |
 
 ```typescript
@@ -590,7 +590,7 @@ const result = validator.validate(schema, { color: '#FF5733', mac: '00:1A:2B:3C:
 | `validateAsync(schema, data)` | Asynchronous validation | Promise (throws on failure) | [Async Validation](https://vextjs.github.io/schema-dsl/validate-async) |
 | `SchemaUtils.pick()` | Select fields | New schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
 | `SchemaUtils.omit()` | Exclude fields | New schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
-| `SchemaUtils.partial()` | Make all fields optional | New schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
+| `SchemaUtils.partial()` | Make all fields optional, or only selected fields optional when `fields` is provided | New schema | [SchemaUtils](https://vextjs.github.io/schema-dsl/schema-utils) |
 | `s.if(condition)` | Conditional validation | ConditionalBuilder | [Conditional API](https://vextjs.github.io/schema-dsl/conditional-api) |
 | `s.match(field, map)` | Branch validation | ConditionalBuilder | [Conditional API](https://vextjs.github.io/schema-dsl/conditional-api) |
 | `I18nError.throw()` | Throw an i18n error | never | [Error Handling](https://vextjs.github.io/schema-dsl/error-handling) |

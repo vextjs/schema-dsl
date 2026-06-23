@@ -50,6 +50,10 @@ export interface ValidationErrorItem {
   path: string
   /** Validation keyword (min, max, email, pattern, etc.). */
   keyword: string
+  /** Broad error category. */
+  kind?: 'data' | 'schema' | 'custom' | 'conditional' | 'internal'
+  /** Stable machine-readable error code. */
+  code?: string
   /** Validation parameters. */
   params?: Record<string, unknown>
   /** Alias for path (backwards compatibility). */

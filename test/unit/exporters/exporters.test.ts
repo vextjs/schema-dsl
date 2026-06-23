@@ -65,6 +65,11 @@ describe('MySQLExporter', () => {
       expect(sql).toContain('users')
     })
 
+    it('throws when the schema is not an object schema', () => {
+      expect(() => MySQLExporter.export('users', null as any)).toThrow('JSON Schema must be an object')
+      expect(() => MySQLExporter.export('users', { type: 'string' } as any)).toThrow('JSON Schema must be an object type')
+    })
+
     it('contains name column', () => {
       const sql = MySQLExporter.export('users', USER_SCHEMA)
       expect(sql.toLowerCase()).toContain('name')
@@ -94,6 +99,65 @@ describe('MySQLExporter', () => {
       }
 
       expect(() => MySQLExporter.export('users', schema)).toThrow('MySQL exporter cannot safely map anyOf')
+    })
+
+    it('reports unsupported keyword loss and supports strict report mode', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            if: { const: 'admin' },
+            then: { minLength: 5 },
+          },
+          tags: {
+            type: 'array',
+            items: {
+              type: 'string',
+              if: { pattern: '^x-' },
+              then: { minLength: 3 },
+            },
+          },
+          code: {
+            type: 'string',
+            pattern: '^[A-Z]+$',
+            const: 'ABC',
+          },
+          source: {
+            anyOf: [
+              { type: 'string', const: 'api' },
+              { type: 'string' },
+            ],
+          },
+        },
+        allOf: [
+          {
+            not: { required: ['blocked'] },
+          },
+        ],
+      } as JSONSchema
+      const losses: unknown[] = []
+      const exporter = new MySQLExporter()
+
+      const report = exporter.exportWithReport('users', schema, {
+        onLoss: loss => losses.push(loss),
+      })
+
+      expect(report.output).toContain('CREATE TABLE')
+      expect(report.losses).toEqual([
+        expect.objectContaining({ path: '$', keyword: 'allOf' }),
+        expect.objectContaining({ path: '$.properties.name', keyword: 'if' }),
+        expect.objectContaining({ path: '$.properties.name', keyword: 'then' }),
+        expect.objectContaining({ path: '$.properties.tags.items', keyword: 'if' }),
+        expect.objectContaining({ path: '$.properties.tags.items', keyword: 'then' }),
+        expect.objectContaining({ path: '$.properties.code', keyword: 'const' }),
+        expect.objectContaining({ path: '$.properties.code', keyword: 'pattern' }),
+        expect.objectContaining({ path: '$.properties.source', keyword: 'anyOf' }),
+        expect.objectContaining({ path: '$.properties.source.anyOf[0]', keyword: 'const' }),
+        expect.objectContaining({ path: '$.allOf[0]', keyword: 'not' }),
+      ])
+      expect(losses).toHaveLength(10)
+      expect(() => exporter.exportWithReport('users', schema, { strict: true })).toThrow('Export would lose unsupported JSON Schema keywords')
     })
   })
 })

@@ -1,6 +1,6 @@
 import { Ajv } from 'ajv'
 import addFormats from 'ajv-formats'
-import type { JSONSchema } from '../types/schema.js'
+import type { JSONSchemaInput } from '../types/schema.js'
 import type { SchemaDslRuntimeOptions, SchemaDslRuntimeValidateOptions } from '../types/runtime.js'
 import { Validator, type ValidatorOptions } from './Validator.js'
 import { CustomKeywords } from '../validators/CustomKeywords.js'
@@ -62,7 +62,7 @@ export class RuntimeValidatorEngine {
       : this.defaultValidator
   }
 
-  quickValidate(schema: JSONSchema, data: unknown): boolean {
+  quickValidate(schema: JSONSchemaInput, data: unknown): boolean {
     try {
       return this.quickAjv.validate(schema, data) as boolean
     } catch {

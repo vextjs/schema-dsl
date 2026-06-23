@@ -18,6 +18,7 @@ import {
 import { DslAdapter } from '../../src/adapters/DslAdapter.js'
 import { ConstraintParser } from '../../src/parser/ConstraintParser.js'
 import { DslParser } from '../../src/parser/DslParser.js'
+import { isJsonSchemaFactoryInputLike, isJsonSchemaTypeValue, isRawJsonSchemaLike } from '../../src/utils/schemaInput.js'
 
 describe('verified issue regressions', () => {
   describe('P0 parser and validator correctness', () => {
@@ -145,6 +146,69 @@ describe('verified issue regressions', () => {
         required: ['name'],
       })
       expect(schema.properties?.user.properties?.properties).toBeUndefined()
+    })
+
+    it('P0-33: top-level raw JSON Schema keyword-only inputs are not parsed as DSL objects', () => {
+      expect(validate({ enum: ['a', 'b'] }, 'a').valid).toBe(true)
+      expect(validate({ enum: ['a', 'b'] }, 'c').valid).toBe(false)
+      expect(validate({ const: 1 }, 1).valid).toBe(true)
+      expect(validate({ const: 1 }, 2).valid).toBe(false)
+    })
+
+    it('P0-33c: validate() keeps DSL object semantics when field names collide with JSON Schema keywords', () => {
+      expect(validate({ default: 'string!' }, { default: 'active' }).valid).toBe(true)
+      expect(validate({ default: 'string!' }, {}).valid).toBe(false)
+
+      expect(validate({ const: 'string!' }, { const: 'literal' }).valid).toBe(true)
+      expect(validate({ const: 'string!' }, {}).valid).toBe(false)
+
+      const nestedKeywordField = { properties: { enabled: 'boolean!' } }
+      expect(validate(nestedKeywordField, { properties: { enabled: true } }).valid).toBe(true)
+      expect(validate(nestedKeywordField, { properties: {} }).valid).toBe(false)
+    })
+
+    it('P0-33b: raw JSON Schema input detector covers schema-valued and primitive keyword shapes', () => {
+      expect(isJsonSchemaTypeValue('string')).toBe(true)
+      expect(isJsonSchemaTypeValue(['string', 'null'])).toBe(true)
+      expect(isJsonSchemaTypeValue(['string', 'unknown'])).toBe(false)
+      expect(isJsonSchemaTypeValue(1)).toBe(false)
+      expect(isRawJsonSchemaLike({ properties: { enabled: true, blocked: false } })).toBe(true)
+      expect(isRawJsonSchemaLike({ properties: { enabled: 'boolean!' } })).toBe(false)
+      expect(isRawJsonSchemaLike({ const: 'string!' })).toBe(false)
+      expect(isRawJsonSchemaLike({ const: 'active' })).toBe(true)
+      expect(isJsonSchemaFactoryInputLike({ items: [{ type: 'string' }, false] })).toBe(true)
+      expect(isJsonSchemaFactoryInputLike({ contains: true })).toBe(true)
+      expect(isJsonSchemaFactoryInputLike({ uniqueItems: true })).toBe(true)
+      expect(isJsonSchemaFactoryInputLike({ minLength: 3 })).toBe(true)
+      expect(isJsonSchemaFactoryInputLike({ contains: 1 })).toBe(false)
+      expect(isRawJsonSchemaLike(['not', 'a', 'schema'])).toBe(false)
+    })
+
+    it('P1-19: Draft 7 boolean schemas are accepted as raw JSON Schema input', () => {
+      expect(validate(true, 'anything').valid).toBe(true)
+      expect(validate(false, 'anything').valid).toBe(false)
+      expect(new Validator().validate(true, { ok: true }).valid).toBe(true)
+      expect(new Validator().validate(false, { ok: true }).valid).toBe(false)
+    })
+
+    it('P0-34: validateBatch follows the same smart coercion path as single validate', () => {
+      const validator = new Validator()
+      const schema = {
+        type: 'object',
+        properties: {
+          age: { type: 'number' },
+          active: { type: 'boolean' },
+        },
+        required: ['age', 'active'],
+      }
+
+      const single = validator.validate(schema, { age: '18', active: 'true' })
+      const batch = validator.validateBatch(schema, [{ age: '18', active: 'true' }])
+
+      expect(single.valid).toBe(true)
+      expect(single.data).toEqual({ age: 18, active: true })
+      expect(batch[0]?.valid).toBe(true)
+      expect(batch[0]?.data).toEqual({ age: 18, active: true })
     })
 
     it('P0-11: validateAsync runs custom validators in matching oneOf branches', async () => {
@@ -313,6 +377,39 @@ describe('verified issue regressions', () => {
       )
 
       expect(extended.properties?.value).toEqual({ type: 'number', minimum: 0 })
+    })
+
+    it('P2-05: SchemaUtils.extend preserves base metadata', () => {
+      const extended = SchemaUtils.extend(
+        {
+          type: 'object',
+          title: 'Base',
+          additionalProperties: false,
+          properties: { name: { type: 'string' } },
+          required: ['name'],
+        },
+        { properties: { age: { type: 'number' } } }
+      )
+
+      expect(extended.title).toBe('Base')
+      expect(extended.additionalProperties).toBe(false)
+      expect(extended.properties).toMatchObject({
+        name: { type: 'string' },
+        age: { type: 'number' },
+      })
+    })
+
+    it('P1-18: SchemaUtils.partial(fields) keeps unlisted fields and only makes listed fields optional', () => {
+      const schema = dsl({
+        name: 'string!',
+        email: 'email!',
+        age: 'integer!',
+      })
+
+      const partial = SchemaUtils.partial(schema, ['email'])
+
+      expect(Object.keys(partial.properties ?? {})).toEqual(['name', 'email', 'age'])
+      expect(partial.required).toEqual(['name', 'age'])
     })
 
     it('P2-06: SchemaUtils.toMarkdown includes nested field paths', () => {

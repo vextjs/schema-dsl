@@ -607,6 +607,8 @@ const schema = s({ email: field });
 
 在编译期改写静态 String 链式 DSL 调用，并注入来自 `schema-dsl/pure` 的 `dsl` 导入。默认覆盖完整内建 String 链式 API，包括 `.label()`、`.pattern()`、`.require()`、`.required()`、`.toJsonSchema()` 等方法，也支持 `"admin|user|guest".label("角色")` 这类裸 pipe 枚举。用户自定义链式方法通过 `additionalMethods` 追加；已注册的自定义 DSL 类型字面量可通过 `additionalTypes` / `additionalTypePatterns` 显式加入转换范围，例如 `"tenant-id!".label("租户")`；`methods` 保持为旧版替换集合，只在你明确要覆盖默认内建方法列表时使用。
 
+该入口会懒加载 Babel AST 包。调用 `transformSchemaDsl()` 的项目需要安装 `@babel/parser`、`@babel/traverse`、`@babel/generator` 和 `@babel/types`。
+
 ```javascript
 import { transformSchemaDsl } from 'schema-dsl/transform';
 
@@ -1005,7 +1007,10 @@ const command = exporter.generateCommand('users', jsonSchema);
 
 **方法**:
 - `export(schema)` - 导出为MongoDB Schema
+- `exportWithReport(schema, options?)` - 导出 MongoDB Schema，并报告目标格式无法表示的 JSON Schema 关键字
 - `generateCommand(collection, schema)` - 生成 createCollection 命令
+
+`exportWithReport()` 返回 `{ output, losses }`；每个 loss 包含 `path`、`keyword`、`severity` 和 `message`。传入 `{ strict: true }` 时会直接抛错，而不是返回有信息丢失的输出。
 
 ---
 
@@ -1022,6 +1027,9 @@ const ddl = exporter.export('users', jsonSchema);
 
 **方法**:
 - `export(tableName, schema)` - 导出为MySQL DDL
+- `exportWithReport(tableName, schema, options?)` - 导出 DDL 并返回 `{ output, losses }`；设置 `strict: true` 时，遇到会被省略的关键字会抛错
+
+每个 loss 包含 `path`、`keyword`、`severity` 和 `message`。
 
 ---
 
@@ -1038,6 +1046,9 @@ const ddl = exporter.export('users', jsonSchema);
 
 **方法**:
 - `export(tableName, schema)` - 导出为PostgreSQL DDL
+- `exportWithReport(tableName, schema, options?)` - 导出 DDL 并返回 `{ output, losses }`；设置 `strict: true` 时，遇到会被省略的关键字会抛错
+
+每个 loss 包含 `path`、`keyword`、`severity` 和 `message`。
 
 ---
 

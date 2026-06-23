@@ -1,5 +1,14 @@
 # Unreleased
 
+## 2026-06-23
+
+- Fixed raw JSON Schema input detection so keyword-only schemas such as `{ enum: [...] }`, `{ const: ... }`, and Draft 7 boolean schemas are treated as JSON Schema without stealing DSL object definitions whose field names collide with JSON Schema keywords.
+- Aligned `Validator.validateBatch()` with single-item validation so smart coercion, conditionals, and custom validators run consistently.
+- Updated `SchemaUtils.partial(schema, fields)` to preserve the full schema and make only the selected fields optional; `SchemaUtils.extend()` now preserves base schema metadata while merging extension fields.
+- Expanded type inference for runtime DSL aliases, typed enums, `types:` unions, JSON Schema `const`, nullable type arrays, and boolean schemas.
+- Added `SchemaCompileError`, structured schema compile errors in `validate()`, broader conditional/custom validator walker coverage, and exporter `exportWithReport()` loss reporting for more unsupported JSON Schema keywords.
+- Moved Babel AST packages for `schema-dsl/transform` to optional peer dependencies, tightened CI gates, and narrowed npm package files to built output and public metadata.
+
 ## 2026-06-18
 
 - Added the shared `s` / `dsl` namespace API: `s === dsl`, `dsl('email!')` remains the explicit DSL seed entry, and built-in factories such as `s.email()`, `s.string()`, `s.number()`, `s.array(item)`, `s.enum(...)`, and `s.type(name)` map to the same builder/schema implementation.

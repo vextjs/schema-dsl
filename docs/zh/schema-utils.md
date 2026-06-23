@@ -208,7 +208,7 @@ const updateSchema = SchemaUtils.partial(s({
 // 结果中 required 会被移除，适合 PATCH / 局部更新场景
 ```
 
-也可以只对部分字段做可选化：
+也可以只对部分字段做可选化，同时保留 schema 中的其他字段：
 
 ```javascript
 const schema = s({
@@ -219,6 +219,8 @@ const schema = s({
 
 const partialContact = SchemaUtils.partial(schema, ['name', 'email']);
 ```
+
+`partialContact` 仍然包含 `age`；只有 `name` 和 `email` 会从顶层 `required` 列表中移除。如果你需要只保留这些字段，可以组合 `SchemaUtils.pick(schema, fields).partial()`。
 
 ---
 

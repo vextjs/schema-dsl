@@ -3,7 +3,7 @@
  */
 
 export { BaseExporter } from './BaseExporter.js'
-export type { ExporterOptions } from './BaseExporter.js'
+export type { ExporterOptions, ExportLossItem, ExportReport, ExportReportOptions } from './BaseExporter.js'
 
 export { MongoDBExporter } from './MongoDBExporter.js'
 export type { MongoDBExporterOptions, MongoDBValidationSchema, MongoDBCreateCommand } from './MongoDBExporter.js'

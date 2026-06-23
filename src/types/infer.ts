@@ -1,6 +1,15 @@
 type StripMarker<S extends string> = S extends `${infer Base}!` | `${infer Base}?` ? Base : S
 
 type KnownDslType =
+    | StringDslType
+    | NumberDslType
+    | BooleanDslType
+    | ObjectDslType
+    | ArrayDslType
+    | NullDslType
+    | AnyDslType
+
+type StringDslType =
     | 'string'
     | 'email'
     | 'url'
@@ -14,7 +23,9 @@ type KnownDslType =
     | 'datetime'
     | 'time'
     | 'binary'
+    | 'buffer'
     | 'objectId'
+    | 'objectid'
     | 'hexColor'
     | 'macAddress'
     | 'cron'
@@ -26,14 +37,36 @@ type KnownDslType =
     | 'lower'
     | 'upper'
     | 'json'
-    | 'port'
+
+type NumberDslType =
     | 'number'
     | 'integer'
-    | 'boolean'
-    | 'object'
-    | 'array'
-    | 'null'
+    | 'int'
+    | 'float'
+    | 'double'
+    | 'decimal'
+    | 'port'
+
+type BooleanDslType = 'boolean'
+type ObjectDslType = 'object'
+type ArrayDslType = 'array'
+type NullDslType = 'null'
+type AnyDslType =
     | 'any'
+    | 'mixed'
+
+type ParseNumberLiteral<S extends string> = S extends `${infer N extends number}` ? N : number
+type ParseBooleanLiteral<S extends string> = S extends 'true' ? true : S extends 'false' ? false : boolean
+type InferTypedEnumValue<TypeName extends string, Value extends string> =
+    StripMarker<TypeName> extends NumberDslType
+    ? ParseNumberLiteral<Value>
+    : StripMarker<TypeName> extends BooleanDslType
+    ? ParseBooleanLiteral<Value>
+    : Value
+
+type SplitTypedEnum<TypeName extends string, Values extends string> = Values extends `${infer Head}|${infer Tail}`
+    ? InferTypedEnumValue<TypeName, Head> | SplitTypedEnum<TypeName, Tail>
+    : InferTypedEnumValue<TypeName, Values>
 
 type InferPipeMember<S extends string> = StripMarker<S> extends KnownDslType ? InferDslString<S> : StripMarker<S>
 
@@ -71,34 +104,60 @@ type InferDslProperties<T extends Record<string, unknown>, RequiredKeys extends 
 
 export type InferDslString<T extends string> = StripMarker<T> extends `types:${infer Rest}`
     ? SplitPipe<Rest>
+    : StripMarker<T> extends `enum:${infer TypeName}:${infer Values}`
+    ? SplitTypedEnum<TypeName, Values>
     : StripMarker<T> extends `enum:${infer Values}`
     ? SplitPipe<Values>
     : StripMarker<T> extends `array<${infer Item}>`
     ? InferDslString<Item>[]
     : StripMarker<T> extends `${infer Base}:${string}`
     ? InferDslString<Base>
-    : StripMarker<T> extends 'number' | 'integer' | 'port'
+    : StripMarker<T> extends NumberDslType
     ? number
-    : StripMarker<T> extends 'boolean'
+    : StripMarker<T> extends BooleanDslType
     ? boolean
-    : StripMarker<T> extends 'object'
+    : StripMarker<T> extends ObjectDslType
     ? Record<string, unknown>
-    : StripMarker<T> extends 'array'
+    : StripMarker<T> extends ArrayDslType
     ? unknown[]
-    : StripMarker<T> extends 'null'
+    : StripMarker<T> extends NullDslType
     ? null
-    : StripMarker<T> extends 'any'
+    : StripMarker<T> extends AnyDslType
     ? unknown
     : StripMarker<T> extends `${string}|${string}`
     ? SplitPipe<StripMarker<T>>
     : string
 
-export type InferJsonSchema<T> = T extends { oneOf: readonly (infer Variant)[] }
+type JsonSchemaTypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null'
+
+type InferJsonSchemaType<TypeName, Schema> = TypeName extends 'number' | 'integer'
+    ? number
+    : TypeName extends 'boolean'
+    ? boolean
+    : TypeName extends 'null'
+    ? null
+    : TypeName extends 'object'
+    ? Schema extends { properties: infer Properties; required?: readonly (infer RequiredKey)[] }
+    ? InferJsonSchemaProperties<Properties, Extract<RequiredKey, keyof Properties>>
+    : Record<string, unknown>
+    : TypeName extends 'array'
+    ? Schema extends { items: infer Item }
+    ? InferSchema<Item>[]
+    : unknown[]
+    : TypeName extends 'string'
+    ? string
+    : unknown
+
+export type InferJsonSchema<T> = T extends { const: infer Value }
+    ? Value
+    : T extends { enum: readonly (infer Value)[] }
+    ? Value
+    : T extends { oneOf: readonly (infer Variant)[] }
     ? InferSchema<Variant>
     : T extends { anyOf: readonly (infer Variant)[] }
     ? InferSchema<Variant>
-    : T extends { enum: readonly (infer Value)[] }
-    ? Value
+    : T extends { type: readonly (infer TypeName)[] }
+    ? InferJsonSchemaType<Extract<TypeName, JsonSchemaTypeName>, T>
     : T extends { type: 'object'; properties: infer Properties; required?: readonly (infer RequiredKey)[] }
     ? InferJsonSchemaProperties<Properties, Extract<RequiredKey, keyof Properties>>
     : T extends { type: 'array'; items: infer Item }
@@ -115,13 +174,19 @@ export type InferJsonSchema<T> = T extends { oneOf: readonly (infer Variant)[] }
     ? unknown[]
     : T extends { type: 'string' }
     ? string
+    : T extends { properties: infer Properties; required?: readonly (infer RequiredKey)[] }
+    ? InferJsonSchemaProperties<Properties, Extract<RequiredKey, keyof Properties>>
     : unknown
 
 export type InferDslDefinition<T extends Record<string, unknown>> = InferDslProperties<T>
 
 export type InferSchema<T> = T extends string
     ? InferDslString<T>
-    : T extends { type: unknown } | { properties: unknown } | { oneOf: unknown } | { anyOf: unknown } | { enum: unknown }
+    : T extends true
+    ? unknown
+    : T extends false
+    ? never
+    : T extends { type: unknown } | { properties: unknown } | { oneOf: unknown } | { anyOf: unknown } | { enum: unknown } | { const: unknown }
     ? InferJsonSchema<T>
     : T extends Record<string, unknown>
     ? InferDslDefinition<T>

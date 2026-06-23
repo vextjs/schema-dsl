@@ -202,6 +202,13 @@ const jsonSchemaCoreResult = jsonSchemaCore.validate({ email: 'bad-email' })
 
 const mongoSchema = MongoDBExporter.export(userSchema)
 const mysqlDDL = MySQLExporter.export('users', userSchema)
+const mysqlReport = new MySQLExporter().exportWithReport('users', {
+  ...userSchema,
+  properties: {
+    ...userSchema.properties,
+    flag: { type: 'string', if: { const: 'x' } },
+  },
+} as any)
 const pgDDL = PostgreSQLExporter.export('users', userSchema)
 const markdown = new MarkdownExporter({ title: 'User schema', locale: 'en-US' }).export(userSchema)
 const namespaceMarkdown = exporters.MarkdownExporter.export(userSchema, { title: 'Namespace export', locale: 'en-US' })
@@ -314,6 +321,7 @@ expect('schema ref should pass before removal', refResult.valid === true)
 expect('CacheManager should return stored value', standaloneCacheHit?.compiled === true)
 expect('CONSTANTS namespace should align with named constants', constantsAligned)
 expect('BaseExporter should be exported for custom exporter subclasses', exporterBaseSurface)
+expect('exportWithReport should expose unsupported keyword losses', mysqlReport.losses.some(loss => loss.keyword === 'if'))
 expect('CustomKeywords should expose registerAll', customKeywordsSurface)
 expect('I18nError.create should preserve status', i18nError.statusCode === 422)
 expect('I18nError.assert should throw I18nError', assertedI18nError?.statusCode === 409)
