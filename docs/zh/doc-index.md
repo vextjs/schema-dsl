@@ -1,10 +1,6 @@
 # schema-dsl 文档地图
 
-> **最后更新**: 2026-06-18
-> **用途**: 按左侧菜单相同的任务路径查找全部已发布文档。
-> **在线文档**: [中文首页](/schema-dsl/zh/)
-
-本页是文档地图。左侧菜单仍是文档站的主导航真相源；本页用于给已经知道大致方向的读者提供紧凑、可搜索的总览。
+本页是文档地图。左侧菜单保留主要学习路径；本页额外列出较短的参考页和附录页，方便已经知道大致方向的读者快速查找。
 
 ## 开始
 
@@ -86,14 +82,11 @@
 
 | 文档 | 何时阅读 |
 |------|----------|
-| [扩展概览](extensions-overview.md) | 在自定义类型、factory、链式方法、关键字、runtime 隔离和插件之间选择路径。 |
-| [自定义 DSL 类型](plugin-type-registration.md) | 注册 `tenant-id!` 这样的可复用 DSL 字面量。 |
-| [自定义 s.xxx() 工厂](custom-factories.md) | 暴露可发现的 namespace factory。 |
-| [自定义链式方法](custom-chain-methods.md) | 给已有 builder 添加方法，并配置 transform 支持。 |
+| [扩展概览](extensions-overview.md) | 在自定义业务类型、校验关键字、runtime 隔离和插件之间选择路径。 |
+| [自定义扩展](custom-extensions.md) | 一份定义同时支撑纯 DSL、`s('...')` 和 `s.xxx()` 入口。 |
 | [自定义校验关键字](add-keyword.md) | 添加自定义 AJV keyword。 |
 | [框架集成与目录结构](framework-extension-setup.md) | 为应用和框架组织可复用扩展模块。 |
 | [插件管理器（高级）](plugin-system.md) | 插件生命周期、hook 和集成编排。 |
-| [高级扩展组合指南](custom-extensions-guide.md) | 组合自定义类型、factory、关键字、多语言、runtime 隔离和插件。 |
 
 ## 生产实践与排错
 
@@ -102,7 +95,7 @@
 | [最佳实践](best-practices.md) | 生产项目中的推荐用法。 |
 | [项目结构最佳实践](best-practices-project-structure.md) | 在真实项目中组织 schema-dsl。 |
 | [性能指南](performance-guide.md) | 性能调优和缓存注意事项。 |
-| [安全检查清单](security-checklist.md) | schema 使用和导出的安全审查清单。 |
+| [安全注意事项](security-checklist.md) | schema 使用、自定义 validator 和导出时的安全注意事项。 |
 | [故障排查](troubleshooting.md) | 常见失败和可复现修复方式。 |
 | [FAQ](faq.md) | 常见问题的短答案。 |
 
@@ -112,7 +105,7 @@
 |------|----------|
 | [API 参考](api-reference.md) | 完整公开 API 参考。 |
 | [API 概览](api.md) | 紧凑 API 入口。 |
-| [文档地图](doc-index.md) | 本页，按 sidebar 路径组织。 |
+| [文档地图](doc-index.md) | 本页，按主题组织。 |
 | [功能索引](FEATURE-INDEX.md) | 按能力查找对应文档。 |
 
 ## 示例

@@ -76,6 +76,16 @@ export type {
   DslFactoryInput,
   DslNamespaceFactories,
   DslExtensionDefinition,
+  DslExtensionFactory,
+  DslExtensionNamespaceFactories,
+  DslExtensionParamDefinition,
+  DslExtensionParamKind,
+  DslExtensionParamValue,
+  DslExtensionParamsDefinition,
+  DslExtensionParamsObject,
+  DslExtensionSchemaFactory,
+  DslExtensionSegmentMode,
+  DslWithExtensions,
   NormalizedDslExtensionDefinition,
 } from './types/dsl.js'
 
@@ -114,6 +124,7 @@ import { TypeRegistry as _TypeRegistry } from './parser/TypeRegistry.js'
 import { DslParser as _DslParser } from './parser/DslParser.js'
 import { DslAdapter as _DslAdapter } from './adapters/DslAdapter.js'
 import { attachDslNamespaceFactories as _attachDslNamespaceFactories, resetDslNamespaceExtensions as _resetDslNamespaceExtensions } from './adapters/DslNamespace.js'
+import { DEFAULT_DSL_EXTENSION_REGISTRY as _DEFAULT_DSL_EXTENSION_REGISTRY } from './parser/DslExtensionRegistry.js'
 import { ConditionalBuilder as _ConditionalBuilder } from './core/ConditionalBuilder.js'
 import { Locale as _Locale } from './core/Locale.js'
 import { installStringExtensions as _install } from './core/StringExtensions.js'
@@ -130,6 +141,7 @@ import type {
   DslDefinition as _DslDefinition,
   DslExtensionDefinition as _DslExtensionDefinition,
   DslFn as _DslFn,
+  DslWithExtensions as _DslWithExtensions,
   IDslBuilder as _IDslBuilder,
   NormalizedDslExtensionDefinition as _NormalizedDslExtensionDefinition,
 } from './types/dsl.js'
@@ -143,6 +155,7 @@ import { readdirSync, statSync, readFileSync } from 'node:fs'
 import { join, basename, extname } from 'node:path'
 
 type _DslBuilderPublic = _DslBuilder & _IDslBuilder
+type _DslParseOptions = NonNullable<Parameters<typeof _DslParser.parseString>[1]>
 
 export const CONSTANTS = _CONSTANTS
 export const exporters = _exporters
@@ -356,7 +369,7 @@ function _normalizeSchemaInput(schema: _JSONSchema | _DslDefinition | _IDslBuild
   }
   if (_isDslObject(schema)) {
     // Plain DSL definition objects are mutable — skip cache
-    return _markSchemaCacheKey(_DslAdapter.parseObject(schema).toSchema())
+    return _markSchemaCacheKey(_DslAdapter.parseObject(schema, _defaultParseOptions()).toSchema())
   }
   // Raw JSON Schema objects: safe to cache (treated as immutable by convention)
   const schemaObj = schema as object
@@ -557,6 +570,13 @@ const _INITIAL_PATTERNS = {
   creditCard: { ..._PATTERNS.creditCard },
 }
 
+function _defaultParseOptions(options: _DslParseOptions = {}): _DslParseOptions {
+  return {
+    ...options,
+    extensionRegistry: _DEFAULT_DSL_EXTENSION_REGISTRY,
+  }
+}
+
 /**
  * Reset global runtime state that may leak across tests, workers, or tenants.
  */
@@ -564,6 +584,7 @@ export function resetRuntimeState(): void {
   resetDefaultValidator()
   _DslBuilder.clearCustomTypes()
   _resetDslNamespaceExtensions(_dslWithNS)
+  _DEFAULT_DSL_EXTENSION_REGISTRY.clear()
   _Locale.reset()
   _TypeRegistry.setStrict(false)
   _restorePatternGroup(_PATTERNS.phone, _INITIAL_PATTERNS.phone)
@@ -624,11 +645,11 @@ export async function validateAsync<T = unknown>(
 function _dslFn(def: string, options?: _SchemaIOOptions): _DslBuilderPublic
 function _dslFn(def: _DslDefinition, options?: _SchemaIOOptions): _JSONSchema
 function _dslFn(def: unknown, _options?: _SchemaIOOptions): _DslBuilderPublic | _JSONSchema {
-  if (typeof def === 'string') return new _DslBuilder(def) as _DslBuilderPublic
+  if (typeof def === 'string') return new _DslBuilder(def, { parseOptions: _defaultParseOptions() }) as _DslBuilderPublic
   if (def === null || def === undefined || typeof def !== 'object' || Array.isArray(def)) {
     throw new Error('[schema-dsl] Invalid DSL definition: expected string or object')
   }
-  return _markSchemaCacheKey(_DslAdapter.parseObject(def as _DslDefinition).toSchema() as _JSONSchema)
+  return _markSchemaCacheKey(_DslAdapter.parseObject(def as _DslDefinition, _defaultParseOptions()).toSchema() as _JSONSchema)
 }
 
 // Namespace shape (mirrors DslFn interface in types/dsl.ts)
@@ -664,10 +685,12 @@ _dslWithNS.error = {
 }
 
 _attachDslNamespaceFactories(_dslWithNS, {
-  createBuilder: definition => new _DslBuilder(definition) as _DslBuilderPublic,
-  createBuilderFromSchema: schema => _DslBuilder.fromSchema(schema) as _DslBuilderPublic,
-  parseObject: definition => _markSchemaCacheKey(_DslAdapter.parseObject(definition).toSchema() as _JSONSchema),
+  createBuilder: definition => new _DslBuilder(definition, { parseOptions: _defaultParseOptions() }) as _DslBuilderPublic,
+  createBuilderFromSchema: schema => _DslBuilder.fromSchema(schema, { parseOptions: _defaultParseOptions() }) as _DslBuilderPublic,
+  parseObject: definition => _markSchemaCacheKey(_DslAdapter.parseObject(definition, _defaultParseOptions()).toSchema() as _JSONSchema),
   registerType: (name, schema) => _DslBuilder.registerType(name, schema),
+  typeExists: name => _TypeRegistry.has(name),
+  extensionRegistry: _DEFAULT_DSL_EXTENSION_REGISTRY,
 })
 
 export function defineExtension(definition: _DslExtensionDefinition): _NormalizedDslExtensionDefinition {
@@ -676,6 +699,12 @@ export function defineExtension(definition: _DslExtensionDefinition): _Normalize
 
 export function registerExtension(definition: _DslExtensionDefinition): void {
   _dslWithNS.registerExtension(definition)
+}
+
+export function registerExtensions<const Definitions extends readonly unknown[]>(
+  definitions: readonly [...Definitions]
+): _DslWithExtensions<Definitions> {
+  return _dslWithNS.registerExtensions(definitions)
 }
 
 /**
@@ -724,6 +753,7 @@ export function compileWithDiagnostics(
     diagnostics,
     emitWarning: false,
     throwOnError: false,
+    extensionRegistry: _DEFAULT_DSL_EXTENSION_REGISTRY,
   } satisfies Parameters<typeof _DslParser.parseString>[1]
 
   const schema = typeof definition === 'string'

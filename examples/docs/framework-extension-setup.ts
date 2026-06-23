@@ -1,4 +1,4 @@
-import { resetRuntimeState, s, validate, type IDslBuilder } from '../../dist/pure.js'
+import { registerExtensions, resetRuntimeState, validate } from '../../dist/pure.js'
 import { createRuntime } from '../../dist/runtime.js'
 
 // ============================================================
@@ -7,17 +7,30 @@ import { createRuntime } from '../../dist/runtime.js'
 
 resetRuntimeState()
 
+export const s = registerExtensions([
+  {
+    literal: 'tenant-id',
+    factoryName: 'tenantId',
+    segmentMode: 'params',
+    params: {
+      scope: { kind: 'enum', values: ['tenant', 'corp'], default: 'tenant' },
+    },
+    schema({ scope }) {
+      return {
+        type: 'string',
+        pattern: scope === 'corp' ? '^corp_[a-z0-9]+$' : '^tenant_[a-z0-9]+$',
+      }
+    },
+  },
+] as const)
+
 export const schemaDslTransformOptions = {
   additionalMethods: ['tenantId'],
   additionalTypes: ['tenant-id'],
 } as const
 
 export function installSchemaDslExtensions() {
-  s.registerExtension({
-    literal: 'tenant-id',
-    factoryName: 'tenantId',
-    schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' },
-  } as any)
+  return s
 }
 
 export function createAppSchemaRuntime() {
@@ -27,34 +40,43 @@ export function createAppSchemaRuntime() {
     },
   })
 
-  runtime.registerExtension({
-    literal: 'runtime-tenant-id',
-    factoryName: 'runtimeTenantId',
-    schema: { type: 'string', pattern: '^rt_[a-z0-9]+$' },
-  } as any)
+  const runtimeS = runtime.registerExtensions([
+    {
+      literal: 'runtime-tenant-id',
+      factoryName: 'runtimeTenantId',
+      segmentMode: 'params',
+      params: {
+        scope: { kind: 'enum', values: ['tenant', 'corp'], default: 'tenant' },
+      },
+      schema({ scope }) {
+        return {
+          type: 'string',
+          pattern: scope === 'corp' ? '^rt_corp_[a-z0-9]+$' : '^rt_tenant_[a-z0-9]+$',
+        }
+      },
+    },
+  ] as const)
 
-  return runtime
+  return { runtime, s: runtimeS }
 }
 
 installSchemaDslExtensions()
 
-const sWithTenant = s as typeof s & { tenantId(): IDslBuilder }
 const appSchema = s({
-  tenant: sWithTenant.tenantId().require(),
-  owner: 'tenant-id!',
+  tenant: s.tenantId('corp').require(),
+  owner: 'tenant-id:corp!',
 })
 
 console.log('framework-extension-setup.app.valid =',
-  validate(appSchema, { tenant: 'tenant_demo', owner: 'tenant_owner' }).valid)
+  validate(appSchema, { tenant: 'corp_demo', owner: 'corp_owner' }).valid)
 
-const runtime = createAppSchemaRuntime()
-const runtimeS = runtime.s as typeof runtime.s & { runtimeTenantId(): IDslBuilder }
-const runtimeSchema = runtime.s({
-  tenant: runtimeS.runtimeTenantId().require(),
+const { runtime, s: runtimeS } = createAppSchemaRuntime()
+const runtimeSchema = runtimeS({
+  tenant: runtimeS.runtimeTenantId('corp').require(),
 })
 
 console.log('framework-extension-setup.runtime.valid =',
-  runtime.validate(runtimeSchema, { tenant: 'rt_demo' }).valid)
+  runtime.validate(runtimeSchema, { tenant: 'rt_corp_demo' }).valid)
 console.log('framework-extension-setup.transform.methods =',
   schemaDslTransformOptions.additionalMethods.includes('tenantId'))
 

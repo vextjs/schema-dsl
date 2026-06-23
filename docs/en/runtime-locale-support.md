@@ -1,7 +1,5 @@
 # Runtime multi-language support - schema-dsl
 
-**Version**: v1.1.8+
-**Updated date**: 2026-06-10
 
 ---
 
@@ -526,6 +524,3 @@ app.get('/api/users/:id', async (req, res) => {
 **Description**: Overrides the key behavior of specifying locale creation error objects at runtime, parameter interpolation, and "local language switching does not pollute the global state".
 
 ---
-
-**Last updated**: 2026-06-10
-**Author**: schema-dsl Team

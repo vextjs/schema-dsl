@@ -5,16 +5,25 @@ import type {
   DslExtensionDefinition,
   DslFactoryInput,
   DslFn,
+  DslWithExtensions,
   IDslBuilder,
   NormalizedDslExtensionDefinition,
 } from '../types/dsl.js'
 import type { JSONSchema, SchemaIOOptions } from '../types/schema.js'
+import type { DslExtensionRegistry } from '../parser/DslExtensionRegistry.js'
+import {
+  buildDslExtensionSchema,
+  normalizeDslExtensionDefinition,
+  normalizeDslExtensionParams,
+} from '../parser/DslExtensionRegistry.js'
 
 export interface DslNamespaceOptions {
   createBuilder: (definition: string) => IDslBuilder
   createBuilderFromSchema?: (schema: JSONSchema) => IDslBuilder
   parseObject: (definition: DslDefinition, options?: SchemaIOOptions) => JSONSchema
   registerType?: (name: string, schema: JSONSchema | (() => JSONSchema)) => void
+  typeExists?: (name: string) => boolean
+  extensionRegistry?: DslExtensionRegistry
 }
 
 type DslNamespaceFunction = (...args: never[]) => unknown
@@ -32,6 +41,7 @@ const STATIC_NAMESPACE_KEYS = new Set([
   'error',
   'defineExtension',
   'registerExtension',
+  'registerExtensions',
 ])
 
 const DANGEROUS_FACTORY_NAMES = new Set([
@@ -125,39 +135,6 @@ function getCustomFactoryNames(namespace: MutableDslNamespace): Set<string> {
 
 function isSchemaDslFactory(value: unknown): boolean {
   return typeof value === 'function' && (value as unknown as Record<PropertyKey, unknown>)[FACTORY_OWNER] === true
-}
-
-function normalizeExtension(definition: DslExtensionDefinition): NormalizedDslExtensionDefinition {
-  if (!definition || typeof definition !== 'object') {
-    throw new Error('[schema-dsl] registerExtension() requires an extension definition object')
-  }
-
-  const literal = definition.literal?.trim()
-  const factoryName = definition.factoryName?.trim()
-
-  if (!literal && !factoryName) {
-    throw new Error('[schema-dsl] registerExtension() requires literal or factoryName')
-  }
-
-  if (factoryName && !FACTORY_NAME_PATTERN.test(factoryName)) {
-    throw new Error(`[schema-dsl] Cannot register namespace factory "${factoryName}": factoryName must be a valid JavaScript identifier`)
-  }
-
-  const transformMethods = [...(definition.transformMethods ?? [])]
-  if (definition.exposeStringChain === true) {
-    if (factoryName && !transformMethods.includes(factoryName)) {
-      transformMethods.push(factoryName)
-    } else if (transformMethods.length === 0) {
-      throw new Error('[schema-dsl] exposeStringChain requires transformMethods or a valid factoryName')
-    }
-  }
-
-  return {
-    ...definition,
-    ...(literal ? { literal } : {}),
-    ...(factoryName ? { factoryName } : {}),
-    transformMethods,
-  }
 }
 
 function assertFactoryNameAvailable(namespace: MutableDslNamespace, name: string): void {
@@ -258,6 +235,7 @@ export function attachDslNamespaceFactories(
   const mutable = namespace as unknown as MutableDslNamespace
   const createBuilderFromSchema = options.createBuilderFromSchema
     ?? ((schema: JSONSchema) => DslBuilder.fromSchema(schema) as unknown as IDslBuilder)
+  const extensionRegistry = options.extensionRegistry
 
   const typeFactory = (literal: string): FactoryFn => () => options.createBuilder(literal)
 
@@ -313,34 +291,59 @@ export function attachDslNamespaceFactories(
   }) as FactoryFn)
 
   mutable.defineExtension = (definition: DslExtensionDefinition): NormalizedDslExtensionDefinition => {
-    return normalizeExtension(definition)
+    return extensionRegistry?.define(definition) ?? normalizeDslExtensionDefinition(definition)
   }
 
   mutable.registerExtension = (definition: DslExtensionDefinition): void => {
-    const normalized = normalizeExtension(definition)
-    const typeName = normalized.literal ?? normalized.factoryName
+    const normalized = extensionRegistry?.define(definition) ?? normalizeDslExtensionDefinition(definition)
     if (normalized.factoryName && normalized.exposeFactory !== false) {
       assertFactoryNameAvailable(mutable, normalized.factoryName)
     }
 
-    if (normalized.schema && typeName) {
-      options.registerType?.(typeName, normalized.schema)
+    if (normalized.literal && options.typeExists?.(normalized.literal)) {
+      throw new Error(`[schema-dsl] Cannot register extension literal "${normalized.literal}": type already exists`)
     }
 
-    if (normalized.factoryName && normalized.exposeFactory !== false) {
-      const literal = normalized.literal ?? normalized.factoryName
-      attachFactory(mutable, normalized.factoryName, ((...args: unknown[]): IDslBuilder => {
-        if (normalized.factory) {
-          const result = normalized.factory(...args)
+    const registered = extensionRegistry?.register(normalized) ?? normalized
+
+    if (registered.schema && registered.literal) {
+      options.registerType?.(registered.literal, () => buildDslExtensionSchema(
+        registered,
+        normalizeDslExtensionParams(registered, { source: 'factory' })
+      ))
+    }
+
+    if (registered.factoryName && registered.exposeFactory !== false) {
+      const literal = registered.literal ?? registered.factoryName
+      attachFactory(mutable, registered.factoryName, ((...args: unknown[]): IDslBuilder => {
+        if (registered.factory) {
+          const result = registered.factory(...args)
           if (typeof result === 'string') return options.createBuilder(result)
           if (result && typeof result === 'object' && typeof (result as { toSchema?: unknown }).toSchema === 'function') {
             return result as IDslBuilder
           }
           return createBuilderFromSchema(result as JSONSchema)
         }
+        const params = normalizeDslExtensionParams(registered, {
+          source: 'factory',
+          args,
+        })
+        if (registered.schema) {
+          return createBuilderFromSchema(buildDslExtensionSchema(registered, params))
+        }
         return options.createBuilder(literal)
       }) as FactoryFn, true)
     }
+  }
+
+  mutable.registerExtensions = <const Definitions extends readonly unknown[]>(
+    definitions: readonly [...Definitions]
+  ): DslWithExtensions<Definitions> => {
+    const registerOne = mutable.registerExtension as (definition: DslExtensionDefinition) => void
+    for (const definition of definitions) {
+      registerOne(definition as DslExtensionDefinition)
+    }
+    return namespace as DslWithExtensions<Definitions>
   }
 
   return namespace

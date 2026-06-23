@@ -1,18 +1,14 @@
-# validate() 函数支持 DSL 对象说明
+# validate() 直接使用 DSL 对象
 
-## 问题
+`validate()` 和 `validateAsync()` 可以直接接收 DSL 对象。对于很小、只用一次的 schema，这种写法可以少一步 `s()` 包裹。
 
-用户问：`validate(schema, { email: 'test@example.com', age: 25 })` 中的 `schema` 能否直接是个对象，为什么必须是 schema？
-
-## 答案
-
-**现在可以了。** 当前版本中，顶层 `validate()` 和 `validateAsync()` 都支持直接传入 DSL 对象。
+如果 schema 会复用，建议先用 `s(...)` 构建一次再复用；如果需要和其他 JSON Schema 工具互通，也可以直接传入标准 JSON Schema。
 
 ---
 
 ## 支持的三种方式
 
-### 方式1：传入 DSL 对象（✅ 当前版本支持）
+### 方式1：传入 DSL 对象
 
 ```javascript
 import { validate } from 'schema-dsl/pure';
@@ -27,10 +23,10 @@ console.log(result.valid);  // true
 ```
 
 **优点**：
-- ✅ 最简洁，无需 `s()` 包裹
-- ✅ 代码更直观，适合简单场景
+- 最简洁，适合小型 schema。
+- 不需要额外的 `s()` 包裹步骤。
 
-**⚠️ 注意**：DSL 对象也支持混合使用 DslBuilder 实例：
+DSL 对象也可以混合使用 DslBuilder 实例：
 
 ```javascript
 import { s, validate } from 'schema-dsl/pure';
@@ -63,9 +59,9 @@ const result = validate(schema, { email: 'test@example.com', age: 25 });
 ```
 
 **优点**：
-- ✅ 更明确，意图清晰
-- ✅ 可复用 schema
-- ✅ 支持链式调用扩展
+- 适合需要复用的 schema。
+- 验证前可以先使用 builder 链式增强。
+- 避免每次请求都重新构建同一个 schema。
 
 ### 方式3：传入标准 JSON Schema
 
@@ -87,8 +83,8 @@ const result = validate(
 ```
 
 **优点**：
-- ✅ 兼容标准 JSON Schema
-- ✅ 可与其他 JSON Schema 工具互操作
+- 兼容标准 JSON Schema。
+- 可以与其他 JSON Schema 工具互操作。
 
 ---
 

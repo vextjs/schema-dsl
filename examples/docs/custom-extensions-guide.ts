@@ -55,18 +55,6 @@ DslBuilder.registerType('invoice-id', {
 
 type NamespaceWithCurrency = typeof s & { currencyCode(): IDslBuilder }
 type NamespaceWithTenant = typeof s & { tenantId(): IDslBuilder }
-type TenantIdBuilder = IDslBuilder & { tenantId(): IDslBuilder }
-
-const tenantIdBuilderProto = DslBuilder.prototype as unknown as {
-  tenantId?: (this: IDslBuilder) => IDslBuilder
-}
-const originalTenantIdBuilderMethod = tenantIdBuilderProto.tenantId
-
-function installTenantIdBuilderMethod() {
-  tenantIdBuilderProto.tenantId ??= function tenantId(this: IDslBuilder) {
-    return this.pattern(/^tenant_[a-z0-9]+$/)
-  }
-}
 
 registerExtension({
   literal: 'currency-code',
@@ -77,17 +65,14 @@ registerExtension({
 registerExtension({
   literal: 'tenant-id',
   factoryName: 'tenantId',
-  exposeStringChain: true,
   schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' },
 } as any)
 
-installTenantIdBuilderMethod()
-
 const currencyFactory = (s as NamespaceWithCurrency).currencyCode()
 const tenantFactory = (s as NamespaceWithTenant).tenantId().require()
-const tenantBuilder = (s('string!') as TenantIdBuilder).tenantId().label('Tenant')
+const tenantSeed = s('tenant-id!').label('Tenant')
 const invoiceSchema  = s({ id: 'invoice-id!', currency: currencyFactory.require() })
-const tenantSchema = s({ tenant: tenantBuilder, tenantFactory })
+const tenantSchema = s({ tenant: tenantSeed, tenantFactory })
 const invoiceTransform = transformSchemaDsl(
   'export const id = "invoice-id!".label("Invoice")',
   {
@@ -95,15 +80,6 @@ const invoiceTransform = transformSchemaDsl(
     additionalTypes: ['invoice-id'],
   },
 )
-const tenantTransform = transformSchemaDsl(
-  'export const tenant = "tenant-id!".tenantId().label("Tenant")',
-  {
-    filename: 'schema.ts',
-    additionalMethods: ['tenantId'],
-    additionalTypes: ['tenant-id'],
-  },
-)
-
 console.log('custom-extensions.invoice.valid     =',
   validate(invoiceSchema, { id: 'INV-2026', currency: 'USD' }).valid)   // true
 console.log('custom-extensions.invoice.badId     =',
@@ -115,7 +91,6 @@ console.log('custom-extensions.transform.custom  =', invoiceTransform.changed)  
 console.log('custom-extensions.tenant.valid      =',
   validate(tenantSchema, { tenant: 'tenant_demo', tenantFactory: 'tenant_demo' }).valid)    // true
 console.log('custom-extensions.factory.tenant    =', tenantFactory.toSchema().pattern === '^tenant_[a-z0-9]+$') // true
-console.log('custom-extensions.transform.tenant  =', tenantTransform.changed)              // true
 
 // ============================================================
 // 3. Custom locale message for a custom type
@@ -144,10 +119,5 @@ console.log('custom-extensions.plugin.valid      =',
 // ============================================================
 
 resetRuntimeState()
-if (originalTenantIdBuilderMethod) {
-  tenantIdBuilderProto.tenantId = originalTenantIdBuilderMethod
-} else {
-  delete tenantIdBuilderProto.tenantId
-}
 
 console.log('custom-extensions.cleared           =', !DslBuilder.hasType('invoice-id'))  // true

@@ -1,10 +1,5 @@
 # Data Validation Best Practices Guide
 
-> **Purpose**: Complete guide to using data validation
-> **Reading time**: 15 minutes
-
----
-
 Use this page when you already have a schema and need to understand validation options, failure paths, and result handling. For the API surface, see [validate()](validate.md), [validateAsync()](validate-async.md), and [Validator](validator.md).
 
 ## Quick Start

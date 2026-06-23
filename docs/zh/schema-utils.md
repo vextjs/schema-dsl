@@ -1,9 +1,6 @@
 # Schema 工具函数文档
 
-> **更新时间**: 2025-12-25  
-
----
-
+当多个 schema 需要复用字段，或你想从一个 schema 派生出另一个 schema 时，可以使用 SchemaUtils。本页先讲常见复用方式，再介绍适合大型项目的辅助 API。
 
 ## Schema 复用
 
@@ -514,7 +511,4 @@ const schema = s({
 **说明**: 覆盖 `reusable()`、`createLibrary()`、`extend()`、`validateBatch()`、`withPerformance()` 和 `clone()` 的最小工作流。
 
 ---
-
-**最后更新**: 2026-05-08
-
 

@@ -1,13 +1,8 @@
 # 插件管理器（高级）
 
-> **更新**: 2026-05-01
-> **状态**: ✅ 稳定
-
----
-
 本页讲的是 `PluginManager`：生命周期、hook、安装/卸载和集成编排。
 
-如果你的目标只是添加可复用类型、factory 或 builder 方法，请先从 [扩展概览](extensions-overview.md)、[自定义 DSL 类型](plugin-type-registration.md)、[自定义 s.xxx() 工厂](custom-factories.md) 或 [自定义链式方法](custom-chain-methods.md) 开始。`PluginManager` 是把这些能力封装和协调起来的高级层。
+如果你的目标只是添加可复用业务类型，请先从 [扩展概览](extensions-overview.md) 和 [自定义扩展](custom-extensions.md) 开始。`PluginManager` 是把这些能力封装和协调起来的高级层。
 
 ## 概述
 

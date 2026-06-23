@@ -59,6 +59,53 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
     });
   });
 
+  describe('reuse helpers and performance wrappers', () => {
+    it('returns reusable factories and fragment libraries without altering call semantics', () => {
+      const factory = SchemaUtils.reusable(() => ({ type: 'string' as const }))
+      const library = SchemaUtils.createLibrary({ email: () => dsl('email!') })
+
+      expect(factory()).toEqual({ type: 'string' })
+      expect((library.email() as any).toSchema()).toMatchObject({ type: 'string', format: 'email' })
+    })
+
+    it('adds performance metadata to validator results', () => {
+      const wrapped = SchemaUtils.withPerformance({
+        validate: () => ({ valid: true, errors: [] }),
+      })
+
+      const result = wrapped.validate()
+
+      expect(result).toMatchObject({ valid: true })
+      expect(result.performance).toMatchObject({ duration: expect.any(Number), timestamp: expect.any(String) })
+    })
+
+    it('validates batches and reports summary metrics', () => {
+      const compiled = Object.assign((data: unknown) => typeof data === 'string', {
+        errors: [{ message: 'must be string' }],
+      })
+      const ajv = {
+        compile: () => compiled,
+      }
+
+      const result = SchemaUtils.validateBatch({ type: 'string' }, ['ok', 1], ajv)
+
+      expect(result.results).toEqual([
+        { index: 0, valid: true, errors: null, data: 'ok' },
+        { index: 1, valid: false, errors: compiled.errors, data: null },
+      ])
+      expect(result.summary).toMatchObject({ total: 2, valid: 1, invalid: 1 })
+      expect(result.summary.averageTime).toBeGreaterThanOrEqual(0)
+    })
+
+    it('handles empty batch averages without dividing by zero', () => {
+      const result = SchemaUtils.validateBatch({ type: 'string' }, [], {
+        compile: () => () => true,
+      })
+
+      expect(result.summary).toMatchObject({ total: 0, valid: 0, invalid: 0, averageTime: 0 })
+    })
+  })
+
   describe('schema export metadata', () => {
     it('should preserve both label and description in Markdown and HTML exports', () => {
       const schema = dsl({
@@ -163,6 +210,50 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
       expect(extendedSchema.properties!.email).toBeDefined();
       expect(extendedSchema.properties!.password).toBeDefined();
     });
+
+    it('should deep-merge nested object properties and required arrays', () => {
+      const base = {
+        type: 'object',
+        properties: {
+          profile: {
+            type: 'object',
+            properties: { name: { type: 'string' } },
+            required: ['name'],
+          },
+        },
+      } as any
+      const extended = SchemaUtils.extend(base, {
+        type: 'object',
+        properties: {
+          profile: {
+            type: 'object',
+            properties: { age: { type: 'number' } },
+            required: ['age'],
+          },
+        },
+      } as any)
+
+      expect(extended.properties!.profile).toMatchObject({
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          age: { type: 'number' },
+        },
+        required: ['name', 'age'],
+      })
+    })
+
+    it('should replace nested values when types differ or values are not plain records', () => {
+      const extended = SchemaUtils.extend({
+        type: 'object',
+        properties: { field: { type: 'string', minLength: 3 } },
+      } as any, {
+        type: 'object',
+        properties: { field: { type: 'number', minimum: 1 } },
+      } as any)
+
+      expect(extended.properties!.field).toEqual({ type: 'number', minimum: 1 })
+    })
   });
 
 
@@ -314,5 +405,39 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
 
       expect(partialSchema.required).toBeUndefined();
     });
+
+    it('should clone chainable and plain schemas without sharing references', () => {
+      const chainable = SchemaUtils.pick(baseSchema, ['name'])
+      const clonedChainable = SchemaUtils.clone(chainable as any)
+      const clonedPlain = SchemaUtils.clone({ type: 'object', properties: { name: { type: 'string' } } })
+
+      expect(clonedChainable).toEqual({ type: 'object', properties: { name: baseSchema.properties.name }, required: ['name'] })
+      expect(clonedPlain).toEqual({ type: 'object', properties: { name: { type: 'string' } } })
+      expect(clonedPlain.properties!.name).not.toBe(baseSchema.properties.name)
+    })
+
+    it('should export markdown safely for pipes, newlines and backtick runs', () => {
+      const markdown = SchemaUtils.toMarkdown({
+        type: 'object',
+        properties: {
+          notes: {
+            type: 'string',
+            description: 'line1\nline2 | pipe',
+            pattern: '`code`',
+            enum: ['a|b', '``literal``'],
+          },
+        },
+      } as any, { title: 'Title\nNext' })
+
+      expect(markdown).toContain('Title\nNext')
+      expect(markdown).toContain('line1<br>line2 \\| pipe')
+      expect(markdown).toContain('`` `code` ``')
+      expect(markdown).toContain('``` ``literal`` ```')
+    })
+
+    it('should return minimal exports for schemas without properties', () => {
+      expect(SchemaUtils.toMarkdown({ type: 'string' })).toBe('# Schema Documentation\n\n')
+      expect(SchemaUtils.toHTML({ type: 'string' })).toContain('<h1>Schema Documentation</h1>')
+    })
   });
 });

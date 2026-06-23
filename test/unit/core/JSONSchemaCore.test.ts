@@ -7,6 +7,54 @@
 
 import { describe, it, expect } from 'vitest'
 import { dsl, validate, Validator } from '../../../src/index.js'
+import { JSONSchemaCore } from '../../../src/core/JSONSchemaCore.js'
+
+describe('JSONSchemaCore direct compatibility facade', () => {
+  it('builds object schemas through the v1-compatible chain API', () => {
+    const core = new JSONSchemaCore()
+      .type('object')
+      .property('name', { type: 'string' })
+      .properties({ age: { type: 'integer' } })
+      .required('name')
+
+    expect(core.toSchema()).toEqual({
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        age: { type: 'integer' },
+      },
+      required: ['name'],
+    })
+    expect(core.getSchema()).toBe(core.toSchema())
+  })
+
+  it('supports scalar decorators and validation through the facade', () => {
+    const core = new JSONSchemaCore({ type: 'string' })
+      .format('email')
+      .pattern(/^[^@]+@example\.com$/)
+
+    expect(core.toSchema()).toEqual({
+      type: 'string',
+      format: 'email',
+      pattern: '^[^@]+@example\\.com$',
+    })
+    expect(core.validate('user@example.com').valid).toBe(true)
+    expect(core.validate('user@test.com').valid).toBe(false)
+  })
+
+  it('supports array items and array-form required input', () => {
+    const core = new JSONSchemaCore()
+      .type('array')
+      .items({ type: 'number' })
+      .required(['items'])
+
+    expect(core.toSchema()).toEqual({
+      type: 'array',
+      items: { type: 'number' },
+      required: ['items'],
+    })
+  })
+})
 
 describe('JSONSchemaCore (v2 equivalent tests via dsl/validate)', () => {
   describe('Basic Schema Building', () => {

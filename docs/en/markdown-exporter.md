@@ -1,10 +1,6 @@
 # Markdown exporter
 
-> **FEATURE**: Export JSON Schema to human-readable Markdown document
-> **Language support**: Chinese, English, Japanese
-
----
-
+Use the Markdown exporter when you want to turn a schema into human-readable field documentation, for example API field tables or internal data-contract notes. Start with a normal schema, then pass it to `exporters.MarkdownExporter.export()`.
 
 ## quick start
 
@@ -393,4 +389,3 @@ console.log('✅ Document has been generated');
 ---
 
 **Document update date**: 2026-06-10
-**Version**: v2.0.9

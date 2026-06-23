@@ -1,13 +1,8 @@
 # Plugin Manager (advanced)
 
-> **Update**: 2026-05-01
-> **Status**: ✅ Stable
-
----
-
 This page is about `PluginManager`: lifecycle, hooks, install/uninstall, and integration orchestration.
 
-If your goal is only to add a reusable type, factory, or builder method, start with [Extension Overview](extensions-overview.md), [Custom DSL Types](plugin-type-registration.md), [Custom s.xxx() Factories](custom-factories.md), or [Custom Chain Methods](custom-chain-methods.md). `PluginManager` is the advanced layer for packaging and coordinating those capabilities.
+If your goal is only to add a reusable business type, start with [Extension Overview](extensions-overview.md) and [Custom Extensions](custom-extensions.md). `PluginManager` is the advanced layer for packaging and coordinating those capabilities.
 
 ## Overview
 

@@ -1,12 +1,5 @@
 # SchemaHelper Schema辅助工具
 
-> **模块**: `src/utils/SchemaHelper.ts`  
-
-> **用途**: 提供 JSON Schema 操作的常用辅助方法
-
----
-
-
 ## 概述
 
 `SchemaHelper` 是一个静态工具类，提供各种 Schema 操作的辅助方法，包括验证、克隆、扁平化、比较等功能。

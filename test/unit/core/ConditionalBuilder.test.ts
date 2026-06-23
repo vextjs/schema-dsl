@@ -48,6 +48,34 @@ describe('ConditionalBuilder', () => {
         .and(() => false)
       expect(cb).toBeInstanceOf(ConditionalBuilder)
     })
+
+    it('supports require(field) as a v1-compatible truthy-field condition', () => {
+      const cb = ConditionalBuilder.start(() => false).require('accepted')
+
+      expect(cb.check({ accepted: true })).toBe(true)
+      expect(cb.check({ accepted: false })).toBe(true)
+    })
+  })
+
+  describe('condition forms and guard rails', () => {
+    it('accepts a string field name as the root condition', () => {
+      const cb = ConditionalBuilder.start('enabled').message('enabled is not allowed')
+
+      expect(cb.check({ enabled: false })).toBe(true)
+      expect(cb.check({ enabled: true })).toBe(false)
+    })
+
+    it('throws clear errors for invalid chain order or argument types', () => {
+      const cb = new ConditionalBuilder()
+
+      expect(() => cb.if(null as any)).toThrow('Condition must be a function')
+      expect(() => new ConditionalBuilder().and(() => true)).toThrow('.and() must follow')
+      expect(() => new ConditionalBuilder().or(() => true)).toThrow('.or() must follow')
+      expect(() => new ConditionalBuilder().elseIf(() => true)).toThrow('.elseIf() must follow')
+      expect(() => new ConditionalBuilder().message(123 as any)).toThrow('Message must be a string')
+      expect(() => new ConditionalBuilder().message('missing if')).toThrow('.message() must follow')
+      expect(() => new ConditionalBuilder().then('string')).toThrow('.then() must follow')
+    })
   })
 
   describe('build() — toSchema() alias', () => {
@@ -114,6 +142,78 @@ describe('ConditionalBuilder', () => {
         const ve = e as ValidationError
         expect(ve.message).toContain('Custom error message')
       }
+    })
+
+    it('uses the first triggered message in chain-check mode', () => {
+      const cb = ConditionalBuilder.start((data: unknown) => Boolean((data as { root?: boolean }).root))
+        .message('root failed')
+        .and((data: unknown) => Boolean((data as { child?: boolean }).child))
+        .message('child failed')
+
+      expect(() => cb.assert({ root: true, child: false })).toThrow('root failed')
+      expect(() => cb.assert({ root: false, child: true })).toThrow('child failed')
+      expect(() => cb.assert({ root: false, child: false })).not.toThrow()
+    })
+
+    it('supports shared AND message mode', () => {
+      const cb = ConditionalBuilder.start((data: unknown) => Boolean((data as { a?: boolean }).a))
+        .and((data: unknown) => Boolean((data as { b?: boolean }).b))
+        .message('both failed')
+
+      expect(cb.check({ a: true, b: false })).toBe(true)
+      expect(cb.check({ a: true, b: true })).toBe(false)
+      expect(() => cb.assert({ a: true, b: true })).toThrow('both failed')
+    })
+
+    it('supports OR message mode with grouped boolean evaluation', () => {
+      const cb = ConditionalBuilder.start((data: unknown) => Boolean((data as { a?: boolean }).a))
+        .and((data: unknown) => Boolean((data as { b?: boolean }).b))
+        .or((data: unknown) => Boolean((data as { c?: boolean }).c))
+        .message('any group failed')
+
+      expect(cb.check({ a: true, b: false, c: false })).toBe(true)
+      expect(cb.check({ a: true, b: true, c: false })).toBe(false)
+      expect(cb.check({ a: false, b: false, c: true })).toBe(false)
+      expect(() => cb.assert({ c: true })).toThrow('any group failed')
+    })
+
+    it('treats thrown condition functions as not matched', () => {
+      const cb = ConditionalBuilder.start(() => {
+        throw new Error('condition blew up')
+      }).message('should not surface')
+
+      expect(cb.check({})).toBe(true)
+      expect(() => cb.assert({})).not.toThrow()
+    })
+  })
+
+  describe('validate() and validateAsync()', () => {
+    it('validates then/else schemas in non-message mode', () => {
+      const cb = ConditionalBuilder.start((data: unknown) => typeof data === 'string')
+        .then({ type: 'string', minLength: 3 })
+        .else({ type: 'number', minimum: 10 })
+
+      expect(cb.validate('abc').valid).toBe(true)
+      expect(cb.validate('a').valid).toBe(false)
+      expect(cb.validate(12).valid).toBe(true)
+      expect(cb.validate(1).valid).toBe(false)
+    })
+
+    it('adapts validateAsync success and ValidationError failure to ValidationResult', async () => {
+      const cb = ConditionalBuilder.start((data: unknown) => typeof data === 'string')
+        .then({ type: 'string', minLength: 3 })
+
+      await expect(cb.validateAsync('abcd')).resolves.toMatchObject({ valid: true, data: 'abcd', errors: [] })
+      await expect(cb.validateAsync('a')).resolves.toMatchObject({ valid: false, data: undefined })
+    })
+
+    it('normalizes constructor options for validator cache keys', () => {
+      const cb = ConditionalBuilder.start(() => false).then({ type: 'string' })
+      const optsA = { custom: { b: 2, a: 1 }, fn: function namedValidator() { return true }, big: 1n }
+      const optsB = { big: 1n, fn: function namedValidator() { return true }, custom: { a: 1, b: 2 } }
+
+      expect(cb.validate('ok', optsA).valid).toBe(true)
+      expect(cb.validate('ok', optsB).valid).toBe(true)
     })
   })
 })

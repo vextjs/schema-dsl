@@ -8,6 +8,18 @@ export type {
   IDslBuilder,
   DslIfFn,
   DslErrorNamespace,
+  DslExtensionDefinition,
+  DslExtensionFactory,
+  DslExtensionNamespaceFactories,
+  DslExtensionParamDefinition,
+  DslExtensionParamKind,
+  DslExtensionParamValue,
+  DslExtensionParamsDefinition,
+  DslExtensionParamsObject,
+  DslExtensionSchemaFactory,
+  DslExtensionSegmentMode,
+  DslWithExtensions,
+  NormalizedDslExtensionDefinition,
 } from './dsl.js'
 export type { ValidateOptions, ValidationResult, ValidationErrorItem, AjvError } from './validate.js'
 export type { DslConfigOptions, I18nConfig, CacheOptions, CacheManagerOptions, ValidatorOptions } from './config.js'

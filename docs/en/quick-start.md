@@ -1,10 +1,5 @@
 # schema-dsl Quick Start
 
-> **Reading time**: 5 minutes
-> **Goal**: Quickly understand the core `schema-dsl` workflow
-
----
-
 Start here if you are new to schema-dsl. After this page, continue with [DSL Syntax](dsl-syntax.md) for authoring rules and [Validation Guide](validation-guide.md) for real validation flows.
 
 ## Installation
@@ -92,7 +87,7 @@ console.log(result.valid); // true
 
 ### 3. Chainable fields in 2 minutes
 
-The recommended v2.1.0 authoring entry is `schema-dsl/pure` with the `s` namespace. Keep simple fields as DSL strings, wrap a DSL seed with `s('...')` when you need chain methods, and use `s.xxx()` factories when you want the strongest TypeScript method discovery.
+In the current source and the next v2.1.0 release, the recommended authoring entry is `schema-dsl/pure` with the `s` namespace. Keep simple fields as DSL strings, wrap a DSL seed with `s('...')` when you need chain methods, and use `s.xxx()` factories when you want the strongest TypeScript method discovery.
 
 ```javascript
 import { s } from 'schema-dsl/pure';
@@ -378,7 +373,7 @@ You now know the core `schema-dsl` workflow.
 **Key takeaways**:
 
 1. DSL syntax is concise and readable.
-2. `schema-dsl/pure` + `s` is the recommended default entry from v2.1.0.
+2. `schema-dsl/pure` + `s` is the recommended default entry for the current source and the next v2.1.0 release.
 3. `s('...')` gives explicit DSL seeds plus builder hints.
 4. `s.xxx()` factories provide the strongest method discovery.
 
@@ -392,5 +387,3 @@ You now know the core `schema-dsl` workflow.
 **Description**: Covers the Hello World flow, the `schema-dsl/pure` + `s` authoring path, a user registration example, and the basic `validate()` plus `Validator.compile()` reuse path from the quick start. It can be run directly as a reference.
 
 ---
-
-**Last updated**: 2026-06-10

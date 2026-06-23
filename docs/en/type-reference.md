@@ -1,8 +1,6 @@
 # schema-dsl complete type list
 
-> **Updated**: 2026-06-18
-
-This page lists the built-in DSL types and shows how to use the same type through the recommended v2.1.0 authoring entries: plain DSL strings, `s('...')` builder seeds, and `s.xxx()` factories.
+This page lists the built-in DSL types and shows how to use the same type through the authoring entries recommended by the current source and the next v2.1.0 release: plain DSL strings, `s('...')` builder seeds, and `s.xxx()` factories.
 
 ---
 
@@ -230,7 +228,6 @@ A: Abbreviations such as `s`/`n`/`i`/`b` are not supported. Use the complete typ
 
 ---
 
-**Last updated**: 2026-06-18
 
 ---
 

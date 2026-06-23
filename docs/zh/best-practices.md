@@ -1,10 +1,5 @@
 # schema-dsl 最佳实践
 
-> **用途**: 帮助你写出高质量、高性能的 Schema 代码  
-> **更新**: 2026-06-18
-
----
-
 当你已经有可用 schema，并希望进入生产级结构、性能和可维护性实践时阅读本页。项目组织方式请继续看 [项目结构最佳实践](best-practices-project-structure.md)。
 
 ## Schema 设计原则
@@ -690,7 +685,7 @@ setInterval(() => {
 ## 延伸阅读
 
 - [性能优化指南](performance-guide.md)
-- [安全检查清单](security-checklist.md)
+- [安全注意事项](security-checklist.md)
 - [故障排查指南](troubleshooting.md)
 
 ---

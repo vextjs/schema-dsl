@@ -1,12 +1,5 @@
 # 链式条件 API - ConditionalBuilder
 
-> **版本**: schema-dsl v2.0.9
-> **更新日期**: 2026-06-10
-> **状态**: ✅ 稳定
-
----
-
-
 ## 概述
 
 `ConditionalBuilder` 提供流畅的链式条件判断 API，类似 JavaScript 的 if-else 语句，用于在验证时根据实际数据动态调整验证规则。

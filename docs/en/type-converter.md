@@ -1,12 +1,5 @@
 # TypeConverter type conversion tool
 
-> **Module**: `src/utils/TypeConverter.ts`
-
-> **Purpose**: Provide conversion between JSON Schema and various database types
-
----
-
-
 ## Overview
 
 `TypeConverter` is a static utility class used to convert between JSON Schema types and various database types. It is the base dependency of all exporters.

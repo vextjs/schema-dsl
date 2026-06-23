@@ -33,6 +33,19 @@ runtime.registerExtension({
   factoryName: 'tenantRuntimeId',
   schema: { type: 'string', pattern: '^runtime_[a-z0-9]+$' },
 })
+const runtimeExtendedS = runtime.registerExtensions([
+  {
+    literal: 'tenant-param-id',
+    factoryName: 'tenantParamId',
+    segmentMode: 'params',
+    params: {
+      scope: { kind: 'enum', values: ['tenant', 'corp'], default: 'tenant' },
+    },
+    schema({ scope }: { scope?: 'tenant' | 'corp' }) {
+      return { type: 'string', pattern: `^${scope}_[a-z0-9]+$` }
+    },
+  },
+] as const)
 
 const schema = runtime.compile({
   id: 'tenantId!',
@@ -40,6 +53,10 @@ const schema = runtime.compile({
 })
 const runtimeField = runtime.s.email().require()
 const runtimeDslField = runtime.dsl.number().min(1).max(5)
+const runtimeParamField = runtimeExtendedS.tenantParamId('corp').require()
+
+// @ts-expect-error Runtime typed extensions preserve enum parameter hints for object params.
+runtimeExtendedS.tenantParamId({ scope: 'bad' })
 
 // @ts-expect-error Runtime namespaces expose callable DSL seeds and factories, not root dsl.config().
 runtime.s.config({})
@@ -48,6 +65,7 @@ runtime.validate(schema, { id: 'tenant_demo', score: 5 })
 runtime.validate(schema, { id: 'tenant_demo', score: '5' }, { coerce: false })
 runtimeField.toSchema()
 runtimeDslField.toSchema()
+runtimeParamField.toSchema()
 
 const error = runtime.createI18nError('missing', { id: 1 })
 const code: string | number = error.code

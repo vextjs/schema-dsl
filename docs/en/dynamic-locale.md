@@ -1,11 +1,5 @@
 # Dynamic Multilingual Configuration Guide
 
-> **Update time**: 2025-12-25
-> **Scenario**: Dynamically obtain language configuration from request header
-
----
-
-
 ## Basic principles
 
 `Validator` of schema-dsl supports dynamically specifying the language during validation without the need for global switching.
@@ -593,6 +587,3 @@ const schema = s({
 **Description**: Covers `Accept-Language` parsing, runtime locale selection, and validation entries for the same schema in different request languages.
 
 ---
-
-**Last updated**: 2026-05-08
-**Author**: schema-dsl Team

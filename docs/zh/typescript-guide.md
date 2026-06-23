@@ -1,10 +1,6 @@
 # TypeScript 使用指南
 
-> **版本**: schema-dsl v2.1.0
-> **更新日期**: 2026-06-18
-> **重要**: 自 v2.1.0 起，公开 TypeScript 示例默认推荐 `schema-dsl/pure` + `s`，避免导入后自动安装 String 原型扩展。
-
----
+**重要**: 在当前源码和下一版 v2.1.0 中，公开 TypeScript 示例默认推荐 `schema-dsl/pure` + `s`，避免导入后自动安装 String 原型扩展。
 
 当你需要在纯 DSL 字符串、DSL 种子 builder、命名空间 factory 和可选 String 扩展之间做取舍时，请尽早阅读本页。它说明 TypeScript 能推导什么、哪些仍是运行时约束，以及编辑器提示的边界。
 
@@ -64,7 +60,7 @@ const defaultBuilderSchema = s({
 });
 ```
 
-### 2.2 v2.1.0 起推荐编写入口
+### 2.2 当前源码和 v2.1.0 的推荐编写入口
 
 按编写目标选择三种推荐入口之一：
 
@@ -611,7 +607,4 @@ s.config({
 **说明**: 展示 TypeScript 下推荐的三种编写入口、`validate<T>()` / `validateAsync<T>()`、以及 `ValidationError` 的字段错误读取方式。
 
 ---
-
-**更新日期**: 2026-06-18
-**文档版本**: v2.1.0
 

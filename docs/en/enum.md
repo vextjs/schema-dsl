@@ -1,10 +1,5 @@
 # Enum function documentation
 
-**Version**: v1.1.0
-**Last updated**: 2025-12-31
-
----
-
 ## 📖 Overview
 
 The Enum feature allows you to define fields that can only take on a specific set of values. schema-dsl supports multiple enumeration types and syntax formats.
@@ -459,21 +454,3 @@ const schema = s({
 
 **Example entry**: [enum.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/enum.ts)
 **Description**: Overrides the success/failure path for string, number, boolean, and array element enumerations and displays a custom enumeration error message.
-
----
-
-## 🆕 Update log
-
-### v1.1.0 (2025-12-31)
-
-- ✨ Added enumeration function
-- ✨ Supports strings, Boolean values, numbers, and integer enumerations
-- ✨ Support `enum:` prefix syntax
-- ✨ Support `enum:type:values` format
-- ✨ Automatic type recognition
-- ✨ Support enumeration of required tags
-
----
-
-**Document generation time**: 2026-05-08
-**Version**: v1.1.0

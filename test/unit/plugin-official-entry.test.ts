@@ -132,5 +132,98 @@ describe('Official Plugin Entry Compatibility', () => {
       warnSpy.mockRestore()
     }
   })
+
+  it('should reject custom-validator installation when the core validator API is missing', () => {
+    expect(() => customValidatorPlugin.install({} as typeof schemaDsl)).toThrow(
+      'getDefaultValidator() is not available'
+    )
+  })
+
+  it('should allow custom-validator uninstall without a core object', () => {
+    const globalRecord = globalThis as typeof globalThis & {
+      __schemaDsl_plugins?: Record<string, unknown>
+    }
+    globalRecord.__schemaDsl_plugins = { 'custom-validator': customValidatorPlugin }
+
+    expect(() => customValidatorPlugin.uninstall(undefined as unknown as typeof schemaDsl)).not.toThrow()
+    expect(globalRecord.__schemaDsl_plugins?.['custom-validator']).toBeUndefined()
+  })
+
+  it('should skip existing custom-validator AJV keywords and remove only installed keywords', () => {
+    const definitions: Record<string, unknown> = {}
+    const removed: string[] = []
+    const fakeAjv = {
+      getKeyword: (name: string) => name === 'unique',
+      removeKeyword: (name: string) => removed.push(name),
+    }
+    const fakeValidator = {
+      getAjv: () => fakeAjv,
+      addKeyword: vi.fn((name: string, definition: unknown) => {
+        definitions[name] = definition
+        return fakeValidator
+      }),
+      clearCache: vi.fn(),
+    }
+    const fakeCore = {
+      getDefaultValidator: () => fakeValidator,
+    }
+
+    customValidatorPlugin.addCustomKeywords(fakeValidator as unknown as ReturnType<typeof getDefaultValidator>)
+
+    expect(fakeValidator.addKeyword).not.toHaveBeenCalledWith('unique', expect.anything())
+    expect(fakeValidator.addKeyword).toHaveBeenCalledWith('passwordStrength', expect.anything())
+    expect(fakeValidator.addKeyword).toHaveBeenCalledWith('idCard', expect.anything())
+
+    customValidatorPlugin.uninstall(fakeCore as unknown as typeof schemaDsl)
+
+    expect(removed).toEqual(['unique'])
+    expect(fakeValidator.clearCache).toHaveBeenCalledTimes(1)
+  })
+
+  it('should expose custom-validator keyword behavior for no-op and failure branches', async () => {
+    const definitions: Record<string, {
+      validate: (schema: unknown, data?: unknown) => boolean | Promise<boolean>
+    }> = {}
+    const fakeValidator = {
+      getAjv: () => ({ getKeyword: () => undefined }),
+      addKeyword: vi.fn((name: string, definition: { validate: (schema: unknown, data?: unknown) => boolean | Promise<boolean> }) => {
+        definitions[name] = definition
+        return fakeValidator
+      }),
+      clearCache: vi.fn(),
+    }
+
+    customValidatorPlugin.addCustomKeywords(fakeValidator as unknown as ReturnType<typeof getDefaultValidator>)
+
+    await expect(definitions.unique.validate(undefined)).resolves.toBe(true)
+    await expect(definitions.unique.validate({ table: 'users', field: 'email' })).resolves.toBe(true)
+
+    expect(definitions.passwordStrength.validate(false, 'x')).toBe(true)
+    expect(definitions.passwordStrength.validate('unknown', 'x')).toBe(true)
+    expect(definitions.passwordStrength.validate('weak', '123456')).toBe(true)
+    expect(definitions.passwordStrength.validate('medium', 'Abcdefgh')).toBe(true)
+    expect(definitions.passwordStrength.validate('medium', 'weak')).toBe(false)
+    expect(definitions.passwordStrength.validate('strong', 'Abcdef1234')).toBe(true)
+    expect(definitions.passwordStrength.validate('strong', 'Abcdefgh')).toBe(false)
+
+    expect(definitions.idCard.validate(false, 'bad')).toBe(true)
+    expect(definitions.idCard.validate(true, 'bad')).toBe(false)
+    expect(definitions.idCard.validate(true, '11010519491231002X')).toBe(true)
+    expect(customValidatorPlugin._validateIdCardChecksum('110105194912310021')).toBe(false)
+  })
+
+  it('should expose custom-validator lifecycle hooks', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      expect(() => customValidatorPlugin.hooks?.onBeforeValidate?.({})).not.toThrow()
+      expect(() => customValidatorPlugin.hooks?.onAfterValidate?.({})).not.toThrow()
+      customValidatorPlugin.hooks?.onError?.(new Error('boom'))
+
+      expect(errorSpy).toHaveBeenCalledWith('[custom-validator] Error:', 'boom')
+    } finally {
+      errorSpy.mockRestore()
+    }
+  })
 })
 

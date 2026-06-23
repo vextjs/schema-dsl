@@ -1,8 +1,6 @@
 # validateAsync - 异步验证
 
-> 验证失败自动抛出错误
-
----
+验证失败自动抛出错误
 
 ## 快速开始
 
@@ -484,8 +482,4 @@ new ValidationError(errors, data)
 **说明**: 覆盖 `validateAsync()` 的成功路径、`ValidationError` 捕获、Promise-returning `.custom()`，以及结构校验后业务层异步检查的可选方式。
 
 ---
-
-**版本**: v2.0.9
-**更新日期**: 2026-06-10
-**作者**: schema-dsl Team
 

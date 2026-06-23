@@ -1,6 +1,8 @@
-# Safety Checklist
+# Security Notes
 
-## Check before publishing
+This page collects security notes for schema definitions, custom validators, and exporter usage. It is not required for the first quick start; use it when a schema handles credentials, URLs, regex patterns, or generated database constraints.
+
+## Before publishing schema-related code
 
 - Run `npm audit --audit-level=moderate`.
 - Confirm that the document examples do not contain real keys, tokens, or passwords.

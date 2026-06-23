@@ -1,6 +1,7 @@
 import type { JSONSchema, SchemaIOOptions } from './schema.js'
 import type { DslConfigOptions } from './config.js'
 import type { IConditionalBuilder } from './conditional.js'
+import type { ValidationResult } from './validate.js'
 import type { I18nError } from '../errors/I18nError.js'
 
 /**
@@ -69,6 +70,7 @@ export interface IDslBuilder {
   toJsonSchema(): JSONSchema
   toSchema(): JSONSchema
   toString(): string
+  validate(data: unknown): Promise<ValidationResult<unknown>>
 
   // ── Internal marker ──────────────────────────────────────────
   readonly _isDslBuilder: true
@@ -108,19 +110,132 @@ export type DslInput = string | DslDefinition
 
 export type DslFactoryInput = string | IDslBuilder | JSONSchema
 
-export interface DslExtensionDefinition {
+export type DslExtensionSegmentMode = 'none' | 'params' | 'constraint'
+export type DslExtensionParamKind = 'string' | 'number' | 'boolean' | 'enum'
+
+export interface DslExtensionParamDefinition<Values extends readonly unknown[] = readonly unknown[]> {
+  kind: DslExtensionParamKind
+  values?: Values
+  default?: unknown
+  required?: boolean
+  description?: string
+  factoryOnly?: boolean
+}
+
+export type DslExtensionParamsDefinition = Record<string, DslExtensionParamDefinition>
+
+export type DslExtensionParamValue<Param> =
+  Param extends { readonly kind: 'number' } ? number :
+    Param extends { readonly kind: 'boolean' } ? boolean :
+      Param extends { readonly kind: 'enum'; readonly values: readonly (infer Value)[] } ? Value :
+        Param extends { readonly kind: 'enum' } ? string | number | boolean :
+          string
+
+export type DslExtensionParamsObject<Params extends DslExtensionParamsDefinition> =
+  {
+    [Key in keyof Params as Params[Key] extends { required: true }
+      ? Params[Key] extends { default: unknown } ? never : Key
+      : never]: DslExtensionParamValue<Params[Key]>
+  } & {
+    [Key in keyof Params as Params[Key] extends { required: true }
+      ? Params[Key] extends { default: unknown } ? Key : never
+      : Key]?: DslExtensionParamValue<Params[Key]>
+  }
+
+export type DslExtensionSchemaFactory<Params extends Record<string, unknown> = Record<string, unknown>> =
+  (params: Params) => JSONSchema
+
+export interface DslExtensionDefinition<Params extends DslExtensionParamsDefinition = DslExtensionParamsDefinition> {
   literal?: string
   factoryName?: string
-  schema?: JSONSchema | (() => JSONSchema)
+  segmentMode?: DslExtensionSegmentMode
+  params?: Params
+  schema?: JSONSchema | (() => JSONSchema) | DslExtensionSchemaFactory<DslExtensionParamsObject<Params>>
   factory?: (...args: unknown[]) => string | IDslBuilder | JSONSchema
   exposeFactory?: boolean
   exposeStringChain?: boolean
   transformMethods?: readonly string[]
 }
 
-export interface NormalizedDslExtensionDefinition extends DslExtensionDefinition {
+export interface NormalizedDslExtensionDefinition<Params extends DslExtensionParamsDefinition = DslExtensionParamsDefinition>
+  extends DslExtensionDefinition<Params> {
+  readonly segmentMode: DslExtensionSegmentMode
   readonly transformMethods: readonly string[]
 }
+
+type DslKebabToCamel<S extends string> =
+  S extends `${infer Head}-${infer Tail}`
+    ? `${Head}${Capitalize<DslKebabToCamel<Tail>>}`
+    : S
+
+type DslNarrowString<S extends string> = string extends S ? never : S
+
+type DslExtensionFactoryName<Definition> =
+  Definition extends { readonly factoryName: infer Name extends string }
+    ? DslNarrowString<Name>
+    : Definition extends { readonly literal: infer Literal extends string }
+      ? DslNarrowString<DslKebabToCamel<Literal>>
+      : never
+
+type DslExtensionParamValues<Params extends object> =
+  { [Key in keyof Params]: DslExtensionParamValue<Params[Key]> }[keyof Params]
+
+type DslExtensionFactoryParamsObject<Params extends object> =
+  {
+    [Key in keyof Params as Params[Key] extends { readonly required: true }
+      ? Params[Key] extends { readonly default: unknown } ? never : Key
+      : never]: DslExtensionParamValue<Params[Key]>
+  } & {
+    [Key in keyof Params as Params[Key] extends { readonly required: true }
+      ? Params[Key] extends { readonly default: unknown } ? Key : never
+      : Key]?: DslExtensionParamValue<Params[Key]>
+  }
+
+type DslExtensionRequiredParamNames<Params extends object> =
+  keyof {
+    [Key in keyof Params as Params[Key] extends { readonly required: true }
+      ? Params[Key] extends { readonly default: unknown } ? never : Key
+      : never]: true
+  }
+
+type DslExtensionSingleValueFactory<Params extends object> =
+  DslExtensionRequiredParamNames<Params> extends never
+    ? { (value?: DslExtensionParamValues<Params>): IDslBuilder }
+    : { (value: DslExtensionParamValues<Params>): IDslBuilder }
+
+export type DslExtensionFactory<Params extends object = DslExtensionParamsDefinition> =
+  keyof Params extends never
+    ? () => IDslBuilder
+    : DslExtensionSingleValueFactory<Params> & {
+      (params: DslExtensionFactoryParamsObject<Params>): IDslBuilder
+    }
+
+type DslExtensionFactoryForDefinition<Definition, Params extends object> =
+  Definition extends { readonly factory: (...args: infer Args) => string | IDslBuilder | JSONSchema }
+    ? (...args: Args) => IDslBuilder
+    : DslExtensionFactory<Params>
+
+type DslExtensionDefinitionParams<Definition> =
+  Definition extends { readonly params: infer Params extends object }
+    ? Params
+    : Record<never, never>
+
+type DslUnionToIntersection<Union> =
+  (Union extends unknown ? (value: Union) => void : never) extends (value: infer Intersection) => void
+    ? Intersection
+    : never
+
+export type DslExtensionNamespaceFactories<Definitions extends readonly unknown[]> =
+  DslUnionToIntersection<
+    Definitions[number] extends infer Definition
+      ? {
+        [Name in DslExtensionFactoryName<Definition>]: DslExtensionFactoryForDefinition<Definition, DslExtensionDefinitionParams<Definition>>
+      }
+      : never
+  >
+
+export type DslWithExtensions<Definitions extends readonly unknown[]> =
+  DslFn & DslExtensionNamespaceFactories<Definitions>
 
 export interface DslNamespaceFactories {
   string(): IDslBuilder
@@ -151,6 +266,9 @@ export interface DslNamespaceFactories {
   type(name: string): IDslBuilder
   defineExtension(definition: DslExtensionDefinition): NormalizedDslExtensionDefinition
   registerExtension(definition: DslExtensionDefinition): void
+  registerExtensions<const Definitions extends readonly unknown[]>(
+    definitions: readonly [...Definitions]
+  ): DslWithExtensions<Definitions>
 }
 
 /**

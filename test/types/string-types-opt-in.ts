@@ -14,6 +14,11 @@ s.email().require('email')
 alias.email().toSchema()
 field.toSchema()
 arrayField.toSchema()
+field.validate('user@example.com')
+factoryField.validate('user@example.com')
 factoryField.toSchema()
 schema.type
 objectSchema.properties
+
+// @ts-expect-error String type opt-in does not add direct .validate() on raw strings.
+'email!'.validate('user@example.com')

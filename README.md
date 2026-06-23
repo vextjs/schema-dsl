@@ -74,7 +74,7 @@ Then that **same set of rules** continues to power:
 **Export & integration**:
 - [Export Guide](https://vextjs.github.io/schema-dsl/export-guide) — MongoDB / MySQL / PostgreSQL
 - [TypeScript Guide](https://vextjs.github.io/schema-dsl/typescript-guide) — type inference and usage
-- [Extensions and Integration](https://vextjs.github.io/schema-dsl/extensions-overview) — custom types, factories, chain methods, keywords, and plugins
+- [Extensions and Integration](https://vextjs.github.io/schema-dsl/extensions-overview) — custom business types, keywords, runtime isolation, and plugins
 
 **Full docs**: [Online Documentation](https://vextjs.github.io/schema-dsl) · [Chinese Documentation](./docs/zh/index.md) · [Feature Index](https://vextjs.github.io/schema-dsl/FEATURE-INDEX)
 
@@ -132,7 +132,7 @@ const schema = s({
 | **Database export** | ✅ | MongoDB / MySQL / PostgreSQL schema generation |
 | **Documentation generation** | ✅ | Markdown field docs auto-generated |
 | **TypeScript** | ✅ | Written in native TypeScript with full type inference |
-| **Extension system** | ✅ | Custom DSL types / factories / chain methods / formats / validators |
+| **Extension system** | ✅ | One business type definition for pure DSL, `s('...')`, and `s.xxx()` entries; plus formats and validators |
 | **Schema reuse** | ✅ | pick / omit / partial / extend |
 | **Side-effect-controlled entries** | ✅ | root compatibility, `schema-dsl/pure` for no `String.prototype` installation, and `schema-dsl/runtime` for isolated runtime state |
 | **Compile-time transform** | ✅ | `schema-dsl/transform` core and optional `schema-dsl/esbuild` adapter |
@@ -186,7 +186,7 @@ npm install schema-dsl
 
 | Entry | Purpose |
 |-------|---------|
-| `schema-dsl/pure` | Recommended default entry from v2.1.0; exports the `s` / `dsl` namespace and validation helpers without installing `String.prototype` extensions. |
+| `schema-dsl/pure` | Recommended default entry for the current source and the next v2.1.0 release; exports the `s` / `dsl` namespace and validation helpers without installing `String.prototype` extensions. |
 | `schema-dsl/runtime` | Runtime adapter factory for per-tenant/per-app isolated Locale messages, messageProvider, TypeRegistry scope, PATTERNS, validator instances and `I18nError` creation. |
 | `schema-dsl` | Root compatibility entry; imports install the non-enumerable String chain API by default. Prefer `schema-dsl/pure` for new public examples. |
 | `schema-dsl/compat` | Explicit compatibility entry that installs String extensions on import. |
@@ -403,7 +403,7 @@ const markdown = exporters.MarkdownExporter.export(productSchema, { title: 'Prod
 | Field documentation | `MarkdownExporter` | [Export Guide](https://vextjs.github.io/schema-dsl/export-guide) |
 | Multilingual API errors | `I18nError` | [Error Handling](https://vextjs.github.io/schema-dsl/error-handling) |
 | Conditional / dynamic rules | `s.if()` / `s.match()` | [Conditional API](https://vextjs.github.io/schema-dsl/conditional-api) |
-| Custom DSL types | `s.registerExtension()` / `DslBuilder.registerType()` | [Extensions Overview](https://vextjs.github.io/schema-dsl/extensions-overview) |
+| Custom DSL types | `registerExtensions([...])` / `s.registerExtension()` | [Extensions Overview](https://vextjs.github.io/schema-dsl/extensions-overview) |
 | No global String extension | `schema-dsl/pure` | [API Reference](https://vextjs.github.io/schema-dsl/api-reference) |
 | Compile-time string-chain transform | `transformSchemaDsl()` / `schemaDslEsbuildPlugin()` | [API Reference](https://vextjs.github.io/schema-dsl/api-reference) |
 
@@ -548,7 +548,7 @@ try {
 
 ## 🔌 Extensions and Plugin Packaging
 
-Use direct extension APIs for simple custom DSL types, factories, and chain methods. Use `PluginManager` when you want to package several extension hooks together.
+Use custom extensions when one business type should work through pure DSL strings, `s('...')`, and `s.xxx()` factories. Use `PluginManager` when you want to package validator formats, keywords, lifecycle hooks, or several extension hooks together.
 
 ```typescript
 import { PluginManager, Validator, s } from 'schema-dsl/pure';

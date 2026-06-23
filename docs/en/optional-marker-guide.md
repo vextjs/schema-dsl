@@ -1,10 +1,5 @@
 # schema-dsl optional tag? supported
 
-**Version**: v1.1.4+
-**Updated date**: 2026-01-13
-
----
-
 ## 📋 Function Overview
 
 schema-dsl now supports explicit marking of optional fields using `?`, providing clearer semantic expression.
@@ -286,14 +281,9 @@ const schema = s({
 });
 ```
 
-### code review checklist
+### Team convention
 
-During a code review, check for the following things:
-
-- [ ] All required fields are marked with `!`
-- [ ] Optional fields determine whether to use `?` according to team specifications
-- [ ] There is no error in using `?` in an enumeration type (like `active|inactive?`)
-- [ ] Optional fields of complex constraints are used correctly (such as `string:3-32?`)
+If your team chooses explicit optional markers, use `?` consistently for fields that are intentionally optional. Be careful with enum DSL such as `active|inactive?`: the `?` belongs to the last enum value there, not to the whole field.
 
 ---
 
@@ -311,13 +301,6 @@ During a code review, check for the following things:
 - [Complete Guide to DSL Syntax](./dsl-syntax.md)
 - [Type reference](./type-reference.md)
 - [Cross-type joint validation](./union-types.md)
-
----
-
-**Last updated**: 2026-01-13
-**Author**: schema-dsl Team
-
----
 
 ## Corresponding sample file
 

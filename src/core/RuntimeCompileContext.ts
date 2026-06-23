@@ -8,7 +8,7 @@ import type {
   SchemaDslRuntimeOptions,
 } from '../types/runtime.js'
 import { createDefaultPatterns } from '../config/patterns.js'
-import type { TypeDefinition, TypeRegistryScope } from '../parser/TypeRegistry.js'
+import { TypeRegistry, type TypeDefinition, type TypeRegistryScope } from '../parser/TypeRegistry.js'
 import { cloneSchemaValue } from '../utils/schemaClone.js'
 
 function clonePatternEntry(entry: SchemaDslPatternEntry): SchemaDslPatternEntry {
@@ -134,6 +134,12 @@ export class RuntimeCompileContext {
     assertTypeName(name)
     this.registryScope.customTypes?.delete(name)
     this.registryScope.dynamicTypes?.delete(name)
+  }
+
+  hasType(name: string): boolean {
+    return TypeRegistry.hasBuiltin(name) ||
+      (this.registryScope.customTypes?.has(name) ?? false) ||
+      (this.registryScope.dynamicTypes?.has(name) ?? false)
   }
 
   dispose(): void {

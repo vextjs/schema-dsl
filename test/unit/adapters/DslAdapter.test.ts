@@ -5,14 +5,34 @@
  * toCore() depends on JSONSchemaCore (not exported in v2), replaced with SchemaHelper.isValidSchema
  */
 
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect } from 'vitest'
 import { DslAdapter } from '../../../src/adapters/DslAdapter.js'
+import { TypeRegistry } from '../../../src/parser/TypeRegistry.js'
+
+const CUSTOM_TYPE_NAMES = ['coverageMoney', 'coverageTenant']
+
+afterEach(() => {
+  for (const name of CUSTOM_TYPE_NAMES) {
+    TypeRegistry.unregister(name)
+  }
+})
 
 describe('DslAdapter', () => {
+  describe('parseString()', () => {
+    it('parses without injecting the v1 _required compatibility marker', () => {
+      expect(DslAdapter.parseString('string')).toEqual({ type: 'string' })
+    })
+
+    it('throws a clear error for non-string input', () => {
+      expect(() => DslAdapter.parseString(undefined as any)).toThrow('DSL must be a string')
+    })
+  })
+
   describe('parse() - basic types', () => {
     it('should parse string type', () => {
       const result = DslAdapter.parse('string')
       expect(result.type).toBe('string')
+      expect(result._required).toBe(false)
     })
 
     it('should parse number type', () => {
@@ -204,6 +224,71 @@ describe('DslAdapter', () => {
       const result = builder.toSchema()
       expect(result.properties!.name).not.toHaveProperty('_required')
       expect(result.properties!.age).not.toHaveProperty('_required')
+    })
+
+    it('returns an ObjectDslBuilder with strict, requireAll, toJsonSchema and toString helpers', () => {
+      const builder = DslAdapter.parseObject({
+        name: 'string',
+        age: 'number',
+      }).strict().requireAll()
+
+      expect(builder.toSchema()).toMatchObject({
+        type: 'object',
+        strictSchema: true,
+        requiredAll: true,
+      })
+      expect(builder.toJsonSchema()).not.toHaveProperty('strictSchema')
+      expect(builder.toJsonSchema()).not.toHaveProperty('requiredAll')
+      expect(JSON.parse(builder.toString())).toMatchObject({
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          age: { type: 'number' },
+        },
+      })
+    })
+  })
+
+  describe('v1 compatibility helpers', () => {
+    it('creates match and if marker objects', () => {
+      expect(DslAdapter.match('role', { admin: 'string!' })).toEqual({
+        _isMatch: true,
+        field: 'role',
+        map: { admin: 'string!' },
+      })
+
+      expect(DslAdapter.if('enabled', 'string!', 'number')).toEqual({
+        _isIf: true,
+        condition: 'enabled',
+        then: 'string!',
+        else: 'number',
+      })
+    })
+
+    it('wraps parsed schemas through toCore()', () => {
+      expect(DslAdapter.toCore('email!').schema).toMatchObject({
+        type: 'string',
+        format: 'email',
+        _required: true,
+      })
+
+      expect(DslAdapter.toCore({ name: 'string!' }).schema).toMatchObject({
+        type: 'object',
+        required: ['name'],
+      })
+    })
+
+    it('exposes registered types through typeMap and registerType()', () => {
+      DslAdapter.registerType('coverageMoney', { type: 'number', minimum: 0 })
+      expect(DslAdapter.parse('coverageMoney')).toMatchObject({ type: 'number', minimum: 0 })
+
+      const typeMap = DslAdapter.typeMap
+      expect(typeMap.string).toEqual({ type: 'string' })
+      typeMap.coverageTenant = { type: 'string', pattern: '^tenant_[a-z]+$' }
+      expect(DslAdapter.parse('coverageTenant')).toMatchObject({
+        type: 'string',
+        pattern: '^tenant_[a-z]+$',
+      })
     })
   })
 

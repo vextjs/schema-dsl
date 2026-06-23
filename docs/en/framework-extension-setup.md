@@ -1,19 +1,16 @@
 # Framework extension setup
 
-> **Last updated**: 2026-06-18
-
-Framework integrations should treat schema-dsl extensions as reusable application assets, similar to locale packs. Keep custom types, factories, chain methods, runtime setup, and transform options in one predictable directory.
+Framework integrations should treat schema-dsl extensions as reusable application assets, similar to locale packs. Keep the extension definition, type declarations, runtime setup, and optional transform options in one predictable directory.
 
 ## Recommended directory
 
 ```text
 src/schema-dsl/
-  index.ts              # Public setup entry
-  types.ts              # Custom DSL literals and type registration
-  factories.ts          # s.xxx() / runtime.s.xxx() factories
-  chain-methods.ts      # Builder method implementations
-  transform.ts          # additionalMethods / additionalTypes for build tools
+  index.ts              # Exports the configured s / runtime
+  extensions.ts         # Custom extension definition array, the single source of truth
+  types.d.ts            # Optional, only for dynamic registration or compatibility
   runtime.ts            # createRuntime() wrapper for isolation
+  transform.ts          # Optional, only for direct String-chain authoring
   locales/
     en-US.ts
     zh-CN.ts
@@ -26,22 +23,31 @@ This structure makes custom types reusable across services, tests, workers, Open
 Use this when the app has one extension set loaded during startup:
 
 ```ts
-import { s, resetRuntimeState } from 'schema-dsl/pure';
+import { registerExtensions, resetRuntimeState } from 'schema-dsl/pure';
 
-export function installSchemaDslExtensions() {
-  s.registerExtension({
+export const s = registerExtensions([
+  {
     literal: 'tenant-id',
     factoryName: 'tenantId',
-    schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
-  });
-}
+    segmentMode: 'params',
+    params: {
+      scope: { kind: 'enum', values: ['tenant', 'corp'], default: 'tenant' }
+    },
+    schema({ scope }) {
+      return {
+        type: 'string',
+        pattern: scope === 'corp' ? '^corp_[a-z0-9]+$' : '^tenant_[a-z0-9]+$'
+      };
+    }
+  }
+] as const);
 
 export function resetSchemaDslExtensionsForTests() {
   resetRuntimeState();
 }
 ```
 
-Call the installer once from your app bootstrap or framework plugin.
+Application code imports this configured `s` from `src/schema-dsl/index.ts`. Isolated tests can call `resetSchemaDslExtensionsForTests()` when they need to clear global extension state.
 
 ## Runtime-scoped setup
 
@@ -51,19 +57,26 @@ Use runtime-scoped setup when each app, tenant, plugin, worker, or test fixture 
 import { createRuntime } from 'schema-dsl/runtime';
 
 export function createAppSchemaRuntime() {
-  const runtime = createRuntime({
-    types: {
-      tenantId: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
+  const runtime = createRuntime();
+
+  const s = runtime.registerExtensions([
+    {
+      literal: 'tenant-id',
+      factoryName: 'tenantId',
+      segmentMode: 'params',
+      params: {
+        scope: { kind: 'enum', values: ['tenant', 'corp'], default: 'tenant' }
+      },
+      schema({ scope }) {
+        return {
+          type: 'string',
+          pattern: scope === 'corp' ? '^corp_[a-z0-9]+$' : '^tenant_[a-z0-9]+$'
+        };
+      }
     }
-  });
+  ] as const);
 
-  runtime.registerExtension({
-    literal: 'tenant-id',
-    factoryName: 'tenantId',
-    schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
-  });
-
-  return runtime;
+  return { runtime, s };
 }
 ```
 
@@ -84,7 +97,7 @@ Framework adapters can pass these options into `transformSchemaDsl()` or `schema
 
 ## TypeScript setup
 
-Place module augmentations in a `.d.ts` file that is included by the framework or application tsconfig:
+In the current source and the next v2.1.0 release, prefer the `s` exported by `registerExtensions([... ] as const)` for `s.xxx()` hints. Maintain a `.d.ts` file only when you still use dynamic `registerExtension()`, legacy module augmentation, or need to add types for a third-party extension package:
 
 ```ts
 import type { IDslBuilder } from 'schema-dsl/pure';
@@ -93,21 +106,18 @@ declare module 'schema-dsl/pure' {
   interface DslNamespaceFactories {
     tenantId(): IDslBuilder;
   }
-
-  interface IDslBuilder {
-    tenantId(): this;
-  }
 }
 ```
 
 Only augment `schema-dsl/string-types` when direct String-chain source is part of your framework authoring model.
 
-## Checklist
+## Recommended setup
 
-- Register global extensions during startup, not per request.
+- Export a configured application-level `s`; do not dynamically register extensions per request.
 - Use `createRuntime()` for framework, tenant, worker, and isolated test boundaries.
-- Keep transform options next to the extension package.
-- Keep TypeScript declarations in the extension package or setup module.
+- Keep the extension definition as the single source of truth for DSL, `s('...')`, and `s.xxx()` entries.
+- Keep transform options only when direct String-chain source is supported.
+- Prefer `registerExtensions([... ] as const)` for TypeScript hints; keep `.d.ts` only for dynamic or compatibility paths.
 - Clean global extension state in isolated tests with `resetRuntimeState()`.
 - Dispose runtime instances in plugin or app teardown.
 

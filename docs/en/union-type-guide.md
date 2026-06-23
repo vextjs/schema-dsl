@@ -1,11 +1,9 @@
 # One field supports multiple types
 
-> Use `.pattern()` method to match multiple formats
+Use `.pattern()` method to match multiple formats
 
-> ⚠️ This document describes the method of "matching multiple formats with the same string field".
-> If you need true union semantics across underlying types, such as `string | number | null`, please use [types: syntax](./union-types.md) in preference.
-
----
+⚠️ This document describes the method of "matching multiple formats with the same string field".
+If you need true union semantics across underlying types, such as `string | number | null`, please use [types: syntax](./union-types.md) in preference.
 
 ## Basic usage
 

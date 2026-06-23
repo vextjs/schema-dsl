@@ -1,12 +1,5 @@
 # MySQL 导出器文档
 
-> **模块**: `src/exporters/MySQLExporter.ts`  
-
-> **用途**: 将 JSON Schema 转换为 MySQL CREATE TABLE 语句
-
----
-
-
 ## 概述
 
 `MySQLExporter` 将 schema-dsl 生成的 JSON Schema 转换为 MySQL 的 DDL 语句，包括 `CREATE TABLE` 和索引创建语句。

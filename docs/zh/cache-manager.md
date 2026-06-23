@@ -1,12 +1,5 @@
 # CacheManager 缓存管理器
 
-> **模块**: `src/core/CacheManager.ts`（公开导出：`import { CacheManager } from 'schema-dsl/pure'`）
-
-> **用途**: 高性能 Schema 编译缓存，支持 LRU 淘汰和 TTL 过期
-
----
-
-
 ## 概述
 
 `CacheManager` 是 schema-dsl 的内部缓存系统，用于缓存编译后的 Schema 验证函数，避免重复编译带来的性能开销。

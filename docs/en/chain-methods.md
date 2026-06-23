@@ -1,8 +1,6 @@
 # schema-dsl chain method list
 
-> **Updated**: 2026-06-18
-
-Use this page when a field needs more than a plain DSL string. The recommended v2.1.0 path is:
+Use this page when a field needs more than a plain DSL string. In the current source and the next v2.1.0 release, the recommended path is:
 
 ```ts
 import { s } from 'schema-dsl/pure';
@@ -106,9 +104,7 @@ Direct String chaining is still supported, but it is no longer the default docum
 
 This page lists built-in field builder methods. For user-defined methods, first decide which layer you need:
 
-- Use [Custom DSL Types](plugin-type-registration.md) for reusable literals such as `tenant-id!`.
-- Use [Custom s.xxx() Factories](custom-factories.md) for namespace factories such as `s.tenantId()`.
-- Use [Custom Chain Methods](custom-chain-methods.md) for builder methods such as `s('string!').tenantId()`.
+- Use [Custom Extensions](custom-extensions.md) for reusable business types such as `tenant-id!`, `s('tenant-id!')`, and `s.tenantId()`.
 - Use [String Extensions](string-extensions.md) plus transform configuration if the source code must remain `'string!'.tenantId()`.
 
 ## Related documents
@@ -118,7 +114,7 @@ This page lists built-in field builder methods. For user-defined methods, first 
 - [TypeScript Guide](./typescript-guide.md)
 - [String Extensions](./string-extensions.md)
 - [Runtime Isolation](./runtime-isolation.md)
-- [Custom Chain Methods](./custom-chain-methods.md)
+- [Custom Extensions](./custom-extensions.md)
 
 ---
 

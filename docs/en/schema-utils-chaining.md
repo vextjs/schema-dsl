@@ -1,8 +1,6 @@
 # SchemaUtils usage guide
 
-> Schema reuse and conversion tools
-
----
+Schema reuse and conversion tools
 
 ## quick start
 

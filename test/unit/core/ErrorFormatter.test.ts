@@ -29,6 +29,28 @@ describe('ErrorFormatter', () => {
     it('should support construction with different locales', () => {
       const enFormatter = new ErrorFormatter('en-US')
       expect(enFormatter).toBeInstanceOf(ErrorFormatter)
+      expect(enFormatter.locale).toBe('en-US')
+    })
+
+    it('should normalize LocaleMessage objects and preserve custom messages across locale format calls', () => {
+      const f = new ErrorFormatter('en-US', {
+        'label.email': { message: 'Email Address' } as any,
+        required: { message: '{{#label}} required custom' } as any,
+        nullable: undefined,
+      })
+
+      const message = f.format({
+        keyword: 'required',
+        instancePath: '',
+        params: { missingProperty: 'email' },
+        parentSchema: {
+          properties: {
+            email: { _label: 'label.email' },
+          },
+        },
+      } as any, 'zh-CN')
+
+      expect(message).toBe('Email Address required custom')
     })
   })
 
@@ -84,6 +106,52 @@ describe('ErrorFormatter', () => {
       const result = formatter.formatDetailed([])
       expect(result).toEqual([])
     })
+
+    it('filters wrapper errors when concrete errors are present', () => {
+      const result = formatter.formatDetailed([
+        { keyword: 'if', instancePath: '', params: {}, message: 'if failed' },
+        { keyword: 'anyOf', instancePath: '', params: {}, message: 'anyOf failed' },
+        { keyword: 'minLength', instancePath: '/name', params: { limit: 3 }, parentSchema: { type: 'string' } },
+      ] as any)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].keyword).toBe('minLength')
+    })
+
+    it('uses detailed fallback interpolation values for primitive, array and null data', () => {
+      const f = new ErrorFormatter('en-US', {
+        default: '{{#label}} expected {{#expected}} got {{#actual}} value {{#value}} allowed {{#allowed}} key {{#key}}',
+      })
+
+      expect(f.formatDetailed([{
+        keyword: 'unknownKeyword',
+        instancePath: '/items',
+        params: { type: 'string', allowedValues: ['a', 'b'], additionalProperty: 'extra' },
+        data: ['x'],
+        parentSchema: { type: 'array' },
+      }] as any)[0].message).toContain('got array')
+
+      expect(f.formatDetailed([{
+        keyword: 'unknownKeyword',
+        instancePath: '/items',
+        params: { type: 'string' },
+        data: null,
+        parentSchema: { type: 'string' },
+      }] as any)[0].message).toContain('got null')
+    })
+
+    it('uses already-merged custom messages without rebuilding the message table', () => {
+      const result = formatter.formatDetailed([
+        {
+          keyword: 'format',
+          instancePath: '/site',
+          params: { format: 'uri' },
+          parentSchema: { type: 'string' },
+        },
+      ] as any, 'zh-CN', { 'format.url': 'custom url message for {{#label}}' }, true)
+
+      expect(result[0].message).toContain('custom url message')
+    })
   })
 
   describe('Internationalization', () => {
@@ -104,6 +172,23 @@ describe('ErrorFormatter', () => {
 
     it('setLocale should not throw', () => {
       expect(() => Locale.setLocale('en-US')).not.toThrow()
+    })
+
+    it('setLocale(), addMessage() and addMessages() update subsequent formatting', () => {
+      formatter.setLocale('en-US')
+      formatter.addMessage('required', '{{#label}} required once')
+      expect(formatter.format({
+        keyword: 'required',
+        instancePath: '',
+        params: { missingProperty: 'email' },
+      } as any)).toBe('email required once')
+
+      formatter.addMessages({ required: '{{#label}} required twice' })
+      expect(formatter.format({
+        type: 'required',
+        path: 'email',
+        params: { missingProperty: 'email' },
+      })).toBe('email required twice')
     })
   })
 })

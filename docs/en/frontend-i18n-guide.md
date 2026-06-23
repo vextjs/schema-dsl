@@ -1,11 +1,6 @@
 # Dynamically switching languages ​​on the front end - a best practice guide
 
 
-> **Scenario**: Front-end and back-end separation architecture, the front-end needs to dynamically switch the validation error message language
-
----
-
-
 <a id="how-to-use"></a>
 
 ## Complete example

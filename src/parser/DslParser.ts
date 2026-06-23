@@ -6,6 +6,12 @@ import { ConstraintParser } from './ConstraintParser.js'
 import { SchemaCompiler } from './SchemaCompiler.js'
 import { PATTERNS } from '../config/patterns.js'
 import type { SchemaDslPatternRegistry, SchemaDslTypeResolver } from '../types/runtime.js'
+import type { DslExtensionRegistry } from './DslExtensionRegistry.js'
+import {
+  buildDslExtensionSchema,
+  DslExtensionError,
+  normalizeDslExtensionParams,
+} from './DslExtensionRegistry.js'
 
 /**
  * DslParser — unified entry point for parsing DSL strings and object definitions
@@ -27,6 +33,7 @@ export interface DslParseOptions {
   patterns?: SchemaDslPatternRegistry
   registryScope?: TypeRegistryScope
   typeResolver?: SchemaDslTypeResolver
+  extensionRegistry?: DslExtensionRegistry
 }
 
 function _childPath(parent: string | undefined, key: string): string {
@@ -68,6 +75,115 @@ function _normalizeResolvedType(
   }
   if ('baseSchema' in resolved) return resolved as TypeDefinition
   return { baseSchema: resolved as Partial<JSONSchema> }
+}
+
+function _looksLikeMixedParamConstraint(segment: string): boolean {
+  return /(?:>=|<=|>|<|=)/.test(segment)
+}
+
+function _recordExtensionError(
+  error: DslExtensionError,
+  dslStr: string,
+  typeName: string,
+  constraintStr: string,
+  options: DslParseOptions | undefined
+): void {
+  options?.diagnostics?.push({
+    code: error.code,
+    severity: 'error',
+    path: options.path ?? '',
+    input: dslStr,
+    typeName,
+    constraint: constraintStr,
+    ...(error.param !== undefined ? { param: error.param } : {}),
+    message: error.message,
+  })
+}
+
+function _handleExtensionError(
+  error: DslExtensionError,
+  dslStr: string,
+  typeName: string,
+  constraintStr: string,
+  required: boolean,
+  options: DslParseOptions | undefined
+): JSONSchema {
+  _recordExtensionError(error, dslStr, typeName, constraintStr, options)
+  if (options?.throwOnError !== false) throw error
+  return {
+    type: 'string',
+    ...(required ? { _required: true } : {}),
+  }
+}
+
+function _parseRegisteredExtension(
+  dslStr: string,
+  typeName: string,
+  constraintStr: string,
+  required: boolean,
+  options: DslParseOptions | undefined
+): JSONSchema | null {
+  const extension = options?.extensionRegistry?.getByLiteral(typeName)
+  if (!extension) return null
+
+  if (extension.segmentMode === 'none' && constraintStr) {
+    return _handleExtensionError(
+      new DslExtensionError(
+        'EXTENSION_SEGMENT_UNSUPPORTED',
+        `[schema-dsl] Extension "${typeName}" does not accept a colon segment`,
+        { extension: typeName, inputValue: constraintStr }
+      ),
+      dslStr,
+      typeName,
+      constraintStr,
+      required,
+      options
+    )
+  }
+
+  if (extension.segmentMode === 'params') {
+    try {
+      const params = normalizeDslExtensionParams(extension, {
+        source: 'dsl',
+        segment: constraintStr,
+      })
+      const schema = buildDslExtensionSchema(extension, params)
+      if (required) schema._required = true
+      return schema
+    } catch (error) {
+      if (error instanceof DslExtensionError) {
+        const finalError = constraintStr && _looksLikeMixedParamConstraint(constraintStr)
+          ? new DslExtensionError(
+            'EXTENSION_PARAM_CONSTRAINT_MIXED',
+            `[schema-dsl] Extension "${typeName}" uses params mode; keep "${constraintStr}" as a parameter or move numeric constraints to builder methods`,
+            { extension: typeName, inputValue: constraintStr }
+          )
+          : error
+        return _handleExtensionError(finalError, dslStr, typeName, constraintStr, required, options)
+      }
+      throw error
+    }
+  }
+
+  const params = normalizeDslExtensionParams(extension, {
+    source: 'dsl',
+  })
+  const baseSchema = buildDslExtensionSchema(extension, params)
+  const baseType = Array.isArray(baseSchema.type)
+    ? (baseSchema.type.find(type => type !== 'null') ?? typeName)
+    : ((baseSchema.type as string | undefined) ?? typeName)
+  const constraints = ConstraintParser.parse(constraintStr, baseType, {
+    diagnostics: options?.diagnostics,
+    path: options?.path ?? '',
+    input: dslStr,
+    emitWarning: options?.emitWarning,
+  })
+  const schema: JSONSchema = {
+    ...baseSchema,
+    ...constraints,
+  }
+  if (required) schema._required = true
+  return schema
 }
 
 /**
@@ -372,6 +488,9 @@ export const DslParser = {
       typeName = s.slice(0, colonIdx)
       constraintStr = s.slice(colonIdx + 1)
     }
+
+    const extensionSchema = _parseRegisteredExtension(dslStr, typeName, constraintStr, required, options)
+    if (extensionSchema) return extensionSchema
 
     // ========== Special case: pattern types (phone/idCard/creditCard/licensePlate/postalCode/passport) ==========
     const PATTERN_TYPES = ['phone', 'idCard', 'creditCard', 'licensePlate', 'postalCode', 'passport'] as const

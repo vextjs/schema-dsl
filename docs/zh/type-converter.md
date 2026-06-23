@@ -1,12 +1,5 @@
 # TypeConverter 类型转换工具
 
-> **模块**: `src/utils/TypeConverter.ts`  
-
-> **用途**: 提供 JSON Schema 与各种数据库类型之间的转换
-
----
-
-
 ## 概述
 
 `TypeConverter` 是一个静态工具类，用于在 JSON Schema 类型与各种数据库类型之间进行转换。它是所有导出器的基础依赖。

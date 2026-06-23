@@ -1,10 +1,5 @@
 # schema-dsl design philosophy
 
-> **Updated**: 2026-06-18
-> **Purpose**: explain why schema-dsl treats validation rules as compact runtime data, and how the recommended v2.1.0 entries support that goal.
-
----
-
 ## Core Idea
 
 schema-dsl is built around one idea: validation rules should be easy to write, easy to store, and easy to move across runtime boundaries.
@@ -27,7 +22,7 @@ const result = validate(userSchema, {
 });
 ```
 
-The recommended public entry since v2.1.0 is `schema-dsl/pure` + `s`:
+In the current source and the next v2.1.0 release, the recommended public entry is `schema-dsl/pure` + `s`:
 
 | Entry | Best for |
 |------|----------|

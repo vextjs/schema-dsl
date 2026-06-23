@@ -1,5 +1,5 @@
 import type { JSONSchema } from '../types/schema.js'
-import type { DslDefinition, DslExtensionDefinition, DslFn, IDslBuilder } from '../types/dsl.js'
+import type { DslDefinition, DslExtensionDefinition, DslFn, DslWithExtensions, IDslBuilder } from '../types/dsl.js'
 import type { IConditionalBuilder } from '../types/conditional.js'
 import type {
   SchemaDslRuntimeConfigureControl,
@@ -16,6 +16,7 @@ import type { ValidateOptions } from '../types/validate.js'
 import { DslBuilder } from './DslBuilder.js'
 import { attachDslNamespaceFactories, resetDslNamespaceExtensions } from '../adapters/DslNamespace.js'
 import { DslParser, type DslParseOptions } from '../parser/DslParser.js'
+import { DslExtensionRegistry } from '../parser/DslExtensionRegistry.js'
 import { RuntimeCompileContext } from './RuntimeCompileContext.js'
 import { RuntimeIssueFormatter } from './RuntimeIssueFormatter.js'
 import { RuntimeValidatorEngine } from './RuntimeValidatorEngine.js'
@@ -41,6 +42,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   private readonly compileContext: RuntimeCompileContext
   private readonly formatter: RuntimeIssueFormatter
   private readonly parseOptions: DslParseOptions
+  private readonly extensionRegistry: DslExtensionRegistry
   private runtimeOptions: SchemaDslRuntimeOptions
   private validatorEngine: RuntimeValidatorEngine
   private disposed = false
@@ -49,9 +51,11 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
     this.runtimeOptions = this.cloneRuntimeOptions(options)
     this.compileContext = new RuntimeCompileContext(options)
     this.formatter = new RuntimeIssueFormatter(options)
+    this.extensionRegistry = new DslExtensionRegistry()
     this.parseOptions = {
       patterns: this.compileContext.patterns,
       registryScope: this.compileContext.registryScope,
+      extensionRegistry: this.extensionRegistry,
       ...(options.typeResolver ? { typeResolver: options.typeResolver } : {}),
       ...(options.strict !== undefined ? { unknownType: options.strict ? 'error' : 'warn' } : {}),
     }
@@ -73,6 +77,8 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
       }) as IDslBuilder,
       parseObject: definition => this.compile(definition),
       registerType: (name, schema) => this.registerType(name, schema),
+      typeExists: name => this.compileContext.hasType(name),
+      extensionRegistry: this.extensionRegistry,
     })
     this.s = this.dsl
   }
@@ -142,6 +148,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
     const mode = control.mode ?? 'merge'
     if (mode === 'reset' || mode === 'replace') {
       resetDslNamespaceExtensions(this.dsl)
+      this.extensionRegistry.clear()
     }
     this.runtimeOptions = this.mergeRuntimeOptions(this.runtimeOptions, options, mode)
     this.compileContext.configure(options, mode)
@@ -166,6 +173,15 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
     this.assertActive()
     this.dsl.registerExtension(definition)
     this.clearCache()
+  }
+
+  registerExtensions<const Definitions extends readonly unknown[]>(
+    definitions: readonly [...Definitions]
+  ): DslWithExtensions<Definitions> {
+    this.assertActive()
+    const namespace = this.dsl.registerExtensions(definitions)
+    this.clearCache()
+    return namespace
   }
 
   unregisterType(name: string): void {
@@ -198,6 +214,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   dispose(): void {
     if (this.disposed) return
     resetDslNamespaceExtensions(this.dsl)
+    this.extensionRegistry.clear()
     this.validatorEngine.dispose()
     this.compileContext.dispose()
     this.formatter.dispose()

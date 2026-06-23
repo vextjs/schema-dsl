@@ -1,10 +1,6 @@
 # TypeScript usage guide
 
-> **Version**: schema-dsl v2.1.0
-> **Updated date**: 2026-06-18
-> **Important**: since v2.1.0, public TypeScript examples prefer `schema-dsl/pure` + `s` so that schema authoring has no automatic String prototype side effect.
-
----
+**Important**: in the current source and the next v2.1.0 release, public TypeScript examples prefer `schema-dsl/pure` + `s` so that schema authoring has no automatic String prototype side effect.
 
 Read this early when choosing between pure DSL strings, DSL seed builders, namespace factories, and optional String extension ergonomics. It explains what TypeScript can infer, what remains runtime-only, and where editor hints are intentionally limited.
 
@@ -64,7 +60,7 @@ const defaultBuilderSchema = s({
 });
 ```
 
-### 2.2 Recommended authoring entries since v2.1.0
+### 2.2 Recommended authoring entries for the current source and v2.1.0
 
 Choose one of the three recommended entries according to the authoring goal:
 
@@ -611,6 +607,3 @@ s.config({
 **Description**: Shows the three recommended TypeScript authoring entries, `validate<T>()` / `validateAsync<T>()`, and `ValidationError` field error reading.
 
 ---
-
-**Updated date**: 2026-06-18
-**Document version**: v2.1.0

@@ -1,10 +1,5 @@
 # schema-dsl 快速上手
 
-> **阅读时间**: 5分钟  
-> **目标**: 快速掌握 schema-dsl 核心用法  
-
----
-
 如果你第一次使用 schema-dsl，请从本页开始。读完后可以继续看 [DSL 语法](dsl-syntax.md) 理解规则写法，再看 [验证指南](validation-guide.md) 进入完整验证流程。
 
 <a id="-安装"></a>
@@ -94,7 +89,7 @@ console.log(result.valid); // true
 
 ### 3. 链式字段（2分钟）
 
-v2.1.0 起，公开文档默认推荐从 `schema-dsl/pure` 导入 `s`。简单字段保留纯 DSL 字符串；需要链式方法时用 `s('...')` 包裹 DSL seed；想要最完整 TypeScript 方法提示时用 `s.xxx()` factory。
+在当前源码和下一版 v2.1.0 中，公开文档默认推荐从 `schema-dsl/pure` 导入 `s`。简单字段保留纯 DSL 字符串；需要链式方法时用 `s('...')` 包裹 DSL seed；想要最完整 TypeScript 方法提示时用 `s.xxx()` factory。
 
 ```javascript
 import { s } from 'schema-dsl/pure';
@@ -378,7 +373,7 @@ const schema = s({
 
 **核心要点**:
 1. ✅ DSL语法简洁直观
-2. ✅ `schema-dsl/pure` + `s` 是 v2.1.0 起推荐的默认入口
+2. ✅ `schema-dsl/pure` + `s` 是当前源码和下一版 v2.1.0 的推荐默认入口
 3. ✅ `s('...')` 适合显式 DSL 种子 + builder 提示
 4. ✅ `s.xxx()` factory 提供最完整的方法发现
 
@@ -392,7 +387,4 @@ const schema = s({
 **说明**: 覆盖快速上手中的 Hello World、`schema-dsl/pure` + `s` 编写路径、用户注册示例，以及 `validate()` 与 `Validator.compile()` 的基础复用路径，可直接运行参考。
 
 ---
-
-**最后更新**: 2026-06-18
-
 

@@ -713,13 +713,10 @@ export class DslBuilder {
     if (!this._baseSchema.maxLength) this._baseSchema.maxLength = maxLength
 
     let pat = '^[a-zA-Z]'
-    if (allowUnderscore && allowNumber) {
-      pat += '[a-zA-Z0-9_]*$'
-    } else if (allowNumber) {
-      pat += '[a-zA-Z0-9]*$'
-    } else {
-      pat += '[a-zA-Z]*$'
-    }
+    let tailChars = 'a-zA-Z'
+    if (allowNumber) tailChars += '0-9'
+    if (allowUnderscore) tailChars += '_'
+    pat += `[${tailChars}]*$`
 
     return this._setPattern(pat).messages({ pattern: 'pattern.username' })
   }

@@ -1,11 +1,5 @@
 # FAQ troubleshooting guide
 
-> **Purpose**: Quickly solve common problems in the use of schema-dsl
-> **Update**: 2026-06-10
-
----
-
-
 ## Validation issues
 
 ### Question 1: Validation always fails, but I don’t know why
@@ -167,7 +161,7 @@ tags: 'array!1-10<string>'
 
 **Symptoms**: Poor performance when validating large amounts of data
 
-**Checklist**:
+Try these steps:
 
 #### 1. Check whether cache is used
 ```javascript

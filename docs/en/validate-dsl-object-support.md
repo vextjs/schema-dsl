@@ -1,18 +1,14 @@
-# validate() function supports DSL object specification
+# validate() with DSL objects
 
-## question
+`validate()` and `validateAsync()` can receive a DSL object directly. This is useful for small, one-off schemas where wrapping the object with `s()` first would not add much value.
 
-User asked: Can `schema` in `validate(schema, { email: 'test@example.com', age: 25 })` be directly an object? Why does it have to be a schema?
-
-## Answer
-
-**It works now.** In the current version, both the top-level `validate()` and `validateAsync()` support passing in DSL objects directly.
+For reusable schemas, build the schema once with `s(...)` and reuse it. For interoperability, standard JSON Schema is also supported.
 
 ---
 
 ## Three supported methods
 
-### Method 1: Pass in DSL object (✅ Supported by current version)
+### Method 1: Pass in a DSL object
 
 ```javascript
 import { validate } from 'schema-dsl/pure';
@@ -26,11 +22,11 @@ const result = validate(
 console.log(result.valid);  // true
 ```
 
-**advantage**:
-- ✅ The simplest, no `s()` package required
-- ✅ The code is more intuitive and suitable for simple scenarios
+**Advantages**:
+- Simplest form for small schemas.
+- No separate `s()` wrapping step is required.
 
-**⚠️ NOTE**: DSL objects also support mixed use of DslBuilder instances:
+DSL objects can also contain DslBuilder instances:
 
 ```javascript
 import { s, validate } from 'schema-dsl/pure';
@@ -62,10 +58,10 @@ const schema = s({
 const result = validate(schema, { email: 'test@example.com', age: 25 });
 ```
 
-**advantage**:
-- ✅More clear, clear intentions
-- ✅ Reusable schema
-- ✅ Support chain call extension
+**Advantages**:
+- Clearer when the schema is reused.
+- Supports builder chains before validation.
+- Avoids rebuilding the same schema for every request.
 
 ### Method 3: Pass in standard JSON Schema
 
@@ -86,9 +82,9 @@ const result = validate(
 );
 ```
 
-**advantage**:
-- ✅ Compatible with standard JSON Schema
-- ✅ Interoperable with other JSON Schema tools
+**Advantages**:
+- Compatible with standard JSON Schema.
+- Interoperates with other JSON Schema tools.
 
 ---
 

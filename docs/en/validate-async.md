@@ -1,8 +1,6 @@
 # validateAsync - asynchronous validation
 
-> Automatically throw an error if validation fails
-
----
+Automatically throw an error if validation fails
 
 ## quick start
 
@@ -485,7 +483,3 @@ new ValidationError(errors, data)
 **Description**: Covers the success path of `validateAsync()`, `ValidationError` capture, Promise-returning `.custom()`, and the optional method of business layer asynchronous checking after structure validation.
 
 ---
-
-**Version**: v2.0.9
-**Updated date**: 2026-06-10
-**Author**: schema-dsl Team

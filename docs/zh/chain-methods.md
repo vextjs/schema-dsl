@@ -1,8 +1,6 @@
 # schema-dsl 链式字段方法列表
 
-> **更新时间**: 2026-06-18
-
-当字段不再只是一个纯 DSL 字符串时，请查阅本页。v2.1.0 起推荐的默认写法是：
+当字段不再只是一个纯 DSL 字符串时，请查阅本页。当前源码和下一版 v2.1.0 推荐的默认写法是：
 
 ```ts
 import { s } from 'schema-dsl/pure';
@@ -106,9 +104,7 @@ const schema = s({
 
 本页列出内置字段 builder 方法。用户自定义方法应先区分要扩展的层次：
 
-- 复用 `tenant-id!` 这样的字面量，看 [自定义 DSL 类型](plugin-type-registration.md)。
-- 增加 `s.tenantId()` 这样的 namespace factory，看 [自定义 s.xxx() 工厂](custom-factories.md)。
-- 增加 `s('string!').tenantId()` 这样的 builder 方法，看 [自定义链式方法](custom-chain-methods.md)。
+- 复用 `tenant-id!`、`s('tenant-id!')`、`s.tenantId()` 这样的业务类型，看 [自定义扩展](custom-extensions.md)。
 - 源码必须保留 `'string!'.tenantId()` 时，看 [String 扩展](string-extensions.md) 并配置 transform。
 
 ## 相关文档
@@ -118,7 +114,7 @@ const schema = s({
 - [TypeScript 指南](./typescript-guide.md)
 - [String 扩展](./string-extensions.md)
 - [运行时隔离](./runtime-isolation.md)
-- [自定义链式方法](./custom-chain-methods.md)
+- [自定义扩展](./custom-extensions.md)
 
 ---
 

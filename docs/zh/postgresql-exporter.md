@@ -1,12 +1,5 @@
 # PostgreSQL 导出器文档
 
-> **模块**: `src/exporters/PostgreSQLExporter.ts`  
-
-> **用途**: 将 JSON Schema 转换为 PostgreSQL CREATE TABLE 语句
-
----
-
-
 ## 概述
 
 `PostgreSQLExporter` 将 schema-dsl 生成的 JSON Schema 转换为 PostgreSQL 的 DDL 语句，支持丰富的 PostgreSQL 特性。

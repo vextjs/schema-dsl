@@ -1,10 +1,6 @@
 # schema-dsl document map
 
-> **Last updated**: 2026-06-18
-> **Purpose**: Find every published document by the same task path used in the left sidebar.
-> **Online documentation**: [English home](/schema-dsl/)
-
-This page is a document map. The left sidebar remains the primary navigation source, while this page gives a compact, searchable overview for readers who already know the area they need.
+This page is a document map. The left sidebar keeps the main learning path, while this page also lists smaller reference and appendix pages for readers who already know the area they need.
 
 ## Start
 
@@ -86,14 +82,11 @@ This page is a document map. The left sidebar remains the primary navigation sou
 
 | Document | When to read it |
 |----------|-----------------|
-| [Extension Overview](extensions-overview.md) | Choose between custom types, factories, chain methods, keywords, runtime isolation, and plugins. |
-| [Custom DSL Types](plugin-type-registration.md) | Register reusable DSL literals such as `tenant-id!`. |
-| [Custom s.xxx() Factories](custom-factories.md) | Expose discoverable namespace factories. |
-| [Custom Chain Methods](custom-chain-methods.md) | Add methods to existing builders and configure transform support. |
+| [Extension Overview](extensions-overview.md) | Choose between custom business types, validation keywords, runtime isolation, and plugins. |
+| [Custom Extensions](custom-extensions.md) | Define reusable business types once for pure DSL, `s('...')`, and `s.xxx()` entries. |
 | [Custom Validation Keywords](add-keyword.md) | Add custom AJV keywords. |
 | [Framework Integration](framework-extension-setup.md) | Organize reusable extension modules for applications and frameworks. |
 | [Plugin Manager (Advanced)](plugin-system.md) | Plugin lifecycle, hooks, and integration orchestration. |
-| [Advanced Extension Recipes](custom-extensions-guide.md) | Combine custom types, factories, keywords, locales, runtime isolation, and plugins. |
 
 ## Production and Troubleshooting
 
@@ -102,7 +95,7 @@ This page is a document map. The left sidebar remains the primary navigation sou
 | [Best Practices](best-practices.md) | Recommended usage patterns for production projects. |
 | [Project Structure Best Practices](best-practices-project-structure.md) | Organizing schema-dsl in a real project. |
 | [Performance Guide](performance-guide.md) | Performance tuning and cache considerations. |
-| [Security Checklist](security-checklist.md) | Security review checklist for schema usage and export. |
+| [Security Notes](security-checklist.md) | Security notes for schema usage, custom validators, and export. |
 | [Troubleshooting](troubleshooting.md) | Common failures and reproducible fixes. |
 | [FAQ](faq.md) | Short answers to common questions. |
 
@@ -112,7 +105,7 @@ This page is a document map. The left sidebar remains the primary navigation sou
 |----------|-----------------|
 | [API Reference](api-reference.md) | Full public API reference. |
 | [API Overview](api.md) | Compact API entry point. |
-| [Document Map](doc-index.md) | This page, organized by sidebar path. |
+| [Document Map](doc-index.md) | This page, organized by topic. |
 | [Feature Index](FEATURE-INDEX.md) | Capability-oriented lookup across documents. |
 
 ## Examples

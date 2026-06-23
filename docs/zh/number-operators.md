@@ -1,6 +1,5 @@
-# 数字比较运算符 (v1.1.2+)
+# 数字比较运算符
 
-**版本**: v1.1.2+  
 **适用类型**: `number`, `integer`
 
 ## 📋 快速概览
@@ -441,9 +440,4 @@ s({ level: 'number:=5' })    // 等于
 
 **示例入口**: [number-operators.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/number-operators.ts)  
 **说明**: 覆盖 `>=`、`<`、`<=`、`=` 和整数比较运算符的成功/失败路径，便于直接观察边界行为。
-
----
-
-**版本**: v1.1.2+  
-**更新时间**: 2026-05-08
 

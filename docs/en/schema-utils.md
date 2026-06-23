@@ -1,9 +1,6 @@
 # Schema tool function documentation
 
-> **Update time**: 2025-12-25
-
----
-
+Use SchemaUtils when multiple schemas share fields or when you need to derive one schema from another. This page focuses on practical reuse patterns first, then introduces helper APIs for larger projects.
 
 ## Schema reuse
 
@@ -511,5 +508,3 @@ const schema = s({
 **Description**: Minimal workflow covering `reusable()`, `createLibrary()`, `extend()`, `validateBatch()`, `withPerformance()` and `clone()`.
 
 ---
-
-**Last updated**: 2026-05-08

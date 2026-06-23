@@ -1,16 +1,12 @@
 # schema-dsl API Reference
 
-> **Updated**: 2026-06-18
-
----
-
 Use this as the complete public API reference after you understand the task-oriented guides. For a shorter route into the API surface, see [API Overview](api.md).
 
 ## `dsl` / `s` Namespace
 
 ### Description
 
-The main DSL namespace. `s` and `dsl` are the same function object: `s === dsl`. The callable form accepts string definitions and object definitions, while namespace factories provide a discoverable chain entry without maintaining a second grammar. From v2.1.0, public examples use `schema-dsl/pure` + `s` as the default no-prototype-mutation entry.
+The main DSL namespace. `s` and `dsl` are the same function object: `s === dsl`. The callable form accepts string definitions and object definitions, while namespace factories provide a discoverable chain entry without maintaining a second grammar. In the current source and the next v2.1.0 release, public examples use `schema-dsl/pure` + `s` as the default no-prototype-mutation entry.
 
 ### Syntax
 
@@ -62,7 +58,7 @@ Built-in factories are available on the shared `s` / `dsl` namespace:
 | Primitive and common types | `s.string()`, `s.number()`, `s.integer()`, `s.int()`, `s.boolean()`, `s.object()`, `s.array(item?)`, `s.any()`, `s.mixed()` |
 | Formats and presets | `s.email()`, `s.url()`, `s.uri()`, `s.uuid()`, `s.ip()`, `s.ipv4()`, `s.ipv6()`, `s.date()`, `s.datetime()`, `s.time()`, `s.slug()`, `s.phone(country?)`, `s.username(preset?)`, `s.password(preset?)` |
 | Enum and custom type bridge | `s.enum(...values)`, `s.enum(values)`, `s.type(name)` |
-| Extension helpers | `s.defineExtension(definition)`, `s.registerExtension(definition)` |
+| Extension helpers | `registerExtensions(definitions)`, `s.defineExtension(definition)`, `s.registerExtension(definition)` |
 
 Examples:
 
@@ -565,7 +561,7 @@ resetRuntimeState();
 
 ### `installStringExtensions(dslFunction?)`
 
-Installs or reinstalls String extensions for projects that intentionally use direct `'string!'.description(...)` chaining. Ordinary v2.1.0 documentation examples do not need this API because they start from `schema-dsl/pure` + `s`.
+Installs or reinstalls String extensions for projects that intentionally use direct `'string!'.description(...)` chaining. Ordinary documentation examples in the current source and the next v2.1.0 release do not need this API because they start from `schema-dsl/pure` + `s`.
 
 ```javascript
 import { installStringExtensions } from 'schema-dsl/pure';
@@ -750,7 +746,8 @@ const result = runtime.validate(schema, {
 | `runtime.compile(definition)` | Compiles a string or object DSL definition using the runtime scope. |
 | `runtime.compileField(string)` | Returns an isolated chainable field builder. |
 | `runtime.configure(options, control?)` | Updates runtime messages, type scope, patterns, strict mode or validator options. `merge` is incremental; `replace` swaps the full runtime-local profile; `reset` clears it before applying `options`. |
-| `runtime.registerExtension(definition)` | Registers a runtime-scoped custom DSL extension and optional namespace factory. |
+| `runtime.registerExtensions(definitions)` | In the current source and the next v2.1.0 release, batch-registers runtime-scoped extensions from one definition set and returns a runtime namespace with typed factories. |
+| `runtime.registerExtension(definition)` | Registers a runtime-scoped custom DSL extension and optional namespace factory; useful for dynamic registration or static-extension compatibility. |
 | `runtime.registerType(name, schema)` | Adds or replaces a runtime-local custom type. |
 | `runtime.registerDynamicType(name, factory)` | Adds or replaces a runtime-local dynamic type factory. |
 | `runtime.unregisterType(name)` | Removes a runtime-local custom or dynamic type. |
@@ -1388,19 +1385,19 @@ The companion example [api-reference.ts](https://github.com/vextjs/schema-dsl/bl
 ```javascript
 import { s, Validator } from 'schema-dsl/pure';
 
-// Define schema with String extensions
+// Define schema with pure DSL plus s(...) builders
 const userSchema = s({
-  username: 'string:3-32!'
+  username: s('string:3-32!')
     .pattern(/^[a-zA-Z0-9_]+$/)
     .messages({
       'string.pattern': 'Only letters, numbers, and underscores are allowed'
     })
     .label('username'),
 
-  email: 'email!'
+  email: s('email!')
     .label('email address'),
 
-  password: 'string:8-64!'
+  password: s('string:8-64!')
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
     .label('password'),
 
@@ -1438,5 +1435,3 @@ console.log(result.valid); // true
 **Description**: Covers runnable call chains for `s()`, `validate()`, `validateAsync()`, the default `Validator` singleton, `CacheManager`, `CustomKeywords`, `I18nError`, `PluginManager`, `CONSTANTS`, template rendering, `JSONSchemaCore`, `ErrorFormatter`, `ObjectDslBuilder`, `TypeRegistry`, and other public APIs.
 
 ---
-
-**Last updated**: 2026-06-17

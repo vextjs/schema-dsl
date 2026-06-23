@@ -1,11 +1,6 @@
 # 导出完整指南
 
-> **用途**: Schema 到多种输出格式的完整导出指南  
-> **阅读时间**: 10分钟
-
-> ⚠️ **重要提示**: 并非所有 schema-dsl 特性都能导出到数据库。请先阅读 [导出限制说明](export-limitations.md) 了解哪些特性不支持导出。
-
----
+⚠️ **重要提示**: 并非所有 schema-dsl 特性都能导出到数据库。请先阅读 [导出限制说明](export-limitations.md) 了解哪些特性不支持导出。
 
 建议在理解 schema-dsl 生成的 JSON Schema 后阅读本指南。依赖数据库 DDL 作为验证层之前，请务必先看 [导出限制](export-limitations.md)。
 

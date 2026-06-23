@@ -1,9 +1,5 @@
 # String extension documentation
 
-> **Update time**: 2026-06-18
-
----
-
 This page documents the explicit String extension path. For ordinary application code, prefer `schema-dsl/pure` + `s`. Use this page when you intentionally want direct string-chain authoring, or when you need to maintain compatibility with code that already uses it.
 
 ## Core features
@@ -521,5 +517,3 @@ const schema = s({
 **Description**: Covers the installation/uninstallation of String.prototype extension, chained `.label()` / `.messages()` / `.pattern()` calls, and validation success/failure paths.
 
 ---
-
-**Last updated**: 2026-06-18

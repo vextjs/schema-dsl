@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Added declarative custom extension registration with `registerExtensions([... ] as const)` and `runtime.registerExtensions([...])`, so one definition can power pure DSL strings, `s('...')` builder seeds, and typed `s.xxx()` factories.
+- Added extension `params` parsing, parameter defaults, factory object/positional arguments, `segmentMode: 'none' | 'params' | 'constraint'`, and structured extension diagnostics for `compileWithDiagnostics()`.
+
+### Changed
+
+- Custom extension docs and runnable examples now use the three-entry model and keep range syntax on the existing dash form, such as `age-range:18-65!`.
+
 ## Version History
 
 | Version | Date | Type | Key Theme |

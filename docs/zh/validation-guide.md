@@ -1,10 +1,5 @@
 # 数据验证最佳实践指南
 
-> **用途**: 完整的数据验证使用指南  
-> **阅读时间**: 15分钟
-
----
-
 当你已经有 schema，需要理解验证选项、失败路径和结果处理时阅读本页。API 细节请配合 [validate()](validate.md)、[validateAsync()](validate-async.md) 和 [Validator](validator.md)。
 
 ## 快速入门

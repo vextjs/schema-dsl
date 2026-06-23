@@ -1,9 +1,6 @@
 # Database export restrictions description
 
-> **IMPORTANT**: When using schema-dsl to export the database schema feature, please read this document carefully to understand which features can be exported and which are not supported.
-
----
-
+**IMPORTANT**: When using schema-dsl to export the database schema feature, please read this document carefully to understand which features can be exported and which are not supported.
 
 ## core principles
 

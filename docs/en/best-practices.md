@@ -1,10 +1,5 @@
 # schema-dsl best practices
 
-> **Purpose**: Help you write high-quality, high-performance Schema code
-> **Update**: 2026-06-18
-
----
-
 Use this after you have working schemas and want production-ready structure, performance, and maintainability patterns. For project layout, continue with [Project Structure Best Practices](best-practices-project-structure.md).
 
 ## Schema design principles
@@ -691,7 +686,7 @@ Following these best practices, your schema-dsl code will have:
 ## Further reading
 
 - [Performance Optimization Guide](performance-guide.md)
-- [Safety Checklist](security-checklist.md)
+- [Security Notes](security-checklist.md)
 - [Troubleshooting Guide](troubleshooting.md)
 
 ---

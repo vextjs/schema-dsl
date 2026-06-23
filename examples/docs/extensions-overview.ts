@@ -2,10 +2,10 @@ import {
   DslBuilder,
   TypeRegistry,
   Validator,
+  registerExtensions,
   resetRuntimeState,
-  s,
+  s as baseS,
   validate,
-  type IDslBuilder,
 } from '../../dist/pure.js'
 import { createRuntime } from '../../dist/runtime.js'
 
@@ -20,21 +20,35 @@ TypeRegistry.register('evenNumber', {
   baseSchema: { type: 'number', multipleOf: 2 },
 })
 
-const evenSchema = s({ value: 'evenNumber!' })
+const evenSchema = baseS({ value: 'evenNumber!' })
 console.log('extensions-overview.type.valid =', validate(evenSchema, { value: 4 }).valid)
 console.log('extensions-overview.type.invalid =', validate(evenSchema, { value: 5 }).valid)
 
 // 2. Custom namespace factory: discoverable s.xxx() path.
-s.registerExtension({
-  literal: 'tenant-id',
-  factoryName: 'tenantId',
-  schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' },
-} as any)
+const s = registerExtensions([
+  {
+    literal: 'tenant-id',
+    factoryName: 'tenantId',
+    segmentMode: 'params',
+    params: {
+      scope: { kind: 'enum', values: ['tenant', 'corp'], default: 'tenant' },
+    },
+    schema({ scope }) {
+      return {
+        type: 'string',
+        pattern: scope === 'corp' ? '^corp_[a-z0-9]+$' : '^tenant_[a-z0-9]+$',
+      }
+    },
+  },
+] as const)
 
-const sWithTenant = s as typeof s & { tenantId(): IDslBuilder }
-const tenantSchema = s({ tenant: sWithTenant.tenantId().require() })
+const tenantSchema = s({
+  compact: 'tenant-id:corp!',
+  named: s('tenant-id:corp!').label('Tenant'),
+  typed: s.tenantId('corp').require(),
+})
 console.log('extensions-overview.factory.valid =',
-  validate(tenantSchema, { tenant: 'tenant_demo' }).valid)
+  validate(tenantSchema, { compact: 'corp_demo', named: 'corp_owner', typed: 'corp_admin' }).valid)
 
 // 3. Runtime-scoped type: isolated app/plugin/tenant state.
 const runtime = createRuntime({
@@ -42,9 +56,16 @@ const runtime = createRuntime({
     runtimeTenantId: { type: 'string', pattern: '^rt_[a-z0-9]+$' },
   },
 })
+const runtimeS = runtime.registerExtensions([
+  {
+    literal: 'runtime-tenant-id',
+    factoryName: 'runtimeTenantId',
+    schema: { type: 'string', pattern: '^rt_[a-z0-9]+$' },
+  },
+] as const)
 
 console.log('extensions-overview.runtime.valid =',
-  runtime.validate(runtime.s({ tenant: 'runtimeTenantId!' }), { tenant: 'rt_demo' }).valid)
+  runtime.validate(runtime.s({ tenant: runtimeS.runtimeTenantId().require() }), { tenant: 'rt_demo' }).valid)
 
 runtime.dispose()
 

@@ -1,8 +1,8 @@
 # Advanced extension recipes
 
-> **Version**: 2.0.11
-> **Updated date**: 2026-06-18
-> **Purpose**: Combine custom types, factories, chain methods, keywords, locale messages, runtime isolation, and plugins after you understand each focused extension path.
+> **Version**: current source extension model; start with [Custom Extensions](custom-extensions.md) for ordinary business types
+> **Updated date**: 2026-06-22
+> **Purpose**: Combine custom extensions, validation keywords, locale messages, runtime isolation, and plugins after you understand each focused extension path.
 
 ---
 
@@ -12,9 +12,7 @@
 For most projects, start with the focused pages:
 
 - [Extension Overview](extensions-overview.md) - choose the right extension path.
-- [Custom DSL Types](plugin-type-registration.md) - register reusable DSL literals.
-- [Custom s.xxx() Factories](custom-factories.md) - expose discoverable namespace factories.
-- [Custom Chain Methods](custom-chain-methods.md) - add methods to existing builders.
+- [Custom Extensions](custom-extensions.md) - define reusable business types once across pure DSL, `s('...')`, and `s.xxx()` entries.
 - [Custom Validation Keywords](add-keyword.md) - add AJV keywords.
 - [Framework Integration](framework-extension-setup.md) - organize reusable extension modules.
 
@@ -25,10 +23,10 @@ Use this page only when an extension package combines several of those capabilit
 schema-dsl adopts modular design. Advanced extensions can combine:
 
 1. **`Validator.addKeyword()`** - Runtime registration of custom AJV keywords
-2. **`registerExtension()` / `s.registerExtension()` / `TypeRegistry.register()` / `DslBuilder.registerType()`** - Register a custom DSL type and optional namespace factory
+2. **`registerExtension()` / `s.registerExtension()` / `TypeRegistry.register()` / `DslBuilder.registerType()`** - Register a custom DSL type and optional namespace factory; ordinary business types should start from [Custom Extensions](custom-extensions.md)
 3. **`PluginManager` + `schema-dsl/plugins/*`** - Combination plug-in, hook and official plug-in entrance
 4. **`Locale.addLocale()` / `s.config({ i18n })`** - Extended multi-language messages
-5. **`transformSchemaDsl({ additionalMethods })` + `schema-dsl/string-types`** - Compile-time String-chain custom methods and opt-in TypeScript hints
+5. **`transformSchemaDsl()` + `schema-dsl/string-types`** - Compatibility for direct String-chain source; do not expose ordinary business types through custom String methods
 6. **`createRuntime()` from `schema-dsl/runtime`** - Isolated custom types, patterns and messages for frameworks or tenants
 
 ## Recommended path for current version
@@ -37,11 +35,11 @@ schema-dsl adopts modular design. Advanced extensions can combine:
 > Only when you maintain `schema-dsl`'s own source code, you need to continue reading the "Modify Internal Module" class example below.
 
 - Custom keywords: priority is given to `new Validator().addKeyword(name, definition)`
-- Custom type and namespace factory: prefer `registerExtension()` / `s.registerExtension()` when you want the DSL literal and `s.tenantId()` to exist together; use `TypeRegistry.register()` or `DslBuilder.registerType()` when only the literal type is needed.
+- Custom type and namespace factory: design ordinary business types with the three-entry model in [Custom Extensions](custom-extensions.md). Use `registerExtension()` / `s.registerExtension()` for dynamic registration or compatibility paths.
 - `factoryName` must be a valid JavaScript/TypeScript identifier, such as `tenantId`, because it becomes a dot-call namespace method and a module-augmentation method name.
 - Official plug-in: give priority to `PluginManager` with `schema-dsl/plugins/custom-format`, `schema-dsl/plugins/custom-validator`, `schema-dsl/plugins/custom-type-example`
 - Custom language: priority is given to `Locale.addLocale()` or `s.config({ i18n: { locales } })`
-- Custom String-chain authoring: configure `additionalMethods` in the transform, configure `additionalTypes` or `additionalTypePatterns` when chaining from registered custom DSL type literals, and augment `schema-dsl/string-types` for IDE hints. The transform only rewrites source code; the actual `s('...').yourMethod()` runtime method must still be provided by your extension.
+- Direct String-chain source: treat it as compatibility or authoring convenience only. Do not design ordinary business types as `'string!'.tenantId()` or `s('string!').tenantId()`; use `'tenant-id!'`, `s('tenant-id!')`, or `s.tenantId()` instead.
 - Framework or tenant isolation: prefer `createRuntime()` from `schema-dsl/runtime` so custom types, pattern overrides, messages, message providers and Validator/AJV caches stay inside one runtime instance.
 - Register runtime custom types and dynamic type factories at app/plugin startup. Avoid request-scoped factories that capture request objects or large app containers; pass request-level locale/messages via `validate(..., options)` instead.
 
@@ -79,7 +77,7 @@ const schema = runtime.s({
 
 For hot reload, prefer `runtime.configure(nextOptions, { mode: 'replace' })` or `runtime.configure({}, { mode: 'reset' })` before loading the next extension set. Use `runtime.dispose()` when an app/plugin instance is unloaded.
 
-Built-in chain methods keep their TypeScript hints through `runtime.s('string')` / `runtime.compileField('string')`. Custom chain methods still need normal builder interface augmentation plus a runtime method implementation in your extension code.
+Built-in chain methods keep their TypeScript hints through `runtime.s('string')` / `runtime.compileField('string')`. Ordinary business types should not be exposed through custom base-builder methods; register an extension on the runtime and use `runtime.s({ id: 'tenant-id!' })` or `runtime.s.tenantId()` instead.
 
 Runtime namespace factories are scoped too:
 
@@ -95,86 +93,38 @@ const tenant = runtime.s.tenantId().require().toSchema();
 
 ---
 
-## Compile-time String-chain custom methods
+## Compile-time String-chain compatibility
 
-When a project has its own builder method, add the method name to `additionalMethods` so static String chains are rewritten to `s(...)` calls:
+Direct String chaining is a compatibility and authoring feature, not the recommended extension entry for ordinary business types. It is useful when existing static source such as:
 
 ```typescript
-import { transformSchemaDsl } from 'schema-dsl/transform';
-
-const result = transformSchemaDsl(
-  'export const tenant = "string!".tenantId().label("Tenant")',
-  {
-    filename: 'schema.ts',
-    additionalMethods: ['tenantId']
-  }
-);
+const schema = 'email!'.label('Email');
 ```
 
-For TypeScript hints, import `schema-dsl/string-types` and augment its extension interface. The direct-string line below is meant for code that is transformed before runtime; without the transform, use `s('...')` or `s.xxx()`:
+should be rewritten at build time into the side-effect-free form:
 
 ```typescript
-import 'schema-dsl/string-types';
-import { DslBuilder, s, registerExtension, type IDslBuilder } from 'schema-dsl/pure';
+const schema = s('email!').label('Email');
+```
 
-registerExtension({
-  literal: 'tenant-id',
-  factoryName: 'tenantId',
-  exposeStringChain: true,
-  schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
+If the goal is adding a business type such as `tenant-id`, do not design these entries:
+
+```typescript
+'string!'.tenantId();     // not recommended for business types
+s('string!').tenantId();  // not recommended for business types
+```
+
+Use one custom extension definition instead:
+
+```typescript
+const schema = s({
+  compact: 'tenant-id!',
+  named: s('tenant-id!').label('Tenant'),
+  typed: s.tenantId().label('Tenant').require()
 });
-
-function installTenantIdBuilderMethod() {
-  const proto = DslBuilder.prototype as unknown as {
-    tenantId?: (this: IDslBuilder) => IDslBuilder;
-  };
-
-  proto.tenantId ??= function tenantId(this: IDslBuilder) {
-    return this.pattern(/^tenant_[a-z0-9]+$/);
-  };
-}
-
-installTenantIdBuilderMethod();
-
-declare module 'schema-dsl/pure' {
-  interface DslNamespaceFactories {
-    tenantId(): IDslBuilder;
-  }
-
-  interface IDslBuilder {
-    tenantId(): this;
-  }
-}
-
-declare module 'schema-dsl/string-types' {
-  interface SchemaDslStringExtensions {
-    tenantId(): IDslBuilder;
-  }
-}
-
-const tenantFromString = 'string!'.tenantId().label('Tenant');
-const tenantFromDsl = s('string!').tenantId().label('Tenant');
-const tenantFromNamespace = s.tenantId().label('Tenant');
 ```
 
-`exposeStringChain: true` lets `defineExtension()` derive `transformMethods: ['tenantId']` from the factory name. It does not install a runtime builder method or TypeScript declarations by itself; keep providing both the runtime method implementation and the module augmentation shown above.
-
-Use `methods` only when intentionally replacing the full built-in transform method set; for normal user extensions, prefer `additionalMethods`.
-
-When the string literal itself is a registered custom DSL type, also add the type name or a matching pattern:
-
-```typescript
-const result = transformSchemaDsl(
-  'export const tenant = "tenant-id!".tenantId().label("Tenant")',
-  {
-    filename: 'schema.ts',
-    additionalMethods: ['tenantId'],
-    additionalTypes: ['tenant-id']
-  }
-);
-```
-
-For generated type names, use `additionalTypePatterns`, for example `{ additionalTypePatterns: ['^tenant-[0-9]+!?$'] }`.
+`transformSchemaDsl({ additionalMethods })`, `additionalTypes`, `additionalTypePatterns`, and `schema-dsl/string-types` can still support existing direct String-chain source, but they are advanced compatibility settings. Most users only need the three-entry model in [Custom Extensions](custom-extensions.md).
 
 ---
 

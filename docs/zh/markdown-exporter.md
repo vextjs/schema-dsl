@@ -1,10 +1,6 @@
 # Markdown 导出器
 
-> **功能**: 将 JSON Schema 导出为人类可读的 Markdown 文档  
-> **语言支持**: 中文、英文、日文
-
----
-
+当你需要把 schema 转成可阅读的字段文档时使用 Markdown 导出器，例如 API 字段表或内部数据契约说明。先按正常方式定义 schema，再交给 `exporters.MarkdownExporter.export()` 生成 Markdown。
 
 ## 快速开始
 
@@ -392,7 +388,4 @@ console.log('✅ 文档已生成');
 **说明**: 覆盖 `MarkdownExporter.export()` 的中英文文档生成和标题/字段落点检查，适合作为文档导出最小样板。
 
 ---
-
-**文档更新日期**: 2026-06-10
-**版本**: v2.0.9
 

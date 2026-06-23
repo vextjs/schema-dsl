@@ -1,11 +1,5 @@
 # 常见问题解答 (FAQ)
 
-> **更新时间**: 2026-06-18
-
-
----
-
-
 ## 基础问题
 
 ### Q: schema-dsl 适合解决什么问题？
@@ -47,7 +41,7 @@ npm install schema-dsl
 **A**: 支持。
 
 ```javascript
-// v2.1.0 起公开文档推荐入口
+// 当前源码和下一版 v2.1.0 的公开文档推荐入口
 import { s, validate } from 'schema-dsl/pure';
 
 const schema = s({ email: 'email!' });
@@ -525,7 +519,7 @@ MySQL 会生成 `COMMENT`，PostgreSQL 会生成 `COMMENT ON COLUMN`。
 
 ### Q: schema-dsl 支持 TypeScript 吗？
 
-**A**: 支持。自 v2.1.0 起，公开 TypeScript 示例推荐 `schema-dsl/pure` + `s`：简单字段用纯 DSL 字符串，需要 builder 提示时用 `s('...')`，需要最完整方法发现时用 `s.xxx()` factory。
+**A**: 支持。在当前源码和下一版 v2.1.0 中，公开 TypeScript 示例推荐 `schema-dsl/pure` + `s`：简单字段用纯 DSL 字符串，需要 builder 提示时用 `s('...')`，需要最完整方法发现时用 `s.xxx()` factory。
 
 ```typescript
 import { s, validate, Validator } from 'schema-dsl/pure';

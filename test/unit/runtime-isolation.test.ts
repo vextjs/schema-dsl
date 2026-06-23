@@ -202,6 +202,41 @@ describe('schema-dsl/runtime isolation', () => {
     expect(TypeRegistry.has('tenant-runtime-id')).toBe(false)
   })
 
+  it('keeps parameterized runtime extensions scoped to the runtime registry', () => {
+    const runtime = createRuntime()
+    const runtimeS = runtime.registerExtensions([
+      {
+        literal: 'tenant-runtime-id',
+        factoryName: 'tenantRuntimeId',
+        segmentMode: 'params',
+        params: {
+          scope: { kind: 'enum', values: ['tenant', 'corp'], default: 'tenant' },
+        },
+        schema({ scope }) {
+          return {
+            type: 'string',
+            pattern: scope === 'corp' ? '^rt_corp_[a-z0-9]+$' : '^rt_tenant_[a-z0-9]+$',
+          }
+        },
+      },
+    ] as const)
+
+    expect(runtimeS).toBe(runtime.s)
+    expect(runtime.compile({ tenant: 'tenant-runtime-id:corp!' })).toMatchObject({
+      required: ['tenant'],
+      properties: {
+        tenant: { type: 'string', pattern: '^rt_corp_[a-z0-9]+$' },
+      },
+    })
+    expect(runtimeS.tenantRuntimeId('corp').require().toSchema()).toMatchObject({
+      type: 'string',
+      pattern: '^rt_corp_[a-z0-9]+$',
+      _required: true,
+    })
+    expect((globalS as unknown as { tenantRuntimeId?: unknown }).tenantRuntimeId).toBeUndefined()
+    expect(TypeRegistry.has('tenant-runtime-id')).toBe(false)
+  })
+
   it('clears scoped namespace extension factories on runtime reset and replace', () => {
     const runtime = createRuntime({ strict: true })
 

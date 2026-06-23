@@ -37,6 +37,20 @@ describe('MarkdownExporter', () => {
       expect(result).toContain('User object')
     })
 
+    it('should support instance export with option overrides', () => {
+      const exporter = new MarkdownExporter({ title: 'Default Title', locale: 'en-US', includeExample: false })
+      const result = exporter.export({
+        type: 'object',
+        properties: {
+          email: { type: 'string', format: 'email', _required: true },
+        },
+      }, { title: 'Override Title' })
+
+      expect(result).toContain('# Override Title')
+      expect(result).toContain('| email | Email | ✅ | - | - |')
+      expect(result).not.toContain('Example Data')
+    })
+
     it('should include field info', () => {
       const schema = {
         type: 'object',
@@ -221,6 +235,73 @@ describe('MarkdownExporter', () => {
       expect(result).toContain('&lt;img src=x onerror=alert(1)&gt;')
       expect(result).toContain('``tick`field``')
       expect(result).not.toContain('`<img src=x onerror=alert(1)>`')
+    })
+
+    it('should render all example value branches', () => {
+      const result = MarkdownExporter.export({
+        type: 'object',
+        required: ['email', 'url', 'date', 'uuid', 'status', 'count', 'half', 'flag', 'tags', 'nested', 'unknown'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          url: { type: 'string', format: 'uri' },
+          date: { type: 'string', format: 'date' },
+          uuid: { type: 'string', format: 'uuid' },
+          status: { type: 'string', enum: ['active', 'inactive'] },
+          count: { type: 'integer', minimum: 3 },
+          half: { type: 'number', maximum: 10 },
+          flag: { type: 'boolean' },
+          tags: { type: 'array', items: { type: 'string', default: 'tag' } },
+          emptyList: { type: 'array' },
+          nested: { type: 'object', properties: { code: { type: 'string', _required: true } } },
+          unknown: {},
+        },
+      } as any, { locale: 'en-US' })
+
+      expect(result).toContain('"email": "user@example.com"')
+      expect(result).toContain('"url": "https://example.com"')
+      expect(result).toContain('"date": "2025-12-29"')
+      expect(result).toContain('"uuid": "550e8400-e29b-41d4-a716-446655440000"')
+      expect(result).toContain('"status": "active"')
+      expect(result).toContain('"count": 3')
+      expect(result).toContain('"half": 5')
+      expect(result).toContain('"flag": true')
+      expect(result).toContain('"tags": [')
+      expect(result).toContain('"nested": {')
+      expect(result).toContain('"unknown": null')
+    })
+
+    it('should render one-sided length, range and item constraints', () => {
+      const result = MarkdownExporter.export({
+        type: 'object',
+        properties: {
+          minOnly: { type: 'string', minLength: 3 },
+          maxOnly: { type: 'string', maxLength: 32 },
+          minNumber: { type: 'number', minimum: 1 },
+          maxNumber: { type: 'number', maximum: 9 },
+          minItems: { type: 'array', minItems: 1 },
+          maxItems: { type: 'array', maxItems: 3 },
+          arrayEmail: { type: 'array', items: { type: 'string', format: 'email' } },
+        },
+      }, { locale: 'en-US', includeExample: false })
+
+      expect(result).toContain('Length: ≥3')
+      expect(result).toContain('Length: ≤32')
+      expect(result).toContain('Range: ≥1')
+      expect(result).toContain('Range: ≤9')
+      expect(result).toContain('Items: ≥1')
+      expect(result).toContain('Items: ≤3')
+      expect(result).toContain('Array&lt;Email&gt;')
+    })
+
+    it('should fall back to English labels for unsupported locales and omit property-only sections', () => {
+      const result = MarkdownExporter.export({ type: 'string' } as any, {
+        locale: 'missing' as any,
+        includeDescription: false,
+        includeExample: false,
+      })
+
+      expect(result).toContain('## Fields')
+      expect(result).not.toContain('## Validation Rules')
     })
   })
 })

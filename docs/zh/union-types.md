@@ -1,10 +1,5 @@
 # 跨类型联合验证 - types: 语法
 
-> **版本**: v1.1.0+  
-> **状态**: ✅ 稳定
-
----
-
 ## 概述
 
 `types:` 语法允许您定义跨类型联合验证，支持字段匹配多种不同的数据类型。
@@ -13,7 +8,7 @@
 
 ✅ **简洁语法** - `'types:string|number'` 一行搞定  
 ✅ **带约束** - `'types:string:3-10|number:0-100'`  
-✅ **自定义 DSL 类型** - 支持可复用类型注册
+✅ **自定义扩展** - 支持可复用类型注册
 ✅ **多语言** - 完整的i18n支持
 
 ---
@@ -270,7 +265,7 @@ DslBuilder.registerType('phone_cn', { ... });
 ## 相关文档
 
 - [扩展概览](./extensions-overview.md)
-- [自定义 DSL 类型](./plugin-type-registration.md)
+- [自定义扩展](./custom-extensions.md)
 - [贡献指南](https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md)
 
 ---

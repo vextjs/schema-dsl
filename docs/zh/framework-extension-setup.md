@@ -1,19 +1,16 @@
 # 框架集成与目录结构
 
-> **最后更新**: 2026-06-18
-
-框架接入应把 schema-dsl 扩展当作可复用的应用资产，类似语言包。自定义类型、factory、链式方法、runtime setup 和 transform 配置应放在一个稳定目录里。
+框架接入应把 schema-dsl 扩展当作可复用的应用资产，类似语言包。扩展定义、类型声明、runtime setup 和可选 transform 配置应放在一个稳定目录里。
 
 ## 推荐目录
 
 ```text
 src/schema-dsl/
-  index.ts              # 对外 setup 入口
-  types.ts              # 自定义 DSL 字面量和类型注册
-  factories.ts          # s.xxx() / runtime.s.xxx() factory
-  chain-methods.ts      # builder 方法实现
-  transform.ts          # 给构建工具使用的 additionalMethods / additionalTypes
+  index.ts              # 导出配置后的 s / runtime
+  extensions.ts         # 自定义扩展定义数组，单一真相源
+  types.d.ts            # 可选，仅动态注册或兼容场景需要
   runtime.ts            # createRuntime() 隔离封装
+  transform.ts          # 可选，仅直接 String 链式源码需要
   locales/
     en-US.ts
     zh-CN.ts
@@ -26,22 +23,31 @@ src/schema-dsl/
 如果应用启动期只加载一套扩展，使用这种方式：
 
 ```ts
-import { s, resetRuntimeState } from 'schema-dsl/pure';
+import { registerExtensions, resetRuntimeState } from 'schema-dsl/pure';
 
-export function installSchemaDslExtensions() {
-  s.registerExtension({
+export const s = registerExtensions([
+  {
     literal: 'tenant-id',
     factoryName: 'tenantId',
-    schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
-  });
-}
+    segmentMode: 'params',
+    params: {
+      scope: { kind: 'enum', values: ['tenant', 'corp'], default: 'tenant' }
+    },
+    schema({ scope }) {
+      return {
+        type: 'string',
+        pattern: scope === 'corp' ? '^corp_[a-z0-9]+$' : '^tenant_[a-z0-9]+$'
+      };
+    }
+  }
+] as const);
 
 export function resetSchemaDslExtensionsForTests() {
   resetRuntimeState();
 }
 ```
 
-在应用 bootstrap 或框架插件启动时调用一次 installer。
+业务代码从 `src/schema-dsl/index.ts` 导入这个配置后的 `s`。测试需要清理全局扩展状态时调用 `resetSchemaDslExtensionsForTests()`。
 
 ## runtime 作用域 setup
 
@@ -51,19 +57,26 @@ export function resetSchemaDslExtensionsForTests() {
 import { createRuntime } from 'schema-dsl/runtime';
 
 export function createAppSchemaRuntime() {
-  const runtime = createRuntime({
-    types: {
-      tenantId: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
+  const runtime = createRuntime();
+
+  const s = runtime.registerExtensions([
+    {
+      literal: 'tenant-id',
+      factoryName: 'tenantId',
+      segmentMode: 'params',
+      params: {
+        scope: { kind: 'enum', values: ['tenant', 'corp'], default: 'tenant' }
+      },
+      schema({ scope }) {
+        return {
+          type: 'string',
+          pattern: scope === 'corp' ? '^corp_[a-z0-9]+$' : '^tenant_[a-z0-9]+$'
+        };
+      }
     }
-  });
+  ] as const);
 
-  runtime.registerExtension({
-    literal: 'tenant-id',
-    factoryName: 'tenantId',
-    schema: { type: 'string', pattern: '^tenant_[a-z0-9]+$' }
-  });
-
-  return runtime;
+  return { runtime, s };
 }
 ```
 
@@ -84,7 +97,7 @@ export const schemaDslTransformOptions = {
 
 ## TypeScript setup
 
-把 module augmentation 放在会被框架或应用 tsconfig 包含的 `.d.ts` 文件里：
+在当前源码和下一版 v2.1.0 中，优先通过 `registerExtensions([... ] as const)` 导出的 `s` 获得 `s.xxx()` 类型提示。只有继续使用动态 `registerExtension()`、旧 module augmentation，或需要给第三方扩展包补类型时，才维护 `.d.ts` 文件：
 
 ```ts
 import type { IDslBuilder } from 'schema-dsl/pure';
@@ -93,21 +106,18 @@ declare module 'schema-dsl/pure' {
   interface DslNamespaceFactories {
     tenantId(): IDslBuilder;
   }
-
-  interface IDslBuilder {
-    tenantId(): this;
-  }
 }
 ```
 
 只有框架作者体验包含直接 String 链式源码时，才增强 `schema-dsl/string-types`。
 
-## 检查清单
+## 推荐配置
 
-- 全局扩展在启动期注册，不要在 request 中注册。
+- 应用级扩展通过配置后的 `s` 导出，不要在 request 中动态注册。
 - 框架、租户、worker 和隔离测试边界使用 `createRuntime()`。
-- transform 选项与扩展包放在一起维护。
-- TypeScript 声明放在扩展包或 setup 模块里。
+- 扩展定义作为 DSL、`s('...')` 和 `s.xxx()` 入口的单一真相源。
+- 只有支持直接 String 链式源码时才维护 transform 选项。
+- TypeScript 提示优先来自 `registerExtensions([... ] as const)`；动态/兼容场景再维护 `.d.ts`。
 - 隔离测试中用 `resetRuntimeState()` 清理全局扩展状态。
 - 插件或应用卸载时 dispose runtime 实例。
 

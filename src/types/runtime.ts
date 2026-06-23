@@ -1,5 +1,5 @@
 import type { JSONSchema, SchemaIOOptions } from './schema.js'
-import type { DslDefinition, DslExtensionDefinition, DslNamespaceFactories, IDslBuilder } from './dsl.js'
+import type { DslDefinition, DslExtensionDefinition, DslNamespaceFactories, DslWithExtensions, IDslBuilder } from './dsl.js'
 import type { IConditionalBuilder } from './conditional.js'
 import type { ValidateOptions, ValidationResult } from './validate.js'
 import type { CacheOptions } from './config.js'
@@ -134,6 +134,9 @@ export interface SchemaDslRuntime {
   registerType(name: string, schema: SchemaDslTypeSchema): void
   registerDynamicType(name: string, factory: () => JSONSchema): void
   registerExtension(definition: DslExtensionDefinition): void
+  registerExtensions<const Definitions extends readonly unknown[]>(
+    definitions: readonly [...Definitions]
+  ): DslWithExtensions<Definitions>
   unregisterType(name: string): void
   clearCache(): void
   getStats(): SchemaDslRuntimeStats

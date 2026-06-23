@@ -1,9 +1,5 @@
 # A complete guide to DSL syntax
 
-> **Update time**: 2026-06-18
-
----
-
 This page is the main reference for writing schema rules. Read it after [Quick Start](quick-start.md), then use [Type Reference](type-reference.md) and [Validation Guide](validation-guide.md) for deeper behavior.
 
 ## quick start
@@ -697,6 +693,3 @@ s('string!').pattern(/^[a-z]+$/)
 **Description**: Covers the basic types, constraints, enumerations, arrays and nested object writing methods of DSL syntax in Batch 1, and can be run directly for reference.
 
 ---
-
-**Last updated**: 2026-05-08
-**Author**: schema-dsl Team

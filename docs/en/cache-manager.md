@@ -1,12 +1,5 @@
 # CacheManager cache manager
 
-> **Module**: `src/core/CacheManager.ts` (Public export: `import { CacheManager } from 'schema-dsl/pure'`)
-
-> **Purpose**: High-performance Schema compilation cache, supporting LRU eviction and TTL expiration
-
----
-
-
 ## Overview
 
 `CacheManager` is the internal caching system of schema-dsl, which is used to cache the compiled Schema validation function to avoid the performance overhead caused by repeated compilation.

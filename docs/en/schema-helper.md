@@ -1,12 +1,5 @@
 # SchemaHelper Schema helper
 
-> **Module**: `src/utils/SchemaHelper.ts`
-
-> **Purpose**: Provide common auxiliary methods for JSON Schema operations
-
----
-
-
 ## Overview
 
 `SchemaHelper` is a static tool class that provides auxiliary methods for various Schema operations, including validation, cloning, flattening, comparison and other functions.

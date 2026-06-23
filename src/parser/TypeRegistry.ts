@@ -16,12 +16,20 @@ export interface TypeDefinition {
 export type SchemaDslUnknownTypeMode = 'warn' | 'error' | 'ignore'
 
 export interface SchemaDslDiagnostic {
-  code: 'UNKNOWN_TYPE' | 'INVALID_CONSTRAINT'
+  code:
+    | 'UNKNOWN_TYPE'
+    | 'INVALID_CONSTRAINT'
+    | 'EXTENSION_SEGMENT_UNSUPPORTED'
+    | 'EXTENSION_PARAM_MISSING'
+    | 'EXTENSION_PARAM_INVALID'
+    | 'EXTENSION_PARAM_EXTRA'
+    | 'EXTENSION_PARAM_CONSTRAINT_MIXED'
   severity: 'warning' | 'error'
   path: string
   input: string
   typeName?: string
   constraint?: string
+  param?: string
   message: string
 }
 
@@ -323,6 +331,15 @@ export const TypeRegistry = {
    */
   has(typeName: string): boolean {
     return BUILTIN_TYPES.has(typeName) || CUSTOM_TYPES.has(typeName) || DYNAMIC_TYPES.has(typeName)
+  },
+
+  /**
+   * Check whether a type name is one of schema-dsl's built-in names.
+   * Runtime instances use this to reject built-in overrides without reading
+   * global custom types from the root/pure singleton registry.
+   */
+  hasBuiltin(typeName: string): boolean {
+    return BUILTIN_TYPES.has(typeName)
   },
 
   /**

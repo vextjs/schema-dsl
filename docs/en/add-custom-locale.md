@@ -1,10 +1,5 @@
 # Guide to adding custom language packs
 
-**Version**: v2.0.9
-**Last updated**: 2026-06-10
-
----
-
 ## 📖 Overview
 
 This guide will teach you how to add a custom language pack or extend an existing language for schema-dsl.

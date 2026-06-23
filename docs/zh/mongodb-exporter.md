@@ -1,12 +1,5 @@
 # MongoDB 导出器文档
 
-> **模块**: `src/exporters/MongoDBExporter.ts`  
-
-> **用途**: 将 JSON Schema 转换为 MongoDB 验证 Schema
-
----
-
-
 ## 概述
 
 `MongoDBExporter` 将 schema-dsl 生成的 JSON Schema 转换为 MongoDB 的 `$jsonSchema` 验证格式，可直接用于创建集合时的文档验证。

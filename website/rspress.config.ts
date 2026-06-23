@@ -59,8 +59,6 @@ const englishSidebar = [
     items: [
       { text: 'SchemaUtils', link: '/schema-utils' },
       { text: 'SchemaUtils Chaining', link: '/schema-utils-chaining' },
-      { text: 'SchemaUtils Advanced Issues', link: '/schema-utils-advanced-issues' },
-      { text: 'SchemaUtils Best Practices', link: '/schema-utils-best-practices' },
       { text: 'SchemaHelper', link: '/schema-helper' },
       { text: 'CacheManager', link: '/cache-manager' },
       { text: 'label vs description', link: '/label-vs-description' }
@@ -70,7 +68,6 @@ const englishSidebar = [
     text: 'Internationalization',
     items: [
       { text: 'i18n Overview', link: '/i18n' },
-      { text: 'Multi-language Support', link: '/multi-language' },
       { text: 'i18n User Guide', link: '/i18n-user-guide' },
       { text: 'Frontend i18n Guide', link: '/frontend-i18n-guide' },
       { text: 'Add Custom Locale', link: '/add-custom-locale' },
@@ -82,13 +79,10 @@ const englishSidebar = [
     text: 'Extensions and Integration',
     items: [
       { text: 'Extension Overview', link: '/extensions-overview' },
-      { text: 'Custom DSL Types', link: '/plugin-type-registration' },
-      { text: 'Custom s.xxx() Factories', link: '/custom-factories' },
-      { text: 'Custom Chain Methods', link: '/custom-chain-methods' },
+      { text: 'Custom Extensions', link: '/custom-extensions' },
       { text: 'Custom Validation Keywords', link: '/add-keyword' },
       { text: 'Framework Integration', link: '/framework-extension-setup' },
-      { text: 'Plugin Manager (Advanced)', link: '/plugin-system' },
-      { text: 'Advanced Extension Recipes', link: '/custom-extensions-guide' }
+      { text: 'Plugin Manager (Advanced)', link: '/plugin-system' }
     ]
   },
   {
@@ -97,7 +91,6 @@ const englishSidebar = [
       { text: 'Best Practices', link: '/best-practices' },
       { text: 'Project Structure Best Practices', link: '/best-practices-project-structure' },
       { text: 'Performance Guide', link: '/performance-guide' },
-      { text: 'Security Checklist', link: '/security-checklist' },
       { text: 'Troubleshooting', link: '/troubleshooting' },
       { text: 'FAQ', link: '/faq' }
     ]
@@ -106,7 +99,6 @@ const englishSidebar = [
     text: 'Reference and Index',
     items: [
       { text: 'API Reference', link: '/api-reference' },
-      { text: 'API Overview', link: '/api' },
       { text: 'Documentation Index', link: '/doc-index' },
       { text: 'Feature Index', link: '/FEATURE-INDEX' }
     ]
@@ -170,8 +162,6 @@ const chineseSidebar = [
     items: [
       { text: 'SchemaUtils', link: '/zh/schema-utils' },
       { text: 'SchemaUtils 链式调用', link: '/zh/schema-utils-chaining' },
-      { text: 'SchemaUtils 进阶问题', link: '/zh/schema-utils-advanced-issues' },
-      { text: 'SchemaUtils 最佳实践', link: '/zh/schema-utils-best-practices' },
       { text: 'SchemaHelper', link: '/zh/schema-helper' },
       { text: 'CacheManager', link: '/zh/cache-manager' },
       { text: 'label vs description', link: '/zh/label-vs-description' }
@@ -181,7 +171,6 @@ const chineseSidebar = [
     text: '国际化',
     items: [
       { text: 'i18n 概览', link: '/zh/i18n' },
-      { text: '多语言支持', link: '/zh/multi-language' },
       { text: 'i18n 用户指南', link: '/zh/i18n-user-guide' },
       { text: '前端 i18n 指南', link: '/zh/frontend-i18n-guide' },
       { text: '添加自定义语言包', link: '/zh/add-custom-locale' },
@@ -193,13 +182,10 @@ const chineseSidebar = [
     text: '扩展与集成',
     items: [
       { text: '扩展概览', link: '/zh/extensions-overview' },
-      { text: '自定义 DSL 类型', link: '/zh/plugin-type-registration' },
-      { text: '自定义 s.xxx() 工厂', link: '/zh/custom-factories' },
-      { text: '自定义链式方法', link: '/zh/custom-chain-methods' },
+      { text: '自定义扩展', link: '/zh/custom-extensions' },
       { text: '自定义校验关键字', link: '/zh/add-keyword' },
       { text: '框架集成与目录结构', link: '/zh/framework-extension-setup' },
-      { text: '插件管理器（高级）', link: '/zh/plugin-system' },
-      { text: '高级扩展组合指南', link: '/zh/custom-extensions-guide' }
+      { text: '插件管理器（高级）', link: '/zh/plugin-system' }
     ]
   },
   {
@@ -208,7 +194,6 @@ const chineseSidebar = [
       { text: '最佳实践', link: '/zh/best-practices' },
       { text: '项目结构最佳实践', link: '/zh/best-practices-project-structure' },
       { text: '性能指南', link: '/zh/performance-guide' },
-      { text: '安全检查清单', link: '/zh/security-checklist' },
       { text: '故障排查', link: '/zh/troubleshooting' },
       { text: 'FAQ', link: '/zh/faq' }
     ]
@@ -217,7 +202,6 @@ const chineseSidebar = [
     text: '参考与索引',
     items: [
       { text: 'API 参考', link: '/zh/api-reference' },
-      { text: 'API 概览', link: '/zh/api' },
       { text: '文档索引', link: '/zh/doc-index' },
       { text: '功能索引', link: '/zh/FEATURE-INDEX' }
     ]

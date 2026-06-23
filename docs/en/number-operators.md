@@ -1,6 +1,5 @@
-# Numeric comparison operators (v1.1.2+)
+# Numeric comparison operators
 
-**Version**: v1.1.2+
 **Applicable types**: `number`, `integer`
 
 ## 📋 Quick overview
@@ -441,8 +440,3 @@ s({ level: 'number:=5' }) // equal to
 
 **Example entry**: [number-operators.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/number-operators.ts)
 **Description**: Override the success/failure paths of `>=`, `<`, `<=`, `=` and integer comparison operators to facilitate direct observation of boundary behavior.
-
----
-
-**Version**: v1.1.2+
-**Updated**: 2026-05-08

@@ -1,12 +1,5 @@
 # Chained Condition API - ConditionalBuilder
 
-> **Version**: schema-dsl v2.0.9
-> **Updated date**: 2026-06-10
-> **Status**: ✅ Stable
-
----
-
-
 ## Overview
 
 `ConditionalBuilder` Provides a smooth chained conditional judgment API, similar to JavaScript’s if-else statement, which is used to dynamically adjust validation rules based on actual data during validation.

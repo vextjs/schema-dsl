@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { dsl, validate } from '../../../src/index.js';
+import { dsl, validate, Validator } from '../../../src/index.js';
 
 describe('CustomKeywords - v1.0.2 new validators', () => {
 
@@ -1268,4 +1268,64 @@ describe('CustomKeywords - v1.0.2 new validators', () => {
       });
     });
   });
+
+  describe('Additional branch coverage for custom keyword edge cases', () => {
+    it('reports sync custom validator failures for all supported return shapes', () => {
+      const validator = new Validator()
+
+      expect(validator.validate({ type: 'string', _customValidators: [() => false] } as any, 'value').valid).toBe(false)
+      expect(validator.validate({ type: 'string', _customValidators: [() => 'custom message'] } as any, 'value').errorMessage).toContain('custom message')
+      expect(validator.validate({ type: 'string', _customValidators: [() => ({ error: true, message: 'object message' })] } as any, 'value').errorMessage).toContain('object message')
+      expect(validator.validate({ type: 'string', _customValidators: [() => ({ error: true })] } as any, 'value').valid).toBe(false)
+      expect(validator.validate({ type: 'string', _customValidators: [() => { throw new Error('validator exploded') }] } as any, 'value').errorMessage).toContain('validator exploded')
+      expect(validator.validate({ type: 'string', _customValidators: [() => Promise.resolve(true)] } as any, 'value').errorMessage).toContain('Async validation not supported')
+      expect(validator.validate({ type: 'string', _customValidators: ['ignored', () => true] } as any, 'value').valid).toBe(true)
+      expect(validator.validate({ type: 'string', _customValidators: 'not-an-array' } as any, 'value').valid).toBe(true)
+    })
+
+    it('reports regex keyword errors for unsafe and invalid patterns', () => {
+      const validator = new Validator()
+
+      expect(validator.validate({ type: 'string', regex: '(a+)+$' } as any, 'aaaaaaaaaaaaaaaa!').valid).toBe(false)
+      expect(validator.validate({ type: 'string', regex: '[' } as any, 'value').valid).toBe(false)
+    })
+
+    it('reports function validator keyword failures', () => {
+      const validator = new Validator()
+
+      expect(validator.validate({ type: 'string', validate: false } as any, 'value').valid).toBe(false)
+      expect(validator.validate({ type: 'string', validate: () => false } as any, 'value').valid).toBe(false)
+      expect(validator.validate({ type: 'string', validate: () => ({ valid: false, message: 'not accepted' }) } as any, 'value').errorMessage).toContain('not accepted')
+      expect(validator.validate({ type: 'string', validate: () => ({ valid: true }) } as any, 'value').valid).toBe(true)
+      expect(validator.validate({ type: 'string', validate: () => ({ ignored: true }) } as any, 'value').valid).toBe(true)
+      expect(validator.validate({ type: 'string', validate: () => { throw new Error('validate exploded') } } as any, 'value').errorMessage).toContain('validate exploded')
+    })
+
+    it('deep-compares required array objects and detects missing object values', () => {
+      const schema = {
+        type: 'array',
+        includesRequired: [{ id: 1, tags: ['a', 'b'] }],
+      } as any
+
+      expect(validate(schema, [{ tags: ['a', 'b'], id: 1 }]).valid).toBe(true)
+      expect(validate(schema, [{ id: 1, tags: ['a'] }]).valid).toBe(false)
+    })
+
+    it('handles disabled custom object and array keyword schemas as no-ops', () => {
+      expect(validate({
+        type: 'object',
+        properties: { name: { type: 'string' } },
+        requiredAll: false,
+        strictSchema: false,
+      } as any, {}).valid).toBe(true)
+
+      expect(validate({ type: 'array', noSparse: false, includesRequired: [] } as any, new Array(2)).valid).toBe(true)
+    })
+
+    it('rejects invalid ISO and impossible calendar dates', () => {
+      expect(validate({ type: 'string', dateFormat: 'ISO8601' } as any, 'not-a-date').valid).toBe(false)
+      expect(validate({ type: 'string', dateFormat: 'YYYY-MM-DD' } as any, '2024-02-31').valid).toBe(false)
+      expect(validate({ type: 'string', dateFormat: 'DD/MM/YYYY' } as any, '31/02/2024').valid).toBe(false)
+    })
+  })
 });

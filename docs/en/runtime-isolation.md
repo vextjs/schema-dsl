@@ -45,7 +45,7 @@ const result = runtime.validate(schema, { id: 'tenant_demo', age: 16 });
 |---------------|:-----------------------------:|
 | Default locale and per-call `locale` | Yes |
 | Inline `messages` and `messageProvider` | Yes |
-| Custom DSL types and `typeResolver` | Yes |
+| Custom extensions and `typeResolver` | Yes |
 | Pattern overrides for `phone`, `idCard`, `creditCard`, `licensePlate`, `postalCode`, `passport`, `common` | Yes |
 | Validator instances and caches | Yes |
 | Custom keyword messages | Yes |
@@ -74,7 +74,7 @@ Per-call validation options follow the root helper conventions. Use `{ coerce: f
 
 `runtime.s.email()`, `runtime.s('string')`, `runtime.dsl('string')`, and `runtime.compileField('string')` return the same chainable builder shape as the normal namespace path, so built-in chain methods keep their existing TypeScript hints.
 
-For custom runtime DSL types, pass `types`, `dynamicTypes` or `typeResolver` to `createRuntime()`. For custom namespace factories, call `runtime.registerExtension({ literal, factoryName, schema })`. For custom chain methods, keep using TypeScript module augmentation for the builder interface and provide the runtime method implementation in your extension code.
+For custom runtime extensions, pass `types`, `dynamicTypes`, or `typeResolver` to `createRuntime()`. Prefer `runtime.registerExtensions([...])` when one definition should power pure DSL, `s('...')`, and `s.xxx()` entries. `runtime.registerExtension({ literal, factoryName, schema })` remains useful for dynamic registration or static-extension compatibility.
 
 ## Message provider contract
 

@@ -1,10 +1,5 @@
 # Cross-type union validation - types: syntax
 
-> **Version**: v1.1.0+
-> **Status**: ✅ Stable
-
----
-
 ## Overview
 
 The `types:` syntax allows you to define cross-type joint validation, supporting field matching of multiple different data types.
@@ -13,7 +8,7 @@ The `types:` syntax allows you to define cross-type joint validation, supporting
 
 ✅ **Concise syntax** - `'types:string|number'` One line to do it
 ✅ **With restraints** - `'types:string:3-10|number:0-100'`
-✅ **Custom DSL types** - Supports reusable type registration
+✅ **Custom extensions** - Supports reusable type registration
 ✅ **Multi-language** - full i18n support
 
 ---
@@ -269,7 +264,7 @@ Union types verify each type in turn until a match is found. The more types, the
 ## Related documents
 
 - [Extension Overview](./extensions-overview.md)
-- [Custom DSL Types](./plugin-type-registration.md)
+- [Custom Extensions](./custom-extensions.md)
 - [Contribution Guide](https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md)
 
 ---

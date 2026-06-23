@@ -8,6 +8,26 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderTemplate } from '../../../src/index.js'
+import { MessageTemplate } from '../../../src/core/MessageTemplate.js'
+
+describe('MessageTemplate direct compatibility facade', () => {
+  it('renders through an instance wrapper', () => {
+    const template = new MessageTemplate('Hello {{#name}}')
+    expect(template.render({ name: 'Ada' })).toBe('Hello Ada')
+    expect(template.render()).toBe('Hello {{#name}}')
+  })
+
+  it('renders through static helper methods', () => {
+    expect(MessageTemplate.render('{{#field}} is required', { field: 'email' })).toBe('email is required')
+    expect(MessageTemplate.renderBatch({
+      min: '{{#field}} min {{#limit}}',
+      max: '{{#field}} max {{#limit}}',
+    }, { field: 'age', limit: 18 })).toEqual({
+      min: 'age min 18',
+      max: 'age max 18',
+    })
+  })
+})
 
 describe('MessageTemplate (via renderTemplate)', () => {
   describe('Single Variable Substitution', () => {

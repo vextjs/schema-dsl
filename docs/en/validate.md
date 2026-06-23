@@ -468,6 +468,3 @@ Based on ajv, the industry's fastest JSON Schema validator:
 - [JSON Schema Validator](https://www.jsonschemavalidator.net/) - Online testing tool
 
 ---
-
-
-**Last updated**: 2025-12-24

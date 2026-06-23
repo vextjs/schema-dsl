@@ -3,6 +3,31 @@ import { describe, expect, it } from 'vitest'
 import { TransformSchemaDslError, transformSchemaDsl } from '../../src/transform.js'
 
 describe('transformSchemaDsl', () => {
+  it('skips files rejected by the include predicate', () => {
+    const source = 'const field = "email!".label("Email")'
+    const result = transformSchemaDsl(source, {
+      filename: 'ignored.ts',
+      include: filename => filename.endsWith('.schema.ts'),
+    })
+
+    expect(result).toEqual({ code: source, changed: false, warnings: [] })
+  })
+
+  it('returns parse warnings without throwing when strict parseError is disabled', () => {
+    const warnings: unknown[] = []
+    const result = transformSchemaDsl('const broken = ', {
+      filename: 'broken.ts',
+      onWarning: warning => warnings.push(warning),
+    })
+
+    expect(result.changed).toBe(false)
+    expect(result.warnings[0]).toMatchObject({
+      code: 'parse-error',
+      filename: 'broken.ts',
+    })
+    expect(warnings).toHaveLength(1)
+  })
+
   it('transforms schema-dsl string literal method calls', () => {
     const result = transformSchemaDsl('const field = "email!".description("Email")', {
       filename: 'user.ts',
@@ -273,6 +298,19 @@ describe('transformSchemaDsl', () => {
     expect(result.warnings).toHaveLength(0)
   })
 
+  it('does not warn for export type star declarations from the root entry', () => {
+    const result = transformSchemaDsl(
+      [
+        'export type * from "schema-dsl";',
+        'const field = "email!".label("Email")',
+      ].join('\n'),
+      { filename: 'types.ts' },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.warnings).toHaveLength(0)
+  })
+
   it('still warns for mixed type and runtime root entry re-exports', () => {
     const result = transformSchemaDsl(
       [
@@ -302,6 +340,28 @@ describe('transformSchemaDsl', () => {
     expect(() => transformSchemaDsl('const broken = ', {
       filename: 'broken.ts',
       strict: true,
+    })).toThrow(TransformSchemaDslError)
+  })
+
+  it('throws only for enabled strict warning codes when strict is an object', () => {
+    expect(() => transformSchemaDsl('const broken = ', {
+      filename: 'broken.ts',
+      strict: { parseError: true },
+    })).toThrow(TransformSchemaDslError)
+
+    expect(() => transformSchemaDsl('import { dsl } from "schema-dsl";\nconst field = "email!".label("Email")', {
+      filename: 'root.ts',
+      strict: { parseError: false, rootImport: true },
+    })).toThrow(TransformSchemaDslError)
+
+    expect(() => transformSchemaDsl('const tenant = "string!".tenantId()', {
+      filename: 'tenant.ts',
+      strict: { unconfiguredExtensionMethod: true },
+    })).toThrow(TransformSchemaDslError)
+
+    expect(() => transformSchemaDsl('const greeting = "hello world".label("Greeting")', {
+      filename: 'tenant.ts',
+      strict: { nonDslLiteral: true },
     })).toThrow(TransformSchemaDslError)
   })
 
@@ -361,5 +421,62 @@ describe('transformSchemaDsl', () => {
     expect(first.changed).toBe(true)
     expect(second.changed).toBe(false)
     expect(second.code).toBe(first.code)
+  })
+
+  it('warns for CommonJS and dynamic root entry imports', () => {
+    const result = transformSchemaDsl(
+      [
+        'const schemaDsl = require("schema-dsl");',
+        'const lazy = import("schema-dsl");',
+        'const field = "email!".label("Email")',
+      ].join('\n'),
+      { filename: 'interop.ts' },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.warnings.filter(warning => warning.code === 'root-import')).toHaveLength(2)
+  })
+
+  it('reuses a default dsl import from the configured pure entry', () => {
+    const result = transformSchemaDsl(
+      'import schemaDsl from "schema-dsl/pure";\nconst field = "email!".label("Email")',
+      { filename: 'user.ts' },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('schemaDsl("email!").label("Email")')
+    expect(result.code.match(/schema-dsl\/pure/g)).toHaveLength(1)
+  })
+
+  it('handles template literals without expressions and rejects strings with whitespace', () => {
+    const transformed = transformSchemaDsl('const field = `email!`.label("Email")', {
+      filename: 'template.ts',
+    })
+    const skipped = transformSchemaDsl('const field = "email address".label("Email")', {
+      filename: 'template.ts',
+    })
+
+    expect(transformed.changed).toBe(true)
+    expect(transformed.code).toContain('__schemaDslDsl("email!").label("Email")')
+    expect(skipped.changed).toBe(false)
+    expect(skipped.warnings[0]).toMatchObject({ code: 'non-dsl-literal' })
+  })
+
+  it('collects reserved names from destructuring, rest, defaults and class/function expressions', () => {
+    const result = transformSchemaDsl(
+      [
+        'const { a: __schemaDslDsl, ...restNames } = source;',
+        'const [__schemaDslDsl2 = "taken", ...tail] = list;',
+        'const factory = function __schemaDslDsl3({ value: nestedName }) { return nestedName; };',
+        'const Holder = class __schemaDslDsl4 {};',
+        'try { throw new Error("x"); } catch (__schemaDslDsl5) {}',
+        'const field = "email!".label("Email")',
+      ].join('\n'),
+      { filename: 'reserved.ts' },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('dsl as __schemaDslDsl6')
+    expect(result.code).toContain('__schemaDslDsl6("email!").label("Email")')
   })
 })

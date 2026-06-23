@@ -1,5 +1,7 @@
 # schema-dsl project best practice examples
 
+Use this page when you are ready to organize schema-dsl in an application rather than in one demo file. It shows where to place shared schemas, how route handlers reuse them, and how to avoid recreating schemas for every request.
+
 ## Recommended project structure
 
 ```text

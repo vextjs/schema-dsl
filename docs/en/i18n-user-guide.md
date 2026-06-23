@@ -1,9 +1,6 @@
 # Multi-language support user guide
 
-> **Updated date**: 2026-04-30
-
----
-
+Use this guide when validation errors need to follow the user's language or when an application maintains its own field labels and message texts. If you only need the smallest working example, start with the quick start below; if you need frontend language switching, continue to the frontend i18n guide afterwards.
 
 ## quick start
 
