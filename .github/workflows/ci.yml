@@ -49,11 +49,15 @@ jobs:
     - name: Examples run
       run: npm run examples:run
 
+    # Rspress/Rspack website builds require Node.js 20.19+ or 22.12+.
+    # Keep package validation on Node 18, but build the website on supported Node lines.
     - name: Install website dependencies
+      if: matrix.node-version != '18.x'
       working-directory: website
       run: npm ci
 
     - name: Website build
+      if: matrix.node-version != '18.x'
       working-directory: website
       run: npm run build
 

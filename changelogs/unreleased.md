@@ -10,6 +10,7 @@
 - Added `SchemaCompileError`, structured schema compile errors in `validate()`, broader conditional/custom validator walker coverage, and exporter `exportWithReport()` loss reporting for more unsupported JSON Schema keywords and tuple item schemas.
 - Documented the source-vs-npm release boundary for the new side-effect-controlled entry points so README and Quick Start examples are not mistaken for guarantees about an older npm latest package.
 - Moved Babel AST packages for `schema-dsl/transform` to optional peer dependencies, tightened CI gates, and narrowed npm package files to built output and public metadata.
+- Kept package CI coverage on Node.js 18 while limiting the Rspress website build to Node.js 20/22, matching the current Rspack runtime requirement.
 
 ## 2026-06-18
 
