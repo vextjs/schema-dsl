@@ -7,7 +7,11 @@
  *   isValidPropertyName, getSchemaComplexity, summarizeSchema
  */
 
-import type { JSONSchema } from '../types/schema.js'
+import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
+
+function isObjectSchema(value: JSONSchemaInput): value is JSONSchema {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
 
 export class SchemaHelper {
   /**
@@ -45,13 +49,13 @@ export class SchemaHelper {
    * Flatten a nested schema into dot-separated path form.
    * @param prefix - Property path prefix.
    */
-  static flattenSchema(schema: JSONSchema, prefix = ''): Record<string, JSONSchema> {
-    const result: Record<string, JSONSchema> = {}
+  static flattenSchema(schema: JSONSchema, prefix = ''): Record<string, JSONSchemaInput> {
+    const result: Record<string, JSONSchemaInput> = {}
 
     if (schema.properties) {
       for (const [key, value] of Object.entries(schema.properties)) {
         const fullKey = prefix ? `${prefix}.${key}` : key
-        if (value.type === 'object' && value.properties) {
+        if (isObjectSchema(value) && value.type === 'object' && value.properties) {
           Object.assign(result, this.flattenSchema(value, fullKey))
         } else {
           result[fullKey] = value
@@ -68,15 +72,17 @@ export class SchemaHelper {
   static getFieldPaths(schema: JSONSchema): string[] {
     const paths: string[] = []
 
-    function traverse(obj: JSONSchema, currentPath = ''): void {
+    function traverse(obj: JSONSchemaInput, currentPath = ''): void {
+      if (!isObjectSchema(obj)) return
       if (obj.properties) {
         for (const [key, value] of Object.entries(obj.properties)) {
           const path = currentPath ? `${currentPath}.${key}` : key
           paths.push(path)
-          if (value.type === 'object') {
+          if (isObjectSchema(value) && value.type === 'object') {
             traverse(value, path)
-          } else if (value.type === 'array' && value.items) {
-            traverse(value.items as JSONSchema, `${path}[]`)
+          } else if (isObjectSchema(value) && value.type === 'array' && value.items) {
+            const items = Array.isArray(value.items) ? value.items : [value.items]
+            items.forEach(item => traverse(item, `${path}[]`))
           }
         }
       }
@@ -92,7 +98,8 @@ export class SchemaHelper {
   static extractRequiredFields(schema: JSONSchema): string[] {
     const required: string[] = []
 
-    function traverse(obj: JSONSchema, prefix = ''): void {
+    function traverse(obj: JSONSchemaInput, prefix = ''): void {
+      if (!isObjectSchema(obj)) return
       if (obj.required && Array.isArray(obj.required)) {
         for (const field of obj.required) {
           required.push(prefix ? `${prefix}.${field}` : field)
@@ -100,7 +107,7 @@ export class SchemaHelper {
       }
       if (obj.properties) {
         for (const [key, value] of Object.entries(obj.properties)) {
-          if (value.type === 'object') {
+          if (isObjectSchema(value) && value.type === 'object') {
             traverse(value, prefix ? `${prefix}.${key}` : key)
           }
         }
@@ -152,14 +159,16 @@ export class SchemaHelper {
   static getSchemaComplexity(schema: JSONSchema): number {
     let maxDepth = 0
 
-    function traverse(obj: JSONSchema, depth: number): void {
+    function traverse(obj: JSONSchemaInput, depth: number): void {
+      if (!isObjectSchema(obj)) return
       maxDepth = Math.max(maxDepth, depth)
       if (obj.properties) {
         for (const value of Object.values(obj.properties)) {
-          if (value.type === 'object') {
+          if (isObjectSchema(value) && value.type === 'object') {
             traverse(value, depth + 1)
-          } else if (value.type === 'array' && value.items) {
-            traverse(value.items as JSONSchema, depth + 1)
+          } else if (isObjectSchema(value) && value.type === 'array' && value.items) {
+            const items = Array.isArray(value.items) ? value.items : [value.items]
+            items.forEach(item => traverse(item, depth + 1))
           }
         }
       }

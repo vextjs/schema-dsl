@@ -158,7 +158,7 @@ export class Validator {
   // Performance: cache whether a schema has any conditional fields (avoids traversing properties on every validation)
   private readonly _conditionalFlagCache = new WeakMap<object, boolean>()
   private readonly _conditionalValidator = new ConditionalValidator({
-    validateSchema: <T>(schema: JSONSchema, data: T, options: ValidateOptions): ValidationResult<T> => this._validateInternal(schema, data, options),
+    validateSchema: <T>(schema: JSONSchemaInput, data: T, options: ValidateOptions): ValidationResult<T> => this._validateInternal(schema, data, options),
     internalError: <T>(error: unknown, data: T): ValidationResult<T> => this._internalError(error, data),
     getMessageText: (key: string, params: Record<string, unknown>, options: ValidateOptions): string =>
       this._getMessageText(key, params, options, 'conditional'),
@@ -286,7 +286,7 @@ export class Validator {
    * AJV's sync keyword skips Promise-returning validators; this method runs the complete set in validateAsync.
    * Returns the first failing ValidationErrorItem, or null if all pass.
    */
-  private _stripCustomValidators(schema: JSONSchema): JSONSchema {
+  private _stripCustomValidators(schema: JSONSchemaInput): JSONSchemaInput {
     const strip = (value: unknown): unknown => {
       if (Array.isArray(value)) {
         let changed = false
@@ -318,15 +318,17 @@ export class Validator {
       return changed ? next : value
     }
 
-    return strip(schema) as JSONSchema
+    return strip(schema) as JSONSchemaInput
   }
 
   private async _runCustomValidators(
-    schema: JSONSchema,
+    schema: JSONSchemaInput,
     data: unknown,
     path = '',
     options: ValidateOptions = {}
   ): Promise<ValidationErrorItem | null> {
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return null
+
     const validators = (schema as Record<string, unknown>)['_customValidators'] as Array<(v: unknown) => unknown> | undefined
     if (validators?.length) {
       for (const fn of validators) {
@@ -527,7 +529,7 @@ export class Validator {
   }
 
   private async _runCustomValidatorsForAnyPassingBranch(
-    schemas: JSONSchema[],
+    schemas: JSONSchemaInput[],
     data: unknown,
     path: string,
     options: ValidateOptions
@@ -546,7 +548,7 @@ export class Validator {
   }
 
   private async _runCustomValidatorsForMatchingBranches(
-    schemas: JSONSchema[],
+    schemas: JSONSchemaInput[],
     data: unknown,
     path: string,
     options: ValidateOptions
@@ -671,8 +673,8 @@ export class Validator {
       return this._conditionalValidator.validateConditional(internalSchema, data as Record<string, unknown>, null, data, options)
     }
 
-    // Object schema containing ConditionalBuilder properties (including arbitrary nesting depth)
-    if (typeof schema === 'object' && internalSchema.properties) {
+    // Any schema containing ConditionalBuilder nodes (objects, arrays, and composition branches).
+    if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
       // Performance: cache conditional detection result to avoid traversing properties on every validation
       let hasConditionals = this._conditionalFlagCache.get(internalSchema as object)
       if (hasConditionals === undefined) {
@@ -743,6 +745,7 @@ export class Validator {
     const src = data as Record<string, unknown>
 
     for (const [key, fieldSchema] of Object.entries(schema.properties)) {
+      if (!fieldSchema || typeof fieldSchema !== 'object' || Array.isArray(fieldSchema)) continue
       const current = src[key]
       let converted = current
 
@@ -751,7 +754,8 @@ export class Validator {
       } else if (fieldSchema.type === 'boolean') {
         converted = this._coerceBoolean(current)
       } else if (fieldSchema.type === 'array' && Array.isArray(current) && !Array.isArray(fieldSchema.items)) {
-        const itemType = fieldSchema.items?.type
+        const itemSchema = fieldSchema.items
+        const itemType = itemSchema && typeof itemSchema === 'object' ? itemSchema.type : undefined
         if (itemType === 'number' || itemType === 'integer' || itemType === 'boolean') {
           converted = current.map(item => itemType === 'boolean' ? this._coerceBoolean(item) : this._coerceNumber(item))
         }

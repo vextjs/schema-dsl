@@ -1,4 +1,4 @@
-import type { JSONSchema } from '../types/schema.js'
+import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 import type { DslDefinition, DslExtensionDefinition, DslFn, DslWithExtensions, IDslBuilder } from '../types/dsl.js'
 import type { IConditionalBuilder } from '../types/conditional.js'
 import type {
@@ -21,20 +21,7 @@ import { RuntimeCompileContext } from './RuntimeCompileContext.js'
 import { RuntimeIssueFormatter } from './RuntimeIssueFormatter.js'
 import { RuntimeValidatorEngine } from './RuntimeValidatorEngine.js'
 import { I18nError } from '../errors/I18nError.js'
-
-function isSchemaLike(value: Record<string, unknown>): boolean {
-  return (
-    typeof value['type'] === 'string' ||
-    'anyOf' in value ||
-    'oneOf' in value ||
-    'allOf' in value ||
-    '$ref' in value ||
-    '$defs' in value ||
-    'definitions' in value ||
-    'properties' in value ||
-    'items' in value
-  )
-}
+import { isRawJsonSchemaLike } from '../utils/schemaInput.js'
 
 export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   readonly dsl: SchemaDslRuntimeNamespace
@@ -103,7 +90,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   }
 
   validate<T = unknown>(
-    schema: JSONSchema | DslDefinition | IDslBuilder | IConditionalBuilder | string,
+    schema: JSONSchemaInput | DslDefinition | IDslBuilder | IConditionalBuilder | string,
     data: unknown,
     options: SchemaDslRuntimeValidateOptions = {}
   ): ValidationResult<T> {
@@ -114,7 +101,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   }
 
   async validateAsync<T = unknown>(
-    schema: JSONSchema | DslDefinition | IDslBuilder | IConditionalBuilder | string,
+    schema: JSONSchemaInput | DslDefinition | IDslBuilder | IConditionalBuilder | string,
     data: unknown,
     options: SchemaDslRuntimeValidateOptions = {}
   ): Promise<T> {
@@ -225,16 +212,16 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   }
 
   private normalizeSchema(
-    schema: JSONSchema | DslDefinition | IDslBuilder | IConditionalBuilder | string
-  ): JSONSchema {
+    schema: JSONSchemaInput | DslDefinition | IDslBuilder | IConditionalBuilder | string
+  ): JSONSchemaInput {
     if (typeof schema === 'string') return (this.compileField(schema) as DslBuilder).toSchema()
-    if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return schema as JSONSchema
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return schema as JSONSchemaInput
 
     const record = schema as Record<string, unknown>
     if (typeof record['toSchema'] === 'function') {
       return (record['toSchema'] as () => JSONSchema)()
     }
-    if (isSchemaLike(record)) return schema as JSONSchema
+    if (isRawJsonSchemaLike(record)) return schema as JSONSchema
     return this.compile(schema as DslDefinition)
   }
 

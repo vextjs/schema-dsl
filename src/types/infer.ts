@@ -1,14 +1,5 @@
 type StripMarker<S extends string> = S extends `${infer Base}!` | `${infer Base}?` ? Base : S
 
-type KnownDslType =
-    | StringDslType
-    | NumberDslType
-    | BooleanDslType
-    | ObjectDslType
-    | ArrayDslType
-    | NullDslType
-    | AnyDslType
-
 type StringDslType =
     | 'string'
     | 'email'
@@ -57,6 +48,14 @@ type AnyDslType =
 
 type ParseNumberLiteral<S extends string> = S extends `${infer N extends number}` ? N : number
 type ParseBooleanLiteral<S extends string> = S extends 'true' ? true : S extends 'false' ? false : boolean
+type InferUntypedEnumValue<Value extends string> =
+    Value extends `${infer N extends number}`
+    ? N
+    : Value extends 'true'
+    ? true
+    : Value extends 'false'
+    ? false
+    : Value
 type InferTypedEnumValue<TypeName extends string, Value extends string> =
     StripMarker<TypeName> extends NumberDslType
     ? ParseNumberLiteral<Value>
@@ -66,13 +65,19 @@ type InferTypedEnumValue<TypeName extends string, Value extends string> =
 
 type SplitTypedEnum<TypeName extends string, Values extends string> = Values extends `${infer Head}|${infer Tail}`
     ? InferTypedEnumValue<TypeName, Head> | SplitTypedEnum<TypeName, Tail>
+    : Values extends `${infer Head},${infer Tail}`
+    ? InferTypedEnumValue<TypeName, Head> | SplitTypedEnum<TypeName, Tail>
     : InferTypedEnumValue<TypeName, Values>
 
-type InferPipeMember<S extends string> = StripMarker<S> extends KnownDslType ? InferDslString<S> : StripMarker<S>
+type SplitUntypedEnum<Values extends string> = Values extends `${infer Head}|${infer Tail}`
+    ? InferUntypedEnumValue<Head> | SplitUntypedEnum<Tail>
+    : Values extends `${infer Head},${infer Tail}`
+    ? InferUntypedEnumValue<Head> | SplitUntypedEnum<Tail>
+    : InferUntypedEnumValue<Values>
 
-type SplitPipe<S extends string> = S extends `${infer Head}|${infer Tail}`
-    ? InferPipeMember<Head> | SplitPipe<Tail>
-    : InferPipeMember<S>
+type SplitDslTypes<S extends string> = S extends `${infer Head}|${infer Tail}`
+    ? InferDslString<Head> | SplitDslTypes<Tail>
+    : InferDslString<S>
 
 type RequiredDslKeys<T extends Record<string, unknown>> = {
     [K in keyof T]: K extends string
@@ -103,15 +108,21 @@ type InferDslProperties<T extends Record<string, unknown>, RequiredKeys extends 
     }
 
 export type InferDslString<T extends string> = StripMarker<T> extends `types:${infer Rest}`
-    ? SplitPipe<Rest>
+    ? SplitDslTypes<Rest>
     : StripMarker<T> extends `enum:${infer TypeName}:${infer Values}`
     ? SplitTypedEnum<TypeName, Values>
     : StripMarker<T> extends `enum:${infer Values}`
-    ? SplitPipe<Values>
+    ? SplitUntypedEnum<Values>
+    : StripMarker<T> extends `array:${string}<${infer Item}>`
+    ? InferDslString<Item>[]
     : StripMarker<T> extends `array<${infer Item}>`
     ? InferDslString<Item>[]
+    : StripMarker<T> extends `${string}|${string}`
+    ? SplitUntypedEnum<StripMarker<T>>
     : StripMarker<T> extends `${infer Base}:${string}`
     ? InferDslString<Base>
+    : StripMarker<T> extends StringDslType
+    ? string
     : StripMarker<T> extends NumberDslType
     ? number
     : StripMarker<T> extends BooleanDslType
@@ -124,8 +135,6 @@ export type InferDslString<T extends string> = StripMarker<T> extends `types:${i
     ? null
     : StripMarker<T> extends AnyDslType
     ? unknown
-    : StripMarker<T> extends `${string}|${string}`
-    ? SplitPipe<StripMarker<T>>
     : string
 
 type JsonSchemaTypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null'

@@ -17,11 +17,18 @@ describe('InferSchema types', () => {
     })
 
     it('infers typed enum and union DSL strings', () => {
+        expectTypeOf<InferDslString<'string|number'>>().toEqualTypeOf<'string' | 'number'>()
+        expectTypeOf<InferDslString<'1|2'>>().toEqualTypeOf<1 | 2>()
+        expectTypeOf<InferDslString<'true|false'>>().toEqualTypeOf<true | false>()
         expectTypeOf<InferDslString<'enum:number:1|2'>>().toEqualTypeOf<1 | 2>()
+        expectTypeOf<InferDslString<'enum:number:1,2'>>().toEqualTypeOf<1 | 2>()
         expectTypeOf<InferDslString<'enum:integer:1|2'>>().toEqualTypeOf<1 | 2>()
         expectTypeOf<InferDslString<'enum:boolean:true|false'>>().toEqualTypeOf<true | false>()
+        expectTypeOf<InferDslString<'enum:string|number'>>().toEqualTypeOf<'string' | 'number'>()
+        expectTypeOf<InferDslString<'enum:a,b'>>().toEqualTypeOf<'a' | 'b'>()
         expectTypeOf<InferDslString<'enum:red|blue'>>().toEqualTypeOf<'red' | 'blue'>()
         expectTypeOf<InferDslString<'types:string|number|boolean'>>().toEqualTypeOf<string | number | boolean>()
+        expectTypeOf<InferDslString<'array:1-5<number>'>>().toEqualTypeOf<number[]>()
         expectTypeOf<InferDslString<'array<enum:number:1|2>'>>().toEqualTypeOf<Array<1 | 2>>()
     })
 

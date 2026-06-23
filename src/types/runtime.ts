@@ -1,4 +1,4 @@
-import type { JSONSchema, SchemaIOOptions } from './schema.js'
+import type { JSONSchema, JSONSchemaInput, SchemaIOOptions } from './schema.js'
 import type { DslDefinition, DslExtensionDefinition, DslNamespaceFactories, DslWithExtensions, IDslBuilder } from './dsl.js'
 import type { IConditionalBuilder } from './conditional.js'
 import type { ValidateOptions, ValidationResult } from './validate.js'
@@ -142,12 +142,12 @@ export interface SchemaDslRuntime {
   getStats(): SchemaDslRuntimeStats
   dispose(): void
   validate<T = unknown>(
-    schema: JSONSchema | DslDefinition | IDslBuilder | IConditionalBuilder | string,
+    schema: JSONSchemaInput | DslDefinition | IDslBuilder | IConditionalBuilder | string,
     data: unknown,
     options?: SchemaDslRuntimeValidateOptions
   ): ValidationResult<T>
   validateAsync<T = unknown>(
-    schema: JSONSchema | DslDefinition | IDslBuilder | IConditionalBuilder | string,
+    schema: JSONSchemaInput | DslDefinition | IDslBuilder | IConditionalBuilder | string,
     data: unknown,
     options?: SchemaDslRuntimeValidateOptions
   ): Promise<T>

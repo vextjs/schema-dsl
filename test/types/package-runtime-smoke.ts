@@ -5,6 +5,7 @@ import {
   type SchemaDslRuntimeConfigureControl,
   type SchemaDslRuntimeStats,
 } from 'schema-dsl/runtime'
+import { ConditionalBuilder, type JSONSchemaInput } from 'schema-dsl/pure'
 
 const runtime = createRuntime({
   strict: true,
@@ -63,6 +64,18 @@ runtime.s.config({})
 
 runtime.validate(schema, { id: 'tenant_demo', score: 5 })
 runtime.validate(schema, { id: 'tenant_demo', score: '5' }, { coerce: false })
+runtime.validate(true, { any: 'value' })
+runtime.validate(false, { any: 'value' })
+const recursiveBooleanSchema: JSONSchemaInput = {
+  type: 'object',
+  properties: {
+    enabled: true,
+    disabled: false,
+  },
+  allOf: [true],
+}
+runtime.validate(recursiveBooleanSchema, { enabled: 'ok' })
+ConditionalBuilder.start(() => true).then(true).else(false).toSchema()
 runtimeField.toSchema()
 runtimeDslField.toSchema()
 runtimeParamField.toSchema()

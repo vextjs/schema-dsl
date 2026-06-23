@@ -7,7 +7,7 @@ import type { ErrorMessages } from './error.js'
 export interface JSONSchema {
   // --- Standard JSON Schema Draft 7 fields ---
   type?: string | string[]
-  properties?: Record<string, JSONSchema>
+  properties?: Record<string, JSONSchemaInput>
   required?: string[]
   minLength?: number
   maxLength?: number
@@ -20,18 +20,18 @@ export interface JSONSchema {
   format?: string
   enum?: unknown[]
   const?: unknown
-  items?: JSONSchema | JSONSchema[]
+  items?: JSONSchemaInput | JSONSchemaInput[]
   minItems?: number
   maxItems?: number
   uniqueItems?: boolean
-  additionalProperties?: boolean | JSONSchema
-  allOf?: JSONSchema[]
-  anyOf?: JSONSchema[]
-  oneOf?: JSONSchema[]
-  not?: JSONSchema
-  if?: JSONSchema
-  then?: JSONSchema
-  else?: JSONSchema
+  additionalProperties?: JSONSchemaInput
+  allOf?: JSONSchemaInput[]
+  anyOf?: JSONSchemaInput[]
+  oneOf?: JSONSchemaInput[]
+  not?: JSONSchemaInput
+  if?: JSONSchemaInput
+  then?: JSONSchemaInput
+  else?: JSONSchemaInput
   title?: string
   description?: string
   default?: unknown
@@ -39,8 +39,8 @@ export interface JSONSchema {
   $ref?: string
   $schema?: string
   $id?: string
-  definitions?: Record<string, JSONSchema>
-  $defs?: Record<string, JSONSchema>
+  definitions?: Record<string, JSONSchemaInput>
+  $defs?: Record<string, JSONSchemaInput>
 
   // --- schema-dsl internal keys (used during parsing; stripped on output) ---
   _label?: string

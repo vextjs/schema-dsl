@@ -191,6 +191,32 @@ describe('verified issue regressions', () => {
       expect(new Validator().validate(false, { ok: true }).valid).toBe(false)
     })
 
+    it('P1-20: public Validator executes conditionals in top-level array and composition schemas', () => {
+      const validator = new Validator()
+      const conditionalNumber = ConditionalBuilder.start(() => true).then('number!').toSchema()
+
+      const arrayResult = validator.validate({
+        type: 'array',
+        items: conditionalNumber,
+      }, ['bad'])
+      const allOfResult = validator.validate({
+        allOf: [conditionalNumber],
+      }, 'bad')
+
+      expect(arrayResult.valid).toBe(false)
+      expect(arrayResult.errors?.[0]?.path).toBe('0')
+      expect(allOfResult.valid).toBe(false)
+      expect(allOfResult.errors?.[0]?.keyword).toBe('type')
+    })
+
+    it('P2-08: ConditionalBuilder accepts boolean JSON Schema branches at runtime', () => {
+      const validator = new Validator()
+
+      expect(validator.validate(ConditionalBuilder.start(() => true).then(true).toSchema(), 'value').valid).toBe(true)
+      expect(validator.validate(ConditionalBuilder.start(() => true).then(false).toSchema(), 'value').valid).toBe(false)
+      expect(validator.validate(ConditionalBuilder.start(() => false).then(true).else(false).toSchema(), 'value').valid).toBe(false)
+    })
+
     it('P0-34: validateBatch follows the same smart coercion path as single validate', () => {
       const validator = new Validator()
       const schema = {
@@ -397,6 +423,18 @@ describe('verified issue regressions', () => {
         name: { type: 'string' },
         age: { type: 'number' },
       })
+    })
+
+    it('P2-05: SchemaUtils.extend keeps JSON Schema metadata extensions as schema metadata', () => {
+      const extended = SchemaUtils.extend(
+        { type: 'object', properties: {} },
+        { type: 'object', title: 'Extended schema' }
+      )
+
+      expect(extended.title).toBe('Extended schema')
+      expect(extended.properties).toEqual({})
+      expect(extended.properties?.type).toBeUndefined()
+      expect(extended.properties?.title).toBeUndefined()
     })
 
     it('P1-18: SchemaUtils.partial(fields) keeps unlisted fields and only makes listed fields optional', () => {

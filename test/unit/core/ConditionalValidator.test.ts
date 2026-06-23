@@ -248,6 +248,18 @@ describe('ConditionalValidator', () => {
     expect(hooks.parseObject).toHaveBeenCalledWith({ name: 'string' }, undefined)
   })
 
+  it('does not parse JSON Schema metadata then branches as DSL objects', () => {
+    const { validator, hooks } = createValidator()
+
+    const result = validator.validateConditional({
+      conditions: [{ then: { type: 'object', title: 'Plain object schema' } }],
+      _evaluateCondition: () => ({ result: true }),
+    }, {}, null, {}, {})
+
+    expect(result.valid).toBe(true)
+    expect(hooks.parseObject).not.toHaveBeenCalled()
+  })
+
   it('allows optional empty values and formats required missing messages', () => {
     const { validator } = createValidator()
     const optional = validator.validateConditional({

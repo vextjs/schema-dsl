@@ -8,7 +8,7 @@
  * @version package.json
  */
 
-import type { JSONSchema } from '../types/schema.js'
+import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 import { BaseExporter, type ExporterOptions, type ExportReport, type ExportReportOptions } from './BaseExporter.js'
 
 // ==================== Type definitions ====================
@@ -21,6 +21,10 @@ export interface MarkdownExporterOptions extends ExporterOptions {
 }
 
 type Locale = 'zh-CN' | 'en-US' | 'ja-JP' | 'fr-FR' | 'es-ES'
+
+function isObjectSchema(value: JSONSchemaInput): value is JSONSchema {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
 
 // ==================== MarkdownExporter ====================
 
@@ -124,7 +128,7 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
         const type = this._escapeTableCell(this._formatType(prop, locale))
         // EX-01 fix: prefer _required flag, then fall back to schema.required
         const isRequired = !!(
-          (prop as Record<string, unknown>)['_required'] === true ||
+          (isObjectSchema(prop) && (prop as Record<string, unknown>)['_required'] === true) ||
           schema.required?.includes(key)
         )
         const required = isRequired ? '✅' : '❌'
@@ -170,24 +174,27 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
     return this._formatInlineCode(this._escapeHtml(String(value)))
   }
 
-  private static _formatType(prop: JSONSchema, locale: Locale): string {
+  private static _formatType(prop: JSONSchemaInput, locale: Locale): string {
     const t = this._i18nTypes[locale] ?? this._i18nTypes['en-US']
+    if (!isObjectSchema(prop)) return prop ? 'any' : 'never'
 
     if (prop.format) {
       return t[prop.format] ?? prop.format
     }
 
     if (prop.type === 'array' && prop.items) {
-      const itemType = this._formatType(prop.items as JSONSchema, locale)
+      const itemSchema = Array.isArray(prop.items) ? prop.items[0] : prop.items
+      const itemType = itemSchema ? this._formatType(itemSchema, locale) : 'any'
       return `${t['array'] ?? 'array'}<${itemType}>`
     }
 
     return t[prop.type as string] ?? String(prop.type ?? 'any')
   }
 
-  private static _formatConstraints(prop: JSONSchema, locale: Locale): string {
+  private static _formatConstraints(prop: JSONSchemaInput, locale: Locale): string {
     const constraints: string[] = []
     const t = this._i18nConstraints[locale] ?? this._i18nConstraints['en-US']
+    if (!isObjectSchema(prop)) return '-'
 
     if (prop.minLength !== undefined || prop.maxLength !== undefined) {
       if (prop.minLength !== undefined && prop.maxLength !== undefined) {
@@ -231,7 +238,8 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
     return constraints.length > 0 ? constraints.join('\n') : '-'
   }
 
-  private static _getDescription(prop: JSONSchema, locale: Locale): string {
+  private static _getDescription(prop: JSONSchemaInput, locale: Locale): string {
+    if (!isObjectSchema(prop)) return '-'
     const p = prop as Record<string, unknown>
     let label: string | undefined
 
@@ -273,7 +281,7 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
       const obj: Record<string, unknown> = {}
       for (const [key, prop] of Object.entries(schema.properties)) {
         const isRequired = !!(
-          (prop as Record<string, unknown>)['_required'] === true ||
+          (isObjectSchema(prop) && (prop as Record<string, unknown>)['_required'] === true) ||
           schema.required?.includes(key)
         )
         if (isRequired) {
@@ -285,7 +293,8 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
     return null
   }
 
-  private static _getExampleValue(prop: JSONSchema): unknown {
+  private static _getExampleValue(prop: JSONSchemaInput): unknown {
+    if (!isObjectSchema(prop)) return prop ? {} : null
     if (prop.default !== undefined) return prop.default
     if (prop.enum) return (prop.enum as unknown[])[0]
 
@@ -304,7 +313,10 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
       case 'boolean':
         return true
       case 'array':
-        if (prop.items) return [this._getExampleValue(prop.items as JSONSchema)]
+        if (prop.items) {
+          const itemSchema = Array.isArray(prop.items) ? prop.items[0] : prop.items
+          return [itemSchema ? this._getExampleValue(itemSchema) : null]
+        }
         return []
       case 'object':
         if (prop.properties) return this._buildExample(prop)

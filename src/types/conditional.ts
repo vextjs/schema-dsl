@@ -2,7 +2,7 @@
  * IConditionalBuilder interface (shape definition).
  * Implementation class is in src/core/ConditionalBuilder.ts (Phase 8).
  */
-import type { JSONSchema } from './schema.js'
+import type { JSONSchema, JSONSchemaInput } from './schema.js'
 import type { ValidationResult } from './validate.js'
 
 export interface IConditionalBuilder {
@@ -10,9 +10,9 @@ export interface IConditionalBuilder {
   /** Add a v1-compatible truthy field requirement to the current condition chain. */
   require(field: string): this
   or(condition: (data: unknown) => boolean): this
-  /** then/else accept string DSL, JSONSchema, or null (no-op). */
-  then(schema: string | JSONSchema | null): this
-  else(schema: string | JSONSchema | null): this
+  /** then/else accept string DSL, JSON Schema (including boolean schemas), or null (no-op). */
+  then(schema: string | JSONSchemaInput | null): this
+  else(schema: string | JSONSchemaInput | null): this
   elseIf(condition: (data: unknown) => boolean): this
   message(msg: string): this
   /** Serialise to a JSON Schema object (internal conditional marker). */

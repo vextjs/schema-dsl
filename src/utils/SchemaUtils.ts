@@ -5,9 +5,10 @@
  *          v2 uses dynamic import or accepts pre-compiled schema directly (avoids circular deps)
  */
 
-import type { JSONSchema } from '../types/schema.js'
+import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 import { DslAdapter } from '../adapters/DslAdapter.js'
 import { cloneSchemaValue } from './schemaClone.js'
+import { isRawJsonSchemaLike } from './schemaInput.js'
 
 // Internal: chainable schema wrapper type
 interface ChainableSchema extends JSONSchema {
@@ -16,6 +17,10 @@ interface ChainableSchema extends JSONSchema {
   pick(fields: string[]): ChainableSchema
   omit(fields: string[]): ChainableSchema
   extend(extensions: Record<string, unknown>): ChainableSchema
+}
+
+function isObjectSchema(value: JSONSchemaInput): value is JSONSchema {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
 // ==================== SchemaUtils ====================
@@ -47,9 +52,9 @@ export class SchemaUtils {
   static extend(baseSchema: JSONSchema, extensions: JSONSchema | Record<string, unknown>): ChainableSchema {
     const result = this._clone(baseSchema)
 
-    // Detect flat DSL definition: if no 'properties' key but has string values, treat as DSL
+    // Detect flat DSL definition without stealing legitimate JSON Schema metadata.
     let extSchema: JSONSchema
-    if (!('properties' in extensions) && Object.values(extensions).some(v => typeof v === 'string')) {
+    if (!isRawJsonSchemaLike(extensions) && Object.values(extensions).some(v => typeof v === 'string')) {
       extSchema = DslAdapter.parseObject(extensions as Record<string, string>).toSchema()
     } else {
       extSchema = extensions as JSONSchema
@@ -93,7 +98,10 @@ export class SchemaUtils {
 
     for (const field of fields) {
       if (schema.properties?.[field]) {
-        (result['properties'] as Record<string, unknown>)[field] = this._clone(schema.properties[field] as JSONSchema)
+        const propertySchema = schema.properties[field]
+        ;(result['properties'] as Record<string, unknown>)[field] = isObjectSchema(propertySchema)
+          ? this._clone(propertySchema)
+          : cloneSchemaValue(propertySchema)
         if (schema.required?.includes(field)) {
           (result['required'] as string[]).push(field)
         }
@@ -252,7 +260,8 @@ export class SchemaUtils {
 
   // ==================== Private Utilities ====================
 
-  private static _getDisplayDescription(prop: JSONSchema): string {
+  private static _getDisplayDescription(prop: JSONSchemaInput): string {
+    if (!isObjectSchema(prop)) return '-'
     const p = prop as Record<string, unknown>
     const label = typeof p['_label'] === 'string' && p['_label'].length > 0
       ? p['_label']
@@ -292,7 +301,7 @@ export class SchemaUtils {
         description: SchemaUtils._escapeMdCell(SchemaUtils._getDisplayDescription(prop)),
       })
 
-      if (prop.properties) {
+      if (isObjectSchema(prop) && prop.properties) {
         rows.push(...SchemaUtils._collectMarkdownRows(prop, path))
       }
     }
@@ -300,12 +309,14 @@ export class SchemaUtils {
     return rows
   }
 
-  private static _formatExportType(prop: JSONSchema): string {
+  private static _formatExportType(prop: JSONSchemaInput): string {
+    if (!isObjectSchema(prop)) return prop ? 'any' : 'never'
     if (typeof prop.format === 'string' && prop.format.length > 0) return prop.format
     return String(prop.type ?? 'any')
   }
 
-  private static _formatExportConstraints(prop: JSONSchema): string {
+  private static _formatExportConstraints(prop: JSONSchemaInput): string {
+    if (!isObjectSchema(prop)) return '-'
     const constraints: string[] = []
     if (prop.minLength !== undefined && prop.maxLength !== undefined) {
       constraints.push(`length: ${prop.minLength}-${prop.maxLength}`)

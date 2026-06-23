@@ -1,4 +1,4 @@
-import type { JSONSchema } from '../types/schema.js'
+import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 import type { ValidateOptions, ValidationErrorItem, ValidationResult } from '../types/validate.js'
 import type { DslDefinition } from '../types/dsl.js'
 import { DslParser } from '../parser/DslParser.js'
@@ -6,6 +6,7 @@ import type { DslParseOptions } from '../parser/DslParser.js'
 import { Locale } from './Locale.js'
 import { CONDITIONAL_RUNTIME_STATE, type ConditionalRuntimeState } from './ConditionalRuntime.js'
 import { cloneSchemaValue } from '../utils/schemaClone.js'
+import { isRawJsonSchemaLike } from '../utils/schemaInput.js'
 
 const EMPTY_ERRORS: ValidationErrorItem[] = []
 
@@ -22,7 +23,7 @@ export type ConditionalInternalSchema = JSONSchema & {
 }
 
 interface ConditionalValidatorHooks {
-    validateSchema<T>(schema: JSONSchema, data: T, options: ValidateOptions): ValidationResult<T>
+    validateSchema<T>(schema: JSONSchemaInput, data: T, options: ValidateOptions): ValidationResult<T>
     internalError<T>(error: unknown, data: T): ValidationResult<T>
     getMessageText?(key: string, params: Record<string, unknown>, options: ValidateOptions): string
     parseString?(dsl: string, options?: DslParseOptions): JSONSchema
@@ -155,23 +156,23 @@ export class ConditionalValidator {
             }
         }
 
-        const resolvedSchema = resolved as ConditionalInternalSchema
-        if (resolvedSchema?._isConditional) {
+        const resolvedSchema = resolved as ConditionalInternalSchema | null
+        if (resolvedSchema && typeof resolvedSchema === 'object' && resolvedSchema._isConditional) {
             return this.validateConditional(resolvedSchema, data, fieldName, fieldValue, options)
         }
 
         if (resolved !== null && typeof resolved === 'object' && !Array.isArray(resolved)) {
             const obj = resolved as Record<string, unknown>
-            if (obj['type'] === undefined && obj['oneOf'] === undefined && obj['anyOf'] === undefined && obj['allOf'] === undefined) {
+            if (!isRawJsonSchemaLike(obj)) {
                 resolved = (this.hooks.parseObject ?? DslParser.parseObject)(resolved as DslDefinition, this.hooks.parseOptions)
             }
         }
 
-        return this.validateFieldValue(resolved as JSONSchema, fieldValue, options)
+        return this.validateFieldValue(resolved as JSONSchemaInput, fieldValue, options)
     }
 
-    private validateFieldValue<T>(schema: JSONSchema, fieldValue: T, options: ValidateOptions): ValidationResult<T> {
-        const internalSchema = schema as ConditionalInternalSchema
+    private validateFieldValue<T>(schema: JSONSchemaInput, fieldValue: T, options: ValidateOptions): ValidationResult<T> {
+        const internalSchema = (schema && typeof schema === 'object') ? schema as ConditionalInternalSchema : {}
         const isRequired = internalSchema._required === true
 
         if (!isRequired && (fieldValue === undefined || fieldValue === '')) {

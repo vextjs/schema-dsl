@@ -159,6 +159,41 @@ describe('MySQLExporter', () => {
       expect(losses).toHaveLength(10)
       expect(() => exporter.exportWithReport('users', schema, { strict: true })).toThrow('Export would lose unsupported JSON Schema keywords')
     })
+
+    it('reports SQL loss for scalar constraints and tuple item schemas', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          age: {
+            type: 'number',
+            minimum: 18,
+            maximum: 99,
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            minLength: 3,
+          },
+          flags: {
+            type: 'array',
+            items: [
+              { type: 'string', pattern: '^x-' },
+            ],
+          },
+        },
+      } as JSONSchema
+
+      const report = new MySQLExporter().exportWithReport('users', schema)
+      const lossKeys = report.losses.map(loss => `${loss.path}:${loss.keyword}`)
+
+      expect(lossKeys).toEqual(expect.arrayContaining([
+        '$.properties.age:minimum',
+        '$.properties.age:maximum',
+        '$.properties.email:format',
+        '$.properties.email:minLength',
+        '$.properties.flags.items[0]:pattern',
+      ]))
+    })
   })
 })
 

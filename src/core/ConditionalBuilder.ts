@@ -7,7 +7,7 @@
  *   C-Y02: build() as toSchema() alias (IConditionalBuilder interface compat)
  */
 
-import type { JSONSchema } from '../types/schema.js'
+import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 import type { IConditionalBuilder } from '../types/conditional.js'
 import type { ValidateOptions, ValidationResult } from '../types/validate.js'
 import { ValidationError } from '../errors/ValidationError.js'
@@ -33,7 +33,7 @@ interface ConditionEntry {
   combinedConditions: CombinedCondition[]
   message?: string
   action?: 'throw'
-  then?: string | JSONSchema | null
+  then?: string | JSONSchemaInput | null
 }
 
 interface EvaluateResult {
@@ -46,7 +46,7 @@ interface EvaluateResult {
 
 export class ConditionalBuilder implements IConditionalBuilder {
   private _conditions: ConditionEntry[]
-  private _elseSchema: string | JSONSchema | null | undefined
+  private _elseSchema: string | JSONSchemaInput | null | undefined
 
   constructor() {
     this._conditions = []
@@ -132,14 +132,14 @@ export class ConditionalBuilder implements IConditionalBuilder {
     return this
   }
 
-  then(schema: string | JSONSchema | null): this {
+  then(schema: string | JSONSchemaInput | null): this {
     const last = this._conditions[this._conditions.length - 1]
     if (!last) throw new Error('[schema-dsl] .then() must follow .if() or .elseIf()')
     last.then = schema
     return this
   }
 
-  else(schema: string | JSONSchema | null): this {
+  else(schema: string | JSONSchemaInput | null): this {
     this._elseSchema = schema
     return this
   }

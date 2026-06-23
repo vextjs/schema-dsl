@@ -38,7 +38,11 @@ const POSTGRESQL_UNSUPPORTED_REPORT_KEYWORDS = [
   'then',
   'else',
   'const',
+  'format',
   'pattern',
+  'minimum',
+  'maximum',
+  'minLength',
   'multipleOf',
   'exclusiveMinimum',
   'exclusiveMaximum',
@@ -58,6 +62,10 @@ const POSTGRESQL_UNSUPPORTED_REPORT_KEYWORDS = [
   'unevaluatedItems',
   'unevaluatedProperties',
 ] as const
+
+function isObjectSchema(value: unknown): value is JSONSchema {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
 
 // ==================== PostgreSQLExporter ====================
 
@@ -157,7 +165,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
     const columns: string[] = []
 
     for (const [name, propSchema] of Object.entries(schema.properties)) {
-      columns.push(this._convertColumn(name, propSchema, required.includes(name)))
+      columns.push(this._convertColumn(name, isObjectSchema(propSchema) ? propSchema : {}, required.includes(name)))
     }
 
     return columns
@@ -191,7 +199,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
       }
     }
 
-    const variants = (schema.anyOf ?? schema.oneOf) as JSONSchema[] | undefined
+    const variants = (schema.anyOf ?? schema.oneOf)?.filter(isObjectSchema) as JSONSchema[] | undefined
     if (!variants?.length) {
       return {
         jsonType: 'string',
@@ -267,7 +275,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
 
     const comments: string[] = []
     for (const [name, propSchema] of Object.entries(schema.properties)) {
-      if (propSchema.description) {
+      if (isObjectSchema(propSchema) && propSchema.description) {
         // fullTableName is already quoted; quote the column identifier separately
         const schemaIdent = this._quoteIdent(this.options.schema)
         const tableIdent = this._quoteIdent(tableName)

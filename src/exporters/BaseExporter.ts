@@ -4,7 +4,7 @@
  * Provides a unified abstract export() method signature; each exporter subclass implements it.
  */
 
-import type { JSONSchema } from '../types/schema.js'
+import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 
 // ==================== Common options type ====================
 
@@ -77,7 +77,7 @@ export abstract class BaseExporter<TOptions extends ExporterOptions = ExporterOp
 
   protected _createExportReport<TOutput>(
     output: TOutput,
-    schema: JSONSchema,
+    schema: JSONSchemaInput,
     options: ExportReportOptions | undefined,
     unsupportedKeywords: readonly string[],
   ): ExportReport<TOutput> {
@@ -90,10 +90,11 @@ export abstract class BaseExporter<TOptions extends ExporterOptions = ExporterOp
   }
 
   private _collectUnsupportedKeywordLosses(
-    schema: JSONSchema,
+    schema: JSONSchemaInput,
     unsupportedKeywords: readonly string[],
     path = '$',
   ): ExportLossItem[] {
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return []
     const unsupported = new Set(unsupportedKeywords)
     const losses: ExportLossItem[] = []
     const record = schema as Record<string, unknown>
@@ -115,8 +116,14 @@ export abstract class BaseExporter<TOptions extends ExporterOptions = ExporterOp
       }
     }
 
-    if (schema.items && !Array.isArray(schema.items)) {
-      losses.push(...this._collectUnsupportedKeywordLosses(schema.items, unsupportedKeywords, `${path}.items`))
+    if (schema.items) {
+      if (Array.isArray(schema.items)) {
+        schema.items.forEach((child, index) => {
+          losses.push(...this._collectUnsupportedKeywordLosses(child, unsupportedKeywords, `${path}.items[${index}]`))
+        })
+      } else {
+        losses.push(...this._collectUnsupportedKeywordLosses(schema.items, unsupportedKeywords, `${path}.items`))
+      }
     }
 
     for (const key of ['allOf', 'anyOf', 'oneOf']) {

@@ -3,10 +3,12 @@
 ## 2026-06-23
 
 - Fixed raw JSON Schema input detection so keyword-only schemas such as `{ enum: [...] }`, `{ const: ... }`, and Draft 7 boolean schemas are treated as JSON Schema without stealing DSL object definitions whose field names collide with JSON Schema keywords.
+- Fixed runtime and conditional branch schema classification so DSL object inputs such as `{ properties: { enabled: 'boolean!' } }` still compile as schema-dsl definitions, while raw JSON Schema branches and boolean schemas stay valid passthrough inputs.
 - Aligned `Validator.validateBatch()` with single-item validation so smart coercion, conditionals, and custom validators run consistently.
 - Updated `SchemaUtils.partial(schema, fields)` to preserve the full schema and make only the selected fields optional; `SchemaUtils.extend()` now preserves base schema metadata while merging extension fields.
-- Expanded type inference for runtime DSL aliases, typed enums, `types:` unions, JSON Schema `const`, nullable type arrays, and boolean schemas.
-- Added `SchemaCompileError`, structured schema compile errors in `validate()`, broader conditional/custom validator walker coverage, and exporter `exportWithReport()` loss reporting for more unsupported JSON Schema keywords.
+- Expanded type inference for runtime DSL aliases, bare pipe enums, comma/pipe enum syntax, `types:` unions, constrained array item syntax, JSON Schema `const`, nullable type arrays, and boolean schemas.
+- Added `SchemaCompileError`, structured schema compile errors in `validate()`, broader conditional/custom validator walker coverage, and exporter `exportWithReport()` loss reporting for more unsupported JSON Schema keywords and tuple item schemas.
+- Documented the source-vs-npm release boundary for the new side-effect-controlled entry points so README and Quick Start examples are not mistaken for guarantees about an older npm latest package.
 - Moved Babel AST packages for `schema-dsl/transform` to optional peer dependencies, tightened CI gates, and narrowed npm package files to built output and public metadata.
 
 ## 2026-06-18

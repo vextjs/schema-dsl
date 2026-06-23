@@ -35,7 +35,11 @@ const MYSQL_UNSUPPORTED_REPORT_KEYWORDS = [
   'then',
   'else',
   'const',
+  'format',
   'pattern',
+  'minimum',
+  'maximum',
+  'minLength',
   'multipleOf',
   'exclusiveMinimum',
   'exclusiveMaximum',
@@ -55,6 +59,10 @@ const MYSQL_UNSUPPORTED_REPORT_KEYWORDS = [
   'unevaluatedItems',
   'unevaluatedProperties',
 ] as const
+
+function isObjectSchema(value: unknown): value is JSONSchema {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
 
 // ==================== MySQLExporter ====================
 
@@ -154,7 +162,7 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
     const columns: string[] = []
 
     for (const [name, propSchema] of Object.entries(schema.properties)) {
-      columns.push(this._convertColumn(name, propSchema, required.includes(name)))
+      columns.push(this._convertColumn(name, isObjectSchema(propSchema) ? propSchema : {}, required.includes(name)))
     }
 
     return columns
@@ -187,7 +195,7 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
       }
     }
 
-    const variants = (schema.anyOf ?? schema.oneOf) as JSONSchema[] | undefined
+    const variants = (schema.anyOf ?? schema.oneOf)?.filter(isObjectSchema) as JSONSchema[] | undefined
     if (!variants?.length) {
       return {
         jsonType: 'string',

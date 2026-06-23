@@ -169,6 +169,16 @@ describe('schema-dsl/runtime isolation', () => {
     expect(strict.errors?.[0]?.keyword).toBe('type')
   })
 
+  it('normalizes DSL object inputs and boolean schemas consistently with root validate', () => {
+    const runtime = createRuntime()
+    const keywordFieldSchema = { properties: { enabled: 'boolean!' } }
+
+    expect(runtime.validate(keywordFieldSchema, { properties: { enabled: true } }).valid).toBe(true)
+    expect(runtime.validate(keywordFieldSchema, { properties: {} }).valid).toBe(false)
+    expect(runtime.validate(true, { any: 'value' }).valid).toBe(true)
+    expect(runtime.validate(false, { any: 'value' }).valid).toBe(false)
+  })
+
   it('exposes scoped s and dsl namespace factories without leaking to global namespace', () => {
     const runtime = createRuntime()
 

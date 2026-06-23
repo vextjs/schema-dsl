@@ -2,7 +2,7 @@
  * MongoDBExporter — Export JSON Schema as a MongoDB $jsonSchema validation schema.
  */
 
-import type { JSONSchema } from '../types/schema.js'
+import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 import { BaseExporter, type ExporterOptions, type ExportReport, type ExportReportOptions } from './BaseExporter.js'
 import { TypeConverter } from '../utils/TypeConverter.js'
 
@@ -56,6 +56,10 @@ const MONGODB_UNSUPPORTED_REPORT_KEYWORDS = [
   'unevaluatedItems',
   'unevaluatedProperties',
 ] as const
+
+function isObjectSchema(value: JSONSchemaInput): value is JSONSchema {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
 
 // ==================== MongoDBExporter ====================
 
@@ -111,13 +115,14 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
 
   // ==================== Private methods ====================
 
-  private _convertSchema(schema: JSONSchema): Record<string, unknown> {
+  private _convertSchema(schema: JSONSchemaInput): Record<string, unknown> {
+    if (!isObjectSchema(schema)) return {}
     const result: Record<string, unknown> = {}
 
     if (schema.type) {
       result['bsonType'] = TypeConverter.toMongoDBType(schema.type as string | string[])
     } else if (schema.anyOf ?? schema.oneOf) {
-      const variants = (schema.anyOf ?? schema.oneOf) as JSONSchema[]
+      const variants = (schema.anyOf ?? schema.oneOf)?.filter(isObjectSchema) as JSONSchema[]
       const bsonTypes = [...new Set(variants.map(v => v.type ? TypeConverter.toMongoDBType(v.type as string) : null).filter(Boolean))]
       result['bsonType'] = bsonTypes.length === 1 ? bsonTypes[0] : bsonTypes
     }
@@ -134,7 +139,9 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
     }
 
     if (schema.items) {
-      result['items'] = this._convertSchema(schema.items as JSONSchema)
+      result['items'] = Array.isArray(schema.items)
+        ? schema.items.map(item => this._convertSchema(item))
+        : this._convertSchema(schema.items)
     }
 
     // String constraints
