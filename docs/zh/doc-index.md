@@ -63,8 +63,8 @@
 | [SchemaUtils 最佳实践](schema-utils-best-practices.md) | 可复用 schema 的实践模式和常见陷阱。 |
 | [SchemaUtils 进阶问题](schema-utils-advanced-issues.md) | 更深入的边界问题和维护说明。 |
 | [SchemaHelper](schema-helper.md) | schema 分析和辅助工具。 |
-| [CacheManager](cache-manager.md) | LRU 缓存行为和缓存管理 API。 |
-| [label vs description](label-vs-description.md) | UI 标签和 schema 描述的区别。 |
+| [Validator 缓存](cache-manager.md) | 编译缓存、容量、TTL 与命中率统计。 |
+| [标签与错误消息](label-vs-description.md) | `.label()`、`.description()`、`.messages()`、`.error()` 的区别。 |
 
 ## 国际化
 
@@ -83,7 +83,7 @@
 | 文档 | 何时阅读 |
 |------|----------|
 | [扩展概览](extensions-overview.md) | 在自定义业务类型、校验关键字、runtime 隔离和插件之间选择路径。 |
-| [自定义扩展](custom-extensions.md) | 一份定义同时支撑纯 DSL、`s('...')` 和 `s.xxx()` 入口。 |
+| [自定义 DSL 类型](custom-extensions.md) | 一份定义同时支撑纯 DSL、`s('...')` 和 `s.xxx()` 入口。 |
 | [自定义校验关键字](add-keyword.md) | 添加自定义 AJV keyword。 |
 | [框架集成与目录结构](framework-extension-setup.md) | 为应用和框架组织可复用扩展模块。 |
 | [插件管理器（高级）](plugin-system.md) | 插件生命周期、hook 和集成编排。 |

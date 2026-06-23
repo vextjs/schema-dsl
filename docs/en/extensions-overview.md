@@ -1,6 +1,6 @@
 # Extension overview
 
-Use this page when you want to extend schema-dsl but are not sure whether you need a custom extension, a validation keyword, runtime isolation, or plugin packaging.
+Use this page when you want to extend schema-dsl but are not sure whether you need a custom DSL type, a validation keyword, runtime isolation, or plugin packaging.
 
 The extension system has several layers. They can be combined, but they solve different jobs.
 
@@ -8,7 +8,7 @@ The extension system has several layers. They can be combined, but they solve di
 
 | Goal | Recommended document | Typical result |
 |------|----------------------|----------------|
-| Define a reusable business type once | [Custom Extensions](custom-extensions.md) | `'tenant-id:corp!'`, `s('tenant-id:corp!')`, `s.tenantId('corp')` |
+| Define a reusable business type once | [Custom DSL Types](custom-extensions.md) | `'tenant-id:corp!'`, `s('tenant-id:corp!')`, `s.tenantId('corp')` |
 | Keep direct String-chain authoring | [String Extensions](string-extensions.md) | Transform or explicit String support |
 | Add a validation keyword | [Custom Validation Keywords](add-keyword.md) | `{ type: 'number', isEven: true }` |
 | Isolate extensions per app, tenant, plugin, or worker | [Framework Integration](framework-extension-setup.md), [Runtime Isolation](runtime-isolation.md) | `const runtime = createRuntime({ types })` |
@@ -16,7 +16,7 @@ The extension system has several layers. They can be combined, but they solve di
 
 ## Custom Extension Entries
 
-The custom extension chapter now owns DSL literals, `s('...')` seed builders, `s.xxx()` factories, parameters, and the decision not to expose custom base-builder methods for ordinary business types:
+The custom DSL type chapter owns DSL literals, `s('...')` seed builders, `s.xxx()` factories, parameters, and the decision not to expose custom base-builder methods for ordinary business types:
 
 ```ts
 const schema = s({
@@ -78,7 +78,7 @@ runtime.registerExtensions([
 
 ## Recommended reading path
 
-1. Read [Custom Extensions](custom-extensions.md) for reusable business types, parameters, and `s.xxx()` factories.
+1. Read [Custom DSL Types](custom-extensions.md) for reusable business types, parameters, and `s.xxx()` factories.
 2. Read [Custom Validation Keywords](add-keyword.md) when the validator needs a new keyword.
 3. Read [Framework Integration](framework-extension-setup.md) before wiring extensions into a real application or framework.
 4. Read [Plugin Manager (Advanced)](plugin-system.md) only when you need plugin lifecycle and hooks.
@@ -88,4 +88,4 @@ runtime.registerExtensions([
 ## Corresponding sample file
 
 **Example entry**: [extensions-overview.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/extensions-overview.ts)
-**Note**: Shows custom extension, runtime-scoped type, and validation keyword paths side by side.
+**Note**: Shows custom DSL type, runtime-scoped type, and validation keyword paths side by side.

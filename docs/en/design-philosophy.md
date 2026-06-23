@@ -22,7 +22,7 @@ const result = validate(userSchema, {
 });
 ```
 
-In the current source and the next v2.1.0 release, the recommended public entry is `schema-dsl/pure` + `s`:
+The recommended public entry is `schema-dsl/pure` + `s`:
 
 | Entry | Best for |
 |------|----------|

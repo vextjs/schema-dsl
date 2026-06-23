@@ -11,6 +11,7 @@ import type {
 } from '../types/dsl.js'
 import type { JSONSchema, SchemaIOOptions } from '../types/schema.js'
 import type { DslExtensionRegistry } from '../parser/DslExtensionRegistry.js'
+import { isRawJsonSchemaFactoryInput } from '../parser/DslParser.js'
 import {
   buildDslExtensionSchema,
   normalizeDslExtensionDefinition,
@@ -197,12 +198,17 @@ function createEnumBuilder(values: unknown[], createBuilder: (definition: string
   throw new Error('[schema-dsl] enum() values must be all strings, all numbers, or all booleans')
 }
 
-function toSchemaForArrayItem(item: DslFactoryInput, createBuilder: (definition: string) => IDslBuilder): JSONSchema {
-  const rawSchema = typeof item === 'string'
-    ? createBuilder(item).toSchema()
-    : typeof (item as { toSchema?: unknown })?.toSchema === 'function'
-      ? (item as { toSchema: () => JSONSchema }).toSchema()
-      : cloneSchemaValue(item as JSONSchema)
+function toSchemaForArrayItem(item: DslFactoryInput, options: DslNamespaceOptions): JSONSchema {
+  let rawSchema: JSONSchema
+  if (typeof item === 'string') {
+    rawSchema = options.createBuilder(item).toSchema()
+  } else if (typeof (item as { toSchema?: unknown })?.toSchema === 'function') {
+    rawSchema = (item as { toSchema: () => JSONSchema }).toSchema()
+  } else if (item && typeof item === 'object' && !Array.isArray(item) && !isRawJsonSchemaFactoryInput(item as Record<string, unknown>)) {
+    rawSchema = options.parseObject(item as DslDefinition)
+  } else {
+    rawSchema = cloneSchemaValue(item as JSONSchema)
+  }
 
   const stripRequired = (schema: unknown): unknown => {
     if (Array.isArray(schema)) {
@@ -268,7 +274,7 @@ export function attachDslNamespaceFactories(
   attachFactory(mutable, 'array', ((item?: DslFactoryInput): IDslBuilder => {
     const builder = options.createBuilder('array')
     if (item !== undefined) {
-      return builder.items(toSchemaForArrayItem(item, options.createBuilder))
+      return builder.items(toSchemaForArrayItem(item, options))
     }
     return builder
   }) as FactoryFn)

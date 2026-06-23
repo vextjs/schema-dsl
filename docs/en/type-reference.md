@@ -1,6 +1,6 @@
 # schema-dsl complete type list
 
-This page lists the built-in DSL types and shows how to use the same type through the authoring entries recommended by the current source and the next v2.1.0 release: plain DSL strings, `s('...')` builder seeds, and `s.xxx()` factories.
+This page lists the built-in DSL types and shows how to use the same type through the recommended authoring entries: plain DSL strings, `s('...')` builder seeds, and `s.xxx()` factories.
 
 ---
 
@@ -13,11 +13,13 @@ This page lists the built-in DSL types and shows how to use the same type throug
 | string | `string` | `{ type: 'string' }` | text type |
 | number | `number` | `{ type: 'number' }` | floating point number |
 | integer | `integer` | `{ type: 'integer' }` | integer |
+| integer alias | `int` | `{ type: 'integer' }` | Alias of `integer` |
 | Boolean | `boolean` | `{ type: 'boolean' }` | true/false |
 | object | `object` | `{ type: 'object' }` | Nested objects |
 | array | `array` | `{ type: 'array' }` | array |
 | null value | `null` | `{ type: 'null' }` | null value |
 | arbitrary | `any` | `{}` | any type |
+| any alias | `mixed` | `{}` | Alias of `any` |
 
 ---
 
@@ -44,7 +46,9 @@ This page lists the built-in DSL types and shows how to use the same type throug
 | type | schema-dsl DSL | JSON Schema | Description |
 |------|----------|-------------|------|
 | binary | `binary` | `contentEncoding: base64` | Base64 encoding |
+| binary alias | `buffer` | `contentEncoding: base64` | Alias of `binary` |
 | ObjectId | `objectId` | `pattern: ^[0-9a-fA-F]{24}$` | MongoDB ObjectId |
+| ObjectId alias | `objectid` | `pattern: ^[0-9a-fA-F]{24}$` | Lowercase alias of `objectId` |
 | HexColor | `hexColor` | `pattern: ^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$` | CSS hexadecimal color |
 | MAC address | `macAddress` | `pattern: ^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$` | MAC address |
 | Cron | `cron` | `pattern: ...` | Cron expression |
@@ -57,6 +61,9 @@ This page lists the built-in DSL types and shows how to use the same type throug
 | uppercase string | `upper` | `uppercase: true` | Custom AJV keyword |
 | JSON string | `json` | `jsonString: true` | Custom AJV keyword |
 | port number | `port` | `port: true` | integer port number |
+| float alias | `float` | `{ type: 'number' }` | Alias of `number` |
+| double alias | `double` | `{ type: 'number' }` | Alias of `number` |
+| decimal alias | `decimal` | `{ type: 'number' }` | Alias of `number` |
 
 ---
 
@@ -89,6 +96,14 @@ const schema5 = s({
 
 // array
 const schema6 = s({ tags: 'array<string>' });
+
+// object array
+const schema6b = s({
+  items: s.array({
+    name: 'string!',
+    quantity: 'number:1-999!'
+  })
+});
 
 //null value
 const schema7 = s({ value: 'null' });
@@ -184,8 +199,39 @@ const schema = s({
   age: s.number().min(18).max(120),
   email: s.email().label('Email').require(),
   tags: s.array('string:1-30').min(1).max(10),
+  lines: s.array({ name: 'string!', quantity: 'number:1-999!' }),
   status: s.enum('active', 'inactive', 'pending').default('active')
 });
+```
+
+### Factory support boundary
+
+Not every DSL type has a same-name `s.xxx()` factory. Built-in factories cover the most common types and entry points:
+
+| Category | Direct factories |
+|----------|------------------|
+| Basic types | `s.string()`, `s.number()`, `s.integer()`, `s.int()`, `s.boolean()`, `s.object()`, `s.array()`, `s.any()`, `s.mixed()` |
+| Format types | `s.email()`, `s.url()`, `s.uri()`, `s.uuid()`, `s.ip()`, `s.ipv4()`, `s.ipv6()`, `s.date()`, `s.datetime()`, `s.time()`, `s.slug()` |
+| Common presets | `s.phone(country?)`, `s.username(preset?)`, `s.password(strength?)` |
+| Other built-in types | Use `s('objectId!')`, `s('hexColor')`, or `s.type('objectId')` |
+
+`s.array(item)` and `.items(item)` accept a DSL string, builder, DSL object, or standard JSON Schema:
+
+```javascript
+s.array('string:1-30')
+s.array(s.string().min(1).require())
+s.array({ name: 'string!', quantity: 'number:1-999!' })
+s.array({ type: 'string', minLength: 1 }) // standard JSON Schema
+s.array({ enum: ['small', 'large'] })     // JSON Schema fragment without type is preserved
+```
+
+If an object-array child field is named like a JSON Schema keyword, such as `enum`, `pattern`, or `minimum`, wrap the DSL object with `s({ ... })` to make the intent explicit:
+
+```javascript
+s.array(s({
+  enum: 'string!',
+  pattern: 'string'
+}))
 ```
 
 ---

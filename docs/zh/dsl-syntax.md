@@ -20,6 +20,33 @@ const schema = s({
 const emailField = s.email().label('邮箱').require();
 ```
 
+同一份 schema 可以直接验证真实数据：
+
+```javascript
+import { s, validate } from 'schema-dsl/pure';
+
+const userSchema = s({
+  name: 'string:1-50!',
+  email: 'email!',
+  age: 'number:18-120',
+  role: 'admin|user|guest'
+});
+
+validate(userSchema, {
+  name: '张三',
+  email: 'zhangsan@example.com',
+  age: 28,
+  role: 'user'
+}).valid; // true
+
+validate(userSchema, {
+  name: '',
+  email: 'not-email',
+  age: 15,
+  role: 'owner'
+}).valid; // false
+```
+
 ---
 
 ## 完整类型列表
@@ -282,14 +309,11 @@ const schema = s({
 // 对象数组
 const schema = s({
   users: 'array<object>',
-  // 或更详细定义
-  items: {
-    type: 'array',
-    items: {
-      name: 'string!',
-      age: 'number'
-    }
-  }
+  // 更详细的对象元素定义
+  items: s.array({
+    name: 'string!',
+    age: 'number'
+  })
 });
 ```
 
@@ -471,7 +495,16 @@ const schema = s({
 'array!1-10<string:1-20>'  // 1-10个元素，每个1-20字符
 ```
 
-⚠️ **也可以**: 使用完整 JSON Schema 格式（不推荐，太繁琐）
+✅ **对象元素也可以直接写 DSL 对象**:
+
+```javascript
+s.array({
+  name: 'string!',
+  age: 'number:18-'
+}).min(1).max(10)
+```
+
+⚠️ **也可以**: 使用完整 JSON Schema 格式（通常只在需要和其他 JSON Schema 工具互操作时使用）
 ```javascript
 {
   type: 'array',
@@ -528,16 +561,29 @@ s('string!').custom((value) => {
 'array<object{name:string,age:number}>'  // ❌ 不支持
 ```
 
-**解决方案**: 使用完整对象定义
+**解决方案**: 使用 `s.array({ ... })` 或 `.items({ ... })`
 ```javascript
 const schema = s({
-  users: {
-    type: 'array',
-    items: {
-      name: 'string!',
-      age: 'number:18-'
-    }
-  }
+  users: s.array({
+    name: 'string!',
+    age: 'number:18-'
+  }).min(1)
+});
+
+const usersField = s.array().items({
+  name: 'string!',
+  age: 'number:18-'
+});
+```
+
+不要把字段名写成 `items:array` 来表达数组类型。schema-dsl 的字段名语法只用来描述字段名本身以及必填标记，例如 `'profile!'`；字段类型应写在值里：
+
+```javascript
+const schema = s({
+  items: s.array({
+    name: 'string!',
+    price: 'number:0-10000!'
+  })
 });
 ```
 
@@ -566,7 +612,10 @@ const schema = s({
   },
   
   // 地址信息
-  addresses: 'array:1-5<object>',  // 1-5个地址
+  addresses: s.array({
+    city: 'string!',
+    street: 'string!'
+  }).min(1).max(5),  // 1-5个地址
   
   // 标签
   tags: 'array:1-10<string:1-20>',  // 1-10个标签，每个1-20字符
@@ -590,20 +639,19 @@ const schema = s({
   'details!': {
     description: 'string:10000',
     images: 'array!1-10<url>',
-    specs: 'array<object>',
+    specs: s.array({
+      name: 'string!',
+      value: 'string!'
+    }),
     tags: 'array:1-20<string:1-30>'
   },
   
   // SKU信息
-  skus: {
-    type: 'array',
-    minItems: 1,
-    items: {
-      sku_code: 'string!',
-      price: 'number!',
-      stock: 'integer!'
-    }
-  }
+  skus: s.array({
+    sku_code: 'string!',
+    price: 'number!',
+    stock: 'integer!'
+  }).min(1)
 });
 ```
 
@@ -651,16 +699,13 @@ const schema = s({
 
 ### Q3: 如何定义对象数组？
 
-**A**: 使用完整对象定义：
+**A**: 使用 `s.array({ ... })`，数组元素对象里的每个字段继续使用普通 DSL：
 ```javascript
 const schema = s({
-  users: {
-    type: 'array',
-    items: {
-      name: 'string!',
-      email: 'email!'
-    }
-  }
+  users: s.array({
+    name: 'string!',
+    email: 'email!'
+  })
 });
 ```
 

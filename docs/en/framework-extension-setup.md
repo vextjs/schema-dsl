@@ -97,7 +97,7 @@ Framework adapters can pass these options into `transformSchemaDsl()` or `schema
 
 ## TypeScript setup
 
-In the current source and the next v2.1.0 release, prefer the `s` exported by `registerExtensions([... ] as const)` for `s.xxx()` hints. Maintain a `.d.ts` file only when you still use dynamic `registerExtension()`, legacy module augmentation, or need to add types for a third-party extension package:
+Prefer the `s` exported by `registerExtensions([... ] as const)` for `s.xxx()` hints. Maintain a `.d.ts` file only when you still use dynamic `registerExtension()`, legacy module augmentation, or need to add types for a third-party extension package:
 
 ```ts
 import type { IDslBuilder } from 'schema-dsl/pure';

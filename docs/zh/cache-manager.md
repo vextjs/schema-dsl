@@ -1,8 +1,17 @@
-# CacheManager 缓存管理器
+# Validator 缓存与性能调优
 
 ## 概述
 
-`CacheManager` 是 schema-dsl 的内部缓存系统，用于缓存编译后的 Schema 验证函数，避免重复编译带来的性能开销。
+schema-dsl 会把 schema 编译成可重复执行的验证函数。`CacheManager` 负责保存这些编译结果，避免同一个 schema 在高频验证场景下反复编译。
+
+大多数项目不需要直接创建 `CacheManager`。你通常只需要正常调用 `validate()`、`validateAsync()` 或 `new Validator()`；只有下面这些场景才需要阅读本页：
+
+| 场景 | 你要做什么 |
+|---|---|
+| 表单、接口、批量任务复用同一批 schema | 了解缓存命中和容量配置 |
+| schema 数量很多，担心内存增长 | 调整 `maxSize` 或关闭缓存 |
+| 需要排查性能波动 | 查看 `getStats()` 的命中率、未命中次数和条目数 |
+| 封装框架适配器 | 把 `CacheManager` 交给自定义 `Validator` 使用 |
 
 ### 核心功能
 

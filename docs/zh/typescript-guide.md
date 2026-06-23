@@ -1,6 +1,6 @@
 # TypeScript 使用指南
 
-**重要**: 在当前源码和下一版 v2.1.0 中，公开 TypeScript 示例默认推荐 `schema-dsl/pure` + `s`，避免导入后自动安装 String 原型扩展。
+**重要**: 公开 TypeScript 示例默认推荐 `schema-dsl/pure` + `s`，避免导入后自动安装 String 原型扩展。
 
 当你需要在纯 DSL 字符串、DSL 种子 builder、命名空间 factory 和可选 String 扩展之间做取舍时，请尽早阅读本页。它说明 TypeScript 能推导什么、哪些仍是运行时约束，以及编辑器提示的边界。
 
@@ -60,7 +60,7 @@ const defaultBuilderSchema = s({
 });
 ```
 
-### 2.2 当前源码和 v2.1.0 的推荐编写入口
+### 2.2 推荐编写入口
 
 按编写目标选择三种推荐入口之一：
 

@@ -29,7 +29,7 @@ features:
   - title: Internationalization
     details: Built-in multi-language error messages and dynamic locale switching, suitable for sharing validation rules between the server and front-end.
   - title: Extensions and plugins
-    details: Add custom extensions, formats and packaged plugins.
+    details: Add custom DSL types, formats and packaged plugins.
   - title: TypeScript friendly
     details: Provides complete type declarations for direct integration in modern Node.js and TypeScript projects.
 ---

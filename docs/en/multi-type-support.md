@@ -197,14 +197,11 @@ const schema = s({
   // Array element constraints
   tags: 'array<string:1-20>', // element length 1-20
 
-  // Use object array when complex validation is required
-  items: {
-    type: 'array',
-    items: {
-      name: 'string:1-50!',
-      price: 'number:0-10000!'
-    }
-  }
+  // Use s.array({ ... }) when an object array needs child fields
+  items: s.array({
+    name: 'string:1-50!',
+    price: 'number:0-10000!'
+  })
 });
 ```
 

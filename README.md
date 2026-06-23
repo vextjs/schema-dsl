@@ -186,7 +186,7 @@ npm install schema-dsl
 
 | Entry | Purpose |
 |-------|---------|
-| `schema-dsl/pure` | Recommended default entry for the current source and the next v2.1.0 release; exports the `s` / `dsl` namespace and validation helpers without installing `String.prototype` extensions. |
+| `schema-dsl/pure` | Recommended default entry for application code; exports the `s` / `dsl` namespace and validation helpers without installing `String.prototype` extensions. |
 | `schema-dsl/runtime` | Runtime adapter factory for per-tenant/per-app isolated Locale messages, messageProvider, TypeRegistry scope, PATTERNS, validator instances and `I18nError` creation. |
 | `schema-dsl` | Root compatibility entry; imports install the non-enumerable String chain API by default. Prefer `schema-dsl/pure` for new public examples. |
 | `schema-dsl/compat` | Explicit compatibility entry that installs String extensions on import. |
@@ -548,7 +548,7 @@ try {
 
 ## 🔌 Extensions and Plugin Packaging
 
-Use custom extensions when one business type should work through pure DSL strings, `s('...')`, and `s.xxx()` factories. Use `PluginManager` when you want to package validator formats, keywords, lifecycle hooks, or several extension hooks together.
+Use custom DSL types when one business type should work through pure DSL strings, `s('...')`, and `s.xxx()` factories. Use `PluginManager` when you want to package validator formats, keywords, lifecycle hooks, or several extension hooks together.
 
 ```typescript
 import { PluginManager, Validator, s } from 'schema-dsl/pure';

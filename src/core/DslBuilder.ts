@@ -9,8 +9,8 @@
  */
 
 import type { JSONSchema } from '../types/schema.js'
-import type { DslFactoryInput } from '../types/dsl.js'
-import { DslParser, type DslParseOptions } from '../parser/DslParser.js'
+import type { DslDefinition, DslFactoryInput } from '../types/dsl.js'
+import { DslParser, isRawJsonSchemaFactoryInput, type DslParseOptions } from '../parser/DslParser.js'
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
 import { cloneSchemaValue } from '../utils/schemaClone.js'
@@ -276,6 +276,12 @@ export class DslBuilder {
     }
     if (value && typeof value === 'object' && typeof (value as { toSchema?: unknown }).toSchema === 'function') {
       return ((value as { toSchema: () => JSONSchema }).toSchema())
+    }
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const objectValue = value as Record<string, unknown>
+      if (!isRawJsonSchemaFactoryInput(objectValue)) {
+        return DslParser.parseObject(value as DslDefinition, this._parseOptions)
+      }
     }
     return cloneSchemaValue(value as JSONSchema)
   }

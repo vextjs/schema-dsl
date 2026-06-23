@@ -9,6 +9,7 @@ import {
   resetRuntimeState,
   s,
   TypeRegistry,
+  validate,
 } from '../../src/pure.js'
 import { DslExtensionRegistry } from '../../src/parser/DslExtensionRegistry.js'
 
@@ -64,6 +65,41 @@ describe('dsl namespace API', () => {
     })
     expect((s.array(s.string().require()).toSchema().items as Record<string, unknown>)._required).toBeUndefined()
     expect(s('array<string>').toSchema()).toMatchObject(s.array('string').toSchema())
+
+    const objectArraySchema = s.array({
+      name: 'string!',
+      quantity: s.number().min(1).require(),
+    }).require().toSchema()
+    expect(objectArraySchema).toMatchObject({
+      type: 'array',
+      _required: true,
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          quantity: { type: 'number', minimum: 1 },
+        },
+        required: ['name', 'quantity'],
+      },
+    })
+    expect(validate(s({ lines: s.array({ name: 'string!', quantity: s.number().min(1).require() }).require() }), {
+      lines: [{ name: 'apple', quantity: 2 }],
+    }).valid).toBe(true)
+    expect(validate(s({ lines: s.array({ name: 'string!', quantity: s.number().min(1).require() }).require() }), {
+      lines: [{ quantity: 2 }],
+    }).valid).toBe(false)
+    expect(s.array({ type: 'string', minLength: 2 }).toSchema()).toMatchObject({
+      type: 'array',
+      items: { type: 'string', minLength: 2 },
+    })
+    expect(s.array({ enum: ['small', 'large'] } as any).toSchema()).toMatchObject({
+      type: 'array',
+      items: { enum: ['small', 'large'] },
+    })
+    expect(s.array().items({ minimum: 1 } as any).toSchema()).toMatchObject({
+      type: 'array',
+      items: { minimum: 1 },
+    })
 
     expect(s.enum('admin', 'user', 'guest').toSchema()).toMatchObject({
       type: 'string',
@@ -458,12 +494,24 @@ describe('dsl namespace API', () => {
 
     const namespaceSchema = s.array(tupleItem).toSchema()
     const builderSchema = dsl('array').items(tupleItem).toSchema()
+    const dslObjectItemSchema = dsl('array').items({
+      code: 'string!',
+      amount: 'number:1-999!',
+    }).toSchema()
 
     for (const schema of [namespaceSchema, builderSchema]) {
       const nestedItems = ((schema.items as Record<string, unknown>).items as Array<Record<string, unknown>>)
       expect(nestedItems[0]._required).toBeUndefined()
       expect(nestedItems[1]._required).toBeUndefined()
     }
+    expect(dslObjectItemSchema.items).toMatchObject({
+      type: 'object',
+      properties: {
+        code: { type: 'string' },
+        amount: { type: 'number', minimum: 1, maximum: 999 },
+      },
+      required: ['code', 'amount'],
+    })
   })
 
   it('supports field require() without changing conditional require(field)', () => {

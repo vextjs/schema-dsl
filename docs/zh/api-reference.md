@@ -7,7 +7,7 @@
 
 ### 描述
 
-DSL 主入口命名空间。`s` 和 `dsl` 是同一个函数对象：`s === dsl`。函数调用形式支持字符串和对象两种定义方式；命名空间 factory 提供可发现的链式入口，但底层仍复用同一套 DSL 解析与 builder 契约。在当前源码和下一版 v2.1.0 中，公开示例默认使用 `schema-dsl/pure` + `s`，避免导入时修改全局原型。
+DSL 主入口命名空间。`s` 和 `dsl` 是同一个函数对象：`s === dsl`。函数调用形式支持字符串和对象两种定义方式；命名空间 factory 提供可发现的链式入口，但底层仍复用同一套 DSL 解析与 builder 契约。公开示例默认使用 `schema-dsl/pure` + `s`，避免导入时修改全局原型。
 
 ### 语法
 
@@ -104,7 +104,7 @@ new DslBuilder(dslString: string)
 | 身份类预设 | `.username(preset?)`、`.password(strength?)`、`.phone(country?)`、`.phoneNumber(country?)`、`.idCard(country?)`、`.creditCard(type?)`、`.licensePlate(country?)`、`.postalCode(country?)`、`.passport(country?)` | string builder | 预设会组合长度、正则和本地化 pattern 消息。 |
 | 数字辅助 | `.precision(n)`、`.multiple(n)`、`.port()` | number/integer builder | `.multiple(n)` 对应标准 JSON Schema `multipleOf`。 |
 | 对象辅助 | `.requireAll()`、`.strict()` | object builder | 添加由 validator 消费的 schema-dsl 对象自定义关键字。 |
-| 数组辅助 | `.items(item)`、`.noSparse()`、`.includesRequired(items)` | array builder | `items()` 接收 DSL 字符串、builder 或 JSON Schema，并会移除数组元素 schema 中的嵌套 `_required`。 |
+| 数组辅助 | `.items(item)`、`.noSparse()`、`.includesRequired(items)` | array builder | `items()` 接收 DSL 字符串、builder、DSL 对象或 JSON Schema，并会移除数组元素 schema 中的嵌套 `_required`。 |
 | 输出与验证 | `.toSchema()`、`.toJsonSchema()`、`.toString()`、`.validate(data)` | `DslBuilder` | 直接字符串链式调用只暴露 `.toSchema()` 与 `.toJsonSchema()`。 |
 
 示例：
@@ -116,6 +116,7 @@ s.string().username('5-20').label('用户名').require()
 s.number().min(18).max(120).precision(2).multiple(0.5)
 s.object().strict().requireAll()
 s.array(s.string().require()).min(1).noSparse().includesRequired(['admin'])
+s.array({ name: 'string!', quantity: 'number:1-999!' }).min(1)
 
 // 直接字符串链式兼容路径：
 // 运行时需要 schema-dsl/register-string、compat/root 或编译期 transform；
@@ -533,7 +534,7 @@ resetRuntimeState();
 
 ### `installStringExtensions(dslFunction?)`
 
-为有意使用 `'string!'.description(...)` 这类直接字符串链式写法的项目安装或重新安装 String 扩展。当前源码和下一版 v2.1.0 的普通文档示例不需要这个 API，因为默认从 `schema-dsl/pure` + `s` 开始。
+为有意使用 `'string!'.description(...)` 这类直接字符串链式写法的项目安装或重新安装 String 扩展。普通文档示例不需要这个 API，因为默认从 `schema-dsl/pure` + `s` 开始。
 
 ```javascript
 import { installStringExtensions } from 'schema-dsl/pure';
@@ -718,7 +719,7 @@ const result = runtime.validate(schema, {
 | `runtime.compile(definition)` | 使用当前 runtime 作用域编译字符串或对象 DSL。 |
 | `runtime.compileField(string)` | 返回隔离的链式字段 builder。 |
 | `runtime.configure(options, control?)` | 更新 runtime messages、类型作用域、patterns、strict mode 或 validator 选项。`merge` 是增量合并，`replace` 替换完整 runtime 本地 profile，`reset` 清空后再应用 `options`。 |
-| `runtime.registerExtensions(definitions)` | 在当前源码和下一版 v2.1.0 中，按一份定义批量注册 runtime 作用域扩展，并返回带 typed factory 的 runtime namespace。 |
+| `runtime.registerExtensions(definitions)` | 按一份定义批量注册 runtime 作用域扩展，并返回带 typed factory 的 runtime namespace。 |
 | `runtime.registerExtension(definition)` | 注册 runtime 作用域内的自定义 DSL 扩展和可选 namespace factory；适合动态注册或静态扩展兼容场景。 |
 | `runtime.registerType(name, schema)` | 添加或替换 runtime 内部 custom type。 |
 | `runtime.registerDynamicType(name, factory)` | 添加或替换 runtime 内部 dynamic type factory。 |

@@ -264,7 +264,7 @@ Union types verify each type in turn until a match is found. The more types, the
 ## Related documents
 
 - [Extension Overview](./extensions-overview.md)
-- [Custom Extensions](./custom-extensions.md)
+- [Custom DSL Types](./custom-extensions.md)
 - [Contribution Guide](https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md)
 
 ---

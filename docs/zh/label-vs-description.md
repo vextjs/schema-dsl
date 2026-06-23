@@ -1,11 +1,20 @@
-# label vs description 使用指南
+# label / description / messages / error 使用指南
 
 ## 📋 快速对比
 
 | 属性 | 用途 | 显示位置 | 示例 |
 |------|------|----------|------|
-| **label** | 字段名称 | 错误消息中 | "邮箱地址不能为空" |
-| **description** | 字段说明 | 表单提示/文档 | "用于登录和接收通知" |
+| `.label(text)` | 字段显示名 | 错误消息、表单标题、导出文档标题 | `邮箱地址` |
+| `.description(text)` | 字段说明 | 表单提示、API 文档、导出文档说明 | `用于登录和接收通知` |
+| `.messages(map)` | 自定义验证消息 | 验证失败时返回的错误消息 | `{ required: '{{#label}}不能为空' }` |
+| `.error(map)` | `.messages(map)` 的别名 | 与 `.messages()` 完全相同 | `{ pattern: '格式不正确' }` |
+
+一句话记忆：
+
+- `.label()` 告诉错误消息“这个字段叫什么”。
+- `.description()` 告诉页面或文档“这个字段是干什么的”。
+- `.messages()` 告诉验证器“某类错误要显示什么话”。
+- `.error()` 只是 `.messages()` 的短别名，适合想写得更短时使用。
 
 ---
 
@@ -91,6 +100,69 @@ email: s('email!').label('邮箱地址')
 ```
 
 `SchemaUtils.toMarkdown()`、导出器或你自己的表单渲染层，通常会再把 `_label` 映射成展示标题。
+
+---
+
+### messages（自定义错误消息）
+
+**作用**：覆盖某些验证规则失败时的提示文案。
+
+**使用场景**：
+- 必填、格式、长度、范围、正则等错误需要业务化文案
+- 需要在消息中引用字段标签 `{{#label}}`
+- 需要统一接口错误消息风格
+
+```javascript
+import { s, validate } from 'schema-dsl/pure';
+
+const schema = s({
+  email: s('email!')
+    .label('邮箱地址')
+    .messages({
+      required: '{{#label}}不能为空',
+      format: '请输入有效的{{#label}}'
+    })
+});
+
+validate(schema, {}).errors[0].message; // 邮箱地址不能为空
+validate(schema, { email: 'bad' }).errors[0].message; // 请输入有效的邮箱地址
+```
+
+常用 key：
+
+| key | 含义 | 常见触发 |
+|-----|------|----------|
+| `required` | 必填失败 | 字段缺失或为空 |
+| `format` | JSON Schema format 失败 | `email`、`url`、`uuid` 等 |
+| `pattern` | 正则失败 | `.pattern()` 或内置 pattern 类型 |
+| `min` / `max` | 数字范围失败 | `number:18-120`、`.min()`、`.max()` |
+| `string.min` / `string.max` | 字符串长度失败 | `string:3-32` |
+| `array.min` / `array.max` | 数组长度失败 | `array:1-10<string>` |
+
+如果不确定具体 key，可以先查看验证结果里的 `errors`，再按返回的错误类型覆盖。
+
+---
+
+### error（messages 的别名）
+
+**作用**：与 `.messages()` 完全相同，内部都会写入 `_customMessages`。
+
+```javascript
+const schema = s({
+  username: s('string:3-32!')
+    .label('用户名')
+    .pattern(/^[a-zA-Z0-9_]+$/)
+    .error({
+      pattern: '{{#label}}只能包含字母、数字和下划线'
+    })
+});
+```
+
+建议：
+
+- 团队喜欢语义清楚时，用 `.messages()`。
+- 单个字段只想快速写错误文案时，用 `.error()`。
+- 同一个字段上不要同时混用 `.messages()` 和 `.error()` 来表达不同含义，因为它们只是同一件事。
 
 ---
 

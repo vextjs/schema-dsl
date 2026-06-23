@@ -50,6 +50,7 @@ const productSchema = s({
   port: s.integer().port(),
   tags: s.array('string:1-30').min(1).max(5).noSparse(),
   nestedTags: s.array().items(s.string().min(1).max(30).require()).min(1).max(5).noSparse(),
+  lines: s.array({ sku: 'string!', quantity: 'integer:1-999!' }).min(1),
   requiredFlags: s.array('string').includesRequired(['terms']),
 })
 
@@ -59,6 +60,7 @@ const productResult = validate(productSchema, {
   port: 3000,
   tags: ['docs', 'api'],
   nestedTags: ['docs', 'api'],
+  lines: [{ sku: 'SKU-001', quantity: 2 }],
   requiredFlags: ['terms', 'newsletter'],
 })
 console.log('chain-methods.product.valid =', productResult.valid)

@@ -197,14 +197,11 @@ const schema = s({
   // 数组元素约束
   tags: 'array<string:1-20>',  // 元素长度1-20
   
-  // 需要复杂验证时用对象数组
-  items: {
-    type: 'array',
-    items: {
-      name: 'string:1-50!',
-      price: 'number:0-10000!'
-    }
-  }
+  // 对象数组需要描述子字段时，用 s.array({ ... })
+  items: s.array({
+    name: 'string:1-50!',
+    price: 'number:0-10000!'
+  })
 });
 ```
 

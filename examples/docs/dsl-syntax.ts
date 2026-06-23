@@ -120,14 +120,10 @@ const advancedArrays = {
   type: 'object',
   properties: {
     matrix: s('array<array<number>>').toJsonSchema(),
-    users: {
-      type: 'array',
-      minItems: 1,
-      items: s({
-        name: 'string:1-32!',
-        age: 'integer:0-120',
-      }),
-    },
+    users: s.array({
+      name: 'string:1-32!',
+      age: 'integer:0-120',
+    }).min(1).toSchema(),
   },
 }
 

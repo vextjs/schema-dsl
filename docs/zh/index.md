@@ -29,7 +29,7 @@ features:
   - title: 国际化
     details: 内置多语言错误消息与动态 locale 切换，适合服务端和前端共享校验规则。
   - title: 扩展与插件
-    details: 支持自定义扩展、格式和插件封装。
+    details: 支持自定义 DSL 类型、格式和插件封装。
   - title: TypeScript 友好
     details: 提供完整类型声明，便于在现代 Node.js 与 TypeScript 项目中直接集成。
 ---

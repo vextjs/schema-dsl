@@ -58,6 +58,10 @@ const mixedSchema = {
   username: s('string:3-32!').label('Username'),
   email:    'email!',
   password: s('string:8!').label('Password'),
+  items: s.array({
+    sku: 'string!',
+    quantity: 'integer:1-999!',
+  }).min(1),
   terms:    'boolean!',
 }
 
@@ -65,6 +69,7 @@ const mixedValid = validate(mixedSchema, {
   username: 'bob_99',
   email:    'bob@example.com',
   password: 'pass1234',
+  items: [{ sku: 'SKU-001', quantity: 2 }],
   terms:     true,
 })
 
@@ -121,3 +126,12 @@ const nestedResult = validate(nestedRaw, {
 })
 
 console.log('raw-s.nested.valid             =', nestedResult.valid)   // true
+
+const objectArrayInvalid = validate(mixedSchema, {
+  username: 'bob_99',
+  email: 'bob@example.com',
+  password: 'pass1234',
+  items: [{ quantity: 0 }],
+  terms: true,
+})
+console.log('raw-s.objectArray.invalid      =', objectArrayInvalid.valid) // false

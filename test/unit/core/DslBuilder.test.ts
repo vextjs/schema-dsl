@@ -277,6 +277,27 @@ describe('DslBuilder', () => {
         },
         items: [{ type: 'string' }],
       })
+      expect(new DslBuilder('array').items({
+        code: 'string!',
+        quantity: 'number:1-999!',
+      }).toSchema().items).toMatchObject({
+        type: 'object',
+        properties: {
+          code: { type: 'string' },
+          quantity: { type: 'number', minimum: 1, maximum: 999 },
+        },
+        required: ['code', 'quantity'],
+      })
+      expect(new DslBuilder('array').items({ type: 'string', minLength: 2 }).toSchema().items).toEqual({
+        type: 'string',
+        minLength: 2,
+      })
+      expect(new DslBuilder('array').items({ enum: ['small', 'large'] } as any).toSchema().items).toEqual({
+        enum: ['small', 'large'],
+      })
+      expect(new DslBuilder('array').items({ minimum: 1 } as any).toSchema().items).toEqual({
+        minimum: 1,
+      })
     })
 
     it('includes description, label, custom validators and when metadata in toSchema output', () => {

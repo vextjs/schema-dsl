@@ -2,8 +2,8 @@
  * DslBuilder New Features Tests — v2 Migration
  *
  * v2 changes:
- * - `phone:cn` is not a built-in DSL type; use chained method .phone('cn') instead
- * - `idCard`, `creditCard` etc. are still called as dsl('idCard:cn!') format
+ * - Pattern DSL types such as `phone:cn`, `idCard:cn`, and `creditCard:visa` are supported
+ * - Chain helpers such as .phone('cn') remain available for builder-style authoring
  * - patterns internal module is not exported; skip direct config tests
  */
 
@@ -16,6 +16,12 @@ beforeAll(() => {
 
 describe('DslBuilder New Features', () => {
   describe('Phone Validation (chain method)', () => {
+    it('should validate cn phone via pattern DSL type', () => {
+      const schema = dsl('phone:cn!')
+      expect(validate(schema, '13800138000').valid).toBe(true)
+      expect(validate(schema, '123').valid).toBe(false)
+    })
+
     it('should validate cn phone via .phone() chain', () => {
       const schema = dsl({ phone: (dsl('string!') as any).phone('cn') })
       const valid = validate(schema, { phone: '13800138000' })

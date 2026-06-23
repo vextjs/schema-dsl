@@ -197,7 +197,7 @@ function _parseRegisteredExtension(
  *   - `{ type: 'object', properties: {...} }` → raw JSON Schema ✅
  *   - `{ street: 'string!', city: 'string!' }` → DSL definition ✅
  */
-function _isRawJsonSchema(obj: Record<string, unknown>): boolean {
+export function isRawJsonSchemaLike(obj: Record<string, unknown>): boolean {
   if (typeof obj['type'] === 'string' && JSON_SCHEMA_TYPES.has(obj['type'] as string)) return true
   if ('anyOf' in obj || 'oneOf' in obj || 'allOf' in obj || '$ref' in obj || '$defs' in obj || 'definitions' in obj) return true
 
@@ -205,17 +205,57 @@ function _isRawJsonSchema(obj: Record<string, unknown>): boolean {
   if (props && typeof props === 'object' && !Array.isArray(props)) {
     const values = Object.values(props as Record<string, unknown>)
     if (values.length === 0) return true
-    if (values.every(value => value && typeof value === 'object' && !Array.isArray(value) && _isRawJsonSchema(value as Record<string, unknown>))) {
+    if (values.every(value => value && typeof value === 'object' && !Array.isArray(value) && isRawJsonSchemaLike(value as Record<string, unknown>))) {
       return true
     }
   }
 
   const items = obj['items']
   if (items && typeof items === 'object' && !Array.isArray(items)) {
-    return _isRawJsonSchema(items as Record<string, unknown>)
+    return isRawJsonSchemaLike(items as Record<string, unknown>)
   }
 
   return false
+}
+
+const JSON_SCHEMA_FACTORY_INPUT_KEYS: ReadonlySet<string> = new Set([
+  'enum',
+  'const',
+  'format',
+  'pattern',
+  'minLength',
+  'maxLength',
+  'minimum',
+  'maximum',
+  'exclusiveMinimum',
+  'exclusiveMaximum',
+  'multipleOf',
+  'minItems',
+  'maxItems',
+  'uniqueItems',
+  'contains',
+  'minContains',
+  'maxContains',
+  'minProperties',
+  'maxProperties',
+  'required',
+  'additionalProperties',
+  'patternProperties',
+  'propertyNames',
+  'dependencies',
+  'dependentRequired',
+  'dependentSchemas',
+  'unevaluatedProperties',
+  'unevaluatedItems',
+  'not',
+  'if',
+  'then',
+  'else',
+])
+
+export function isRawJsonSchemaFactoryInput(obj: Record<string, unknown>): boolean {
+  if (isRawJsonSchemaLike(obj)) return true
+  return Object.keys(obj).some(key => JSON_SCHEMA_FACTORY_INPUT_KEYS.has(key))
 }
 
 function _cleanRequiredMarks(schema: unknown): void {
@@ -245,7 +285,7 @@ function _resolveDsl(value: unknown, options?: DslParseOptions): JSONSchema {
   if (typeof value === 'object' && !Array.isArray(value)) {
     const obj = value as Record<string, unknown>
     if (typeof obj['toSchema'] === 'function') return (obj['toSchema'] as () => JSONSchema)()
-    if (_isRawJsonSchema(obj)) return value as JSONSchema
+    if (isRawJsonSchemaLike(obj)) return value as JSONSchema
     return DslParser.parseObject(value as DslDefinition, options)
   }
   return value as JSONSchema
@@ -584,7 +624,7 @@ export const DslParser = {
         } else if (typeof obj['toSchema'] === 'function') {
           // DslBuilder instance or ConditionalBuilder (has toSchema method)
           fieldSchema = (obj['toSchema'] as () => JSONSchema)()
-        } else if (_isRawJsonSchema(obj)) {
+        } else if (isRawJsonSchemaLike(obj)) {
           // Raw JSON Schema object (e.g., { type: 'object', properties: {...} }) — pass through as-is
           fieldSchema = value as JSONSchema
         } else {

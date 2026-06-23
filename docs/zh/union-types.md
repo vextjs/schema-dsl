@@ -8,7 +8,7 @@
 
 ✅ **简洁语法** - `'types:string|number'` 一行搞定  
 ✅ **带约束** - `'types:string:3-10|number:0-100'`  
-✅ **自定义扩展** - 支持可复用类型注册
+✅ **自定义 DSL 类型** - 支持可复用类型注册
 ✅ **多语言** - 完整的i18n支持
 
 ---
@@ -265,7 +265,7 @@ DslBuilder.registerType('phone_cn', { ... });
 ## 相关文档
 
 - [扩展概览](./extensions-overview.md)
-- [自定义扩展](./custom-extensions.md)
+- [自定义 DSL 类型](./custom-extensions.md)
 - [贡献指南](https://github.com/vextjs/schema-dsl/blob/main/CONTRIBUTING.md)
 
 ---

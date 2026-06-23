@@ -87,6 +87,10 @@ const postSchema = s({
   title: 'string:5-200!',
   content: 'string:10-50000!',
   tags: 'array:1-5<string:1-30>',
+  relatedProducts: s.array({
+    sku: 'string!',
+    quantity: 'integer:1-999!',
+  }).min(1),
   published: 'boolean',
   author: {
     name: 'string:2-50!',
@@ -103,6 +107,7 @@ const validPost = {
   title: 'Getting started with schema-dsl',
   content: 'This comprehensive guide shows how to use schema-dsl for all your validation needs.',
   tags: ['tutorial', 'typescript'],
+  relatedProducts: [{ sku: 'SKU-001', quantity: 2 }],
   published: false,
   author: {
     name: 'Alice',
@@ -118,6 +123,7 @@ const invalidPost = validate(postSchema, {
   title: 'Hi',                         // too short (< 5 chars)
   content: 'Short',                    // too short (< 10 chars)
   tags: [],                            // empty array violates min:1
+  relatedProducts: [{ quantity: 0 }],  // missing sku + quantity below minimum
   author: { name: 'B', email: 'bad' }, // name too short, email invalid
   stats: { views: -1, likes: 0 },      // views below minimum
 })

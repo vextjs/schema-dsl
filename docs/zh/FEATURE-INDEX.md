@@ -55,9 +55,9 @@
 |------|----------|
 | 复用 schema 片段 | [SchemaUtils](schema-utils.md), [SchemaUtils 链式调用](schema-utils-chaining.md) |
 | 使用 schema 工具实践模式 | [SchemaUtils 最佳实践](schema-utils-best-practices.md), [SchemaUtils 进阶问题](schema-utils-advanced-issues.md) |
-| 分析或转换 schema 对象 | [SchemaHelper](schema-helper.md), [CacheManager](cache-manager.md) |
+| 分析或转换 schema 对象 | [SchemaHelper](schema-helper.md), [Validator 缓存](cache-manager.md) |
 | 选择扩展路径 | [扩展概览](extensions-overview.md), [框架集成与目录结构](framework-extension-setup.md) |
-| 添加自定义扩展 | [自定义扩展](custom-extensions.md), [扩展概览](extensions-overview.md) |
+| 添加自定义 DSL 类型 | [自定义 DSL 类型](custom-extensions.md), [扩展概览](extensions-overview.md) |
 | 使用直接 String 链式源码 | [String 扩展](string-extensions.md), [TypeScript 指南](typescript-guide.md) |
 | 添加自定义关键字 | [自定义校验关键字](add-keyword.md) |
 | 封装插件生命周期和 hook | [插件管理器（高级）](plugin-system.md) |
@@ -76,7 +76,7 @@
 | 能力 | 主要文档 |
 |------|----------|
 | 选择生产实践模式 | [最佳实践](best-practices.md), [项目结构最佳实践](best-practices-project-structure.md) |
-| 优化性能 | [性能指南](performance-guide.md), [CacheManager](cache-manager.md) |
+| 优化性能 | [性能指南](performance-guide.md), [Validator 缓存](cache-manager.md) |
 | 审查安全相关用法 | [安全注意事项](security-checklist.md), [导出限制](export-limitations.md) |
 | 诊断常见失败 | [故障排查](troubleshooting.md), [FAQ](faq.md) |
 
@@ -96,6 +96,6 @@
 | [feature-index.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/feature-index.ts) | 串联 DSL、String 扩展和导出器的代表性示例。 |
 | [chain-methods.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/chain-methods.ts) | 覆盖字段 builder 链式方法的可运行示例。 |
 | [extensions-overview.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/extensions-overview.ts) | 覆盖扩展路径总览的可运行示例。 |
-| [custom-extensions.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/custom-extensions.ts) | 覆盖纯 DSL、`s('...')`、`s.xxx()` 和 runtime 作用域入口的自定义扩展示例。 |
+| [custom-extensions.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/custom-extensions.ts) | 覆盖纯 DSL、`s('...')`、`s.xxx()` 和 runtime 作用域入口的自定义 DSL 类型示例。 |
 | [object-dsl-builder.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/object-dsl-builder.ts) | 覆盖对象 builder 链式写法、必填字段控制和对象 schema 转换。 |
 | [real-world.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/real-world.ts) | 覆盖用户、商品、订单、查询、默认值和异步校验的生产式组合示例。 |

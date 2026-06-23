@@ -41,7 +41,7 @@ The current version uses `Node.js >=18.0.0` as the runtime baseline and no longe
 **A**: Supported.
 
 ```javascript
-// Recommended public entry in the current source and the next v2.1.0 release
+// Recommended public documentation entry
 import { s, validate } from 'schema-dsl/pure';
 
 const schema = s({ email: 'email!' });
@@ -519,7 +519,7 @@ MySQL will generate `COMMENT` and PostgreSQL will generate `COMMENT ON COLUMN`.
 
 ### Q: Does schema-dsl support TypeScript?
 
-**A**: Supported. In the current source and the next v2.1.0 release, public TypeScript examples prefer `schema-dsl/pure` + `s`: pure DSL strings for simple fields, `s('...')` for DSL seeds with builder hints, and `s.xxx()` factories for the strongest method discovery.
+**A**: Supported. Public TypeScript examples prefer `schema-dsl/pure` + `s`: pure DSL strings for simple fields, `s('...')` for DSL seeds with builder hints, and `s.xxx()` factories for the strongest method discovery.
 
 ```typescript
 import { s, validate, Validator } from 'schema-dsl/pure';

@@ -1,6 +1,6 @@
 # schema-dsl 完整类型列表
 
-本页列出内置 DSL 类型，并说明同一种类型在当前源码和下一版 v2.1.0 推荐写法中的三种调用方式：纯 DSL 字符串、`s('...')` builder seed、`s.xxx()` factory。
+本页列出内置 DSL 类型，并说明同一种类型在推荐写法中的三种调用方式：纯 DSL 字符串、`s('...')` builder seed、`s.xxx()` factory。
 
 ---
 
@@ -13,11 +13,13 @@
 | 字符串 | `string` | `{ type: 'string' }` | 文本类型 |
 | 数字 | `number` | `{ type: 'number' }` | 浮点数 |
 | 整数 | `integer` | `{ type: 'integer' }` | 整数 |
+| 整数别名 | `int` | `{ type: 'integer' }` | `integer` 的别名 |
 | 布尔 | `boolean` | `{ type: 'boolean' }` | true/false |
 | 对象 | `object` | `{ type: 'object' }` | 嵌套对象 |
 | 数组 | `array` | `{ type: 'array' }` | 数组 |
 | 空值 | `null` | `{ type: 'null' }` | null值 |
 | 任意 | `any` | `{}` | 任意类型 |
+| 任意别名 | `mixed` | `{}` | `any` 的别名 |
 
 ---
 
@@ -44,7 +46,9 @@
 | 类型 | schema-dsl DSL | JSON Schema | 说明 |
 |------|----------|-------------|------|
 | 二进制 | `binary` | `contentEncoding: base64` | Base64编码 |
+| 二进制别名 | `buffer` | `contentEncoding: base64` | `binary` 的别名 |
 | ObjectId | `objectId` | `pattern: ^[0-9a-fA-F]{24}$` | MongoDB ObjectId |
+| ObjectId 别名 | `objectid` | `pattern: ^[0-9a-fA-F]{24}$` | `objectId` 的小写别名 |
 | HexColor | `hexColor` | `pattern: ^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$` | CSS 16进制颜色 |
 | MAC地址 | `macAddress` | `pattern: ^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$` | MAC地址 |
 | Cron | `cron` | `pattern: ...` | Cron表达式 |
@@ -57,6 +61,9 @@
 | 大写字符串 | `upper` | `uppercase: true` | 自定义 AJV keyword |
 | JSON字符串 | `json` | `jsonString: true` | 自定义 AJV keyword |
 | 端口号 | `port` | `port: true` | 整数端口号 |
+| 浮点数别名 | `float` | `{ type: 'number' }` | `number` 的别名 |
+| 双精度别名 | `double` | `{ type: 'number' }` | `number` 的别名 |
+| 十进制别名 | `decimal` | `{ type: 'number' }` | `number` 的别名 |
 
 ---
 
@@ -89,6 +96,14 @@ const schema5 = s({
 
 // 数组
 const schema6 = s({ tags: 'array<string>' });
+
+// 对象数组
+const schema6b = s({
+  items: s.array({
+    name: 'string!',
+    quantity: 'number:1-999!'
+  })
+});
 
 // 空值
 const schema7 = s({ value: 'null' });
@@ -184,8 +199,39 @@ const schema = s({
   age: s.number().min(18).max(120),
   email: s.email().label('邮箱').require(),
   tags: s.array('string:1-30').min(1).max(10),
+  lines: s.array({ name: 'string!', quantity: 'number:1-999!' }),
   status: s.enum('active', 'inactive', 'pending').default('active')
 });
+```
+
+### Factory 支持边界
+
+不是每个 DSL 类型都有同名 `s.xxx()` factory。内置 factory 覆盖最常用的类型和入口：
+
+| 类别 | 可直接调用的 factory |
+|------|----------------------|
+| 基础类型 | `s.string()`、`s.number()`、`s.integer()`、`s.int()`、`s.boolean()`、`s.object()`、`s.array()`、`s.any()`、`s.mixed()` |
+| 格式类型 | `s.email()`、`s.url()`、`s.uri()`、`s.uuid()`、`s.ip()`、`s.ipv4()`、`s.ipv6()`、`s.date()`、`s.datetime()`、`s.time()`、`s.slug()` |
+| 常用预设 | `s.phone(country?)`、`s.username(preset?)`、`s.password(strength?)` |
+| 其他内置类型 | 用 `s('objectId!')`、`s('hexColor')` 或 `s.type('objectId')` |
+
+`s.array(item)` 和 `.items(item)` 的 `item` 可以是 DSL 字符串、builder、DSL 对象或标准 JSON Schema：
+
+```javascript
+s.array('string:1-30')
+s.array(s.string().min(1).require())
+s.array({ name: 'string!', quantity: 'number:1-999!' })
+s.array({ type: 'string', minLength: 1 }) // 标准 JSON Schema
+s.array({ enum: ['small', 'large'] })     // 无 type 的 JSON Schema 片段也会保留
+```
+
+如果对象数组的子字段名刚好叫 `enum`、`pattern`、`minimum` 这类 JSON Schema keyword，请用 `s({ ... })` 明确告诉 schema-dsl 这是 DSL 对象：
+
+```javascript
+s.array(s({
+  enum: 'string!',
+  pattern: 'string'
+}))
 ```
 
 ---

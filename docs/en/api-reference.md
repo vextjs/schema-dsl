@@ -6,7 +6,7 @@ Use this as the complete public API reference after you understand the task-orie
 
 ### Description
 
-The main DSL namespace. `s` and `dsl` are the same function object: `s === dsl`. The callable form accepts string definitions and object definitions, while namespace factories provide a discoverable chain entry without maintaining a second grammar. In the current source and the next v2.1.0 release, public examples use `schema-dsl/pure` + `s` as the default no-prototype-mutation entry.
+The main DSL namespace. `s` and `dsl` are the same function object: `s === dsl`. The callable form accepts string definitions and object definitions, while namespace factories provide a discoverable chain entry without maintaining a second grammar. Public examples use `schema-dsl/pure` + `s` as the default no-prototype-mutation entry.
 
 ### Syntax
 
@@ -104,7 +104,7 @@ new DslBuilder(dslString: string)
 | Identity presets | `.username(preset?)`, `.password(strength?)`, `.phone(country?)`, `.phoneNumber(country?)`, `.idCard(country?)`, `.creditCard(type?)`, `.licensePlate(country?)`, `.postalCode(country?)`, `.passport(country?)` | String builders | Presets combine length, pattern, and localized pattern messages. |
 | Number helpers | `.precision(n)`, `.multiple(n)`, `.port()` | Number/integer builders | `.multiple(n)` maps to standard JSON Schema `multipleOf`. |
 | Object helpers | `.requireAll()`, `.strict()` | Object builders | Adds schema-dsl object custom keywords consumed by the validator. |
-| Array helpers | `.items(item)`, `.noSparse()`, `.includesRequired(items)` | Array builders | `items()` accepts a DSL string, builder, or JSON Schema and strips nested `_required` for array item schemas. |
+| Array helpers | `.items(item)`, `.noSparse()`, `.includesRequired(items)` | Array builders | `items()` accepts a DSL string, builder, DSL object, or JSON Schema and strips nested `_required` for array item schemas. |
 | Output and validation | `.toSchema()`, `.toJsonSchema()`, `.toString()`, `.validate(data)` | `DslBuilder` | Direct String chaining exposes `.toSchema()` and `.toJsonSchema()` only. |
 
 Examples:
@@ -116,6 +116,7 @@ s.string().username('5-20').label('username').require()
 s.number().min(18).max(120).precision(2).multiple(0.5)
 s.object().strict().requireAll()
 s.array(s.string().require()).min(1).noSparse().includesRequired(['admin'])
+s.array({ name: 'string!', quantity: 'number:1-999!' }).min(1)
 
 // Direct String chain compatibility path:
 // runtime requires schema-dsl/register-string, compat/root, or compile-time transform;
@@ -561,7 +562,7 @@ resetRuntimeState();
 
 ### `installStringExtensions(dslFunction?)`
 
-Installs or reinstalls String extensions for projects that intentionally use direct `'string!'.description(...)` chaining. Ordinary documentation examples in the current source and the next v2.1.0 release do not need this API because they start from `schema-dsl/pure` + `s`.
+Installs or reinstalls String extensions for projects that intentionally use direct `'string!'.description(...)` chaining. Ordinary documentation examples do not need this API because they start from `schema-dsl/pure` + `s`.
 
 ```javascript
 import { installStringExtensions } from 'schema-dsl/pure';
@@ -746,7 +747,7 @@ const result = runtime.validate(schema, {
 | `runtime.compile(definition)` | Compiles a string or object DSL definition using the runtime scope. |
 | `runtime.compileField(string)` | Returns an isolated chainable field builder. |
 | `runtime.configure(options, control?)` | Updates runtime messages, type scope, patterns, strict mode or validator options. `merge` is incremental; `replace` swaps the full runtime-local profile; `reset` clears it before applying `options`. |
-| `runtime.registerExtensions(definitions)` | In the current source and the next v2.1.0 release, batch-registers runtime-scoped extensions from one definition set and returns a runtime namespace with typed factories. |
+| `runtime.registerExtensions(definitions)` | Batch-registers runtime-scoped extensions from one definition set and returns a runtime namespace with typed factories. |
 | `runtime.registerExtension(definition)` | Registers a runtime-scoped custom DSL extension and optional namespace factory; useful for dynamic registration or static-extension compatibility. |
 | `runtime.registerType(name, schema)` | Adds or replaces a runtime-local custom type. |
 | `runtime.registerDynamicType(name, factory)` | Adds or replaces a runtime-local dynamic type factory. |

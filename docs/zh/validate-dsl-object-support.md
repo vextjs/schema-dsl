@@ -135,9 +135,9 @@ const result = validate(
 
 **原因**：`validate()` 会把 DSL 对象当作标准 JSON Schema，而 `"email!"` 不是有效的 JSON Schema 关键字。
 
-### 当前方案
+### 支持方式
 
-当前版本已补齐自动检测和转换逻辑：
+`validate()` / `validateAsync()` 会自动检测并转换 DSL 对象：
 
 1. **检测 DSL 对象**：识别对象中的 DSL 字符串
 2. **自动转换**：通过内部 DSL object 归一化流程转换为 JSON Schema
@@ -364,10 +364,23 @@ if (result.valid) {
 
 **答：现在不必了！** 
 
-- ✅ 当前版本支持直接传入 DSL 对象
+- ✅ 支持直接传入 DSL 对象
 - ✅ 自动检测并转换，无需手动包裹
 - ✅ 完全向后兼容，不影响原有功能
 - ✅ 同时支持 JSON Schema、DslBuilder、DSL 对象三种方式
+
+对象数组也可以在 DSL 对象中使用 builder：
+
+```javascript
+const schema = s({
+  items: s.array({
+    name: 'string!',
+    quantity: 'number:1-999!'
+  }).min(1)
+});
+```
+
+字段名不要写成 `items:array`。类型定义放在字段值里，字段名只保留业务字段名和必填标记。
 
 **推荐使用**：
 - 简单场景：直接用 DSL 对象
@@ -440,8 +453,6 @@ app.post('/api/user', (req, res) => {
 - 稳定的 raw DSL 对象结构通常不是内存泄漏。对象会再次归一化，但 validator 仍可以对相同的结果 schema 结构复用编译缓存。
 - 如果请求路径会产生无限多种唯一 schema 结构，就会持续缓存未命中。schema-dsl 自身的受控缓存有容量边界，但每次未命中仍要承担转换和 AJV 编译成本。
 - 普通请求中不要每次都 `new Validator()`。如果实例没有被长期持有，通常不会永久泄漏；但它会重置 AJV 和实例级缓存，增加对象分配和 GC 压力。
-
-**✅ 您的理解完全正确！**
 
 **最佳实践**：在项目启动时配置好所有 schema
 

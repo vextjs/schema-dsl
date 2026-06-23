@@ -1,24 +1,26 @@
 import { s, validate } from '../../dist/pure.js';
 
 // ============================================================
-// All 32 built-in types, grouped by category.
+// Built-in types and aliases, grouped by category.
 // ============================================================
 
-// ── 1. Primitive types (8) ────────────────────────────────
+// ── 1. Primitive types and aliases ────────────────────────
 
 const primitiveSchema = s({
   a: 'string',    // any string
   b: 'number',    // float or integer
   c: 'integer',   // whole number
-  d: 'boolean',   // true/false
-  e: 'object',    // plain object {}
-  f: 'array',     // any array []
-  g: 'null',      // must be null
-  h: 'any',       // no type constraint
+  d: 'int',       // integer alias
+  e: 'boolean',   // true/false
+  f: 'object',    // plain object {}
+  g: 'array',     // any array []
+  h: 'null',      // must be null
+  i: 'any',       // no type constraint
+  j: 'mixed',     // any alias
 })
 console.log('type-reference.primitives.valid =',
   validate(primitiveSchema, {
-    a: 'text', b: 3.14, c: 42, d: true, e: {}, f: [], g: null, h: 'anything',
+    a: 'text', b: 3.14, c: 42, d: 7, e: true, f: {}, g: [], h: null, i: 'anything', j: { nested: true },
   }).valid)
 
 // ── 2. Format types (11) ─────────────────────────────────
@@ -60,30 +62,34 @@ const formatInvalid = validate(formatSchema, {
 console.log('type-reference.formats.invalid =', formatInvalid.valid)
 console.log('type-reference.formats.errorCount =', formatInvalid.errors?.length)
 
-// ── 3. Special string types (9) ─────────────────────────
+// ── 3. Special string types and aliases ─────────────────
 
 const specialSchema = s({
   a: 'binary',       // base64 encoded binary data
-  b: 'objectId',     // MongoDB ObjectId (24-char hex)
-  c: 'hexColor',     // #rrggbb or #rgb
-  d: 'macAddress',   // 00:1A:2B:3C:4D:5E
-  e: 'cron',         // cron expression (5 fields)
-  f: 'slug',         // url-friendly slug (e.g. my-post-title)
-  g: 'chineseName',  // Chinese full name
-  h: 'chinese',      // any Chinese characters
-  i: 'emailDomain',  // domain part of an email address
+  b: 'buffer',       // binary alias
+  c: 'objectId',     // MongoDB ObjectId (24-char hex)
+  d: 'objectid',     // objectId alias
+  e: 'hexColor',     // #rrggbb or #rgb
+  f: 'macAddress',   // 00:1A:2B:3C:4D:5E
+  g: 'cron',         // cron expression (5 fields)
+  h: 'slug',         // url-friendly slug (e.g. my-post-title)
+  i: 'chineseName',  // Chinese full name
+  j: 'chinese',      // any Chinese characters
+  k: 'emailDomain',  // email address with domain validation support
 })
 console.log('type-reference.special.valid =',
   validate(specialSchema, {
     a: 'SGVsbG8gV29ybGQ=',
-    b: '507f1f77bcf86cd799439011',
-    c: '#336699',
-    d: '00:1A:2B:3C:4D:5E',
-    e: '0 9 * * 1',
-    f: 'my-post-title',
-    g: '\u5f20\u4f1f',
-    h: '\u4f60\u597d\u4e16\u754c',
-    i: 'example.com',
+    b: 'SGVsbG8gV29ybGQ=',
+    c: '507f1f77bcf86cd799439011',
+    d: '507f1f77bcf86cd799439011',
+    e: '#336699',
+    f: '00:1A:2B:3C:4D:5E',
+    g: '0 9 * * 1',
+    h: 'my-post-title',
+    i: '\u5f20\u4f1f',
+    j: '\u4f60\u597d\u4e16\u754c',
+    k: 'user@example.com',
   }).valid)
 
 // ── 4. Extension types (5) ───────────────────────────────
@@ -110,6 +116,25 @@ console.log('type-reference.extensions.invalid =',
     c: 'hello',     // lowercase not allowed in upper
     d: 'not json',  // invalid JSON
     e: 70000,       // out of port range
+  }).valid)
+
+// ── 4b. Numeric aliases and object-array factory input ────
+
+const aliasSchema = s({
+  floatValue: 'float',
+  doubleValue: 'double',
+  decimalValue: 'decimal',
+  lines: s.array({
+    name: 'string!',
+    quantity: 'number:1-999!',
+  }).min(1),
+})
+console.log('type-reference.aliases.valid =',
+  validate(aliasSchema, {
+    floatValue: 1.2,
+    doubleValue: 2.3,
+    decimalValue: 3.4,
+    lines: [{ name: 'apple', quantity: 2 }],
   }).valid)
 
 // ── 5. Phone and identity patterns ──────────────────────

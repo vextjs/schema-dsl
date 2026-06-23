@@ -60,8 +60,8 @@ const englishSidebar = [
       { text: 'SchemaUtils', link: '/schema-utils' },
       { text: 'SchemaUtils Chaining', link: '/schema-utils-chaining' },
       { text: 'SchemaHelper', link: '/schema-helper' },
-      { text: 'CacheManager', link: '/cache-manager' },
-      { text: 'label vs description', link: '/label-vs-description' }
+      { text: 'Validator Cache', link: '/cache-manager' },
+      { text: 'Labels and Messages', link: '/label-vs-description' }
     ]
   },
   {
@@ -79,7 +79,7 @@ const englishSidebar = [
     text: 'Extensions and Integration',
     items: [
       { text: 'Extension Overview', link: '/extensions-overview' },
-      { text: 'Custom Extensions', link: '/custom-extensions' },
+      { text: 'Custom DSL Types', link: '/custom-extensions' },
       { text: 'Custom Validation Keywords', link: '/add-keyword' },
       { text: 'Framework Integration', link: '/framework-extension-setup' },
       { text: 'Plugin Manager (Advanced)', link: '/plugin-system' }
@@ -163,8 +163,8 @@ const chineseSidebar = [
       { text: 'SchemaUtils', link: '/zh/schema-utils' },
       { text: 'SchemaUtils 链式调用', link: '/zh/schema-utils-chaining' },
       { text: 'SchemaHelper', link: '/zh/schema-helper' },
-      { text: 'CacheManager', link: '/zh/cache-manager' },
-      { text: 'label vs description', link: '/zh/label-vs-description' }
+      { text: 'Validator 缓存', link: '/zh/cache-manager' },
+      { text: '标签与错误消息', link: '/zh/label-vs-description' }
     ]
   },
   {
@@ -182,7 +182,7 @@ const chineseSidebar = [
     text: '扩展与集成',
     items: [
       { text: '扩展概览', link: '/zh/extensions-overview' },
-      { text: '自定义扩展', link: '/zh/custom-extensions' },
+      { text: '自定义 DSL 类型', link: '/zh/custom-extensions' },
       { text: '自定义校验关键字', link: '/zh/add-keyword' },
       { text: '框架集成与目录结构', link: '/zh/framework-extension-setup' },
       { text: '插件管理器（高级）', link: '/zh/plugin-system' }

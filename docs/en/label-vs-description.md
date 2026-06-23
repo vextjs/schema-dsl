@@ -1,11 +1,20 @@
-# label vs description usage guide
+# label / description / messages / error usage guide
 
 ## 📋Quick comparison
 
 | property | use | show location | Example |
 |------|------|----------|------|
-| **label** | Field name | in error message | "Email address cannot be empty" |
-| **description** | Field description | Form prompts/documentation | "For logging in and receiving notifications" |
+| `.label(text)` | Display name for the field | Error messages, form labels, exported docs | `email address` |
+| `.description(text)` | Help text for the field | Form hints, API docs, exported docs | `Used for login and notifications` |
+| `.messages(map)` | Custom validation messages | Returned validation errors | `{ required: '{{#label}} is required' }` |
+| `.error(map)` | Alias of `.messages(map)` | Exactly the same as `.messages()` | `{ pattern: 'Invalid format' }` |
+
+Quick memory:
+
+- `.label()` tells error messages what the field is called.
+- `.description()` tells pages or docs what the field is for.
+- `.messages()` tells the validator what to say for specific failures.
+- `.error()` is only a shorter alias of `.messages()`.
 
 ---
 
@@ -91,6 +100,69 @@ email: s('email!').label('email address')
 ```
 
 `SchemaUtils.toMarkdown()`, the exporter, or your own form rendering layer will usually map `_label` to the display title.
+
+---
+
+### messages
+
+**Purpose**: Override the message returned when specific validation rules fail.
+
+**Use cases**:
+- Required, format, length, range or pattern errors need business wording.
+- A message needs to reference `{{#label}}`.
+- API errors need a consistent voice.
+
+```javascript
+import { s, validate } from 'schema-dsl/pure';
+
+const schema = s({
+  email: s('email!')
+    .label('email address')
+    .messages({
+      required: '{{#label}} is required',
+      format: 'Please enter a valid {{#label}}'
+    })
+});
+
+validate(schema, {}).errors[0].message; // email address is required
+validate(schema, { email: 'bad' }).errors[0].message; // Please enter a valid email address
+```
+
+Common keys:
+
+| key | Meaning | Common trigger |
+|-----|---------|----------------|
+| `required` | Required field failure | Missing or empty field |
+| `format` | JSON Schema format failure | `email`, `url`, `uuid`, etc. |
+| `pattern` | Regex failure | `.pattern()` or built-in pattern types |
+| `min` / `max` | Numeric range failure | `number:18-120`, `.min()`, `.max()` |
+| `string.min` / `string.max` | String length failure | `string:3-32` |
+| `array.min` / `array.max` | Array length failure | `array:1-10<string>` |
+
+If you are unsure which key to override, inspect the returned `errors` first.
+
+---
+
+### error
+
+**Purpose**: Exactly the same as `.messages()`. Both write to `_customMessages` internally.
+
+```javascript
+const schema = s({
+  username: s('string:3-32!')
+    .label('username')
+    .pattern(/^[a-zA-Z0-9_]+$/)
+    .error({
+      pattern: '{{#label}} can only contain letters, numbers, and underscores'
+    })
+});
+```
+
+Guidance:
+
+- Use `.messages()` when you want the wording to be explicit.
+- Use `.error()` when a field only needs a short inline error override.
+- Do not give `.messages()` and `.error()` different meanings on the same field; they are aliases.
 
 ---
 

@@ -1,8 +1,17 @@
-# CacheManager cache manager
+# Validator Cache and Performance Tuning
 
 ## Overview
 
-`CacheManager` is the internal caching system of schema-dsl, which is used to cache the compiled Schema validation function to avoid the performance overhead caused by repeated compilation.
+schema-dsl compiles a schema into a reusable validation function. `CacheManager` stores those compiled results so the same schema does not need to be compiled repeatedly in high-frequency validation paths.
+
+Most applications do not need to instantiate `CacheManager` directly. You can usually call `validate()`, `validateAsync()`, or `new Validator()` normally. Read this page when you need one of these tasks:
+
+| Scenario | What you configure or inspect |
+|---|---|
+| Forms, APIs, or batch jobs reuse the same schemas | Cache hit behavior and capacity |
+| Your application creates many schema shapes | `maxSize`, TTL, or disabling cache |
+| You need to explain performance changes | `getStats()` hit rate, misses, and entry count |
+| You are building a framework adapter | Passing a custom `CacheManager` into `Validator` |
 
 ### Core functions
 

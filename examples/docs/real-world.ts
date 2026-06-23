@@ -123,7 +123,7 @@ const orderSchema = s({
   userId:      'uuid!',
   status:      s('pending|confirmed|processing|shipped|delivered|cancelled|refunded')
                  .default('pending'),
-  items:       'array<object>!',   // CartItem array — validated separately
+  items:       s.array(cartItemSchema).require(),
   shipping: {
     method:    'standard|express|overnight!',
     address:   'string:5-300!',

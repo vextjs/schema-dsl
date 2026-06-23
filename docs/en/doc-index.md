@@ -63,8 +63,8 @@ This page is a document map. The left sidebar keeps the main learning path, whil
 | [SchemaUtils Best Practices](schema-utils-best-practices.md) | Practical patterns and common pitfalls for reusable schemas. |
 | [SchemaUtils Advanced Issues](schema-utils-advanced-issues.md) | Deeper edge cases and maintenance notes. |
 | [SchemaHelper](schema-helper.md) | Schema analysis and helper utilities. |
-| [CacheManager](cache-manager.md) | LRU cache behavior and cache management APIs. |
-| [label vs description](label-vs-description.md) | Difference between UI labels and schema descriptions. |
+| [Validator Cache](cache-manager.md) | Compile cache capacity, TTL, and hit-rate statistics. |
+| [Labels and Messages](label-vs-description.md) | Difference between `.label()`, `.description()`, `.messages()`, and `.error()`. |
 
 ## Internationalization
 
@@ -83,7 +83,7 @@ This page is a document map. The left sidebar keeps the main learning path, whil
 | Document | When to read it |
 |----------|-----------------|
 | [Extension Overview](extensions-overview.md) | Choose between custom business types, validation keywords, runtime isolation, and plugins. |
-| [Custom Extensions](custom-extensions.md) | Define reusable business types once for pure DSL, `s('...')`, and `s.xxx()` entries. |
+| [Custom DSL Types](custom-extensions.md) | Define reusable business types once for pure DSL, `s('...')`, and `s.xxx()` entries. |
 | [Custom Validation Keywords](add-keyword.md) | Add custom AJV keywords. |
 | [Framework Integration](framework-extension-setup.md) | Organize reusable extension modules for applications and frameworks. |
 | [Plugin Manager (Advanced)](plugin-system.md) | Plugin lifecycle, hooks, and integration orchestration. |

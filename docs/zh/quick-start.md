@@ -89,7 +89,7 @@ console.log(result.valid); // true
 
 ### 3. 链式字段（2分钟）
 
-在当前源码和下一版 v2.1.0 中，公开文档默认推荐从 `schema-dsl/pure` 导入 `s`。简单字段保留纯 DSL 字符串；需要链式方法时用 `s('...')` 包裹 DSL seed；想要最完整 TypeScript 方法提示时用 `s.xxx()` factory。
+公开文档默认推荐从 `schema-dsl/pure` 导入 `s`。简单字段保留纯 DSL 字符串；需要 `.label()`、`.messages()`、`.pattern()`、`.custom()` 等链式方法时，用 `s('...')` 包裹 DSL seed；想要最完整 TypeScript 方法提示时，用 `s.xxx()` factory。
 
 ```javascript
 import { s } from 'schema-dsl/pure';
@@ -267,6 +267,19 @@ const schema = s({
 });
 ```
 
+### 对象数组
+
+```javascript
+const orderSchema = s({
+  orderNo: 'string!',
+  items: s.array({
+    sku: 'string!',
+    quantity: 'integer:1-999!',
+    price: 'number:0-!'
+  }).min(1)
+});
+```
+
 ---
 
 <a id="-下一步"></a>
@@ -373,7 +386,7 @@ const schema = s({
 
 **核心要点**:
 1. ✅ DSL语法简洁直观
-2. ✅ `schema-dsl/pure` + `s` 是当前源码和下一版 v2.1.0 的推荐默认入口
+2. ✅ `schema-dsl/pure` + `s` 是普通业务代码的推荐默认入口
 3. ✅ `s('...')` 适合显式 DSL 种子 + builder 提示
 4. ✅ `s.xxx()` factory 提供最完整的方法发现
 

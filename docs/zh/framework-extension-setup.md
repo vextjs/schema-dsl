@@ -7,7 +7,7 @@
 ```text
 src/schema-dsl/
   index.ts              # 导出配置后的 s / runtime
-  extensions.ts         # 自定义扩展定义数组，单一真相源
+  extensions.ts         # 自定义 DSL 类型定义数组，单一真相源
   types.d.ts            # 可选，仅动态注册或兼容场景需要
   runtime.ts            # createRuntime() 隔离封装
   transform.ts          # 可选，仅直接 String 链式源码需要
@@ -97,7 +97,7 @@ export const schemaDslTransformOptions = {
 
 ## TypeScript setup
 
-在当前源码和下一版 v2.1.0 中，优先通过 `registerExtensions([... ] as const)` 导出的 `s` 获得 `s.xxx()` 类型提示。只有继续使用动态 `registerExtension()`、旧 module augmentation，或需要给第三方扩展包补类型时，才维护 `.d.ts` 文件：
+优先通过 `registerExtensions([... ] as const)` 导出的 `s` 获得 `s.xxx()` 类型提示。只有继续使用动态 `registerExtension()`、旧 module augmentation，或需要给第三方扩展包补类型时，才维护 `.d.ts` 文件：
 
 ```ts
 import type { IDslBuilder } from 'schema-dsl/pure';

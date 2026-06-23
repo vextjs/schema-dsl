@@ -219,6 +219,6 @@ const extensionSchema = s({
 const extensionValid = validate(extensionSchema, { tenant: 'tenant_demo' })
 
 console.log('feature-index.extension.valid           =', extensionValid.valid)
-expect('custom extension factory validates', extensionValid.valid)
+expect('custom DSL type factory validates', extensionValid.valid)
 
 resetRuntimeState()

@@ -22,7 +22,7 @@ const result = validate(userSchema, {
 });
 ```
 
-在当前源码和下一版 v2.1.0 中，公开文档默认推荐 `schema-dsl/pure` + `s`：
+公开文档默认推荐 `schema-dsl/pure` + `s`：
 
 | 入口 | 适合场景 |
 |------|----------|

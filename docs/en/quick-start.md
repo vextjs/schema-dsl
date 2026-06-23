@@ -87,7 +87,7 @@ console.log(result.valid); // true
 
 ### 3. Chainable fields in 2 minutes
 
-In the current source and the next v2.1.0 release, the recommended authoring entry is `schema-dsl/pure` with the `s` namespace. Keep simple fields as DSL strings, wrap a DSL seed with `s('...')` when you need chain methods, and use `s.xxx()` factories when you want the strongest TypeScript method discovery.
+The recommended authoring entry is `schema-dsl/pure` with the `s` namespace. Keep simple fields as DSL strings, wrap a DSL seed with `s('...')` when you need chain methods such as `.label()`, `.messages()`, `.pattern()` or `.custom()`, and use `s.xxx()` factories when you want the strongest TypeScript method discovery.
 
 ```javascript
 import { s } from 'schema-dsl/pure';
@@ -266,6 +266,19 @@ const schema = s({
 });
 ```
 
+### Object arrays
+
+```javascript
+const orderSchema = s({
+  orderNo: 'string!',
+  items: s.array({
+    sku: 'string!',
+    quantity: 'integer:1-999!',
+    price: 'number:0-!'
+  }).min(1)
+});
+```
+
 ---
 
 ## Next Steps
@@ -373,7 +386,7 @@ You now know the core `schema-dsl` workflow.
 **Key takeaways**:
 
 1. DSL syntax is concise and readable.
-2. `schema-dsl/pure` + `s` is the recommended default entry for the current source and the next v2.1.0 release.
+2. `schema-dsl/pure` + `s` is the recommended default entry for application code.
 3. `s('...')` gives explicit DSL seeds plus builder hints.
 4. `s.xxx()` factories provide the strongest method discovery.
 

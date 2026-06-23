@@ -2,7 +2,16 @@
 
 This page is about `PluginManager`: lifecycle, hooks, install/uninstall, and integration orchestration.
 
-If your goal is only to add a reusable business type, start with [Extension Overview](extensions-overview.md) and [Custom Extensions](custom-extensions.md). `PluginManager` is the advanced layer for packaging and coordinating those capabilities.
+If your goal is only to add a reusable business type, start with [Extension Overview](extensions-overview.md) and [Custom DSL Types](custom-extensions.md). `PluginManager` is the advanced layer for packaging and coordinating those capabilities.
+
+## Check whether you need a plugin
+
+| What you want to do | Recommended approach |
+|---|---|
+| Define business types such as `tenant-id!` or `money:CNY!` | Use [Custom DSL Types](custom-extensions.md) |
+| Register a group of types during project startup | Use [Framework Integration](framework-extension-setup.md) |
+| Add a low-level validation keyword to `Validator` | Use [Custom Validation Keywords](add-keyword.md) |
+| Package install, uninstall, hooks, and option merging as a distributable module | Use `PluginManager` on this page |
 
 ## Overview
 

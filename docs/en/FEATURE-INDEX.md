@@ -55,9 +55,9 @@ Use this page when you know the capability you need but not the document name. F
 |------------|-------------------|
 | Reuse schema fragments | [SchemaUtils](schema-utils.md), [SchemaUtils Chaining](schema-utils-chaining.md) |
 | Apply schema utility patterns | [SchemaUtils Best Practices](schema-utils-best-practices.md), [SchemaUtils Advanced Issues](schema-utils-advanced-issues.md) |
-| Analyze or transform schema objects | [SchemaHelper](schema-helper.md), [CacheManager](cache-manager.md) |
+| Analyze or transform schema objects | [SchemaHelper](schema-helper.md), [Validator Cache](cache-manager.md) |
 | Choose an extension path | [Extension Overview](extensions-overview.md), [Framework Integration](framework-extension-setup.md) |
-| Add custom extensions | [Custom Extensions](custom-extensions.md), [Extension Overview](extensions-overview.md) |
+| Add custom DSL types | [Custom DSL Types](custom-extensions.md), [Extension Overview](extensions-overview.md) |
 | Use direct String-chain authoring | [String Extensions](string-extensions.md), [TypeScript Guide](typescript-guide.md) |
 | Add custom keywords | [Custom Validation Keywords](add-keyword.md) |
 | Package plugin lifecycle and hooks | [Plugin Manager (Advanced)](plugin-system.md) |
@@ -76,7 +76,7 @@ Use this page when you know the capability you need but not the document name. F
 | Capability | Primary documents |
 |------------|-------------------|
 | Choose production patterns | [Best Practices](best-practices.md), [Project Structure Best Practices](best-practices-project-structure.md) |
-| Improve performance | [Performance Guide](performance-guide.md), [CacheManager](cache-manager.md) |
+| Improve performance | [Performance Guide](performance-guide.md), [Validator Cache](cache-manager.md) |
 | Review security-sensitive usage | [Security Notes](security-checklist.md), [Export Limitations](export-limitations.md) |
 | Diagnose common failures | [Troubleshooting](troubleshooting.md), [FAQ](faq.md) |
 
@@ -96,6 +96,6 @@ Use this page when you know the capability you need but not the document name. F
 | [feature-index.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/feature-index.ts) | Representative example connecting DSL, String extensions, and exporters. |
 | [chain-methods.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/chain-methods.ts) | Runnable coverage for field builder chain methods. |
 | [extensions-overview.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/extensions-overview.ts) | Runnable overview of extension paths. |
-| [custom-extensions.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/custom-extensions.ts) | Runnable custom extension example using pure DSL, `s('...')`, `s.xxx()` and runtime-scoped entries. |
+| [custom-extensions.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/custom-extensions.ts) | Runnable custom DSL type example using pure DSL, `s('...')`, `s.xxx()` and runtime-scoped entries. |
 | [object-dsl-builder.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/object-dsl-builder.ts) | Object builder chaining, required-field control, and object schema conversion. |
 | [real-world.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/real-world.ts) | Production-style composition for users, products, orders, queries, defaults, and async validation. |

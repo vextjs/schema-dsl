@@ -108,7 +108,7 @@ export type DslField = string | IDslBuilder | DslDefinition | DslConditionMarker
  */
 export type DslInput = string | DslDefinition
 
-export type DslFactoryInput = string | IDslBuilder | JSONSchema
+export type DslFactoryInput = string | IDslBuilder | JSONSchema | DslDefinition
 
 export type DslExtensionSegmentMode = 'none' | 'params' | 'constraint'
 export type DslExtensionParamKind = 'string' | 'number' | 'boolean' | 'enum'

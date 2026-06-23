@@ -1,6 +1,6 @@
-# 自定义扩展
+# 自定义 DSL 类型
 
-自定义扩展用来把你项目里的业务类型注册成 DSL 类型。例如把“租户 ID”注册成 `tenant-id` 后，业务 schema 里就可以直接写：
+自定义 DSL 类型用来把你项目里的业务类型注册成 DSL 类型。例如把“租户 ID”注册成 `tenant-id` 后，业务 schema 里就可以直接写：
 
 ```ts
 const schema = s({
@@ -100,7 +100,7 @@ export const s = registerExtensions([
 | 字段 | 必填 | 类型 | 作用 | 何时配置 |
 |------|:----:|------|------|----------|
 | `literal` | 三入口业务类型需要 | `string` | DSL 字符串里的类型名，例如 `'tenant-id!'`、`'tenant-id:corp!'`。它决定纯 DSL 和 `s('...')` 如何找到扩展。 | 需要从 DSL 字符串使用这个扩展时配置。建议使用短横线命名，如 `tenant-id`、`money`。 |
-| `factoryName` | 否 | `string` | namespace factory 名称，例如 `s.tenantId()`。在当前源码和下一版 v2.1.0 中，可从 `literal` 推导；显式配置可以避免推导歧义。 | 需要 `s.xxx()` 完整类型提示时配置；名称必须是合法 JavaScript 标识符。 |
+| `factoryName` | 否 | `string` | namespace factory 名称，例如 `s.tenantId()`。可从 `literal` 推导；显式配置可以避免推导歧义。 | 需要 `s.xxx()` 完整类型提示时配置；名称必须是合法 JavaScript 标识符。 |
 | `segmentMode` | 否 | `'none' \| 'params' \| 'constraint'` | 决定冒号后的片段如何解释。`tenant-id:corp!` 的 `corp` 是参数，`positive-money:>=0!` 的 `>=0` 是约束。 | 扩展支持冒号段时必须明确。参数化类型通常用 `params`，数值约束型扩展用 `constraint`。 |
 | `params` | 否 | 参数声明对象 | 声明 DSL 参数、factory 参数、默认值、合法值、错误诊断和文档参数表。 | 扩展有参数时配置；无参静态类型可以省略。 |
 | `schema` | DSL 字符串需要解析这个类型时需要 | `JSONSchema` 或参数函数 | 生成最终 JSON Schema。无参扩展可以直接给对象；参数化扩展接收归一化后的参数对象。 | 普通自定义业务类型都需要。底层 factory-only 动态扩展属于高级用法，应在自己的运行时文档里说明行为。 |
@@ -330,7 +330,7 @@ const schema = s({
 
 ## 容易混淆的 DSL 语法
 
-自定义扩展不能改变已有 DSL 语义。遇到下面这些写法时，先按表格区分它们：
+自定义 DSL 类型不能改变已有 DSL 语义。遇到下面这些写法时，先按表格区分它们：
 
 | 语法 | 含义 |
 |------|------|
@@ -524,17 +524,17 @@ const schema = s({
 
 普通用户定义业务类型时，只需要理解上面的 `literal`、`factoryName`、`params`、`schema` 和三种入口。
 
-本页描述的是当前源码中的下一版 v2.1.0 契约。当前仓库 `package.json` 仍是 `2.0.11`，npm `latest` 也是 `2.0.11`；在 v2.1.0 正式发布前，请基于仓库源码或本地构建运行这些示例。
+本页描述的是扩展系统的公开使用方式。请以当前安装版本的导出 API 为准；如果你在本仓库内阅读文档示例，运行前先执行本地构建。
 
 如果你在源码或历史文档里看到直接 String 链式、编译期转换或特殊解析 hook，它们是兼容/高级能力，不是普通业务类型的主入口。
 
-### 什么不是自定义扩展入口
+### 什么不是自定义 DSL 类型入口
 
 自定义业务类型不需要自定义 base builder 链式方法：
 
 ```ts
-s('string!').tenantId();  // 不属于自定义扩展模型
-'string!'.tenantId();     // 不属于自定义扩展模型
+s('string!').tenantId();  // 不属于自定义 DSL 类型模型
+'string!'.tenantId();     // 不属于自定义 DSL 类型模型
 ```
 
 已有的直接 String 链式和 transform 能力仍然是独立的兼容/作者体验工具，不应用来暴露 `tenant-id` 这类普通业务类型。
@@ -633,4 +633,4 @@ runtime 作用域需要看清这些事：
 ## 对应示例文件
 
 **示例入口**: [custom-extensions.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/custom-extensions.ts)
-**说明**: 示例使用当前源码里的声明式参数化 API。如果你安装到的 npm 包仍是 `2.0.11`，请先本地构建仓库源码，或等待 v2.1.0 包正式发布。
+**说明**: 示例使用声明式参数化 API。在本仓库内运行示例前，请先执行本地构建，确保 `dist/` 与源码一致。

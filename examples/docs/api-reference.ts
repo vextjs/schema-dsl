@@ -172,6 +172,7 @@ const resolvedEmailType = TypeRegistry.resolve('email')
 const builderStringSchema = s.string().min(3).max(32).label('Username').require().toSchema()
 const namespaceEmailSchema = s.email().label('Email').require().toSchema()
 const explicitDslSeedSchema = s('email!').label('Email').toSchema()
+const namespaceArrayObjectSchema = s.array({ name: 'string!', quantity: 'number:1-999!' }).min(1).toSchema()
 const normalizedExtension = defineExtension({
   literal: 'tenant-id',
   factoryName: 'tenantId',
@@ -274,6 +275,7 @@ console.log('api-reference.dslBuilder.string.required =', builderStringSchema._r
 console.log('api-reference.namespace.identity =', s === pureDsl)
 console.log('api-reference.namespace.email =', namespaceEmailSchema.format)
 console.log('api-reference.namespace.dslSeed =', explicitDslSeedSchema._required)
+console.log('api-reference.namespace.arrayObject =', (namespaceArrayObjectSchema.items as any).required)
 console.log('api-reference.namespace.defineExtension =', normalizedExtension.factoryName)
 console.log('api-reference.namespace.customFactory =', tenantFactorySchema.pattern)
 console.log('api-reference.objectDslBuilder.required =', objectBuilderSchema.requiredAll)
@@ -327,6 +329,7 @@ expect('string extensions produce schema constraints', extensionSchema.minLength
 expect('shared namespace identity should hold', s === pureDsl)
 expect('namespace factories should produce required email fields', namespaceEmailSchema.format === 'email' && namespaceEmailSchema._required === true)
 expect('explicit dsl seed should preserve DSL literal required flag', explicitDslSeedSchema._required === true)
+expect('namespace array factory should accept DSL object items', Array.isArray((namespaceArrayObjectSchema.items as any).required))
 expect('defineExtension should normalize extension metadata', normalizedExtension.factoryName === 'tenantId')
 expect('registerExtension should expose a namespace factory', tenantFactorySchema.pattern === '^tenant_[a-z0-9]+$')
 

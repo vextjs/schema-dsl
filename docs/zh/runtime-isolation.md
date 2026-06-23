@@ -45,7 +45,7 @@ const result = runtime.validate(schema, { id: 'tenant_demo', age: 16 });
 |------------|:--------------------------:|
 | 默认 locale 与单次调用 `locale` | 是 |
 | 内联 `messages` 与 `messageProvider` | 是 |
-| 自定义扩展与 `typeResolver` | 是 |
+| 自定义 DSL 类型与 `typeResolver` | 是 |
 | `phone`、`idCard`、`creditCard`、`licensePlate`、`postalCode`、`passport`、`common` 的 pattern 覆盖 | 是 |
 | Validator 实例与缓存 | 是 |
 | custom keyword 消息 | 是 |

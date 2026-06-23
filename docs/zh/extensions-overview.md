@@ -1,6 +1,6 @@
 # 扩展概览
 
-当你想扩展 schema-dsl，但还不确定应该使用自定义扩展、校验关键字、runtime 隔离还是插件封装时，先看本页。
+当你想扩展 schema-dsl，但还不确定应该使用自定义 DSL 类型、校验关键字、runtime 隔离还是插件封装时，先看本页。
 
 扩展系统有多个层次。它们可以组合，但解决的问题不同。
 
@@ -8,15 +8,15 @@
 
 | 目标 | 推荐文档 | 典型结果 |
 |------|----------|----------|
-| 定义一次可复用业务类型 | [自定义扩展](custom-extensions.md) | `'tenant-id:corp!'`、`s('tenant-id:corp!')`、`s.tenantId('corp')` |
+| 定义一次可复用业务类型 | [自定义 DSL 类型](custom-extensions.md) | `'tenant-id:corp!'`、`s('tenant-id:corp!')`、`s.tenantId('corp')` |
 | 保留直接 String 链式源码 | [String 扩展](string-extensions.md) | transform 或显式 String 支持 |
 | 增加校验关键字 | [自定义校验关键字](add-keyword.md) | `{ type: 'number', isEven: true }` |
 | 按 app、tenant、plugin 或 worker 隔离扩展 | [框架集成与目录结构](framework-extension-setup.md)、[运行时隔离](runtime-isolation.md) | `const runtime = createRuntime({ types })` |
 | 协调插件安装、卸载与 hook | [插件管理器（高级）](plugin-system.md) | `pluginManager.install(schemaDsl, 'plugin')` |
 
-## 自定义扩展入口
+## 自定义 DSL 类型入口
 
-自定义扩展章节统一承载 DSL 字面量、`s('...')` seed builder、`s.xxx()` factory、参数，以及普通业务类型不再暴露自定义 base builder 方法的约定：
+自定义 DSL 类型章节统一承载 DSL 字面量、`s('...')` seed builder、`s.xxx()` factory、参数，以及普通业务类型不再暴露自定义 base builder 方法的约定：
 
 ```ts
 const schema = s({
@@ -78,7 +78,7 @@ runtime.registerExtensions([
 
 ## 推荐阅读顺序
 
-1. 可复用业务类型、参数和 `s.xxx()` factory，看 [自定义扩展](custom-extensions.md)。
+1. 可复用业务类型、参数和 `s.xxx()` factory，看 [自定义 DSL 类型](custom-extensions.md)。
 2. 需要新增 validator keyword，看 [自定义校验关键字](add-keyword.md)。
 3. 准备接入真实应用或框架前，看 [框架集成与目录结构](framework-extension-setup.md)。
 4. 只有需要插件生命周期和 hook 编排时，再看 [插件管理器（高级）](plugin-system.md)。
@@ -88,4 +88,4 @@ runtime.registerExtensions([
 ## 对应示例文件
 
 **示例入口**: [extensions-overview.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/extensions-overview.ts)
-**说明**: 并排展示自定义扩展、runtime 作用域类型和自定义校验关键字路径。
+**说明**: 并排展示自定义 DSL 类型、runtime 作用域类型和自定义校验关键字路径。

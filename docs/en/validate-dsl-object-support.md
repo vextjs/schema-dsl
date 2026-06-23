@@ -135,9 +135,9 @@ const result = validate(
 
 **Cause**: `validate()` treats the DSL object as a standard JSON Schema, and `"email!"` is not a valid JSON Schema keyword.
 
-### Current plan
+### Supported behavior
 
-The current version has completed automatic detection and conversion logic:
+`validate()` / `validateAsync()` automatically detect and convert DSL objects:
 
 1. **Detect DSL Objects**: Identify DSL strings in objects
 2. **Automatic Conversion**: Converted to JSON Schema via internal DSL object normalization process
@@ -364,10 +364,23 @@ if (result.valid) {
 
 **A: No need now! **
 
-- ✅The current version supports passing in DSL objects directly
+- ✅ Passing DSL objects directly is supported
 - ✅ Automatically detect and convert, no manual wrapping required
 - ✅ Fully backward compatible and does not affect original functions
 - ✅ Supports JSON Schema, DslBuilder, and DSL objects at the same time
+
+Object arrays can also use builders inside a DSL object:
+
+```javascript
+const schema = s({
+  items: s.array({
+    name: 'string!',
+    quantity: 'number:1-999!'
+  }).min(1)
+});
+```
+
+Do not write the field name as `items:array`. Put the type definition in the field value; keep the field name for the business field name and required marker only.
 
 **Recommended use**:
 - Simple scenario: use DSL objects directly
@@ -440,8 +453,6 @@ app.post('/api/user', (req, res) => {
 - A stable raw DSL object shape is normally not a memory leak. The object is normalized again, but the validator can still reuse the compilation cache for the same resulting schema structure.
 - A request path that produces unbounded unique schema structures can keep missing the cache. schema-dsl's managed cache is bounded, but each miss still pays conversion and AJV compilation cost.
 - Do not create `new Validator()` for every normal request. If the instance is not retained it usually will not leak permanently, but it resets AJV and the per-instance cache, increasing allocation and GC pressure.
-
-**✅ Your understanding is completely correct! **
 
 **Best Practice**: Configure all schemas at project startup
 

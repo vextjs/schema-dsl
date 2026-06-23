@@ -20,6 +20,33 @@ const schema = s({
 const emailField = s.email().label('Email').require();
 ```
 
+Use the same schema to validate real data:
+
+```javascript
+import { s, validate } from 'schema-dsl/pure';
+
+const userSchema = s({
+  name: 'string:1-50!',
+  email: 'email!',
+  age: 'number:18-120',
+  role: 'admin|user|guest'
+});
+
+validate(userSchema, {
+  name: 'John',
+  email: 'john@example.com',
+  age: 28,
+  role: 'user'
+}).valid; // true
+
+validate(userSchema, {
+  name: '',
+  email: 'not-email',
+  age: 15,
+  role: 'owner'
+}).valid; // false
+```
+
 ---
 
 ## Complete list of types
@@ -281,14 +308,11 @@ const schema = s({
 // array of objects
 const schema = s({
   users: 'array<object>',
-  // or more detailed definition
-  items: {
-    type: 'array',
-    items: {
-      name: 'string!',
-      age: 'number'
-    }
-  }
+  // detailed object item definition
+  items: s.array({
+    name: 'string!',
+    age: 'number'
+  })
 });
 ```
 
@@ -470,7 +494,16 @@ const schema = s({
 'array!1-10<string:1-20>' // 1-10 elements, 1-20 characters each
 ```
 
-⚠️ **Also**: Use the complete JSON Schema format (not recommended, too cumbersome)
+✅ **Object items can also be written as a DSL object**:
+
+```javascript
+s.array({
+  name: 'string!',
+  age: 'number:18-'
+}).min(1).max(10)
+```
+
+⚠️ **Also**: Use the complete JSON Schema format when you need direct JSON Schema interoperability
 ```javascript
 {
   type: 'array',
@@ -527,16 +560,29 @@ Asynchronous validation (such as database duplication checking) can be placed in
 'array<object{name:string,age:number}>' // ❌ Not supported
 ```
 
-**Solution**: Use full object definition
+**Solution**: Use `s.array({ ... })` or `.items({ ... })`
 ```javascript
 const schema = s({
-  users: {
-    type: 'array',
-    items: {
-      name: 'string!',
-      age: 'number:18-'
-    }
-  }
+  users: s.array({
+    name: 'string!',
+    age: 'number:18-'
+  }).min(1)
+});
+
+const usersField = s.array().items({
+  name: 'string!',
+  age: 'number:18-'
+});
+```
+
+Do not write a field name such as `items:array` to declare an array type. In schema-dsl, the field name syntax describes the field name itself and required markers such as `'profile!'`; the field type belongs in the value:
+
+```javascript
+const schema = s({
+  items: s.array({
+    name: 'string!',
+    price: 'number:0-10000!'
+  })
 });
 ```
 
@@ -565,7 +611,10 @@ const schema = s({
   },
 
   //Address information
-  addresses: 'array:1-5<object>', // 1-5 addresses
+  addresses: s.array({
+    city: 'string!',
+    street: 'string!'
+  }).min(1).max(5), // 1-5 addresses
 
   // Label
   tags: 'array:1-10<string:1-20>', // 1-10 tags, each 1-20 characters
@@ -589,20 +638,19 @@ const schema = s({
   'details!': {
     description: 'string:10000',
     images: 'array!1-10<url>',
-    specs: 'array<object>',
+    specs: s.array({
+      name: 'string!',
+      value: 'string!'
+    }),
     tags: 'array:1-20<string:1-30>'
   },
 
   // SKU information
-  skus: {
-    type: 'array',
-    minItems: 1,
-    items: {
-      sku_code: 'string!',
-      price: 'number!',
-      stock: 'integer!'
-    }
-  }
+  skus: s.array({
+    sku_code: 'string!',
+    price: 'number!',
+    stock: 'integer!'
+  }).min(1)
 });
 ```
 
@@ -650,16 +698,13 @@ const schema = s({
 
 ### Q3: How to define an object array?
 
-**A**: Use full object definition:
+**A**: Use `s.array({ ... })`; each field inside the object item keeps using normal DSL:
 ```javascript
 const schema = s({
-  users: {
-    type: 'array',
-    items: {
-      name: 'string!',
-      email: 'email!'
-    }
-  }
+  users: s.array({
+    name: 'string!',
+    email: 'email!'
+  })
 });
 ```
 

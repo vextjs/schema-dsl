@@ -2,7 +2,16 @@
 
 本页讲的是 `PluginManager`：生命周期、hook、安装/卸载和集成编排。
 
-如果你的目标只是添加可复用业务类型，请先从 [扩展概览](extensions-overview.md) 和 [自定义扩展](custom-extensions.md) 开始。`PluginManager` 是把这些能力封装和协调起来的高级层。
+如果你的目标只是添加可复用业务类型，请先从 [扩展概览](extensions-overview.md) 和 [自定义 DSL 类型](custom-extensions.md) 开始。`PluginManager` 是把这些能力封装和协调起来的高级层。
+
+## 先判断是否真的需要插件
+
+| 你想做什么 | 推荐做法 |
+|---|---|
+| 定义 `tenant-id!`、`money:CNY!` 这类业务类型 | 使用 [自定义 DSL 类型](custom-extensions.md) |
+| 在项目启动时集中注册一批类型 | 使用 [框架集成与目录结构](framework-extension-setup.md) |
+| 给 `Validator` 增加底层校验关键字 | 使用 [自定义校验关键字](add-keyword.md) |
+| 把“安装、卸载、hook、配置合并”封装成一个可分发模块 | 再使用本页的 `PluginManager` |
 
 ## 概述
 

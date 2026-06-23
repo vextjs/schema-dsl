@@ -9,12 +9,14 @@ function expectIncludes(value: string, expected: string, message: string): void 
 }
 
 // ============================================================
-// label vs description — two distinct metadata fields
+// label / description / messages / error — distinct user-facing metadata and message helpers
 //
 // label       → human-friendly field name used in error messages
 //               ("Email Address is required" instead of ".email is required")
 // description → longer documentation string (appears in JSON Schema
 //               as `description` and in Markdown exports)
+// messages    → custom validation messages
+// error       → alias of messages()
 // ============================================================
 
 // ============================================================
@@ -95,7 +97,23 @@ console.log('label-vs-description.enum.valid  =', roleResult.valid) // false
 console.log('label-vs-description.enum.error  =', roleError || 'none')
 
 // ============================================================
-// 6. description survives toJsonSchema() — used by MarkdownExporter
+// 6. error() is an alias of messages()
+// ============================================================
+
+const errorAliasField = s('string!')
+  .label('Invite code')
+  .pattern(/^INV-[0-9]{4}$/)
+  .error({ pattern: '{{#label}} must look like INV-2026' })
+
+const errorAliasResult = validate(s({ code: errorAliasField }), { code: 'bad' })
+const errorAliasMessage = errorAliasResult.errors?.[0]?.message ?? ''
+
+expect(errorAliasResult.valid === false, 'error() alias should customize pattern failure')
+expectIncludes(errorAliasMessage, 'Invite code', 'error() alias should use label placeholders')
+console.log('label-vs-description.errorAlias =', errorAliasMessage)
+
+// ============================================================
+// 7. description survives toJsonSchema() — used by MarkdownExporter
 // ============================================================
 
 const { MarkdownExporter } = await import('../../dist/index.js')

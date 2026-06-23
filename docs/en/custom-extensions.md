@@ -1,6 +1,6 @@
-# Custom extensions
+# Custom DSL Types
 
-Custom extensions turn project-specific business types into DSL types. For example, after registering a tenant ID type as `tenant-id`, application schemas can write:
+Custom DSL types turn project-specific business types into DSL types. For example, after registering a tenant ID type as `tenant-id`, application schemas can write:
 
 ```ts
 const schema = s({
@@ -100,7 +100,7 @@ When you need the full contract, use this table:
 | Field | Required | Type | What it controls | When to set it |
 |-------|:--------:|------|------------------|----------------|
 | `literal` | Yes for three-entry business types | `string` | The DSL type name, such as `'tenant-id!'` or `'tenant-id:corp!'`. Pure DSL strings and `s('...')` use it to find the extension. | Set it when the extension must be usable from DSL strings. Prefer short kebab-case names such as `tenant-id` or `money`. |
-| `factoryName` | No | `string` | The namespace factory name, such as `s.tenantId()`. In the current source and the next v2.1.0 release, it may be inferred from `literal`; setting it explicitly avoids ambiguity. | Set it when you want the discoverable `s.xxx()` entry. The name must be a valid JavaScript identifier. |
+| `factoryName` | No | `string` | The namespace factory name, such as `s.tenantId()`. It may be inferred from `literal`; setting it explicitly avoids ambiguity. | Set it when you want the discoverable `s.xxx()` entry. The name must be a valid JavaScript identifier. |
 | `segmentMode` | No | `'none' \| 'params' \| 'constraint'` | How the colon segment is interpreted. In `tenant-id:corp!`, `corp` is a parameter. In `positive-money:>=0!`, `>=0` is a constraint. | Set it whenever the extension accepts colon segments. Parameterized extensions usually use `params`; constraint-style numeric extensions use `constraint`. |
 | `params` | No | Parameter declaration object | Declares DSL arguments, factory arguments, defaults, legal values, diagnostics, and generated parameter docs. | Set it for parameterized extensions. Omit it for static extensions. |
 | `schema` | Yes when DSL strings should resolve the type | `JSONSchema` or parameter function | Produces the final JSON Schema. Static extensions can pass an object; parameterized extensions receive normalized parameters. | Required for normal custom business types. Low-level factory-only dynamic extensions are advanced usage and should document their own runtime behavior. |
@@ -330,7 +330,7 @@ If a custom type really needs multiple unrelated arguments, prefer `s.xxx({ ... 
 
 ## DSL Syntax That Is Easy To Mix Up
 
-Custom extensions must not change existing DSL meaning. Use this table to separate similar-looking syntax:
+Custom DSL types must not change existing DSL meaning. Use this table to separate similar-looking syntax:
 
 | Syntax | Meaning |
 |--------|---------|
@@ -524,7 +524,7 @@ Custom types should consume these constraints only when they declare `segmentMod
 
 When defining ordinary business types, users only need the fields above: `literal`, `factoryName`, `params`, `schema`, and the three entries.
 
-This page describes the current source contract for the next v2.1.0 release. The repository `package.json` is still `2.0.11`, and npm `latest` is also `2.0.11`; until v2.1.0 is published, use these examples against the repository source or a local build.
+This page describes the public usage contract for the extension system. Use the API exported by your installed package version; when reading these examples inside the repository, build locally before running them.
 
 If you see direct String chaining, compile-time transforms, or special parser hooks in source code or older docs, treat them as compatibility or advanced capabilities, not the main entry for ordinary business types.
 
@@ -533,8 +533,8 @@ If you see direct String chaining, compile-time transforms, or special parser ho
 Custom business types do not need custom base-builder chain methods:
 
 ```ts
-s('string!').tenantId();  // not part of the custom extension model
-'string!'.tenantId();     // not part of the custom extension model
+s('string!').tenantId();  // not part of the custom DSL type model
+'string!'.tenantId();     // not part of the custom DSL type model
 ```
 
 Existing direct String chaining and transform support remain separate compatibility and authoring tools. They should not be used to expose ordinary business types such as `tenant-id`.
@@ -633,4 +633,4 @@ Do not require users to call `uninstallStringExtensions()` before they can use `
 ## Corresponding sample file
 
 **Example entry**: [custom-extensions.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/custom-extensions.ts)
-**Note**: The sample uses the declarative parameter API from the current source. If your installed npm package is still `2.0.11`, build this repository locally or wait for the v2.1.0 package release.
+**Note**: The sample uses the declarative parameter API. When running examples inside this repository, build locally first so `dist/` matches the source.
