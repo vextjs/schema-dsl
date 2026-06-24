@@ -31,6 +31,9 @@ export class PluginManager extends EventEmitter {
   /** Per-plugin hook references (used for automatic cleanup on unregister). */
   private readonly _pluginHooks: Map<string, Map<string, Set<HookFn>>> = new Map()
 
+  /** Names whose install hook has already run for this manager instance. */
+  private readonly _installedPlugins = new Set<string>()
+
   private _installedCore: unknown = undefined
 
   /** Built-in hook names (pre-initialized on construction). */
@@ -176,9 +179,12 @@ export class PluginManager extends EventEmitter {
   }
 
   private _installPlugin(core: unknown, plugin: Plugin, extraOptions?: Record<string, unknown>): void {
+    if (this._installedPlugins.has(plugin.name)) return
+
     const mergedOptions = { ...(plugin.options ?? {}), ...(extraOptions ?? {}) }
     try {
       plugin.install?.(core, mergedOptions, this.context)
+      this._installedPlugins.add(plugin.name)
       this.emit('plugin:installed', plugin)
     } catch (error) {
       this.emit('plugin:error', { plugin, error })
@@ -224,6 +230,7 @@ export class PluginManager extends EventEmitter {
     }
 
     this.plugins.delete(name)
+    this._installedPlugins.delete(name)
 
     this.emit('plugin:uninstalled', plugin)
     return this
@@ -264,6 +271,7 @@ export class PluginManager extends EventEmitter {
     }
     this.plugins.clear()
     this._pluginHooks.clear()
+    this._installedPlugins.clear()
     // Clear all custom hooks (keep built-in pre-initialized entries but empty their handler arrays)
     for (const [, list] of this.hooks) {
       list.length = 0

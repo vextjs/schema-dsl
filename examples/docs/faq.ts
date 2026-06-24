@@ -106,19 +106,19 @@ console.log('faq.default.value             =', (noTheme.data as any).theme)
 expect('default value is applied', (noTheme.data as any).theme === 'light')
 
 // ============================================================
-// Q7: Can I turn allErrors on per validate() call?
-//     A: No — allErrors is an AJV constructor option. Create another Validator.
+// Q7: Can I control allErrors per validate() call?
+//     A: Yes for keeping only the first formatted error on a default validator.
+//        A Validator constructed with allErrors:false cannot restore skipped AJV errors per call.
 // ============================================================
 
-const firstOnlyValidator = new Validator({ allErrors: false })
-const firstOnly = firstOnlyValidator.validate(schema, {
+const firstOnly = validator.validate(schema, {
   username: 'x',
   email: 'bad-email',
   age: 12,
-}, { allErrors: true } as any)
+}, { allErrors: false })
 
-console.log('faq.allErrors.constructorOnly  =', firstOnly.errors?.length)  // 1
-expect('allErrors is controlled by constructor', firstOnly.errors?.length === 1)
+console.log('faq.allErrors.perCallFirstOnly =', firstOnly.errors?.length)  // 1
+expect('allErrors false keeps only one formatted error per call', firstOnly.errors?.length === 1)
 
 // ============================================================
 // Q8: Why did "42" validate as number?

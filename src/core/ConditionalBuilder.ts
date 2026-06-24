@@ -116,6 +116,13 @@ export class ConditionalBuilder implements IConditionalBuilder {
     return this
   }
 
+  /**
+   * Attach a failure message to the current condition.
+   *
+   * When every chained condition has its own message, message mode keeps the
+   * v1 chain-check behavior: conditions are evaluated left-to-right and the
+   * first truthy condition fails with its own message.
+   */
   message(msg: string): this {
     if (typeof msg !== 'string') {
       throw new Error('[schema-dsl] Message must be a string')

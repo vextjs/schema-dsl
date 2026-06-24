@@ -90,11 +90,10 @@ export class SchemaUtils {
    * Pick a subset of fields from a schema.
    */
   static pick(schema: JSONSchema, fields: string[]): ChainableSchema {
-    const result: Record<string, unknown> = {
-      type: 'object',
-      properties: {} as Record<string, unknown>,
-      required: [] as string[],
-    }
+    const result = this._clone(schema)
+    result['type'] = 'object'
+    result['properties'] = {} as Record<string, unknown>
+    result['required'] = [] as string[]
 
     for (const field of fields) {
       if (schema.properties?.[field]) {
@@ -107,6 +106,11 @@ export class SchemaUtils {
         }
       }
     }
+
+    if ((result['required'] as string[]).length === 0) {
+      delete result['required']
+    }
+    this._prunePickedFieldConstraints(result, fields)
 
     return this._makeChainable(result as JSONSchema)
   }
@@ -425,6 +429,42 @@ export class SchemaUtils {
     obj['required'] = (obj['required'] as string[]).filter(field => !optional.has(field))
     if ((obj['required'] as string[]).length === 0) {
       delete obj['required']
+    }
+  }
+
+  private static _prunePickedFieldConstraints(schema: Record<string, unknown>, fields: string[]): void {
+    const fieldSet = new Set(fields)
+
+    const dependentRequired = schema['dependentRequired']
+    if (this._isPlainRecord(dependentRequired)) {
+      const next: Record<string, string[]> = {}
+      for (const [field, dependencies] of Object.entries(dependentRequired)) {
+        if (!fieldSet.has(field) || !Array.isArray(dependencies)) continue
+        const kept = dependencies.map(String).filter(dependency => fieldSet.has(dependency))
+        if (kept.length > 0) next[field] = kept
+      }
+      if (Object.keys(next).length > 0) {
+        schema['dependentRequired'] = next
+      } else {
+        delete schema['dependentRequired']
+      }
+    }
+
+    delete schema['dependentSchemas']
+
+    const dependencies = schema['dependencies']
+    if (this._isPlainRecord(dependencies)) {
+      const next: Record<string, unknown> = {}
+      for (const [field, dependency] of Object.entries(dependencies)) {
+        if (!fieldSet.has(field) || !Array.isArray(dependency)) continue
+        const kept = dependency.map(String).filter(dependentField => fieldSet.has(dependentField))
+        if (kept.length > 0) next[field] = kept
+      }
+      if (Object.keys(next).length > 0) {
+        schema['dependencies'] = next
+      } else {
+        delete schema['dependencies']
+      }
     }
   }
 

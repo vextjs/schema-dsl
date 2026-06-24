@@ -8,27 +8,133 @@
  */
 
 import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
+import { cloneSchemaValue } from './schemaClone.js'
+
+const JSON_SCHEMA_KEYWORDS = new Set([
+  '$schema',
+  '$id',
+  '$ref',
+  '$defs',
+  '$comment',
+  '$anchor',
+  'type',
+  'properties',
+  'patternProperties',
+  'additionalProperties',
+  'propertyNames',
+  'required',
+  'items',
+  'prefixItems',
+  'additionalItems',
+  'contains',
+  'minContains',
+  'maxContains',
+  'allOf',
+  'anyOf',
+  'oneOf',
+  'not',
+  'if',
+  'then',
+  'else',
+  'enum',
+  'const',
+  'format',
+  'pattern',
+  'minimum',
+  'maximum',
+  'exclusiveMinimum',
+  'exclusiveMaximum',
+  'multipleOf',
+  'minLength',
+  'maxLength',
+  'minItems',
+  'maxItems',
+  'uniqueItems',
+  'minProperties',
+  'maxProperties',
+  'dependencies',
+  'dependentRequired',
+  'dependentSchemas',
+  'definitions',
+  'unevaluatedItems',
+  'unevaluatedProperties',
+  'title',
+  'description',
+  'default',
+  'examples',
+  'readOnly',
+  'writeOnly',
+  'deprecated',
+  'contentEncoding',
+  'contentMediaType',
+])
 
 function isObjectSchema(value: JSONSchemaInput): value is JSONSchema {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
+function stableSchemaStringify(value: unknown, seen = new Map<object, number>()): string {
+  if (value === null) return 'null'
+
+  switch (typeof value) {
+    case 'string':
+    case 'boolean':
+      return JSON.stringify(value)
+    case 'number':
+      return Number.isFinite(value) ? JSON.stringify(value) : JSON.stringify(String(value))
+    case 'bigint':
+      return JSON.stringify(`${value.toString()}n`)
+    case 'undefined':
+      return '"__undefined__"'
+    case 'symbol':
+      return JSON.stringify(value.toString())
+    case 'function':
+      return JSON.stringify(`[Function:${value.name || 'anonymous'}]`)
+    case 'object':
+      break
+  }
+
+  if (value instanceof RegExp) {
+    return JSON.stringify({ $regex: value.source, $flags: value.flags })
+  }
+
+  if (value instanceof Date) {
+    return JSON.stringify({ $date: value.toISOString() })
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(item => stableSchemaStringify(item, seen)).join(',')}]`
+  }
+
+  const obj = value as Record<PropertyKey, unknown>
+  const existing = seen.get(obj)
+  if (existing !== undefined) return JSON.stringify(`[Circular:${existing}]`)
+
+  seen.set(obj, seen.size)
+  const entries = Reflect.ownKeys(obj)
+    .sort((left, right) => String(left).localeCompare(String(right)))
+    .map(key => `${JSON.stringify(String(key))}:${stableSchemaStringify(obj[key], seen)}`)
+  seen.delete(obj)
+
+  return `{${entries.join(',')}}`
+}
+
 export class SchemaHelper {
   /**
-   * Check whether the value is a valid JSON Schema (must contain at least one of: type / properties / items / $ref).
+   * Check whether the value is a JSON Schema-like value.
    */
-  static isValidSchema(schema: unknown): schema is JSONSchema {
-    if (!schema || typeof schema !== 'object') return false
+  static isValidSchema(schema: unknown): schema is JSONSchemaInput {
+    if (typeof schema === 'boolean') return true
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return false
     const s = schema as Record<string, unknown>
-    return !!(s['type'] || s['properties'] || s['items'] || s['$ref']
-      || s['anyOf'] || s['oneOf'] || s['allOf'] || s['enum'])
+    return Object.keys(s).some(key => JSON_SCHEMA_KEYWORDS.has(key))
   }
 
   /**
    * Generate a content-hash-based unique ID for a schema.
    */
   static generateSchemaId(schema: JSONSchema): string {
-    const str = JSON.stringify(schema)
+    const str = stableSchemaStringify(schema)
     let hash = 0xcbf29ce484222325n
     const prime = 0x100000001b3n
     for (let i = 0; i < str.length; i++) {
@@ -39,10 +145,10 @@ export class SchemaHelper {
   }
 
   /**
-   * Deep-clone a schema via JSON serialisation (Function/RegExp fields are not preserved).
+   * Deep-clone a schema without JSON serialisation, preserving Function/RegExp fields.
    */
   static cloneSchema(schema: JSONSchema): JSONSchema {
-    return JSON.parse(JSON.stringify(schema)) as JSONSchema
+    return cloneSchemaValue(schema)
   }
 
   /**
@@ -119,10 +225,10 @@ export class SchemaHelper {
   }
 
   /**
-   * Shallow-compare two schemas for equality (via JSON serialisation).
+   * Compare two schemas for structural equality with stable key ordering.
    */
   static compareSchemas(schema1: JSONSchema, schema2: JSONSchema): boolean {
-    return JSON.stringify(schema1) === JSON.stringify(schema2)
+    return stableSchemaStringify(schema1) === stableSchemaStringify(schema2)
   }
 
   /**

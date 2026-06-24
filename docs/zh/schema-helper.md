@@ -57,11 +57,14 @@ console.log(summary);
 ```javascript
 SchemaHelper.isValidSchema({ type: 'string' });        // true
 SchemaHelper.isValidSchema({ properties: {} });        // true
+SchemaHelper.isValidSchema(true);                      // true
+SchemaHelper.isValidSchema({ const: 1 });              // true
+SchemaHelper.isValidSchema({ format: 'email' });       // true
 SchemaHelper.isValidSchema({});                        // false
 SchemaHelper.isValidSchema(null);                      // false
 ```
 
-**判断标准**：至少包含 `type`、`properties`、`items` 或 `$ref` 之一。
+**判断标准**：接受 boolean schema；对象 schema 需包含至少一个已识别的 JSON Schema 关键字，例如 `type`、`properties`、`items`、`$ref`、`const`、`not`、`if`/`then`、`format` 或 `pattern`。
 
 ---
 

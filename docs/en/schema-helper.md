@@ -57,11 +57,14 @@ Check if it is a valid JSON Schema.
 ```javascript
 SchemaHelper.isValidSchema({ type: 'string' });        // true
 SchemaHelper.isValidSchema({ properties: {} });        // true
+SchemaHelper.isValidSchema(true);                      // true
+SchemaHelper.isValidSchema({ const: 1 });              // true
+SchemaHelper.isValidSchema({ format: 'email' });       // true
 SchemaHelper.isValidSchema({});                        // false
 SchemaHelper.isValidSchema(null);                      // false
 ```
 
-**Judgment Criteria**: Contains at least one of `type`, `properties`, `items` or `$ref`.
+**Judgment Criteria**: Boolean schemas are accepted. Object schemas must contain at least one recognized JSON Schema keyword such as `type`, `properties`, `items`, `$ref`, `const`, `not`, `if`/`then`, `format`, or `pattern`.
 
 ---
 

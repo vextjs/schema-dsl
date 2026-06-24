@@ -2,6 +2,7 @@
 
 ## 2026-06-23
 
+- Fixed validation option edge cases so root helpers and `Validator` honor per-call smart-coercion opt-outs, `{ allErrors: false }` returns only the first error, custom `validate` keyword boolean failures carry a stable error, `SchemaUtils.pick()` preserves object-level constraints, `SchemaHelper` accepts modern JSON Schema shapes with stable clone/hash/compare behavior, and plugin installation is idempotent.
 - Fixed conditional validation execution in JSON Schema applicators including `patternProperties`, `additionalProperties`, `propertyNames`, `contains`, `prefixItems`, and `dependentSchemas`; also tightened raw JSON Schema string keyword detection and PostgreSQL export loss reporting for CHECK-backed scalar constraints.
 - Fixed raw JSON Schema input detection so keyword-only schemas such as `{ enum: [...] }`, `{ const: ... }`, and Draft 7 boolean schemas are treated as JSON Schema without stealing DSL object definitions whose field names collide with JSON Schema keywords.
 - Fixed runtime and conditional branch schema classification so DSL object inputs such as `{ properties: { enabled: 'boolean!' } }` still compile as schema-dsl definitions, while raw JSON Schema branches and boolean schemas stay valid passthrough inputs.

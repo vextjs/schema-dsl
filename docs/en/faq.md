@@ -189,10 +189,10 @@ const result = validator.validate(schema, data);
 **A**: All errors will be returned by default. If you only want to keep the first error, you can explicitly turn off `allErrors`:
 
 ```javascript
-const validator = new Validator({ allErrors: false });
+validate(schema, data, { allErrors: false });
 ```
 
-`allErrors` needs to be configured when creating the `Validator` instance. `validator.validate(schema, data, options)` cannot override this switch one by one.
+`new Validator({ allErrors: false })` also works when you want an early-exit validator. A Validator created with `allErrors: false` cannot recover errors that AJV did not collect, but the default validator and root helpers can use `{ allErrors: false }` per call to keep only the first formatted error.
 
 ---
 

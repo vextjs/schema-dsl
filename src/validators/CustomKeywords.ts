@@ -156,6 +156,7 @@ export class CustomKeywords {
 
   static registerFunctionKeyword(ajv: Ajv, options: CustomKeywordOptions = {}): void {
     const validate: ValidateFnWithErrors = (schema: unknown, data: unknown): boolean => {
+      delete validate.errors
       if (typeof schema !== 'function') {
         validate.errors = [{
           keyword: 'validate',
@@ -167,14 +168,25 @@ export class CustomKeywords {
 
       try {
         const result = (schema as (d: unknown) => unknown)(data)
-        if (typeof result === 'boolean') return result
+        if (typeof result === 'boolean') {
+          if (!result) {
+            validate.errors = [{
+              keyword: 'validate',
+              message: CustomKeywords._message(options, 'CUSTOM_VALIDATION_FAILED'),
+              params: {},
+            }]
+          }
+          return result
+        }
         if (result !== null && typeof result === 'object') {
           const res = result as Record<string, unknown>
           if (typeof res['valid'] === 'boolean') {
-            if (!res['valid'] && res['message']) {
+            if (!res['valid']) {
               validate.errors = [{
                 keyword: 'validate',
-                message: String(res['message']),
+                message: res['message']
+                  ? String(res['message'])
+                  : CustomKeywords._message(options, 'CUSTOM_VALIDATION_FAILED'),
                 params: {},
               }]
             }

@@ -27,6 +27,8 @@ console.log('schema-helper.isValid.schema   =', SchemaHelper.isValidSchema(userS
 console.log('schema-helper.isValid.null     =', SchemaHelper.isValidSchema(null))         // false
 console.log('schema-helper.isValid.empty    =', SchemaHelper.isValidSchema({}))           // false
 console.log('schema-helper.isValid.typed    =', SchemaHelper.isValidSchema({ type: 'string' }))  // true
+console.log('schema-helper.isValid.boolean  =', SchemaHelper.isValidSchema(true))         // true
+console.log('schema-helper.isValid.const    =', SchemaHelper.isValidSchema({ const: 1 })) // true
 
 // ============================================================
 // 2. generateSchemaId — stable content hash

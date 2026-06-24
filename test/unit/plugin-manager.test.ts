@@ -149,6 +149,23 @@ describe('PluginManager', () => {
       expect(installed).toHaveLength(2);
     });
 
+    it('should not run the same plugin install hook more than once', () => {
+      let installCount = 0;
+
+      pluginManager.register({
+        name: 'plugin-once',
+        install() {
+          installCount++;
+        }
+      });
+
+      pluginManager.install({});
+      pluginManager.install({});
+      pluginManager.install({}, 'plugin-once');
+
+      expect(installCount).toBe(1);
+    });
+
     it('should pass install options (install(core, name, opts) merges plugin.options + opts)', () => {
       let receivedOptions: any;
 

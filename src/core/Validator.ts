@@ -19,6 +19,7 @@ import { SchemaCompileError } from '../errors/SchemaCompileError.js'
 const NON_AJV_KEYS = new Set([
   'cache', 'smartCoerce', 'locale', 'messages', 'format', 'messageProvider',
   'messageResolver', 'messageTableProvider', 'parseOptions', 'quickValidate',
+  '__schemaDslPreCoerced',
   'strict',  // v2 redefines this as strictSchema; do not forward to AJV
 ])
 
@@ -664,7 +665,7 @@ export class Validator {
 
     const internalSchema = (typeof schema === 'object' ? schema : {}) as InternalSchema
 
-    if (this._smartCoerceEnabled && typeof schema === 'object') {
+    if (this._shouldSmartCoerce(options) && typeof schema === 'object') {
       data = this._smartCoerceTypes(data, internalSchema) as T
     }
 
@@ -770,6 +771,14 @@ export class Validator {
     }
 
     return result ?? data
+  }
+
+  private _shouldSmartCoerce(options: ValidateOptions): boolean {
+    return this._smartCoerceEnabled
+      && options.coerce !== false
+      && options.smartCoerce !== false
+      && options['coerceTypes'] !== false
+      && options['__schemaDslPreCoerced'] !== true
   }
 
   private _coerceNumber(value: unknown): unknown {
@@ -995,7 +1004,8 @@ export class Validator {
     shouldFormat: boolean,
     options: ValidateOptions = {}
   ): ValidationErrorItem[] {
-    if (!shouldFormat) return rawErrors as ValidationErrorItem[]
+    const selectedErrors = options.allErrors === false ? rawErrors.slice(0, 1) : rawErrors
+    if (!shouldFormat) return selectedErrors as ValidationErrorItem[]
     const localeMessages = this._getMessageTable(locale, options)
     // Only merge when there are custom messages (avoid unnecessary object spread)
     const mergedMessages: ErrorMessages =
@@ -1003,7 +1013,7 @@ export class Validator {
         ? localeMessages
         : { ...localeMessages, ...messages }
     // alreadyMerged=true: mergedMessages already contains locale+custom, skip re-expansion inside formatDetailed
-    return this._errorFormatter.formatDetailed(rawErrors as Parameters<ErrorFormatter['formatDetailed']>[0], locale, mergedMessages, true)
+    return this._errorFormatter.formatDetailed(selectedErrors as Parameters<ErrorFormatter['formatDetailed']>[0], locale, mergedMessages, true)
   }
 
   private _getMessageTable(locale: string, options: ValidateOptions): ErrorMessages {

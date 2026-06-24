@@ -60,7 +60,7 @@ const noCoerceResult = validate(
 console.log('validate.noCoerce.valid =', noCoerceResult.valid) // false — "25" is not integer
 
 // ============================================================
-// 3. allErrors — collect every error vs. stop at first
+// 3. allErrors — collect every error vs. keep only the first
 // ============================================================
 
 const allErrorsResult = validate(
@@ -71,7 +71,7 @@ const allErrorsResult = validate(
 const firstErrorResult = validate(
   userSchema,
   { username: 'x', email: 'bad', age: 10, role: 'hacker' },
-  { allErrors: false }, // default
+  { allErrors: false },
 )
 
 console.log('validate.allErrors.count =',    allErrorsResult.errors?.length)   // all 4 errors

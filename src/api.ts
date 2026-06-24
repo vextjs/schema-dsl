@@ -578,9 +578,15 @@ function _restorePatternGroup<T>(target: Record<string, T>, snapshot: Record<str
 
 // ==================== Convenience validation functions ====================
 
+const _PRE_COERCED_VALIDATE_OPTION = '__schemaDslPreCoerced'
+
+function _shouldSmartCoerce(options: Record<string, unknown>): boolean {
+  return options['coerce'] !== false && options['smartCoerce'] !== false && options['coerceTypes'] !== false
+}
+
 /**
  * Convenience validate function (uses the default Validator singleton).
- * Automatically coerces string → number when options.coerce !== false.
+ * Automatically coerces string → number unless coerce/smartCoerce/coerceTypes is false.
  */
 export function validate<T = unknown>(
   schema: _JSONSchemaInput | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
@@ -588,13 +594,14 @@ export function validate<T = unknown>(
   options: Record<string, unknown> = {},
 ): _ValidationResult<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
-  const shouldCoerce = options['coerce'] !== false
+  const shouldCoerce = _shouldSmartCoerce(options)
   // O5b: use candidate-field cache instead of _hasCoercibleFields + Object.keys scan
   const coercedData = shouldCoerce && typeof normalizedSchema === 'object' && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
   const validator = shouldCoerce ? _getDefaultValidator() : _getNoCoerceValidator()
-  return validator.validate(normalizedSchema, coercedData as T, options)
+  const validateOptions = shouldCoerce ? { ...options, [_PRE_COERCED_VALIDATE_OPTION]: true } : options
+  return validator.validate(normalizedSchema, coercedData as T, validateOptions)
 }
 
 /**
@@ -606,13 +613,14 @@ export async function validateAsync<T = unknown>(
   options: Record<string, unknown> = {},
 ): Promise<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
-  const shouldCoerce = options['coerce'] !== false
+  const shouldCoerce = _shouldSmartCoerce(options)
   // O5b: use candidate-field cache instead of _hasCoercibleFields + Object.keys scan
   const coercedData = shouldCoerce && typeof normalizedSchema === 'object' && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
   const validator = shouldCoerce ? _getDefaultValidator() : _getNoCoerceValidator()
-  return validator.validateAsync(normalizedSchema, coercedData as T, options)
+  const validateOptions = shouldCoerce ? { ...options, [_PRE_COERCED_VALIDATE_OPTION]: true } : options
+  return validator.validateAsync(normalizedSchema, coercedData as T, validateOptions)
 }
 
 // ==================== dsl main function ====================

@@ -28,6 +28,8 @@ describe('SchemaHelper', () => {
 
     describe('isValidSchema()', () => {
         it('accepts schemas with core JSON Schema markers', () => {
+            expect(SchemaHelper.isValidSchema(true)).toBe(true)
+            expect(SchemaHelper.isValidSchema(false)).toBe(true)
             expect(SchemaHelper.isValidSchema({ type: 'string' })).toBe(true)
             expect(SchemaHelper.isValidSchema({ properties: {} })).toBe(true)
             expect(SchemaHelper.isValidSchema({ items: { type: 'string' } })).toBe(true)
@@ -36,12 +38,18 @@ describe('SchemaHelper', () => {
             expect(SchemaHelper.isValidSchema({ oneOf: [{ type: 'string' }] })).toBe(true)
             expect(SchemaHelper.isValidSchema({ allOf: [{ type: 'string' }] })).toBe(true)
             expect(SchemaHelper.isValidSchema({ enum: ['active'] })).toBe(true)
+            expect(SchemaHelper.isValidSchema({ const: 1 })).toBe(true)
+            expect(SchemaHelper.isValidSchema({ not: true })).toBe(true)
+            expect(SchemaHelper.isValidSchema({ if: { type: 'string' }, then: { minLength: 1 } })).toBe(true)
+            expect(SchemaHelper.isValidSchema({ format: 'email' })).toBe(true)
+            expect(SchemaHelper.isValidSchema({ pattern: '^a' })).toBe(true)
+            expect(SchemaHelper.isValidSchema({ title: 'Name' })).toBe(true)
         })
 
         it('rejects non-object and marker-less values', () => {
             expect(SchemaHelper.isValidSchema(null)).toBe(false)
             expect(SchemaHelper.isValidSchema('string')).toBe(false)
-            expect(SchemaHelper.isValidSchema({ title: 'Name' })).toBe(false)
+            expect(SchemaHelper.isValidSchema({ custom: 'Name' })).toBe(false)
         })
     })
 
@@ -71,6 +79,11 @@ describe('SchemaHelper', () => {
             expect(id).toMatch(/^schema_[0-9a-z]+$/)
             expect(id.length).toBeGreaterThan('schema_zzzzzz'.length)
         })
+
+        it('generates the same id for schemas with equivalent key order', () => {
+            expect(SchemaHelper.generateSchemaId({ type: 'string', minLength: 1 } as any))
+                .toBe(SchemaHelper.generateSchemaId({ minLength: 1, type: 'string' } as any))
+        })
     })
 
     describe('schema structure helpers', () => {
@@ -80,6 +93,21 @@ describe('SchemaHelper', () => {
             expect(clone).toEqual(complexSchema)
             expect(clone).not.toBe(complexSchema)
             expect(clone.properties!.profile).not.toBe(complexSchema.properties.profile)
+        })
+
+        it('clones schemas without erasing function validators or RegExp metadata', () => {
+            const validate = () => true
+            const metadata = /schema-helper/i
+            const clone = SchemaHelper.cloneSchema({
+                type: 'string',
+                validate,
+                metadata,
+            } as any) as any
+
+            expect(clone.validate).toBe(validate)
+            expect(clone.metadata).not.toBe(metadata)
+            expect(clone.metadata.source).toBe('schema-helper')
+            expect(clone.metadata.flags).toBe('i')
         })
 
         it('flattens nested object properties into dot paths', () => {
@@ -110,6 +138,10 @@ describe('SchemaHelper', () => {
         it('compares schemas by serialized structure', () => {
             expect(SchemaHelper.compareSchemas({ type: 'string' }, { type: 'string' })).toBe(true)
             expect(SchemaHelper.compareSchemas({ type: 'string' }, { type: 'number' })).toBe(false)
+            expect(SchemaHelper.compareSchemas(
+                { type: 'string', minLength: 1 } as any,
+                { minLength: 1, type: 'string' } as any
+            )).toBe(true)
         })
 
         it('simplifies metadata and empty containers while preserving real fields', () => {

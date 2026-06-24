@@ -87,6 +87,7 @@ v1.1.1 introduced **Chain Check Mode**, which is automatically enabled when the 
 - Check each condition in turn
 - The first condition `true` fails and its message is returned
 - Validation passes when all conditions are `false`
+- This mode is a sequential failure-check chain, not an `A && B` boolean expression
 
 **Example comparison**:
 

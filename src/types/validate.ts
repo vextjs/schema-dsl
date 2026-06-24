@@ -7,7 +7,7 @@ import type { ErrorMessages } from './error.js'
 export interface ValidateOptions {
   /** Whether to format errors (default true). */
   format?: boolean
-  /** Whether to return all errors (default false — only the first). */
+  /** Whether to return all errors (default true; set false to keep only the first). */
   allErrors?: boolean
   /** Dynamically specify a locale (e.g. 'zh-CN', 'en-US', 'ja-JP', 'es-ES', 'fr-FR'). */
   locale?: string

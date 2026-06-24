@@ -12,12 +12,14 @@ import {
   TypeConverter,
   TypeRegistry,
   validate,
+  validateAsync,
   Validator,
   PATTERNS,
 } from '../../src/index.js'
 import { DslAdapter } from '../../src/adapters/DslAdapter.js'
 import { ConstraintParser } from '../../src/parser/ConstraintParser.js'
 import { DslParser } from '../../src/parser/DslParser.js'
+import { createRuntime } from '../../src/runtime.js'
 import { isJsonSchemaFactoryInputLike, isJsonSchemaTypeValue, isRawJsonSchemaLike } from '../../src/utils/schemaInput.js'
 
 describe('verified issue regressions', () => {
@@ -415,6 +417,46 @@ describe('verified issue regressions', () => {
 
       expect(validate(schema, { age: 'Infinity' }).data).toEqual({ age: 'Infinity' })
       expect(new Validator().validate(schema, { age: 'Infinity' }).data).toEqual({ age: 'Infinity' })
+    })
+
+    it('P1-23: root and Validator per-call options disable smart coercion consistently', async () => {
+      const schema = dsl({ age: 'number!' })
+
+      expect(validate(schema, { age: '42' }).data).toEqual({ age: 42 })
+      expect(validate(schema, { age: '42' }, { smartCoerce: false }).valid).toBe(false)
+      expect(validate(schema, { age: '42' }, { coerceTypes: false }).valid).toBe(false)
+      expect(validate(schema, { age: '42' }, { coerce: false }).valid).toBe(false)
+
+      expect(new Validator().validate(schema, { age: '42' }, { smartCoerce: false }).valid).toBe(false)
+      expect(new Validator().validate(schema, { age: '42' }, { coerceTypes: false }).valid).toBe(false)
+      expect(new Validator().validate(schema, { age: '42' }, { coerce: false }).valid).toBe(false)
+
+      const runtime = createRuntime()
+      const runtimeSchema = runtime.dsl({ age: 'number!' })
+      expect(runtime.validate(runtimeSchema, { age: '42' }, { smartCoerce: false }).valid).toBe(false)
+      await expect(validateAsync(schema, { age: '42' }, { smartCoerce: false })).rejects.toThrow()
+      runtime.dispose()
+    })
+
+    it('P1-24: allErrors false limits formatted root validation results per call', () => {
+      const schema = dsl({ name: 'string!', age: 'number!' })
+
+      expect(validate(schema, {}, { allErrors: false }).errors).toHaveLength(1)
+      expect(validate(schema, {}, { allErrors: true }).errors?.length).toBeGreaterThanOrEqual(2)
+      expect(validate(schema, {}).errors?.length).toBeGreaterThanOrEqual(2)
+    })
+
+    it('P1-25: validate keyword boolean false returns a stable custom keyword error', () => {
+      const validator = new Validator()
+
+      const objectResult = validator.validate({ validate: () => ({ valid: false, message: 'custom fail' }) }, 'value')
+      const booleanResult = validator.validate({ validate: () => false }, 'value')
+
+      expect(objectResult.errors?.[0]?.message).toBe('custom fail')
+      expect(booleanResult.errors?.[0]).toMatchObject({
+        keyword: 'validate',
+        message: 'Validation failed',
+      })
     })
 
     it('P1-08: TypeRegistry.toJsonSchema recursively strips internal metadata', () => {

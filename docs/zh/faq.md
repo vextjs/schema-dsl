@@ -189,10 +189,10 @@ const result = validator.validate(schema, data);
 **A**: 默认就会返回全部错误。如果你只想保留首条错误，可以显式关闭 `allErrors`：
 
 ```javascript
-const validator = new Validator({ allErrors: false });
+validate(schema, data, { allErrors: false });
 ```
 
-`allErrors` 需要在创建 `Validator` 实例时配置，`validator.validate(schema, data, options)` 不能按次覆盖这个开关。
+如果你需要一个提前停止的 Validator，也可以使用 `new Validator({ allErrors: false })`。注意：构造期已经关闭 `allErrors` 的 Validator 无法在单次调用时恢复 AJV 没有收集的错误；默认 Validator 和 root helpers 可以通过 `{ allErrors: false }` 在单次调用中只保留首条格式化错误。
 
 ---
 

@@ -192,6 +192,63 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
       expect(pickedSchema.required).toContain('name');
       expect(pickedSchema.required).toContain('email');
     });
+
+    it('should preserve object-level constraints when picking fields', () => {
+      const strictSchema = {
+        type: 'object',
+        title: 'Strict user',
+        additionalProperties: false,
+        minProperties: 1,
+        patternProperties: {
+          '^x_': { type: 'string' }
+        },
+        properties: {
+          name: { type: 'string' },
+          age: { type: 'number' }
+        },
+        required: ['name', 'age']
+      } as any;
+
+      const pickedSchema = SchemaUtils.pick(strictSchema, ['name']);
+
+      expect(pickedSchema.title).toBe('Strict user');
+      expect(pickedSchema.additionalProperties).toBe(false);
+      expect(pickedSchema.minProperties).toBe(1);
+      expect(pickedSchema.patternProperties).toEqual({ '^x_': { type: 'string' } });
+      expect(pickedSchema.required).toEqual(['name']);
+      expect(validate(pickedSchema, { name: 'Ada', extra: 1 }).valid).toBe(false);
+      expect(validate(pickedSchema, { name: 'Ada', x_meta: 'ok' }).valid).toBe(true);
+    });
+
+    it('should drop dependent constraints that reference fields omitted by pick', () => {
+      const strictSchema = {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          card: { type: 'string' },
+          billingAddress: { type: 'string' },
+          note: { type: 'string' }
+        },
+        required: ['card', 'billingAddress'],
+        dependentRequired: {
+          card: ['billingAddress']
+        },
+        dependentSchemas: {
+          card: { required: ['billingAddress'] }
+        },
+        dependencies: {
+          card: ['billingAddress']
+        }
+      } as any;
+
+      const pickedSchema = SchemaUtils.pick(strictSchema, ['card']);
+
+      expect(pickedSchema.required).toEqual(['card']);
+      expect(pickedSchema.dependentRequired).toBeUndefined();
+      expect(pickedSchema.dependentSchemas).toBeUndefined();
+      expect(pickedSchema.dependencies).toBeUndefined();
+      expect(validate(pickedSchema, { card: '4242' }).valid).toBe(true);
+    });
   });
 
   describe('extend() - Extend Fields', () => {
