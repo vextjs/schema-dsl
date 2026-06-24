@@ -69,8 +69,19 @@ const JSON_SCHEMA_KEYWORDS = new Set([
   'contentMediaType',
 ])
 
+const RUNTIME_FUNCTION_IDS = new WeakMap<object, number>()
+let nextRuntimeFunctionId = 0
+
 function isObjectSchema(value: JSONSchemaInput): value is JSONSchema {
   return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function getRuntimeFunctionId(value: object): number {
+  const existing = RUNTIME_FUNCTION_IDS.get(value)
+  if (existing !== undefined) return existing
+  const id = nextRuntimeFunctionId++
+  RUNTIME_FUNCTION_IDS.set(value, id)
+  return id
 }
 
 function stableSchemaStringify(value: unknown, seen = new Map<object, number>()): string {
@@ -89,7 +100,7 @@ function stableSchemaStringify(value: unknown, seen = new Map<object, number>())
     case 'symbol':
       return JSON.stringify(value.toString())
     case 'function':
-      return JSON.stringify(`[Function:${value.name || 'anonymous'}:${Function.prototype.toString.call(value)}]`)
+      return JSON.stringify(`[FunctionRef:${getRuntimeFunctionId(value)}:${value.name || 'anonymous'}:${Function.prototype.toString.call(value)}]`)
     case 'object':
       break
   }
@@ -134,6 +145,7 @@ export class SchemaHelper {
 
   /**
    * Generate a content-hash-based unique ID for a schema.
+   * Function validators are runtime values and are hashed by process-local reference identity.
    */
   static generateSchemaId(schema: JSONSchema): string {
     const str = stableSchemaStringify(schema)

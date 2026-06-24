@@ -371,6 +371,33 @@ describe('verified issue regressions', () => {
 
       expect(propertyRefResult.valid).toBe(false)
       expect(propertyRefResult.errors?.[0]?.path).toBe('value')
+
+      const nestedRefResult = validator.validate({
+        type: 'object',
+        properties: {
+          value: { $ref: '#/$defs/A' },
+        },
+        $defs: {
+          A: { $ref: '#/$defs/B' },
+          B: conditionalNumber,
+        },
+      }, { value: 'bad' })
+
+      expect(nestedRefResult.valid).toBe(false)
+      expect(nestedRefResult.errors?.[0]?.path).toBe('value')
+
+      const escapedPointerResult = validator.validate({
+        type: 'object',
+        properties: {
+          value: { $ref: '#/$defs/a%7E1b' },
+        },
+        $defs: {
+          'a/b': conditionalNumber,
+        },
+      }, { value: 'bad' })
+
+      expect(escapedPointerResult.valid).toBe(false)
+      expect(escapedPointerResult.errors?.[0]?.path).toBe('value')
     })
 
     it('P2-08: ConditionalBuilder accepts boolean JSON Schema branches at runtime', () => {
@@ -750,9 +777,18 @@ describe('verified issue regressions', () => {
         missing: undefined,
         tag: Symbol.for('schema-dsl:test'),
       }
+      const createValidator = (expected: number) => function validate(value: unknown) {
+        return value === expected
+      }
+      const closureA = createValidator(1)
+      const closureB = createValidator(2)
 
       expect(SchemaHelper.compareSchemas(schemaA as any, schemaB as any)).toBe(false)
       expect(SchemaHelper.generateSchemaId(schemaA as any)).not.toBe(SchemaHelper.generateSchemaId(schemaB as any))
+      expect(SchemaHelper.compareSchemas({ validate: closureA } as any, { validate: closureB } as any)).toBe(false)
+      expect(SchemaHelper.compareSchemas({ validate: closureA } as any, { validate: closureA } as any)).toBe(true)
+      expect(SchemaHelper.generateSchemaId({ validate: closureA } as any)).not.toBe(SchemaHelper.generateSchemaId({ validate: closureB } as any))
+      expect(SchemaHelper.generateSchemaId({ validate: closureA } as any)).toBe(SchemaHelper.generateSchemaId({ validate: closureA } as any))
       expect(() => SchemaHelper.generateSchemaId({ type: 'array', items: circular } as any)).not.toThrow()
       expect(SchemaHelper.generateSchemaId({ type: 'array', items: circular } as any)).toBe(
         SchemaHelper.generateSchemaId({ type: 'array', items: circular } as any)

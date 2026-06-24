@@ -2,7 +2,7 @@
 
 ## 2026-06-24
 
-- Fixed follow-up validation edge cases so conditional validation honors `{ allErrors: false }` after merging base and conditional errors, runs conditionals through Draft 7 `dependencies` and local `definitions` / `$defs` `$ref` targets, preserves `prefixItems + items` semantics during conditional stripping, keeps boolean `false` schemas in `SchemaUtils.pick()`, prunes dependent constraints in `SchemaUtils.omit()`, and makes `SchemaHelper` stable comparison/hash generation distinguish function bodies while handling circular arrays.
+- Fixed follow-up validation edge cases so conditional validation honors `{ allErrors: false }` after merging base and conditional errors, runs conditionals through Draft 7 `dependencies` and local `definitions` / `$defs` `$ref` targets including nested local refs and encoded JSON Pointer segments, preserves `prefixItems + items` semantics during conditional stripping, keeps boolean `false` schemas in `SchemaUtils.pick()`, prunes dependent constraints in `SchemaUtils.omit()`, and makes `SchemaHelper` stable comparison/hash generation distinguish runtime function references and circular arrays.
 
 ## 2026-06-23
 

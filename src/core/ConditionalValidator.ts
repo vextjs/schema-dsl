@@ -535,18 +535,19 @@ export class ConditionalValidator {
         return errors
     }
 
-    private _hasConditionalChild(schema: unknown, rootSchema?: unknown): boolean {
+    private _hasConditionalChild(schema: unknown, rootSchema?: unknown, seenRefs = new Set<string>()): boolean {
         if (!schema || typeof schema !== 'object') return false
         if (this._hasAnyConditional(schema as ConditionalInternalSchema, new WeakSet<object>())) return true
 
         const ref = (schema as Record<string, unknown>)['$ref']
-        if (typeof ref !== 'string' || rootSchema === undefined) return false
+        if (typeof ref !== 'string' || rootSchema === undefined || seenRefs.has(ref)) return false
         const resolved = this._resolveLocalRef(rootSchema, ref)
-        return resolved !== undefined
-            && resolved !== schema
-            && !!resolved
-            && typeof resolved === 'object'
-            && this._hasAnyConditional(resolved as ConditionalInternalSchema, new WeakSet<object>())
+        if (resolved === undefined || resolved === schema) return false
+
+        seenRefs.add(ref)
+        const result = this._hasConditionalChild(resolved, rootSchema, seenRefs)
+        seenRefs.delete(ref)
+        return result
     }
 
     private _validateSchemaNode(
@@ -608,12 +609,13 @@ export class ConditionalValidator {
     }
 
     private _decodeJsonPointerSegment(segment: string): string {
-        const unescaped = segment.replace(/~1/g, '/').replace(/~0/g, '~')
+        let decoded = segment
         try {
-            return decodeURIComponent(unescaped)
+            decoded = decodeURIComponent(segment)
         } catch {
-            return unescaped
+            decoded = segment
         }
+        return decoded.replace(/~1/g, '/').replace(/~0/g, '~')
     }
 
     private _createPatternMatcher(pattern: string): RegExp | null {
