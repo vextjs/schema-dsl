@@ -89,7 +89,7 @@ function stableSchemaStringify(value: unknown, seen = new Map<object, number>())
     case 'symbol':
       return JSON.stringify(value.toString())
     case 'function':
-      return JSON.stringify(`[Function:${value.name || 'anonymous'}]`)
+      return JSON.stringify(`[Function:${value.name || 'anonymous'}:${Function.prototype.toString.call(value)}]`)
     case 'object':
       break
   }
@@ -102,15 +102,17 @@ function stableSchemaStringify(value: unknown, seen = new Map<object, number>())
     return JSON.stringify({ $date: value.toISOString() })
   }
 
-  if (Array.isArray(value)) {
-    return `[${value.map(item => stableSchemaStringify(item, seen)).join(',')}]`
-  }
-
   const obj = value as Record<PropertyKey, unknown>
   const existing = seen.get(obj)
   if (existing !== undefined) return JSON.stringify(`[Circular:${existing}]`)
 
   seen.set(obj, seen.size)
+  if (Array.isArray(value)) {
+    const items = value.map(item => stableSchemaStringify(item, seen))
+    seen.delete(obj)
+    return `[${items.join(',')}]`
+  }
+
   const entries = Reflect.ownKeys(obj)
     .sort((left, right) => String(left).localeCompare(String(right)))
     .map(key => `${JSON.stringify(String(key))}:${stableSchemaStringify(obj[key], seen)}`)

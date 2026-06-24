@@ -8,6 +8,7 @@ import {
   MySQLExporter,
   PostgreSQLExporter,
   resetRuntimeState,
+  SchemaHelper,
   SchemaUtils,
   TypeConverter,
   TypeRegistry,
@@ -289,6 +290,23 @@ describe('verified issue regressions', () => {
           },
         },
       }, { value: 'bad' }).valid).toBe(true)
+
+      const legacyDependenciesResult = validator.validate({
+        type: 'object',
+        properties: {
+          enabled: { type: 'boolean' },
+          value: true,
+        },
+        dependencies: {
+          enabled: {
+            properties: {
+              value: conditionalNumber,
+            },
+          },
+        },
+      }, { enabled: true, value: 'bad' })
+      expect(legacyDependenciesResult.valid).toBe(false)
+      expect(legacyDependenciesResult.errors?.[0]?.path).toBe('value')
     })
 
     it('P1-22: public Validator executes conditionals in array applicator schemas', () => {
@@ -316,6 +334,43 @@ describe('verified issue regressions', () => {
         type: 'array',
         prefixItems: [conditionalNumber],
       }, [1]).valid).toBe(true)
+
+      const prefixItemsWithItems = validator.validate({
+        type: 'array',
+        prefixItems: [{ type: 'string' }],
+        items: { type: 'number' },
+        allOf: [ConditionalBuilder.start(() => true).then(true).toSchema()],
+      }, [1, 2])
+      expect(prefixItemsWithItems.valid).toBe(false)
+      expect(prefixItemsWithItems.errors?.[0]?.path).toBe('0')
+    })
+
+    it('P1-22: public Validator executes conditionals behind local JSON Schema refs', () => {
+      const validator = new Validator()
+      const conditionalNumber = ConditionalBuilder.start(() => true).then('number!').toSchema()
+
+      const rootRefResult = validator.validate({
+        definitions: {
+          Value: conditionalNumber,
+        },
+        $ref: '#/definitions/Value',
+      }, 'bad')
+
+      expect(rootRefResult.valid).toBe(false)
+      expect(rootRefResult.errors?.[0]?.keyword).toBe('type')
+
+      const propertyRefResult = validator.validate({
+        type: 'object',
+        properties: {
+          value: { $ref: '#/$defs/Value' },
+        },
+        $defs: {
+          Value: conditionalNumber,
+        },
+      }, { value: 'bad' })
+
+      expect(propertyRefResult.valid).toBe(false)
+      expect(propertyRefResult.errors?.[0]?.path).toBe('value')
     })
 
     it('P2-08: ConditionalBuilder accepts boolean JSON Schema branches at runtime', () => {
@@ -444,6 +499,25 @@ describe('verified issue regressions', () => {
       expect(validate(schema, {}, { allErrors: false }).errors).toHaveLength(1)
       expect(validate(schema, {}, { allErrors: true }).errors?.length).toBeGreaterThanOrEqual(2)
       expect(validate(schema, {}).errors?.length).toBeGreaterThanOrEqual(2)
+    })
+
+    it('P1-24: allErrors false also limits merged conditional validation results', () => {
+      const conditionalNumber = ConditionalBuilder.start(() => true).then('number!').toSchema()
+      const schema = {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: { type: 'string' },
+          score: conditionalNumber,
+        },
+      }
+
+      const singleError = validate(schema, { score: 'bad' }, { allErrors: false })
+      const allErrors = validate(schema, { score: 'bad' }, { allErrors: true })
+
+      expect(singleError.valid).toBe(false)
+      expect(singleError.errors).toHaveLength(1)
+      expect(allErrors.errors?.map(error => `${error.path}:${error.keyword}`)).toEqual(['name:required', 'score:type'])
     })
 
     it('P1-25: validate keyword boolean false returns a stable custom keyword error', () => {
@@ -597,6 +671,64 @@ describe('verified issue regressions', () => {
 
       expect(Object.keys(partial.properties ?? {})).toEqual(['name', 'email', 'age'])
       expect(partial.required).toEqual(['name', 'age'])
+    })
+
+    it('P1-26: SchemaUtils.pick preserves boolean false field schemas', () => {
+      const picked = SchemaUtils.pick({
+        type: 'object',
+        properties: {
+          blocked: false,
+          name: { type: 'string' },
+        },
+        required: ['blocked'],
+      }, ['blocked'])
+
+      expect(Object.prototype.hasOwnProperty.call(picked.properties, 'blocked')).toBe(true)
+      expect(picked.properties?.blocked).toBe(false)
+      expect(picked.required).toEqual(['blocked'])
+      expect(validate(picked, { blocked: 'anything' }).valid).toBe(false)
+    })
+
+    it('P2-09: SchemaUtils.omit prunes dependent constraints for removed fields', () => {
+      const omitted = SchemaUtils.omit({
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          card: { type: 'string' },
+          billingAddress: { type: 'string' },
+          note: { type: 'string' },
+        },
+        required: ['card', 'billingAddress'],
+        dependentRequired: {
+          card: ['billingAddress'],
+        },
+        dependentSchemas: {
+          card: { required: ['billingAddress'] },
+        },
+        dependencies: {
+          card: ['billingAddress'],
+        },
+      }, ['billingAddress'])
+
+      expect(omitted.required).toEqual(['card'])
+      expect(omitted.dependentRequired).toBeUndefined()
+      expect(omitted.dependentSchemas).toBeUndefined()
+      expect(omitted.dependencies).toBeUndefined()
+      expect(validate(omitted, { card: '4242' }).valid).toBe(true)
+    })
+
+    it('P2-10: SchemaHelper stable comparison distinguishes function bodies and handles circular arrays', () => {
+      const schemaA = { validate: () => true }
+      const schemaB = { validate: () => false }
+      const circular: unknown[] = []
+      circular.push(circular)
+
+      expect(SchemaHelper.compareSchemas(schemaA as any, schemaB as any)).toBe(false)
+      expect(SchemaHelper.generateSchemaId(schemaA as any)).not.toBe(SchemaHelper.generateSchemaId(schemaB as any))
+      expect(() => SchemaHelper.generateSchemaId({ type: 'array', items: circular } as any)).not.toThrow()
+      expect(SchemaHelper.generateSchemaId({ type: 'array', items: circular } as any)).toBe(
+        SchemaHelper.generateSchemaId({ type: 'array', items: circular } as any)
+      )
     })
 
     it('P2-06: SchemaUtils.toMarkdown includes nested field paths', () => {

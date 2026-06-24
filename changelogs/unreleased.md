@@ -1,5 +1,9 @@
 # Unreleased
 
+## 2026-06-24
+
+- Fixed follow-up validation edge cases so conditional validation honors `{ allErrors: false }` after merging base and conditional errors, runs conditionals through Draft 7 `dependencies` and local `definitions` / `$defs` `$ref` targets, preserves `prefixItems + items` semantics during conditional stripping, keeps boolean `false` schemas in `SchemaUtils.pick()`, prunes dependent constraints in `SchemaUtils.omit()`, and makes `SchemaHelper` stable comparison/hash generation distinguish function bodies while handling circular arrays.
+
 ## 2026-06-23
 
 - Fixed validation option edge cases so root helpers and `Validator` honor per-call smart-coercion opt-outs, `{ allErrors: false }` returns only the first error, custom `validate` keyword boolean failures carry a stable error, `SchemaUtils.pick()` preserves object-level constraints, `SchemaHelper` accepts modern JSON Schema shapes with stable clone/hash/compare behavior, and plugin installation is idempotent.

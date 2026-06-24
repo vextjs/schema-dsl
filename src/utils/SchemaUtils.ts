@@ -96,7 +96,7 @@ export class SchemaUtils {
     result['required'] = [] as string[]
 
     for (const field of fields) {
-      if (schema.properties?.[field]) {
+      if (schema.properties && Object.prototype.hasOwnProperty.call(schema.properties, field)) {
         const propertySchema = schema.properties[field]
         ;(result['properties'] as Record<string, unknown>)[field] = isObjectSchema(propertySchema)
           ? this._clone(propertySchema)
@@ -134,6 +134,8 @@ export class SchemaUtils {
     if (Array.isArray(result['required']) && (result['required'] as string[]).length === 0) {
       delete result['required']
     }
+    const keptFields = Object.keys((result['properties'] as Record<string, unknown> | undefined) ?? {})
+    this._prunePickedFieldConstraints(result, keptFields)
 
     return this._makeChainable(result as JSONSchema)
   }
