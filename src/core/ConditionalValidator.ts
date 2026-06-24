@@ -254,22 +254,64 @@ export class ConditionalValidator {
             }
         }
 
-        for (const key of ['items', 'additionalProperties', 'propertyNames', 'contains', 'not', 'if', 'then', 'else', 'unevaluatedItems', 'unevaluatedProperties']) {
+        for (const key of ['items', 'additionalProperties', 'propertyNames', 'contains', 'then', 'else', 'unevaluatedItems', 'unevaluatedProperties']) {
             if (key in source) result[key] = this._stripConditionalNodes(source[key])
         }
 
-        for (const key of ['allOf', 'anyOf', 'oneOf', 'prefixItems']) {
+        if ('not' in source) {
+            if (this._hasConditionalChild(source['not'])) delete result['not']
+            else result['not'] = this._stripConditionalNodes(source['not'])
+        }
+
+        if ('if' in source) {
+            if (this._hasConditionalChild(source['if'])) {
+                delete result['if']
+                delete result['then']
+                delete result['else']
+            } else {
+                result['if'] = this._stripConditionalNodes(source['if'])
+            }
+        }
+
+        for (const key of ['allOf', 'anyOf']) {
             const list = source[key]
             if (Array.isArray(list)) result[key] = list.map(item => this._stripConditionalNodes(item))
         }
 
-        for (const key of ['patternProperties', 'dependentSchemas', 'definitions', '$defs']) {
+        const oneOf = source['oneOf']
+        if (Array.isArray(oneOf)) {
+            if (oneOf.some(item => this._hasConditionalChild(item))) delete result['oneOf']
+            else result['oneOf'] = oneOf.map(item => this._stripConditionalNodes(item))
+        }
+
+        const prefixItems = source['prefixItems']
+        if (Array.isArray(prefixItems)) {
+            if (!prefixItems.some(item => this._hasConditionalChild(item)) && !('items' in source)) {
+                result['items'] = prefixItems.map(item => this._stripConditionalNodes(item))
+            }
+            delete result['prefixItems']
+        }
+
+        for (const key of ['patternProperties', 'definitions', '$defs']) {
             const map = source[key]
             if (map && typeof map === 'object' && !Array.isArray(map)) {
                 result[key] = Object.fromEntries(
                     Object.entries(map as Record<string, unknown>).map(([childKey, child]) => [childKey, this._stripConditionalNodes(child)])
                 )
             }
+        }
+
+        const dependentSchemas = source['dependentSchemas']
+        if (dependentSchemas && typeof dependentSchemas === 'object' && !Array.isArray(dependentSchemas)) {
+            const stripped = Object.fromEntries(
+                Object.entries(dependentSchemas as Record<string, unknown>).map(([childKey, child]) => [childKey, this._stripConditionalNodes(child)])
+            )
+            const dependencies = result['dependencies']
+            result['dependencies'] =
+                dependencies && typeof dependencies === 'object' && !Array.isArray(dependencies)
+                    ? { ...(dependencies as Record<string, unknown>), ...stripped }
+                    : stripped
+            delete result['dependentSchemas']
         }
 
         return result
@@ -297,9 +339,56 @@ export class ConditionalValidator {
         if (internalSchema.properties && data && typeof data === 'object' && !Array.isArray(data)) {
             const record = data as Record<string, unknown>
             for (const [key, childSchema] of Object.entries(internalSchema.properties)) {
-                if (!this._hasAnyConditional(childSchema, new WeakSet<object>())) continue
+                if (!this._hasConditionalChild(childSchema)) continue
                 const childPath = path ? `${path}/${key}` : key
                 errors.push(...this._runConditionalNodes(childSchema, record[key], childPath, options, rootData, key))
+            }
+        }
+
+        if (internalSchema.patternProperties && data && typeof data === 'object' && !Array.isArray(data)) {
+            const record = data as Record<string, unknown>
+            for (const [pattern, childSchema] of Object.entries(internalSchema.patternProperties as Record<string, unknown>)) {
+                if (!this._hasConditionalChild(childSchema)) continue
+                const matcher = this._createPatternMatcher(pattern)
+                if (!matcher) continue
+                for (const [key, value] of Object.entries(record)) {
+                    if (!matcher.test(key)) continue
+                    const childPath = path ? `${path}/${key}` : key
+                    errors.push(...this._runConditionalNodes(childSchema, value, childPath, options, rootData, key))
+                }
+            }
+        }
+
+        if (internalSchema.additionalProperties && typeof internalSchema.additionalProperties === 'object' && data && typeof data === 'object' && !Array.isArray(data)) {
+            if (this._hasConditionalChild(internalSchema.additionalProperties)) {
+                const record = data as Record<string, unknown>
+                const declaredProperties = new Set(Object.keys(internalSchema.properties ?? {}))
+                const patternMatchers = this._createPatternMatchers(internalSchema.patternProperties)
+
+                for (const [key, value] of Object.entries(record)) {
+                    if (declaredProperties.has(key)) continue
+                    if (patternMatchers.some(matcher => matcher.test(key))) continue
+                    const childPath = path ? `${path}/${key}` : key
+                    errors.push(...this._runConditionalNodes(internalSchema.additionalProperties, value, childPath, options, rootData, key))
+                }
+            }
+        }
+
+        if (internalSchema.propertyNames && data && typeof data === 'object' && !Array.isArray(data)) {
+            if (this._hasConditionalChild(internalSchema.propertyNames)) {
+                for (const key of Object.keys(data as Record<string, unknown>)) {
+                    const childPath = path ? `${path}/${key}` : key
+                    errors.push(...this._runConditionalNodes(internalSchema.propertyNames, key, childPath, options, rootData, key))
+                }
+            }
+        }
+
+        if (internalSchema.dependentSchemas && data && typeof data === 'object' && !Array.isArray(data)) {
+            const record = data as Record<string, unknown>
+            for (const [key, childSchema] of Object.entries(internalSchema.dependentSchemas as Record<string, unknown>)) {
+                if (!Object.prototype.hasOwnProperty.call(record, key)) continue
+                if (!this._hasConditionalChild(childSchema)) continue
+                errors.push(...this._runConditionalNodes(childSchema, data, path, options, rootData, key))
             }
         }
 
@@ -307,44 +396,171 @@ export class ConditionalValidator {
             const tupleItems = Array.isArray(internalSchema.items) ? internalSchema.items : null
             for (let index = 0; index < data.length; index++) {
                 const childSchema = tupleItems ? tupleItems[index] : internalSchema.items
-                if (!childSchema || !this._hasAnyConditional(childSchema, new WeakSet<object>())) continue
+                if (!childSchema || !this._hasConditionalChild(childSchema)) continue
                 const childPath = path ? `${path}/${index}` : String(index)
                 errors.push(...this._runConditionalNodes(childSchema, data[index], childPath, options, rootData, null))
             }
         }
 
+        const prefixItems = (internalSchema as Record<string, unknown>)['prefixItems']
+        if (Array.isArray(prefixItems) && Array.isArray(data)) {
+            const hasConditionalPrefixItem = prefixItems.some(childSchema => this._hasConditionalChild(childSchema))
+            for (let index = 0; index < data.length && index < prefixItems.length; index++) {
+                const childSchema = prefixItems[index]
+                const childPath = path ? `${path}/${index}` : String(index)
+                if (hasConditionalPrefixItem) {
+                    errors.push(...this._validateSchemaNode(childSchema, data[index], childPath, options, rootData, null))
+                } else if (this._hasConditionalChild(childSchema)) {
+                    errors.push(...this._runConditionalNodes(childSchema, data[index], childPath, options, rootData, null))
+                }
+            }
+        }
+
+        if (internalSchema.contains && Array.isArray(data) && this._hasConditionalChild(internalSchema.contains)) {
+            const containsSchema = internalSchema.contains
+            const cleanContains = this._stripConditionalNodes(containsSchema) as JSONSchema
+            let firstConditionalErrors: ValidationErrorItem[] | null = null
+
+            for (let index = 0; index < data.length; index++) {
+                if (!this.hooks.validateSchema(cleanContains, data[index], { ...options, format: false }).valid) continue
+                const childPath = path ? `${path}/${index}` : String(index)
+                const childErrors = this._runConditionalNodes(containsSchema, data[index], childPath, options, rootData, null)
+                if (childErrors.length === 0) {
+                    firstConditionalErrors = null
+                    break
+                }
+                firstConditionalErrors ??= childErrors
+            }
+
+            if (firstConditionalErrors) errors.push(...firstConditionalErrors)
+        }
+
         for (const childSchema of internalSchema.allOf ?? []) {
-            if (!this._hasAnyConditional(childSchema, new WeakSet<object>())) continue
+            if (!this._hasConditionalChild(childSchema)) continue
             errors.push(...this._runConditionalNodes(childSchema, data, path, options, rootData, fieldName))
         }
 
-        for (const childSchema of internalSchema.anyOf ?? []) {
-            if (!this._hasAnyConditional(childSchema, new WeakSet<object>())) continue
-            const clean = this._stripConditionalNodes(childSchema) as JSONSchema
-            if (this.hooks.validateSchema(clean, data, { ...options, format: false }).valid) {
-                errors.push(...this._runConditionalNodes(childSchema, data, path, options, rootData, fieldName))
+        const anyOfSchemas = internalSchema.anyOf ?? []
+        if (anyOfSchemas.some(childSchema => this._hasConditionalChild(childSchema))) {
+            let matched = false
+            let firstConditionalErrors: ValidationErrorItem[] | null = null
+
+            for (const childSchema of anyOfSchemas) {
+                const clean = this._stripConditionalNodes(childSchema) as JSONSchema
+                if (!this.hooks.validateSchema(clean, data, { ...options, format: false }).valid) continue
+                if (!this._hasConditionalChild(childSchema)) {
+                    matched = true
+                    break
+                }
+
+                const childErrors = this._runConditionalNodes(childSchema, data, path, options, rootData, fieldName)
+                if (childErrors.length === 0) {
+                    matched = true
+                    break
+                }
+                firstConditionalErrors ??= childErrors
+            }
+
+            if (!matched && firstConditionalErrors) errors.push(...firstConditionalErrors)
+        }
+
+        const oneOfSchemas = internalSchema.oneOf ?? []
+        if (oneOfSchemas.some(childSchema => this._hasConditionalChild(childSchema))) {
+            let matches = 0
+            let firstConditionalErrors: ValidationErrorItem[] | null = null
+
+            for (const childSchema of oneOfSchemas) {
+                const clean = this._stripConditionalNodes(childSchema) as JSONSchema
+                if (!this.hooks.validateSchema(clean, data, { ...options, format: false }).valid) continue
+                if (!this._hasConditionalChild(childSchema)) {
+                    matches += 1
+                    continue
+                }
+
+                const childErrors = this._runConditionalNodes(childSchema, data, path, options, rootData, fieldName)
+                if (childErrors.length === 0) matches += 1
+                else firstConditionalErrors ??= childErrors
+            }
+
+            if (matches === 0 && firstConditionalErrors) {
+                errors.push(...firstConditionalErrors)
+            } else if (matches !== 1) {
+                errors.push(this._createKeywordError('oneOf', path, 'value must match exactly one schema'))
             }
         }
 
-        for (const childSchema of internalSchema.oneOf ?? []) {
-            if (!this._hasAnyConditional(childSchema, new WeakSet<object>())) continue
-            const clean = this._stripConditionalNodes(childSchema) as JSONSchema
-            if (this.hooks.validateSchema(clean, data, { ...options, format: false }).valid) {
-                errors.push(...this._runConditionalNodes(childSchema, data, path, options, rootData, fieldName))
+        if (internalSchema.not && this._hasConditionalChild(internalSchema.not)) {
+            const notMatch = this._validateSchemaNode(internalSchema.not, data, path, options, rootData, fieldName)
+            if (notMatch.length === 0) {
+                errors.push(this._createKeywordError('not', path, 'value must NOT be valid'))
             }
         }
 
-        if (internalSchema.if) {
-            const cleanIf = this._stripConditionalNodes(internalSchema.if) as JSONSchema
-            const branch = this.hooks.validateSchema(cleanIf, data, { ...options, format: false }).valid
-                ? internalSchema.then
-                : internalSchema.else
-            if (branch && this._hasAnyConditional(branch, new WeakSet<object>())) {
+        if (internalSchema.if !== undefined) {
+            const ifHasConditional = this._hasConditionalChild(internalSchema.if)
+            const conditionMatched = ifHasConditional
+                ? this._validateSchemaNode(internalSchema.if, data, path, options, rootData, fieldName).length === 0
+                : this.hooks.validateSchema(this._stripConditionalNodes(internalSchema.if) as JSONSchema, data, { ...options, format: false }).valid
+            const branch = conditionMatched ? internalSchema.then : internalSchema.else
+
+            if (branch !== undefined && ifHasConditional) {
+                errors.push(...this._validateSchemaNode(branch, data, path, options, rootData, fieldName))
+            } else if (branch !== undefined && this._hasConditionalChild(branch)) {
                 errors.push(...this._runConditionalNodes(branch, data, path, options, rootData, fieldName))
             }
         }
 
         return errors
+    }
+
+    private _hasConditionalChild(schema: unknown): boolean {
+        return !!schema && typeof schema === 'object' && this._hasAnyConditional(schema as ConditionalInternalSchema, new WeakSet<object>())
+    }
+
+    private _validateSchemaNode(
+        schema: unknown,
+        data: unknown,
+        path: string,
+        options: ValidateOptions,
+        rootData: Record<string, unknown>,
+        fieldName: string | null
+    ): ValidationErrorItem[] {
+        const clean = this._stripConditionalNodes(schema) as JSONSchema
+        const errors: ValidationErrorItem[] = []
+        const baseResult = this.hooks.validateSchema(clean, data, { ...options, format: false })
+
+        if (!baseResult.valid) {
+            errors.push(...(baseResult.errors ?? []).map(err => this._prefixError(err, path)))
+        }
+        errors.push(...this._runConditionalNodes(schema, data, path, options, rootData, fieldName))
+        return errors
+    }
+
+    private _createPatternMatcher(pattern: string): RegExp | null {
+        try {
+            return new RegExp(pattern)
+        } catch {
+            return null
+        }
+    }
+
+    private _createPatternMatchers(patternProperties: unknown): RegExp[] {
+        if (!patternProperties || typeof patternProperties !== 'object' || Array.isArray(patternProperties)) return []
+        return Object.keys(patternProperties as Record<string, unknown>)
+            .map(pattern => this._createPatternMatcher(pattern))
+            .filter((matcher): matcher is RegExp => matcher !== null)
+    }
+
+    private _createKeywordError(keyword: string, path: string, message: string): ValidationErrorItem {
+        const errorPath = path || 'value'
+        return {
+            message,
+            path: errorPath,
+            keyword,
+            params: {},
+            field: errorPath,
+            type: keyword,
+        }
     }
 
     private _prefixError(err: ValidationErrorItem, path: string): ValidationErrorItem {

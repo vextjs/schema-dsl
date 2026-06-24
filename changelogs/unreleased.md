@@ -2,6 +2,7 @@
 
 ## 2026-06-23
 
+- Fixed conditional validation execution in JSON Schema applicators including `patternProperties`, `additionalProperties`, `propertyNames`, `contains`, `prefixItems`, and `dependentSchemas`; also tightened raw JSON Schema string keyword detection and PostgreSQL export loss reporting for CHECK-backed scalar constraints.
 - Fixed raw JSON Schema input detection so keyword-only schemas such as `{ enum: [...] }`, `{ const: ... }`, and Draft 7 boolean schemas are treated as JSON Schema without stealing DSL object definitions whose field names collide with JSON Schema keywords.
 - Fixed runtime and conditional branch schema classification so DSL object inputs such as `{ properties: { enabled: 'boolean!' } }` still compile as schema-dsl definitions, while raw JSON Schema branches and boolean schemas stay valid passthrough inputs.
 - Aligned `Validator.validateBatch()` with single-item validation so smart coercion, conditionals, and custom validators run consistently.

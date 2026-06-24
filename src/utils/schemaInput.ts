@@ -75,49 +75,6 @@ const ALWAYS_JSON_SCHEMA_KEYWORDS = new Set([
   'const',
 ])
 
-const COMMON_DSL_TYPE_NAMES = new Set([
-  'string',
-  'number',
-  'integer',
-  'int',
-  'boolean',
-  'object',
-  'array',
-  'null',
-  'any',
-  'mixed',
-  'email',
-  'url',
-  'uri',
-  'uuid',
-  'ipv4',
-  'ipv6',
-  'ip',
-  'hostname',
-  'date',
-  'datetime',
-  'time',
-  'binary',
-  'buffer',
-  'objectid',
-  'hexcolor',
-  'macaddress',
-  'cron',
-  'slug',
-  'chinesename',
-  'chinese',
-  'emaildomain',
-  'alphanum',
-  'lower',
-  'upper',
-  'json',
-  'port',
-  'float',
-  'double',
-  'decimal',
-  'enum',
-])
-
 export function isJsonSchemaTypeValue(value: unknown): boolean {
   if (typeof value === 'string') return JSON_SCHEMA_TYPES.has(value)
   if (Array.isArray(value)) {
@@ -134,14 +91,13 @@ function isSchemaOrBoolean(value: unknown): boolean {
   return typeof value === 'boolean' || isRawJsonSchemaLike(value)
 }
 
-function isLikelyDslString(value: unknown): boolean {
+function isExplicitDslString(value: unknown): boolean {
   if (typeof value !== 'string') return false
   const trimmed = value.trim()
   if (!trimmed || /\s/.test(trimmed)) return false
   if (trimmed.endsWith('!') || trimmed.endsWith('?')) return true
   if (trimmed.startsWith('types:') || trimmed.startsWith('enum:')) return true
-  if (trimmed.includes('|') || trimmed.includes(':') || trimmed.includes('<')) return true
-  return COMMON_DSL_TYPE_NAMES.has(trimmed.toLowerCase())
+  return trimmed.includes('|') || trimmed.includes(':') || trimmed.includes('<')
 }
 
 function isJsonSchemaPropertiesMap(value: unknown): boolean {
@@ -152,9 +108,9 @@ function isJsonSchemaPropertiesMap(value: unknown): boolean {
 
 function hasJsonSchemaKeywordShape(key: string, value: unknown): boolean {
   if (key === 'type') return isJsonSchemaTypeValue(value)
-  if (ALWAYS_JSON_SCHEMA_KEYWORDS.has(key)) return !isLikelyDslString(value)
+  if (ALWAYS_JSON_SCHEMA_KEYWORDS.has(key)) return !isExplicitDslString(value)
   if (key === 'default') return false
-  if (JSON_SCHEMA_STRING_KEYWORDS.has(key)) return typeof value === 'string' && !isLikelyDslString(value)
+  if (JSON_SCHEMA_STRING_KEYWORDS.has(key)) return typeof value === 'string' && !isExplicitDslString(value)
   if (JSON_SCHEMA_NUMBER_KEYWORDS.has(key)) return typeof value === 'number'
   if (JSON_SCHEMA_BOOLEAN_KEYWORDS.has(key)) return typeof value === 'boolean'
   if (JSON_SCHEMA_ARRAY_KEYWORDS.has(key)) return Array.isArray(value)

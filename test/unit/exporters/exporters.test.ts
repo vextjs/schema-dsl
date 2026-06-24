@@ -239,6 +239,31 @@ describe('PostgreSQLExporter', () => {
 
       expect(() => PostgreSQLExporter.export('users', schema)).toThrow('PostgreSQL exporter cannot safely map oneOf')
     })
+
+    it('does not report PostgreSQL CHECK-backed scalar constraints as lost', () => {
+      const schema: JSONSchema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string', minLength: 2 },
+          age: { type: 'number', minimum: 18, maximum: 99 },
+          email: { type: 'string', format: 'email' },
+        },
+      }
+
+      const report = new PostgreSQLExporter().exportWithReport('users', schema)
+      const lossKeys = report.losses.map(loss => `${loss.path}:${loss.keyword}`)
+
+      expect(report.output).toContain('CHECK (LENGTH("name") >= 2)')
+      expect(report.output).toContain('CHECK ("age" BETWEEN 18 AND 99)')
+      expect(lossKeys).not.toEqual(expect.arrayContaining([
+        '$.properties.name:minLength',
+        '$.properties.age:minimum',
+        '$.properties.age:maximum',
+      ]))
+      expect(lossKeys).toEqual(expect.arrayContaining([
+        '$.properties.email:format',
+      ]))
+    })
   })
 })
 

@@ -153,6 +153,11 @@ describe('verified issue regressions', () => {
       expect(validate({ enum: ['a', 'b'] }, 'c').valid).toBe(false)
       expect(validate({ const: 1 }, 1).valid).toBe(true)
       expect(validate({ const: 1 }, 2).valid).toBe(false)
+      expect(validate({ const: 'string' }, 'string').valid).toBe(true)
+      expect(validate({ const: 'string' }, 'number').valid).toBe(false)
+      expect(validate({ type: 'string', format: 'email' }, 'user@example.com').valid).toBe(true)
+      expect(validate({ type: 'string', format: 'email' }, 'not-email').valid).toBe(false)
+      expect(validate({ title: 'string' }, 123).valid).toBe(true)
     })
 
     it('P0-33c: validate() keeps DSL object semantics when field names collide with JSON Schema keywords', () => {
@@ -175,7 +180,10 @@ describe('verified issue regressions', () => {
       expect(isRawJsonSchemaLike({ properties: { enabled: true, blocked: false } })).toBe(true)
       expect(isRawJsonSchemaLike({ properties: { enabled: 'boolean!' } })).toBe(false)
       expect(isRawJsonSchemaLike({ const: 'string!' })).toBe(false)
+      expect(isRawJsonSchemaLike({ const: 'string' })).toBe(true)
       expect(isRawJsonSchemaLike({ const: 'active' })).toBe(true)
+      expect(isRawJsonSchemaLike({ format: 'email' })).toBe(true)
+      expect(isRawJsonSchemaLike({ title: 'string' })).toBe(true)
       expect(isJsonSchemaFactoryInputLike({ items: [{ type: 'string' }, false] })).toBe(true)
       expect(isJsonSchemaFactoryInputLike({ contains: true })).toBe(true)
       expect(isJsonSchemaFactoryInputLike({ uniqueItems: true })).toBe(true)
@@ -202,11 +210,110 @@ describe('verified issue regressions', () => {
       const allOfResult = validator.validate({
         allOf: [conditionalNumber],
       }, 'bad')
+      const conditionalIfFalseBranch = validator.validate({
+        if: ConditionalBuilder.start(() => true).then(true).toSchema(),
+        then: false,
+      }, 'value')
 
       expect(arrayResult.valid).toBe(false)
       expect(arrayResult.errors?.[0]?.path).toBe('0')
       expect(allOfResult.valid).toBe(false)
       expect(allOfResult.errors?.[0]?.keyword).toBe('type')
+      expect(conditionalIfFalseBranch.valid).toBe(false)
+    })
+
+    it('P1-21: public Validator executes conditionals in object applicator schemas', () => {
+      const validator = new Validator()
+      const conditionalNumber = ConditionalBuilder.start(() => true).then('number!').toSchema()
+
+      const patternResult = validator.validate({
+        type: 'object',
+        patternProperties: {
+          '^x_': conditionalNumber,
+        },
+      }, { x_name: 'bad' })
+      expect(patternResult.valid).toBe(false)
+      expect(patternResult.errors?.[0]?.path).toBe('x_name')
+      expect(validator.validate({
+        type: 'object',
+        patternProperties: {
+          '^x_': conditionalNumber,
+        },
+      }, { y_name: 'bad' }).valid).toBe(true)
+
+      const additionalResult = validator.validate({
+        type: 'object',
+        properties: {
+          known: { type: 'string' },
+        },
+        patternProperties: {
+          '^x_': { type: 'string' },
+        },
+        additionalProperties: conditionalNumber,
+      }, { known: 'ok', x_skip: 'text', extra: 'bad' })
+      expect(additionalResult.valid).toBe(false)
+      expect(additionalResult.errors?.[0]?.path).toBe('extra')
+      expect(validator.validate({
+        type: 'object',
+        additionalProperties: conditionalNumber,
+      }, { extra: 1 }).valid).toBe(true)
+
+      const propertyNamesResult = validator.validate({
+        type: 'object',
+        propertyNames: conditionalNumber,
+      }, { abc: 1 })
+      expect(propertyNamesResult.valid).toBe(false)
+      expect(propertyNamesResult.errors?.[0]?.path).toBe('abc')
+
+      const dependentResult = validator.validate({
+        type: 'object',
+        dependentSchemas: {
+          enabled: {
+            properties: {
+              value: conditionalNumber,
+            },
+          },
+        },
+      }, { enabled: true, value: 'bad' })
+      expect(dependentResult.valid).toBe(false)
+      expect(dependentResult.errors?.[0]?.path).toBe('value')
+      expect(validator.validate({
+        type: 'object',
+        dependentSchemas: {
+          enabled: {
+            properties: {
+              value: conditionalNumber,
+            },
+          },
+        },
+      }, { value: 'bad' }).valid).toBe(true)
+    })
+
+    it('P1-22: public Validator executes conditionals in array applicator schemas', () => {
+      const validator = new Validator()
+      const conditionalNumber = ConditionalBuilder.start(() => true).then('number!').toSchema()
+
+      const containsResult = validator.validate({
+        type: 'array',
+        contains: conditionalNumber,
+      }, ['bad'])
+      expect(containsResult.valid).toBe(false)
+      expect(containsResult.errors?.[0]?.path).toBe('0')
+      expect(validator.validate({
+        type: 'array',
+        contains: conditionalNumber,
+      }, ['bad', 1]).valid).toBe(true)
+
+      const prefixItemsResult = validator.validate({
+        type: 'array',
+        prefixItems: [conditionalNumber],
+      }, ['bad'])
+      expect(prefixItemsResult.valid).toBe(false)
+      expect(prefixItemsResult.errors?.[0]?.path).toBe('0')
+      expect(validator.validate({
+        type: 'array',
+        prefixItems: [conditionalNumber],
+      }, [1]).valid).toBe(true)
     })
 
     it('P2-08: ConditionalBuilder accepts boolean JSON Schema branches at runtime', () => {
