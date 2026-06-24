@@ -175,6 +175,100 @@ describe('ConditionalValidator', () => {
     expect(compositeResult.errors?.[0]?.path).toBe('score')
   })
 
+  it('covers ref, dependency and invalid-pattern traversal edge branches', () => {
+    const { validator } = createValidator()
+    const conditionalNumber: ConditionalInternalSchema = {
+      _isConditional: true,
+      conditions: [{ then: { type: 'number' } }],
+      _evaluateCondition: () => ({ result: true }),
+    }
+
+    expect(validator.validateWithConditionals({
+      $ref: '#/definitions/Value',
+      definitions: { Value: conditionalNumber },
+    } as ConditionalInternalSchema, 'bad', {}).valid).toBe(false)
+
+    expect(validator.validateWithConditionals({
+      $ref: 'https://example.test/Value',
+      allOf: [conditionalNumber],
+    } as ConditionalInternalSchema, 'bad', {}).valid).toBe(false)
+
+    expect(validator.validateWithConditionals({
+      $ref: '#',
+      allOf: [conditionalNumber],
+    } as ConditionalInternalSchema, 'bad', {}).valid).toBe(false)
+
+    expect(validator.validateWithConditionals({
+      $ref: '#/missing/Value',
+      allOf: [conditionalNumber],
+    } as ConditionalInternalSchema, 'bad', {}).valid).toBe(false)
+
+    expect(validator.validateWithConditionals({
+      $ref: '#/%E0%A4%A/missing',
+      allOf: [conditionalNumber],
+    } as ConditionalInternalSchema, 'bad', {}).valid).toBe(false)
+
+    const dependenciesResult = validator.validateWithConditionals({
+      type: 'object',
+      dependencies: {
+        absent: conditionalNumber,
+        enabled: ['value'],
+        loose: { type: 'number' },
+        gate: conditionalNumber,
+      },
+    } as ConditionalInternalSchema, { enabled: true, loose: true, gate: true }, {})
+
+    expect(dependenciesResult.valid).toBe(false)
+    expect(validator.validateWithConditionals({
+      type: 'object',
+      dependencies: { gate: conditionalNumber },
+    } as ConditionalInternalSchema, 'bad', {}).valid).toBe(true)
+
+    const invalidPatternResult = validator.validateWithConditionals({
+      type: 'object',
+      patternProperties: {
+        '[': conditionalNumber,
+      },
+      additionalProperties: conditionalNumber,
+    } as ConditionalInternalSchema, { extra: 'bad' }, {})
+
+    expect(invalidPatternResult.valid).toBe(false)
+    expect(invalidPatternResult.errors?.[0]?.path).toBe('extra')
+  })
+
+  it('creates not-keyword errors when a conditional not branch matches', () => {
+    const { validator } = createValidator()
+    const conditionalString: ConditionalInternalSchema = {
+      _isConditional: true,
+      conditions: [{ then: { type: 'string' } }],
+      _evaluateCondition: () => ({ result: true }),
+    }
+
+    const result = validator.validateWithConditionals({
+      not: conditionalString,
+    } as ConditionalInternalSchema, 'ok', {})
+
+    expect(result.valid).toBe(false)
+    expect(result.errors?.[0]).toMatchObject({ keyword: 'not', path: 'value' })
+  })
+
+  it('runs conditional branches selected by a plain if schema', () => {
+    const { validator } = createValidator()
+    const conditionalNumber: ConditionalInternalSchema = {
+      _isConditional: true,
+      conditions: [{ then: { type: 'number' } }],
+      _evaluateCondition: () => ({ result: true }),
+    }
+
+    const result = validator.validateWithConditionals({
+      if: { type: 'string' },
+      then: conditionalNumber,
+    } as ConditionalInternalSchema, 'bad', {})
+
+    expect(result.valid).toBe(false)
+    expect(result.errors?.[0]).toMatchObject({ keyword: 'type', path: 'value' })
+  })
+
   it('reports serialized runtime-only conditional schemas explicitly', () => {
     const { validator } = createValidator()
 

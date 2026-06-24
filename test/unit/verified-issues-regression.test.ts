@@ -715,6 +715,27 @@ describe('verified issue regressions', () => {
       expect(omitted.dependentSchemas).toBeUndefined()
       expect(omitted.dependencies).toBeUndefined()
       expect(validate(omitted, { card: '4242' }).valid).toBe(true)
+
+      const kept = SchemaUtils.pick({
+        type: 'object',
+        properties: {
+          card: { type: 'string' },
+          billingAddress: { type: 'string' },
+        },
+        dependentRequired: {
+          card: ['billingAddress'],
+        },
+        dependentSchemas: {
+          card: { required: ['billingAddress'] },
+        },
+        dependencies: {
+          card: ['billingAddress'],
+        },
+      }, ['card', 'billingAddress'])
+
+      expect(kept.dependentRequired).toEqual({ card: ['billingAddress'] })
+      expect(kept.dependentSchemas).toBeUndefined()
+      expect(kept.dependencies).toEqual({ card: ['billingAddress'] })
     })
 
     it('P2-10: SchemaHelper stable comparison distinguishes function bodies and handles circular arrays', () => {
@@ -722,12 +743,24 @@ describe('verified issue regressions', () => {
       const schemaB = { validate: () => false }
       const circular: unknown[] = []
       circular.push(circular)
+      const dateSchema = { createdAt: new Date('2026-06-24T00:00:00.000Z') }
+      const regexSchema = { pattern: /^user_/i }
+      const mixedPrimitiveSchema = {
+        count: BigInt(10),
+        missing: undefined,
+        tag: Symbol.for('schema-dsl:test'),
+      }
 
       expect(SchemaHelper.compareSchemas(schemaA as any, schemaB as any)).toBe(false)
       expect(SchemaHelper.generateSchemaId(schemaA as any)).not.toBe(SchemaHelper.generateSchemaId(schemaB as any))
       expect(() => SchemaHelper.generateSchemaId({ type: 'array', items: circular } as any)).not.toThrow()
       expect(SchemaHelper.generateSchemaId({ type: 'array', items: circular } as any)).toBe(
         SchemaHelper.generateSchemaId({ type: 'array', items: circular } as any)
+      )
+      expect(SchemaHelper.generateSchemaId(dateSchema as any)).toBe(SchemaHelper.generateSchemaId({ ...dateSchema } as any))
+      expect(SchemaHelper.generateSchemaId(regexSchema as any)).toBe(SchemaHelper.generateSchemaId({ pattern: /^user_/i } as any))
+      expect(SchemaHelper.generateSchemaId(mixedPrimitiveSchema as any)).toBe(
+        SchemaHelper.generateSchemaId({ ...mixedPrimitiveSchema } as any)
       )
     })
 
