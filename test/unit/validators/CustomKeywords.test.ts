@@ -4,8 +4,10 @@
  * Tests for the 15 custom validators added in v1.0.2
  */
 
+import Ajv from 'ajv';
 import { describe, it, expect } from 'vitest';
 import { dsl, validate, Validator } from '../../../src/index.js';
+import { CustomKeywords } from '../../../src/validators/CustomKeywords.js';
 
 describe('CustomKeywords - v1.0.2 new validators', () => {
 
@@ -1281,6 +1283,341 @@ describe('CustomKeywords - v1.0.2 new validators', () => {
       expect(validator.validate({ type: 'string', _customValidators: [() => Promise.resolve(true)] } as any, 'value').errorMessage).toContain('Async validation not supported')
       expect(validator.validate({ type: 'string', _customValidators: ['ignored', () => true] } as any, 'value').valid).toBe(true)
       expect(validator.validate({ type: 'string', _customValidators: 'not-an-array' } as any, 'value').valid).toBe(true)
+    })
+
+    it('does not invoke declared async custom validators in sync validate()', async () => {
+      const validator = new Validator()
+      let syncCalls = 0
+      let conditionalCalls = 0
+      const schema = {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            _customValidators: [
+              async () => {
+                syncCalls += 1
+                return true
+              },
+            ],
+          },
+        },
+      } as any
+
+      const syncResult = validator.validate(schema, { name: 'Ada' })
+      expect(syncResult.valid).toBe(false)
+      expect(syncResult.errorMessage).toContain('Async validation not supported')
+      expect(syncCalls).toBe(0)
+
+      await expect(validator.validateAsync(schema, { name: 'Ada' })).resolves.toEqual({ name: 'Ada' })
+      expect(syncCalls).toBe(1)
+
+      const conditional = dsl
+        .if(() => true)
+        .then({
+          type: 'string',
+          _customValidators: [
+            async () => {
+              conditionalCalls += 1
+              return true
+            },
+          ],
+        })
+        .toSchema()
+
+      const conditionalSync = validator.validate(conditional, 'ok')
+      expect(conditionalSync.valid).toBe(false)
+      expect(conditionalSync.errorMessage).toContain('Async validation not supported')
+      expect(conditionalCalls).toBe(0)
+
+      await expect(validator.validateAsync(conditional, 'ok')).resolves.toBe('ok')
+      expect(conditionalCalls).toBe(1)
+    })
+
+    it('guards declared async custom validators across sync schema traversal paths', () => {
+      const validator = new Validator()
+
+      const cases: Array<{ name: string; schema: any; data: unknown }> = [
+        {
+          name: 'toSchema',
+          schema: {
+            toSchema: () => ({
+              type: 'string',
+              _customValidators: [async () => true],
+            }),
+          },
+          data: 'ok',
+        },
+        {
+          name: 'nested properties',
+          schema: {
+            type: 'object',
+            properties: {
+              user: {
+                type: 'object',
+                properties: {
+                  name: {
+                    type: 'string',
+                    _customValidators: [async () => true],
+                  },
+                },
+              },
+            },
+          },
+          data: { user: { name: 'Ada' } },
+        },
+        {
+          name: 'composition',
+          schema: {
+            allOf: [{
+              type: 'string',
+              _customValidators: [async () => true],
+            }],
+          },
+          data: 'ok',
+        },
+        {
+          name: 'tuple items',
+          schema: {
+            type: 'array',
+            items: [{
+              type: 'string',
+              _customValidators: [async () => true],
+            }],
+          },
+          data: ['ok'],
+        },
+        {
+          name: 'prefixItems',
+          schema: {
+            type: 'array',
+            prefixItems: [{
+              type: 'string',
+              _customValidators: [async () => true],
+            }],
+          },
+          data: ['ok'],
+        },
+        {
+          name: 'dependentSchemas',
+          schema: {
+            type: 'object',
+            dependentSchemas: {
+              name: {
+                properties: {
+                  nickname: {
+                    type: 'string',
+                    _customValidators: [async () => true],
+                  },
+                },
+              },
+            },
+          },
+          data: { name: 'Ada', nickname: 'A' },
+        },
+        {
+          name: 'additionalProperties',
+          schema: {
+            type: 'object',
+            additionalProperties: {
+              type: 'string',
+              _customValidators: [async () => true],
+            },
+          },
+          data: { name: 'Ada' },
+        },
+        {
+          name: 'propertyNames',
+          schema: {
+            type: 'object',
+            propertyNames: {
+              type: 'string',
+              _customValidators: [async () => true],
+            },
+          },
+          data: { name: 'Ada' },
+        },
+        {
+          name: 'contains',
+          schema: {
+            type: 'array',
+            contains: {
+              type: 'string',
+              _customValidators: [async () => true],
+            },
+          },
+          data: ['ok'],
+        },
+        {
+          name: 'local ref',
+          schema: {
+            type: 'object',
+            properties: {
+              value: { $ref: '#/$defs/Value' },
+            },
+            $defs: {
+              Value: {
+                type: 'string',
+                _customValidators: [async () => true],
+              },
+            },
+          },
+          data: { value: 'ok' },
+        },
+      ]
+
+      for (const testCase of cases) {
+        let calls = 0
+        const schemaText = JSON.stringify(testCase.schema)
+        const schema = JSON.parse(schemaText, (_key, value) => value)
+        const attachCalls = (node: unknown): void => {
+          if (Array.isArray(node)) {
+            node.forEach(attachCalls)
+            return
+          }
+          if (!node || typeof node !== 'object') return
+          const record = node as Record<string, unknown>
+          if (Array.isArray(record['_customValidators'])) {
+            record['_customValidators'] = [
+              async () => {
+                calls += 1
+                return true
+              },
+            ]
+          }
+          Object.values(record).forEach(attachCalls)
+        }
+
+        if (testCase.name === 'toSchema') {
+          schema.toSchema = () => ({
+            type: 'string',
+            _customValidators: [
+              async () => {
+                calls += 1
+                return true
+              },
+            ],
+          })
+        } else {
+          attachCalls(schema)
+        }
+
+        const result = validator.validate(schema, testCase.data)
+        expect(result.valid, testCase.name).toBe(false)
+        expect(result.errorMessage, testCase.name).toContain('Async validation not supported')
+        expect(calls, testCase.name).toBe(0)
+      }
+    })
+
+    it('does not reject unreferenced async custom validators in $defs during sync validate()', () => {
+      const validator = new Validator()
+      let calls = 0
+      const schema = {
+        type: 'object',
+        $defs: {
+          Unused: {
+            type: 'string',
+            _customValidators: [
+              async () => {
+                calls += 1
+                return true
+              },
+            ],
+          },
+        },
+      } as any
+
+      const result = validator.validate(schema, {})
+      expect(result.valid).toBe(true)
+      expect(calls).toBe(0)
+    })
+
+    it('runs referenced async custom validators behind local refs in validateAsync()', async () => {
+      const validator = new Validator()
+      let referencedCalls = 0
+      let unusedCalls = 0
+      const schema = {
+        type: 'object',
+        properties: {
+          value: { $ref: '#/$defs/Value' },
+        },
+        $defs: {
+          Value: {
+            type: 'string',
+            _customValidators: [
+              async () => {
+                referencedCalls += 1
+                return true
+              },
+            ],
+          },
+          Unused: {
+            type: 'string',
+            _customValidators: [
+              async () => {
+                unusedCalls += 1
+                return true
+              },
+            ],
+          },
+        },
+      } as any
+
+      const syncResult = validator.validate(schema, { value: 'ok' })
+      expect(syncResult.valid).toBe(false)
+      expect(syncResult.errorMessage).toContain('Async validation not supported')
+      expect(referencedCalls).toBe(0)
+      expect(unusedCalls).toBe(0)
+
+      await expect(validator.validateAsync(schema, { value: 'ok' })).resolves.toEqual({ value: 'ok' })
+      expect(referencedCalls).toBe(1)
+      expect(unusedCalls).toBe(0)
+    })
+
+    it('guards declared async custom validators in conditional else branches', async () => {
+      const validator = new Validator()
+      let calls = 0
+      const conditional = dsl
+        .if(() => false)
+        .then('string')
+        .else({
+          type: 'string',
+          _customValidators: [
+            async () => {
+              calls += 1
+              return true
+            },
+          ],
+        })
+        .toSchema()
+
+      const syncResult = validator.validate(conditional, 'ok')
+      expect(syncResult.valid).toBe(false)
+      expect(syncResult.errorMessage).toContain('Async validation not supported')
+      expect(calls).toBe(0)
+
+      await expect(validator.validateAsync(conditional, 'ok')).resolves.toBe('ok')
+      expect(calls).toBe(1)
+    })
+
+    it('guards declared async custom validators when AJV keyword is invoked directly', () => {
+      const ajv = new Ajv()
+      let calls = 0
+      CustomKeywords.registerCustomValidatorsKeyword(ajv)
+
+      const compiled = ajv.compile({
+        type: 'string',
+        _customValidators: [
+          async () => {
+            calls += 1
+            return true
+          },
+        ],
+      } as any)
+
+      expect(compiled('ok')).toBe(false)
+      expect(calls).toBe(0)
+      expect(compiled.errors?.[0]?.message).toContain('Async validation not supported')
     })
 
     it('reports regex keyword errors for unsafe and invalid patterns', () => {

@@ -272,7 +272,7 @@ export class Validator {
     const customErr =
       typeof resolvedSchema === 'function'
         ? null
-        : await this._runCustomValidators(resolvedSchema, result.data, '', options)
+        : await this._runCustomValidators(resolvedSchema, result.data, '', options, resolvedSchema)
     if (customErr) {
       const { ValidationError } = await import('../errors/ValidationError.js')
       throw new ValidationError([customErr], data)
@@ -358,14 +358,30 @@ export class Validator {
     schema: JSONSchemaInput,
     data: unknown,
     path = '',
-    options: ValidateOptions = {}
+    options: ValidateOptions = {},
+    rootSchema: unknown = schema,
+    seenRefs = new Set<string>()
   ): Promise<ValidationErrorItem | null> {
     if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return null
 
-    const conditionalErr = await this._runCustomValidatorsForConditionalRuntime(schema, data, path, options)
+    const source = schema as Record<string, unknown>
+    const ref = source['$ref']
+    if (typeof ref === 'string' && !seenRefs.has(ref)) {
+      const resolved = this._resolveLocalRef(rootSchema, ref)
+      if (resolved && resolved !== schema) {
+        seenRefs.add(ref)
+        try {
+          return await this._runCustomValidators(resolved as JSONSchemaInput, data, path, options, rootSchema, seenRefs)
+        } finally {
+          seenRefs.delete(ref)
+        }
+      }
+    }
+
+    const conditionalErr = await this._runCustomValidatorsForConditionalRuntime(schema, data, path, options, rootSchema, seenRefs)
     if (conditionalErr) return conditionalErr
 
-    const validators = (schema as Record<string, unknown>)['_customValidators'] as Array<(v: unknown) => unknown> | undefined
+    const validators = source['_customValidators'] as Array<(v: unknown) => unknown> | undefined
     if (validators?.length) {
       for (const fn of validators) {
         try {
@@ -419,7 +435,7 @@ export class Validator {
       for (const [key, childSchema] of Object.entries(schema.properties)) {
         if (!Object.prototype.hasOwnProperty.call(record, key)) continue
         const childPath = path ? `${path}/${key}` : key
-        const err = await this._runCustomValidators(childSchema, record[key], childPath, options)
+        const err = await this._runCustomValidators(childSchema, record[key], childPath, options, rootSchema, seenRefs)
         if (err) return err
       }
     }
@@ -436,7 +452,7 @@ export class Validator {
         for (const [key, value] of Object.entries(record)) {
           if (!matcher.test(key)) continue
           const childPath = path ? `${path}/${key}` : key
-          const err = await this._runCustomValidators(childSchema, value, childPath, options)
+          const err = await this._runCustomValidators(childSchema, value, childPath, options, rootSchema, seenRefs)
           if (err) return err
         }
       }
@@ -458,7 +474,7 @@ export class Validator {
         if (declaredProperties.has(key)) continue
         if (patternMatchers.some(matcher => matcher.test(key))) continue
         const childPath = path ? `${path}/${key}` : key
-        const err = await this._runCustomValidators(schema.additionalProperties as JSONSchema, value, childPath, options)
+        const err = await this._runCustomValidators(schema.additionalProperties as JSONSchema, value, childPath, options, rootSchema, seenRefs)
         if (err) return err
       }
     }
@@ -466,15 +482,15 @@ export class Validator {
     if (schema.propertyNames && data && typeof data === 'object' && !Array.isArray(data)) {
       for (const key of Object.keys(data as Record<string, unknown>)) {
         const childPath = path ? `${path}/${key}` : key
-        const err = await this._runCustomValidators(schema.propertyNames as JSONSchema, key, childPath, options)
+        const err = await this._runCustomValidators(schema.propertyNames as JSONSchema, key, childPath, options, rootSchema, seenRefs)
         if (err) return err
       }
     }
 
-    const dependenciesErr = await this._runCustomValidatorsForDependencies(schema.dependencies, data, path, options)
+    const dependenciesErr = await this._runCustomValidatorsForDependencies(schema.dependencies, data, path, options, rootSchema, seenRefs)
     if (dependenciesErr) return dependenciesErr
 
-    const dependentSchemasErr = await this._runCustomValidatorsForDependencies(schema.dependentSchemas, data, path, options)
+    const dependentSchemasErr = await this._runCustomValidatorsForDependencies(schema.dependentSchemas, data, path, options, rootSchema, seenRefs)
     if (dependentSchemasErr) return dependentSchemasErr
 
     if (schema.items && Array.isArray(data)) {
@@ -483,7 +499,7 @@ export class Validator {
         const childSchema = itemSchemas ? itemSchemas[i] : schema.items
         if (!childSchema || Array.isArray(childSchema)) continue
         const childPath = `${path}/${i}`.replace(/^\//, '')
-        const err = await this._runCustomValidators(childSchema, data[i], childPath, options)
+        const err = await this._runCustomValidators(childSchema, data[i], childPath, options, rootSchema, seenRefs)
         if (err) return err
       }
     }
@@ -494,7 +510,7 @@ export class Validator {
         const childSchema = prefixItems[i] as JSONSchema | undefined
         if (!childSchema) continue
         const childPath = `${path}/${i}`.replace(/^\//, '')
-        const err = await this._runCustomValidators(childSchema, data[i], childPath, options)
+        const err = await this._runCustomValidators(childSchema, data[i], childPath, options, rootSchema, seenRefs)
         if (err) return err
       }
     }
@@ -506,7 +522,7 @@ export class Validator {
       for (let i = 0; i < data.length; i++) {
         if (!this._quickValidate(strippedContains, data[i])) continue
         const childPath = `${path}/${i}`.replace(/^\//, '')
-        const err = await this._runCustomValidators(containsSchema, data[i], childPath, options)
+        const err = await this._runCustomValidators(containsSchema, data[i], childPath, options, rootSchema, seenRefs)
         if (!err) return null
         firstContainsErr ??= err
       }
@@ -516,20 +532,20 @@ export class Validator {
     const allOfSchemas = schema.allOf
     if (Array.isArray(allOfSchemas)) {
       for (const childSchema of allOfSchemas) {
-        const err = await this._runCustomValidators(childSchema, data, path, options)
+        const err = await this._runCustomValidators(childSchema, data, path, options, rootSchema, seenRefs)
         if (err) return err
       }
     }
 
     const anyOfSchemas = schema.anyOf
     if (Array.isArray(anyOfSchemas)) {
-      const err = await this._runCustomValidatorsForAnyPassingBranch(anyOfSchemas, data, path, options)
+      const err = await this._runCustomValidatorsForAnyPassingBranch(anyOfSchemas, data, path, options, rootSchema, seenRefs)
       if (err) return err
     }
 
     const oneOfSchemas = schema.oneOf
     if (Array.isArray(oneOfSchemas)) {
-      const err = await this._runCustomValidatorsForMatchingBranches(oneOfSchemas, data, path, options)
+      const err = await this._runCustomValidatorsForMatchingBranches(oneOfSchemas, data, path, options, rootSchema, seenRefs)
       if (err) return err
     }
 
@@ -537,7 +553,7 @@ export class Validator {
       const ifSchema = this._stripCustomValidators(schema.if)
       const branch = this._quickValidate(ifSchema, data) ? schema.then : schema.else
       if (branch) {
-        const err = await this._runCustomValidators(branch, data, path, options)
+        const err = await this._runCustomValidators(branch, data, path, options, rootSchema, seenRefs)
         if (err) return err
       }
     }
@@ -549,7 +565,9 @@ export class Validator {
     schema: JSONSchemaInput,
     data: unknown,
     path: string,
-    options: ValidateOptions
+    options: ValidateOptions,
+    rootSchema: unknown,
+    seenRefs: Set<string>
   ): Promise<ValidationErrorItem | null> {
     const runtimeState = (schema as { [CONDITIONAL_RUNTIME_STATE]?: ConditionalRuntimeState })[CONDITIONAL_RUNTIME_STATE]
     if (!runtimeState) return null
@@ -559,11 +577,11 @@ export class Validator {
       if (!evaluated.result) continue
 
       const branch = this._normalizeCustomValidatorSchema((condition as Record<string, unknown>)['then'])
-      return branch ? this._runCustomValidators(branch, data, path, options) : null
+      return branch ? this._runCustomValidators(branch, data, path, options, rootSchema, seenRefs) : null
     }
 
     const elseSchema = this._normalizeCustomValidatorSchema(runtimeState.elseSchema)
-    return elseSchema ? this._runCustomValidators(elseSchema, data, path, options) : null
+    return elseSchema ? this._runCustomValidators(elseSchema, data, path, options, rootSchema, seenRefs) : null
   }
 
   private _normalizeCustomValidatorSchema(schema: unknown): JSONSchemaInput | null {
@@ -579,7 +597,9 @@ export class Validator {
     dependencies: unknown,
     data: unknown,
     path: string,
-    options: ValidateOptions
+    options: ValidateOptions,
+    rootSchema: unknown,
+    seenRefs: Set<string>
   ): Promise<ValidationErrorItem | null> {
     if (!dependencies || typeof dependencies !== 'object' || Array.isArray(dependencies)) return null
     if (!data || typeof data !== 'object' || Array.isArray(data)) return null
@@ -588,7 +608,7 @@ export class Validator {
     for (const [key, childSchema] of Object.entries(dependencies as Record<string, JSONSchema | string[]>)) {
       if (!Object.prototype.hasOwnProperty.call(record, key)) continue
       if (Array.isArray(childSchema)) continue
-      const err = await this._runCustomValidators(childSchema, data, path, options)
+      const err = await this._runCustomValidators(childSchema, data, path, options, rootSchema, seenRefs)
       if (err) return err
     }
     return null
@@ -598,14 +618,16 @@ export class Validator {
     schemas: JSONSchemaInput[],
     data: unknown,
     path: string,
-    options: ValidateOptions
+    options: ValidateOptions,
+    rootSchema: unknown,
+    seenRefs: Set<string>
   ): Promise<ValidationErrorItem | null> {
     let firstErr: ValidationErrorItem | null = null
 
     for (const childSchema of schemas) {
       const stripped = this._stripCustomValidators(childSchema)
       if (!this._quickValidate(stripped, data)) continue
-      const err = await this._runCustomValidators(childSchema, data, path, options)
+      const err = await this._runCustomValidators(childSchema, data, path, options, rootSchema, seenRefs)
       if (!err) return null
       firstErr ??= err
     }
@@ -617,12 +639,14 @@ export class Validator {
     schemas: JSONSchemaInput[],
     data: unknown,
     path: string,
-    options: ValidateOptions
+    options: ValidateOptions,
+    rootSchema: unknown,
+    seenRefs: Set<string>
   ): Promise<ValidationErrorItem | null> {
     for (const childSchema of schemas) {
       const stripped = this._stripCustomValidators(childSchema)
       if (!this._quickValidate(stripped, data)) continue
-      const err = await this._runCustomValidators(childSchema, data, path, options)
+      const err = await this._runCustomValidators(childSchema, data, path, options, rootSchema, seenRefs)
       if (err) return err
     }
     return null
@@ -733,6 +757,14 @@ export class Validator {
     }
 
     const internalSchema = (typeof schema === 'object' ? schema : {}) as InternalSchema
+
+    if (typeof schema === 'object') {
+      const asyncValidatorPath = this._findDeclaredAsyncCustomValidatorPath(schema, data, '', schema)
+      if (asyncValidatorPath !== null) {
+        const err = this._createAsyncValidationNotSupportedError(asyncValidatorPath, options)
+        return { valid: false, data, errors: [err], errorMessage: err.message }
+      }
+    }
 
     if (this._shouldSmartCoerce(options) && typeof schema === 'object') {
       data = this._smartCoerceTypes(data, internalSchema) as T
@@ -891,6 +923,233 @@ export class Validator {
       && options.smartCoerce !== false
       && options['coerceTypes'] !== false
       && options['__schemaDslPreCoerced'] !== true
+  }
+
+  private _findDeclaredAsyncCustomValidatorPath(
+    schema: unknown,
+    data: unknown,
+    path = '',
+    rootSchema: unknown = schema,
+    seen = new WeakSet<object>(),
+    seenRefs = new Set<string>()
+  ): string | null {
+    if (!schema || typeof schema !== 'object') return null
+    const schemaObject = schema as object
+    if (seen.has(schemaObject)) return null
+    seen.add(schemaObject)
+
+    const source = schema as Record<string, unknown>
+    if (typeof source['toSchema'] === 'function') {
+      const resolvedSchema = (source['toSchema'] as () => unknown)()
+      return this._findDeclaredAsyncCustomValidatorPath(resolvedSchema, data, path, resolvedSchema, seen, seenRefs)
+    }
+
+    const ref = source['$ref']
+    if (typeof ref === 'string' && !seenRefs.has(ref)) {
+      const resolved = this._resolveLocalRef(rootSchema, ref)
+      if (resolved && resolved !== schema) {
+        seenRefs.add(ref)
+        const found = this._findDeclaredAsyncCustomValidatorPath(resolved, data, path, rootSchema, seen, seenRefs)
+        seenRefs.delete(ref)
+        if (found !== null) return found
+      }
+    }
+
+    const validators = source['_customValidators']
+    if (Array.isArray(validators) && validators.some(validator => this._isDeclaredAsyncFunction(validator))) {
+      return path
+    }
+
+    const runtimeState = (source as { [CONDITIONAL_RUNTIME_STATE]?: ConditionalRuntimeState })[CONDITIONAL_RUNTIME_STATE]
+    if (runtimeState) {
+      for (const condition of runtimeState.conditions) {
+        const evaluated = runtimeState.evaluateCondition(condition, data)
+        if (!evaluated.result) continue
+        const branch = this._normalizeCustomValidatorSchema((condition as Record<string, unknown>)['then'])
+        const found = this._findDeclaredAsyncCustomValidatorPath(branch, data, path, rootSchema, seen, seenRefs)
+        if (found !== null) return found
+      }
+      const elseSchema = this._normalizeCustomValidatorSchema(runtimeState.elseSchema)
+      const found = this._findDeclaredAsyncCustomValidatorPath(elseSchema, data, path, rootSchema, seen, seenRefs)
+      if (found !== null) return found
+    }
+
+    if (source['properties'] && data && typeof data === 'object' && !Array.isArray(data)) {
+      const record = data as Record<string, unknown>
+      const properties = source['properties'] as Record<string, unknown>
+      for (const [key, child] of Object.entries(properties as Record<string, unknown>)) {
+        if (!Object.prototype.hasOwnProperty.call(record, key)) continue
+        const found = this._findDeclaredAsyncCustomValidatorPath(child, record[key], this._joinPath(path, key), rootSchema, seen, seenRefs)
+        if (found !== null) return found
+      }
+    }
+
+    if (source['patternProperties'] && data && typeof data === 'object' && !Array.isArray(data)) {
+      const record = data as Record<string, unknown>
+      for (const [pattern, child] of Object.entries(source['patternProperties'] as Record<string, unknown>)) {
+        const matcher = this._createPatternMatcher(pattern)
+        if (!matcher) continue
+        for (const [key, value] of Object.entries(record)) {
+          if (!matcher.test(key)) continue
+          const found = this._findDeclaredAsyncCustomValidatorPath(child, value, this._joinPath(path, key), rootSchema, seen, seenRefs)
+          if (found !== null) return found
+        }
+      }
+    }
+
+    if (source['additionalProperties'] && typeof source['additionalProperties'] === 'object' && data && typeof data === 'object' && !Array.isArray(data)) {
+      const record = data as Record<string, unknown>
+      const declaredProperties = new Set(Object.keys((source['properties'] as Record<string, unknown> | undefined) ?? {}))
+      const patternEntries = Object.entries((source['patternProperties'] as Record<string, unknown> | undefined) ?? {})
+      const patternMatchers = patternEntries
+        .map(([pattern]) => this._createPatternMatcher(pattern))
+        .filter((matcher): matcher is RegExp => matcher !== null)
+
+      for (const [key, value] of Object.entries(record)) {
+        if (declaredProperties.has(key)) continue
+        if (patternMatchers.some(matcher => matcher.test(key))) continue
+        const found = this._findDeclaredAsyncCustomValidatorPath(source['additionalProperties'], value, this._joinPath(path, key), rootSchema, seen, seenRefs)
+        if (found !== null) return found
+      }
+    }
+
+    if (source['propertyNames'] && data && typeof data === 'object' && !Array.isArray(data)) {
+      for (const key of Object.keys(data as Record<string, unknown>)) {
+        const found = this._findDeclaredAsyncCustomValidatorPath(source['propertyNames'], key, this._joinPath(path, key), rootSchema, seen, seenRefs)
+        if (found !== null) return found
+      }
+    }
+
+    for (const mapKey of ['dependencies', 'dependentSchemas']) {
+      const dependencies = source[mapKey]
+      if (!dependencies || typeof dependencies !== 'object' || Array.isArray(dependencies)) continue
+      if (!data || typeof data !== 'object' || Array.isArray(data)) continue
+      const record = data as Record<string, unknown>
+      for (const [key, child] of Object.entries(dependencies as Record<string, unknown>)) {
+        if (!Object.prototype.hasOwnProperty.call(record, key)) continue
+        if (Array.isArray(child)) continue
+        const found = this._findDeclaredAsyncCustomValidatorPath(child, data, path, rootSchema, seen, seenRefs)
+        if (found !== null) return found
+      }
+    }
+
+    if (source['items'] && Array.isArray(data)) {
+      const itemSchemas = Array.isArray(source['items']) ? source['items'] as unknown[] : null
+      for (let index = 0; index < data.length; index++) {
+        const child = itemSchemas ? itemSchemas[index] : source['items']
+        if (!child || Array.isArray(child)) continue
+        const found = this._findDeclaredAsyncCustomValidatorPath(child, data[index], this._joinPath(path, String(index)), rootSchema, seen, seenRefs)
+        if (found !== null) return found
+      }
+    }
+
+    const prefixItems = source['prefixItems']
+    if (Array.isArray(prefixItems) && Array.isArray(data)) {
+      for (let index = 0; index < data.length && index < prefixItems.length; index++) {
+        const child = prefixItems[index]
+        if (!child) continue
+        const found = this._findDeclaredAsyncCustomValidatorPath(child, data[index], this._joinPath(path, String(index)), rootSchema, seen, seenRefs)
+        if (found !== null) return found
+      }
+    }
+
+    if (source['contains'] && Array.isArray(data)) {
+      const strippedContains = this._stripCustomValidators(source['contains'] as JSONSchemaInput)
+      for (let index = 0; index < data.length; index++) {
+        if (!this._quickValidate(strippedContains, data[index])) continue
+        const found = this._findDeclaredAsyncCustomValidatorPath(source['contains'], data[index], this._joinPath(path, String(index)), rootSchema, seen, seenRefs)
+        if (found !== null) return found
+      }
+    }
+
+    const allOfSchemas = source['allOf']
+    if (Array.isArray(allOfSchemas)) {
+      for (const child of allOfSchemas) {
+        const found = this._findDeclaredAsyncCustomValidatorPath(child, data, path, rootSchema, seen, seenRefs)
+        if (found !== null) return found
+      }
+    }
+
+    for (const listKey of ['anyOf', 'oneOf']) {
+      const list = source[listKey]
+      if (!Array.isArray(list)) continue
+      for (const child of list) {
+        const stripped = this._stripCustomValidators(child as JSONSchemaInput)
+        if (!this._quickValidate(stripped, data)) continue
+        const found = this._findDeclaredAsyncCustomValidatorPath(child, data, path, rootSchema, seen, seenRefs)
+        if (found !== null) return found
+      }
+    }
+
+    const ifSchema = source['if']
+    if (ifSchema) {
+      const found = this._findDeclaredAsyncCustomValidatorPath(ifSchema, data, path, rootSchema, seen, seenRefs)
+      if (found !== null) return found
+      const branch = this._quickValidate(this._stripCustomValidators(ifSchema as JSONSchemaInput), data) ? source['then'] : source['else']
+      const branchFound = this._findDeclaredAsyncCustomValidatorPath(branch, data, path, rootSchema, seen, seenRefs)
+      if (branchFound !== null) return branchFound
+    }
+
+    for (const key of ['not', 'unevaluatedItems', 'unevaluatedProperties']) {
+      const found = this._findDeclaredAsyncCustomValidatorPath(source[key], data, path, rootSchema, seen, seenRefs)
+      if (found !== null) return found
+    }
+
+    return null
+  }
+
+  private _isDeclaredAsyncFunction(value: unknown): boolean {
+    return typeof value === 'function' && value.constructor.name === 'AsyncFunction'
+  }
+
+  private _createAsyncValidationNotSupportedError(path: string, options: ValidateOptions): ValidationErrorItem {
+    const message = this._getMessageText('ASYNC_VALIDATION_NOT_SUPPORTED', {}, options, 'customValidator')
+    return {
+      message,
+      path,
+      keyword: '_customValidators',
+      kind: 'schema',
+      code: 'ASYNC_VALIDATION_NOT_SUPPORTED',
+      params: {},
+      field: path,
+      type: '_customValidators',
+    }
+  }
+
+  private _joinPath(base: string, child: string): string {
+    return base ? `${base}/${child}` : child
+  }
+
+  private _resolveLocalRef(rootSchema: unknown, ref: string): unknown {
+    if (!ref.startsWith('#')) return undefined
+    if (ref === '#') return rootSchema
+    if (!ref.startsWith('#/')) return undefined
+
+    let current = rootSchema
+    for (const rawSegment of ref.slice(2).split('/')) {
+      if (!current || typeof current !== 'object') return undefined
+      const segment = this._decodeJsonPointerSegment(rawSegment)
+      current = (current as Record<string, unknown>)[segment]
+    }
+    return current
+  }
+
+  private _decodeJsonPointerSegment(segment: string): string {
+    let decoded = segment
+    try {
+      decoded = decodeURIComponent(segment)
+    } catch {
+      decoded = segment
+    }
+    return decoded.replace(/~1/g, '/').replace(/~0/g, '~')
+  }
+
+  private _createPatternMatcher(pattern: string): RegExp | null {
+    try {
+      return new RegExp(pattern)
+    } catch {
+      return null
+    }
   }
 
   private _coerceNumber(value: unknown): unknown {

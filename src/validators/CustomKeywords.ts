@@ -70,6 +70,14 @@ export class CustomKeywords {
 
       for (const validator of validators as unknown[]) {
         if (typeof validator !== 'function') continue
+        if (validator.constructor.name === 'AsyncFunction') {
+          validate.errors = [{
+            keyword: '_customValidators',
+            message: 'Async validation not supported in sync validate(). Use validateAsync() instead.',
+            params: {},
+          }]
+          return false
+        }
         try {
           const result = (validator as (d: unknown) => unknown)(data)
 
