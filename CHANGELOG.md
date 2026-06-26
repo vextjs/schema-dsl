@@ -8,19 +8,51 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+No changes yet.
+
+---
+
+## [2.1.0] - 2026-06-26
+
 ### Added
 
+- Added side-effect controlled package entries: `schema-dsl/pure`, `schema-dsl/compat`, `schema-dsl/register-string`, `schema-dsl/string-types`, `schema-dsl/runtime`, `schema-dsl/transform`, and `schema-dsl/esbuild`.
+- Added runtime isolation with `createRuntime()`, instance-level locale/messages/type registry/cache state, and lifecycle helpers.
+- Added the shared `s` / `dsl` namespace API, including chainable factories and the `.require()` alias.
+- Added compile-time String DSL transform coverage and optional esbuild adapter support.
 - Added declarative custom extension registration with `registerExtensions([... ] as const)` and `runtime.registerExtensions([...])`, so one definition can power pure DSL strings, `s('...')` builder seeds, and typed `s.xxx()` factories.
 - Added extension `params` parsing, parameter defaults, factory object/positional arguments, `segmentMode: 'none' | 'params' | 'constraint'`, and structured extension diagnostics for `compileWithDiagnostics()`.
+- Added DSL object support for array item schemas through `s.array({ ... })` and `.items({ ... })`.
 
 ### Changed
 
+- Babel AST and esbuild integrations now use optional peer dependencies for the transform/esbuild subpaths instead of forcing ordinary runtime consumers to install them.
 - Custom extension docs and runnable examples now use the three-entry model and keep range syntax on the existing dash form, such as `age-range:18-65!`.
+- Documentation, examples, and website navigation were synchronized around the current public API surface and side-effect controlled entry model.
+
+### Fixed
+
+- Hardened parser, validator, schema utility, exporter, and type inference behavior across the verified regression suite.
+- Unified raw JSON Schema detection across runtime, root helpers, conditional branches, and `SchemaUtils.extend()`, including boolean schemas and string-valued JSON Schema keywords such as `const`, `format`, and `title`.
+- Completed Conditional execution coverage for nested applicators, local `$ref` chains, `definitions` / `$defs`, dependencies, `prefixItems`, `contains`, `propertyNames`, and related public `Validator.validate()` paths.
+- Aligned `coerce`, `smartCoerce`, `allErrors`, and async custom validator behavior across sync and async validation paths.
+- Preserved boolean `false` schemas and dependent constraints in `SchemaUtils.pick()` / `omit()` / `partial()` workflows.
+- Improved exporter loss reporting and SQL constraint coverage for MySQL and PostgreSQL.
+- Made `SchemaHelper` comparison and schema ID generation handle circular arrays and process-local function identity more accurately.
+
+### Validation
+
+- `npm run test:all:with-audit`
+- `npm run test:coverage`
+- `npm run examples:run`
+- `npm run build` in `website/`
+- `npm pack --dry-run`
 
 ## Version History
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.1.0] | 2026-06-26 | Minor | Side-effect controlled entries, runtime isolation, shared `s` namespace, declarative extensions, array item DSL support, and deep validation hardening [View](./changelogs/v2.1.0.md) |
 | [2.0.11] | 2026-06-15 | Patch | ESM/CJS shared custom type registry for vext dev route validation and OpenAPI generation [View](./changelogs/v2.0.11.md) |
 | [2.0.10] | 2026-06-13 | Patch | Legacy DSL aliases, structured unknown-type diagnostics, and downstream adapter delegation support [View](./changelogs/v2.0.10.md) |
 | [2.0.9] | 2026-06-11 | Patch | Documentation/example convergence, Markdown label preservation, cache-hub 2.2.4, and release dependency audit cleanup [View](./changelogs/v2.0.9.md) |
@@ -252,7 +284,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.0.11...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/vextjs/schema-dsl/compare/v2.0.11...v2.1.0
 [2.0.11]: https://github.com/vextjs/schema-dsl/compare/v2.0.10...v2.0.11
 [2.0.10]: https://github.com/vextjs/schema-dsl/compare/v2.0.9...v2.0.10
 [2.0.9]: https://github.com/vextjs/schema-dsl/compare/v2.0.8...v2.0.9
