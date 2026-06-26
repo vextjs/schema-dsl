@@ -174,7 +174,7 @@ import * as _locales from './locales/index.js'
 
 // ==================== smartCoerceTypes ====================
 
-// Perf O5b: pre-compute the set of coercible field candidates for a schema
+// Pre-compute the set of coercible field candidates from the current schema shape.
 // Avoids scanning all keys of `data` on every smartCoerceTypes call.
 // Only iterates fields that may need coercion (numbers/arrays/objects).
 type _CoerceCandidates = {
@@ -184,18 +184,56 @@ type _CoerceCandidates = {
   objects: Array<{ key: string; schema: _JSONSchema }>   // nested objects with properties
 } | null   // null = no coercible fields
 
-const _coerceCandidatesCache = new WeakMap<object, _CoerceCandidates>()
+function _schemaTypeIncludes(schema: _JSONSchema, type: string): boolean {
+  return schema.type === type || (Array.isArray(schema.type) && schema.type.includes(type))
+}
+
+function _directCoercibleType(schema: _JSONSchema): 'number' | 'integer' | 'boolean' | null {
+  if (_schemaTypeIncludes(schema, 'number')) return 'number'
+  if (_schemaTypeIncludes(schema, 'integer')) return 'integer'
+  if (_schemaTypeIncludes(schema, 'boolean')) return 'boolean'
+  return null
+}
+
+function _getCoercibleType(schema: _JSONSchema): 'number' | 'integer' | 'boolean' | null {
+  const direct = _directCoercibleType(schema)
+  if (direct) return direct
+
+  for (const key of ['anyOf', 'oneOf'] as const) {
+    const branches = schema[key] as _JSONSchema[] | undefined
+    if (!Array.isArray(branches)) continue
+
+    let target: 'number' | 'integer' | 'boolean' | null = null
+    let safeNullableUnion = true
+
+    for (const branch of branches) {
+      if (!branch || typeof branch !== 'object' || Array.isArray(branch)) {
+        safeNullableUnion = false
+        break
+      }
+
+      const branchType = _directCoercibleType(branch)
+      if (branchType) {
+        if (target && target !== branchType) {
+          safeNullableUnion = false
+          break
+        }
+        target = branchType
+      } else if (!_schemaTypeIncludes(branch, 'null')) {
+        safeNullableUnion = false
+        break
+      }
+    }
+
+    if (safeNullableUnion && target) return target
+  }
+
+  return null
+}
 
 function _getCoerceCandidates(schema: _JSONSchema): _CoerceCandidates {
-  const schemaObj = schema as object
-  const cached = _coerceCandidatesCache.get(schemaObj)
-  if (cached !== undefined) return cached
-
   const props = schema.properties as Record<string, _JSONSchema> | undefined
-  if (!props) {
-    _coerceCandidatesCache.set(schemaObj, null)
-    return null
-  }
+  if (!props) return null
 
   const numbers: string[] = []
   const booleans: string[] = []
@@ -203,21 +241,19 @@ function _getCoerceCandidates(schema: _JSONSchema): _CoerceCandidates {
   const objects: Array<{ key: string; schema: _JSONSchema }> = []
 
   for (const [key, f] of Object.entries(props)) {
-    const ft = f.type
-    if (f.enum && !((ft === 'number' || ft === 'integer') && f.enum.every(v => typeof v === 'number')) && !(ft === 'boolean' && f.enum.every(v => typeof v === 'boolean'))) {
+    const ft = _getCoercibleType(f)
+    if (f.enum && !((ft === 'number' || ft === 'integer') && f.enum.every(v => typeof v === 'number' || v === null)) && !(ft === 'boolean' && f.enum.every(v => typeof v === 'boolean' || v === null))) {
       continue
     }
     if (ft === 'number' || ft === 'integer') {
       numbers.push(key)
     } else if (ft === 'boolean') {
       booleans.push(key)
-    } else if (ft === 'array' && (f.items as _JSONSchema | undefined)?.type === 'number') {
-      arrays.push({ key, itemType: 'number' })
-    } else if (ft === 'array' && (f.items as _JSONSchema | undefined)?.type === 'integer') {
-      arrays.push({ key, itemType: 'integer' })
-    } else if (ft === 'array' && (f.items as _JSONSchema | undefined)?.type === 'boolean') {
-      arrays.push({ key, itemType: 'boolean' })
-    } else if (ft === 'object' && f.properties) {
+    } else if (_schemaTypeIncludes(f, 'array')) {
+      const itemSchema = f.items as _JSONSchema | undefined
+      const itemType = itemSchema && typeof itemSchema === 'object' && !Array.isArray(itemSchema) ? _getCoercibleType(itemSchema) : null
+      if (itemType) arrays.push({ key, itemType })
+    } else if (_schemaTypeIncludes(f, 'object') && f.properties) {
       objects.push({ key, schema: f })
     }
   }
@@ -225,7 +261,6 @@ function _getCoerceCandidates(schema: _JSONSchema): _CoerceCandidates {
   const result: _CoerceCandidates = (numbers.length || booleans.length || arrays.length || objects.length)
     ? { numbers, booleans, arrays, objects }
     : null
-  _coerceCandidatesCache.set(schemaObj, result)
   return result
 }
 
@@ -595,7 +630,7 @@ export function validate<T = unknown>(
 ): _ValidationResult<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = _shouldSmartCoerce(options)
-  // O5b: use candidate-field cache instead of _hasCoercibleFields + Object.keys scan
+  // Use candidate fields instead of scanning all input keys.
   const coercedData = shouldCoerce && typeof normalizedSchema === 'object' && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data
@@ -614,7 +649,7 @@ export async function validateAsync<T = unknown>(
 ): Promise<T> {
   const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = _shouldSmartCoerce(options)
-  // O5b: use candidate-field cache instead of _hasCoercibleFields + Object.keys scan
+  // Use candidate fields instead of scanning all input keys.
   const coercedData = shouldCoerce && typeof normalizedSchema === 'object' && _getCoerceCandidates(normalizedSchema)
     ? smartCoerceTypes(data, normalizedSchema)
     : data

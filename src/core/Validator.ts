@@ -11,6 +11,7 @@ import { ErrorFormatter } from './ErrorFormatter.js'
 import { CustomKeywords } from '../validators/CustomKeywords.js'
 import { Locale, DEFAULT_LOCALE } from './Locale.js'
 import { ConditionalValidator, type ConditionalInternalSchema } from './ConditionalValidator.js'
+import { CONDITIONAL_RUNTIME_STATE, type ConditionalRuntimeState } from './ConditionalRuntime.js'
 import { DslParser, type DslParseOptions } from '../parser/DslParser.js'
 import type { RuntimeIssueSource } from './RuntimeIssueFormatter.js'
 import { SchemaCompileError } from '../errors/SchemaCompileError.js'
@@ -156,8 +157,6 @@ export class Validator {
   private readonly _removeAdditionalSchemaRefs = new Map<string, JSONSchemaInput>()
   private readonly _removeAdditionalSchemaLru = new Map<string, true>()
 
-  // Performance: cache whether a schema has any conditional fields (avoids traversing properties on every validation)
-  private readonly _conditionalFlagCache = new WeakMap<object, boolean>()
   private readonly _conditionalValidator = new ConditionalValidator({
     validateSchema: <T>(schema: JSONSchemaInput, data: T, options: ValidateOptions): ValidationResult<T> => this._validateInternal(schema, data, options),
     internalError: <T>(error: unknown, data: T): ValidationResult<T> => this._internalError(error, data),
@@ -302,6 +301,7 @@ export class Validator {
       if (!value || typeof value !== 'object') return value
 
       const source = value as Record<string, unknown>
+      const runtimeState = (source as { [CONDITIONAL_RUNTIME_STATE]?: ConditionalRuntimeState })[CONDITIONAL_RUNTIME_STATE]
       let changed = false
       const next: Record<string, unknown> = {}
 
@@ -314,6 +314,38 @@ export class Validator {
         const stripped = strip(child)
         next[key] = stripped
         if (stripped !== child) changed = true
+      }
+
+      if (runtimeState) {
+        let runtimeChanged = false
+        const strippedConditions = runtimeState.conditions.map(condition => {
+          if (!condition || typeof condition !== 'object') return condition
+          const conditionRecord = condition as Record<string, unknown>
+          if (!Object.prototype.hasOwnProperty.call(conditionRecord, 'then')) return condition
+
+          const strippedThen = strip(conditionRecord['then'])
+          if (strippedThen === conditionRecord['then']) return condition
+
+          runtimeChanged = true
+          return { ...conditionRecord, then: strippedThen }
+        })
+
+        const strippedElse = strip(runtimeState.elseSchema)
+        runtimeChanged = runtimeChanged || strippedElse !== runtimeState.elseSchema
+
+        if (runtimeChanged) {
+          changed = true
+          Object.defineProperty(next, CONDITIONAL_RUNTIME_STATE, {
+            value: {
+              ...runtimeState,
+              conditions: strippedConditions,
+              elseSchema: strippedElse as ConditionalRuntimeState['elseSchema'],
+            },
+            enumerable: false,
+            configurable: false,
+            writable: false,
+          })
+        }
       }
 
       return changed ? next : value
@@ -329,6 +361,9 @@ export class Validator {
     options: ValidateOptions = {}
   ): Promise<ValidationErrorItem | null> {
     if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return null
+
+    const conditionalErr = await this._runCustomValidatorsForConditionalRuntime(schema, data, path, options)
+    if (conditionalErr) return conditionalErr
 
     const validators = (schema as Record<string, unknown>)['_customValidators'] as Array<(v: unknown) => unknown> | undefined
     if (validators?.length) {
@@ -510,6 +545,36 @@ export class Validator {
     return null
   }
 
+  private async _runCustomValidatorsForConditionalRuntime(
+    schema: JSONSchemaInput,
+    data: unknown,
+    path: string,
+    options: ValidateOptions
+  ): Promise<ValidationErrorItem | null> {
+    const runtimeState = (schema as { [CONDITIONAL_RUNTIME_STATE]?: ConditionalRuntimeState })[CONDITIONAL_RUNTIME_STATE]
+    if (!runtimeState) return null
+
+    for (const condition of runtimeState.conditions) {
+      const evaluated = runtimeState.evaluateCondition(condition, data)
+      if (!evaluated.result) continue
+
+      const branch = this._normalizeCustomValidatorSchema((condition as Record<string, unknown>)['then'])
+      return branch ? this._runCustomValidators(branch, data, path, options) : null
+    }
+
+    const elseSchema = this._normalizeCustomValidatorSchema(runtimeState.elseSchema)
+    return elseSchema ? this._runCustomValidators(elseSchema, data, path, options) : null
+  }
+
+  private _normalizeCustomValidatorSchema(schema: unknown): JSONSchemaInput | null {
+    if (schema === null || schema === undefined) return null
+    if (typeof schema === 'string') return DslParser.parseString(schema, this._parseOptions)
+    if (typeof schema === 'object' && typeof (schema as Record<string, unknown>)['toSchema'] === 'function') {
+      return ((schema as Record<string, unknown>)['toSchema'] as () => JSONSchemaInput)()
+    }
+    return schema as JSONSchemaInput
+  }
+
   private async _runCustomValidatorsForDependencies(
     dependencies: unknown,
     data: unknown,
@@ -564,11 +629,11 @@ export class Validator {
   }
 
   /**
-   * Batch validation (compile once, reuse for each item).
+   * Batch validation using the same validation path and options for each item.
    */
-  validateBatch<T = unknown>(schema: JSONSchemaInput, dataArray: T[]): ValidationResult<T>[] {
+  validateBatch<T = unknown>(schema: JSONSchemaInput, dataArray: T[], options: ValidateOptions = {}): ValidationResult<T>[] {
     if (!Array.isArray(dataArray)) throw new Error('Data must be an array')
-    return dataArray.map(data => this.validate(schema, data))
+    return dataArray.map(data => this.validate(schema, data, options))
   }
 
   /**
@@ -580,6 +645,7 @@ export class Validator {
         ...definition,
         keyword,
       })
+      this.clearCache()
       return this
     } catch (error) {
       throw new Error(`Failed to add keyword '${keyword}': ${error instanceof Error ? error.message : String(error)}`)
@@ -591,6 +657,7 @@ export class Validator {
    */
   addFormat(name: string, validator: Format): this {
     this._ajv.addFormat(name, validator)
+    this.clearCache()
     return this
   }
 
@@ -599,6 +666,7 @@ export class Validator {
    */
   addSchema(uri: string, schema: JSONSchema): this {
     this._ajv.addSchema(schema, uri)
+    this.clearCache()
     return this
   }
 
@@ -607,6 +675,7 @@ export class Validator {
    */
   removeSchema(uri: string): this {
     this._ajv.removeSchema(uri)
+    this.clearCache()
     return this
   }
 
@@ -676,12 +745,7 @@ export class Validator {
 
     // Any schema containing ConditionalBuilder nodes (objects, arrays, and composition branches).
     if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
-      // Performance: cache conditional detection result to avoid traversing properties on every validation
-      let hasConditionals = this._conditionalFlagCache.get(internalSchema as object)
-      if (hasConditionals === undefined) {
-        hasConditionals = this._conditionalValidator.hasAnyConditional(internalSchema)
-        this._conditionalFlagCache.set(internalSchema as object, hasConditionals)
-      }
+      const hasConditionals = this._conditionalValidator.hasAnyConditional(internalSchema)
       if (hasConditionals) {
         return this._conditionalValidator.validateWithConditionals(internalSchema, data, options)
       }
@@ -749,18 +813,19 @@ export class Validator {
       if (!fieldSchema || typeof fieldSchema !== 'object' || Array.isArray(fieldSchema)) continue
       const current = src[key]
       let converted = current
+      const fieldType = this._getCoercibleType(fieldSchema)
 
-      if (fieldSchema.type === 'number' || fieldSchema.type === 'integer') {
+      if (fieldType === 'number' || fieldType === 'integer') {
         converted = this._coerceNumber(current)
-      } else if (fieldSchema.type === 'boolean') {
+      } else if (fieldType === 'boolean') {
         converted = this._coerceBoolean(current)
-      } else if (fieldSchema.type === 'array' && Array.isArray(current) && !Array.isArray(fieldSchema.items)) {
+      } else if (this._schemaTypeIncludes(fieldSchema, 'array') && Array.isArray(current) && !Array.isArray(fieldSchema.items)) {
         const itemSchema = fieldSchema.items
-        const itemType = itemSchema && typeof itemSchema === 'object' ? itemSchema.type : undefined
+        const itemType = itemSchema && typeof itemSchema === 'object' ? this._getCoercibleType(itemSchema) : undefined
         if (itemType === 'number' || itemType === 'integer' || itemType === 'boolean') {
           converted = current.map(item => itemType === 'boolean' ? this._coerceBoolean(item) : this._coerceNumber(item))
         }
-      } else if (fieldSchema.type === 'object' && fieldSchema.properties && current && typeof current === 'object' && !Array.isArray(current)) {
+      } else if (this._schemaTypeIncludes(fieldSchema, 'object') && fieldSchema.properties && current && typeof current === 'object' && !Array.isArray(current)) {
         converted = this._smartCoerceTypes(current, fieldSchema)
       }
 
@@ -771,6 +836,53 @@ export class Validator {
     }
 
     return result ?? data
+  }
+
+  private _getCoercibleType(schema: JSONSchema): 'number' | 'integer' | 'boolean' | null {
+    const direct = this._directCoercibleType(schema)
+    if (direct) return direct
+
+    for (const key of ['anyOf', 'oneOf'] as const) {
+      const branches = schema[key]
+      if (!Array.isArray(branches)) continue
+
+      let target: 'number' | 'integer' | 'boolean' | null = null
+      let safeNullableUnion = true
+
+      for (const branch of branches) {
+        if (!branch || typeof branch !== 'object' || Array.isArray(branch)) {
+          safeNullableUnion = false
+          break
+        }
+
+        const branchType = this._directCoercibleType(branch)
+        if (branchType) {
+          if (target && target !== branchType) {
+            safeNullableUnion = false
+            break
+          }
+          target = branchType
+        } else if (!this._schemaTypeIncludes(branch, 'null')) {
+          safeNullableUnion = false
+          break
+        }
+      }
+
+      if (safeNullableUnion && target) return target
+    }
+
+    return null
+  }
+
+  private _directCoercibleType(schema: JSONSchema): 'number' | 'integer' | 'boolean' | null {
+    if (this._schemaTypeIncludes(schema, 'number')) return 'number'
+    if (this._schemaTypeIncludes(schema, 'integer')) return 'integer'
+    if (this._schemaTypeIncludes(schema, 'boolean')) return 'boolean'
+    return null
+  }
+
+  private _schemaTypeIncludes(schema: JSONSchema, type: string): boolean {
+    return schema.type === type || (Array.isArray(schema.type) && schema.type.includes(type))
   }
 
   private _shouldSmartCoerce(options: ValidateOptions): boolean {

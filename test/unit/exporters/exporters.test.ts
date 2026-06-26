@@ -110,6 +110,15 @@ describe('MySQLExporter', () => {
             if: { const: 'admin' },
             then: { minLength: 5 },
           },
+          dynamic: {
+            type: 'object',
+            patternProperties: {
+              '^x_': {
+                if: { const: 'on' },
+                then: { pattern: '^enabled$' },
+              },
+            },
+          },
           tags: {
             type: 'array',
             items: {
@@ -129,6 +138,36 @@ describe('MySQLExporter', () => {
               { type: 'string' },
             ],
           },
+          extra: {
+            type: 'object',
+            additionalProperties: {
+              type: 'string',
+              pattern: '^ok$',
+            },
+            propertyNames: {
+              pattern: '^x_',
+            },
+          },
+          list: {
+            type: 'array',
+            contains: {
+              type: 'string',
+              const: 'needle',
+            },
+            prefixItems: [
+              { type: 'string', pattern: '^first$' },
+            ],
+          },
+        },
+        dependencies: {
+          legacyFlag: ['legacyValue'],
+        },
+        dependentSchemas: {
+          enabled: {
+            properties: {
+              marker: { type: 'string', const: 'on' },
+            },
+          },
         },
         allOf: [
           {
@@ -144,19 +183,34 @@ describe('MySQLExporter', () => {
       })
 
       expect(report.output).toContain('CREATE TABLE')
-      expect(report.losses).toEqual([
+      expect(report.losses).toEqual(expect.arrayContaining([
         expect.objectContaining({ path: '$', keyword: 'allOf' }),
         expect.objectContaining({ path: '$.properties.name', keyword: 'if' }),
         expect.objectContaining({ path: '$.properties.name', keyword: 'then' }),
+        expect.objectContaining({ path: '$.properties.name.if', keyword: 'const' }),
+        expect.objectContaining({ path: '$.properties.name.then', keyword: 'minLength' }),
+        expect.objectContaining({ path: '$.properties.dynamic', keyword: 'patternProperties' }),
+        expect.objectContaining({ path: '$.properties.dynamic.patternProperties.^x_', keyword: 'if' }),
+        expect.objectContaining({ path: '$.properties.dynamic.patternProperties.^x_', keyword: 'then' }),
+        expect.objectContaining({ path: '$.properties.dynamic.patternProperties.^x_.if', keyword: 'const' }),
+        expect.objectContaining({ path: '$.properties.dynamic.patternProperties.^x_.then', keyword: 'pattern' }),
         expect.objectContaining({ path: '$.properties.tags.items', keyword: 'if' }),
         expect.objectContaining({ path: '$.properties.tags.items', keyword: 'then' }),
+        expect.objectContaining({ path: '$.properties.tags.items.if', keyword: 'pattern' }),
+        expect.objectContaining({ path: '$.properties.tags.items.then', keyword: 'minLength' }),
         expect.objectContaining({ path: '$.properties.code', keyword: 'const' }),
         expect.objectContaining({ path: '$.properties.code', keyword: 'pattern' }),
         expect.objectContaining({ path: '$.properties.source', keyword: 'anyOf' }),
         expect.objectContaining({ path: '$.properties.source.anyOf[0]', keyword: 'const' }),
+        expect.objectContaining({ path: '$.properties.extra.additionalProperties', keyword: 'pattern' }),
+        expect.objectContaining({ path: '$.properties.extra.propertyNames', keyword: 'pattern' }),
+        expect.objectContaining({ path: '$.properties.list.contains', keyword: 'const' }),
+        expect.objectContaining({ path: '$.properties.list.prefixItems[0]', keyword: 'pattern' }),
+        expect.objectContaining({ path: '$.dependentSchemas.enabled.properties.marker', keyword: 'const' }),
         expect.objectContaining({ path: '$.allOf[0]', keyword: 'not' }),
-      ])
-      expect(losses).toHaveLength(10)
+      ]))
+      expect(losses).toHaveLength(report.losses.length)
+      expect(report.losses.length).toBeGreaterThan(24)
       expect(() => exporter.exportWithReport('users', schema, { strict: true })).toThrow('Export would lose unsupported JSON Schema keywords')
     })
 

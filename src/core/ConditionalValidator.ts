@@ -46,7 +46,7 @@ export class ConditionalValidator {
     ): ValidationResult<T> {
         const errors: ValidationErrorItem[] = []
         const effectiveRoot = rootData ?? (data as Record<string, unknown>)
-        const cleanSchema = this._stripConditionalNodes(schema) as ConditionalInternalSchema
+        const cleanSchema = this._stripConditionalNodes(schema, schema) as ConditionalInternalSchema
 
         const baseResult = this.hooks.validateSchema(cleanSchema, data, options)
         if (!baseResult.valid) {
@@ -223,12 +223,12 @@ export class ConditionalValidator {
         return false
     }
 
-    private _stripConditionalNodes(value: unknown): unknown {
+    private _stripConditionalNodes(value: unknown, rootSchema: unknown = value, seenRefs = new Set<string>()): unknown {
         if (!value || typeof value !== 'object') return value
         if ((value as ConditionalInternalSchema)._isConditional) return {}
 
         if (Array.isArray(value)) {
-            return value.map(item => this._stripConditionalNodes(item))
+            return value.map(item => this._stripConditionalNodes(item, rootSchema, seenRefs))
         }
 
         const source = value as Record<string, unknown>
@@ -244,7 +244,7 @@ export class ConditionalValidator {
                     omitted.add(key)
                     continue
                 }
-                nextProps[key] = this._stripConditionalNodes(child)
+                nextProps[key] = this._stripConditionalNodes(child, rootSchema, seenRefs)
             }
 
             result['properties'] = nextProps
@@ -256,40 +256,40 @@ export class ConditionalValidator {
         }
 
         for (const key of ['items', 'additionalProperties', 'propertyNames', 'contains', 'then', 'else', 'unevaluatedItems', 'unevaluatedProperties']) {
-            if (key in source) result[key] = this._stripConditionalNodes(source[key])
+            if (key in source) result[key] = this._stripConditionalNodes(source[key], rootSchema, seenRefs)
         }
 
         if ('not' in source) {
-            if (this._hasConditionalChild(source['not'])) delete result['not']
-            else result['not'] = this._stripConditionalNodes(source['not'])
+            if (this._hasConditionalChild(source['not'], rootSchema, seenRefs)) delete result['not']
+            else result['not'] = this._stripConditionalNodes(source['not'], rootSchema, seenRefs)
         }
 
         if ('if' in source) {
-            if (this._hasConditionalChild(source['if'])) {
+            if (this._hasConditionalChild(source['if'], rootSchema, seenRefs)) {
                 delete result['if']
                 delete result['then']
                 delete result['else']
             } else {
-                result['if'] = this._stripConditionalNodes(source['if'])
+                result['if'] = this._stripConditionalNodes(source['if'], rootSchema, seenRefs)
             }
         }
 
         for (const key of ['allOf', 'anyOf']) {
             const list = source[key]
-            if (Array.isArray(list)) result[key] = list.map(item => this._stripConditionalNodes(item))
+            if (Array.isArray(list)) result[key] = list.map(item => this._stripConditionalNodes(item, rootSchema, seenRefs))
         }
 
         const oneOf = source['oneOf']
         if (Array.isArray(oneOf)) {
-            if (oneOf.some(item => this._hasConditionalChild(item))) delete result['oneOf']
-            else result['oneOf'] = oneOf.map(item => this._stripConditionalNodes(item))
+            if (oneOf.some(item => this._hasConditionalChild(item, rootSchema, seenRefs))) delete result['oneOf']
+            else result['oneOf'] = oneOf.map(item => this._stripConditionalNodes(item, rootSchema, seenRefs))
         }
 
         const prefixItems = source['prefixItems']
         if (Array.isArray(prefixItems)) {
-            result['items'] = prefixItems.map(item => this._stripConditionalNodes(item))
+            result['items'] = prefixItems.map(item => this._stripConditionalNodes(item, rootSchema, seenRefs))
             if ('items' in source) {
-                result['additionalItems'] = this._stripConditionalNodes(source['items'])
+                result['additionalItems'] = this._stripConditionalNodes(source['items'], rootSchema, seenRefs)
             } else {
                 result['additionalItems'] = true
             }
@@ -300,7 +300,7 @@ export class ConditionalValidator {
             const map = source[key]
             if (map && typeof map === 'object' && !Array.isArray(map)) {
                 result[key] = Object.fromEntries(
-                    Object.entries(map as Record<string, unknown>).map(([childKey, child]) => [childKey, this._stripConditionalNodes(child)])
+                    Object.entries(map as Record<string, unknown>).map(([childKey, child]) => [childKey, this._stripConditionalNodes(child, rootSchema, seenRefs)])
                 )
             }
         }
@@ -308,7 +308,7 @@ export class ConditionalValidator {
         const dependentSchemas = source['dependentSchemas']
         if (dependentSchemas && typeof dependentSchemas === 'object' && !Array.isArray(dependentSchemas)) {
             const stripped = Object.fromEntries(
-                Object.entries(dependentSchemas as Record<string, unknown>).map(([childKey, child]) => [childKey, this._stripConditionalNodes(child)])
+                Object.entries(dependentSchemas as Record<string, unknown>).map(([childKey, child]) => [childKey, this._stripConditionalNodes(child, rootSchema, seenRefs)])
             )
             const dependencies = result['dependencies']
             result['dependencies'] =
@@ -323,7 +323,7 @@ export class ConditionalValidator {
             const stripped = Object.fromEntries(
                 Object.entries(dependencies as Record<string, unknown>).map(([childKey, child]) => [
                     childKey,
-                    Array.isArray(child) ? [...child] : this._stripConditionalNodes(child),
+                    Array.isArray(child) ? [...child] : this._stripConditionalNodes(child, rootSchema, seenRefs),
                 ])
             )
             const existing = result['dependencies']
@@ -440,7 +440,7 @@ export class ConditionalValidator {
 
         if (internalSchema.contains && Array.isArray(data) && this._hasConditionalChild(internalSchema.contains, rootSchema)) {
             const containsSchema = internalSchema.contains
-            const cleanContains = this._stripConditionalNodes(containsSchema) as JSONSchema
+            const cleanContains = this._stripConditionalNodes(containsSchema, rootSchema) as JSONSchema
             let firstConditionalErrors: ValidationErrorItem[] | null = null
 
             for (let index = 0; index < data.length; index++) {
@@ -468,7 +468,7 @@ export class ConditionalValidator {
             let firstConditionalErrors: ValidationErrorItem[] | null = null
 
             for (const childSchema of anyOfSchemas) {
-                const clean = this._stripConditionalNodes(childSchema) as JSONSchema
+                const clean = this._stripConditionalNodes(childSchema, rootSchema) as JSONSchema
                 if (!this.hooks.validateSchema(clean, data, options).valid) continue
                 if (!this._hasConditionalChild(childSchema, rootSchema)) {
                     matched = true
@@ -492,7 +492,7 @@ export class ConditionalValidator {
             let firstConditionalErrors: ValidationErrorItem[] | null = null
 
             for (const childSchema of oneOfSchemas) {
-                const clean = this._stripConditionalNodes(childSchema) as JSONSchema
+                const clean = this._stripConditionalNodes(childSchema, rootSchema) as JSONSchema
                 if (!this.hooks.validateSchema(clean, data, options).valid) continue
                 if (!this._hasConditionalChild(childSchema, rootSchema)) {
                     matches += 1
@@ -522,7 +522,7 @@ export class ConditionalValidator {
             const ifHasConditional = this._hasConditionalChild(internalSchema.if, rootSchema)
             const conditionMatched = ifHasConditional
                 ? this._validateSchemaNode(internalSchema.if, data, path, options, rootData, fieldName, rootSchema, seenRefs).length === 0
-                : this.hooks.validateSchema(this._stripConditionalNodes(internalSchema.if) as JSONSchema, data, options).valid
+                : this.hooks.validateSchema(this._stripConditionalNodes(internalSchema.if, rootSchema) as JSONSchema, data, options).valid
             const branch = conditionMatched ? internalSchema.then : internalSchema.else
 
             if (branch !== undefined && ifHasConditional) {
@@ -560,7 +560,20 @@ export class ConditionalValidator {
         rootSchema: unknown = schema,
         seenRefs = new Set<string>()
     ): ValidationErrorItem[] {
-        const clean = this._stripConditionalNodes(schema) as JSONSchema
+        if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
+            const ref = (schema as Record<string, unknown>)['$ref']
+            if (typeof ref === 'string' && !seenRefs.has(ref)) {
+                const resolved = this._resolveLocalRef(rootSchema, ref)
+                if (resolved !== undefined && resolved !== schema) {
+                    seenRefs.add(ref)
+                    const errors = this._validateSchemaNode(resolved, data, path, options, rootData, fieldName, rootSchema, seenRefs)
+                    seenRefs.delete(ref)
+                    return errors
+                }
+            }
+        }
+
+        const clean = this._stripConditionalNodes(schema, rootSchema) as JSONSchema
         const errors: ValidationErrorItem[] = []
         const baseResult = this.hooks.validateSchema(clean, data, options)
 

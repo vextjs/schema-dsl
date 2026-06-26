@@ -1,5 +1,7 @@
 /**
- * JSON Schema Draft 7 type definitions.
+ * JSON Schema Draft 7 baseline type definitions.
+ * Some newer applicator keywords are accepted as pass-through extension keys
+ * for compatibility, but this package does not claim full 2020-12 dialect support.
  * Includes schema-dsl internal keys (prefixed with _; stripped by toJsonSchema()).
  */
 import type { ErrorMessages } from './error.js'

@@ -384,6 +384,155 @@ describe('verified issue regressions', () => {
       expect(raw.errors?.[0]).toHaveProperty('instancePath')
     })
 
+    it('P1-22: stripping conditionals is root-aware for local refs inside composition keywords', () => {
+      const validator = new Validator()
+      const conditionalNumber = ConditionalBuilder.start(() => true).then('number!').toSchema()
+      const schema = {
+        not: { $ref: '#/$defs/Value' },
+        $defs: {
+          Value: conditionalNumber,
+        },
+      }
+
+      expect(validator.validate(schema, 'bad').valid).toBe(true)
+      expect(validator.validate(schema, 1).valid).toBe(false)
+    })
+
+    it('P1-22: validateAsync runs async custom validators inside conditional runtime branches', async () => {
+      const validator = new Validator()
+      const conditional = ConditionalBuilder
+        .start(() => true)
+        .then({
+          type: 'string',
+          _customValidators: [
+            async (value: unknown) => value === 'ok' || 'failed',
+          ],
+        })
+        .toSchema()
+
+      await expect(validator.validateAsync(conditional, 'bad')).rejects.toMatchObject({
+        errors: [expect.objectContaining({ message: 'failed' })],
+      })
+      await expect(validator.validateAsync(conditional, 'ok')).resolves.toBe('ok')
+    })
+
+    it('P1-22: mutable schemas are rechecked for newly added conditionals', () => {
+      const validator = new Validator()
+      const schema: {
+        type: 'object'
+        properties: Record<string, unknown>
+      } = {
+        type: 'object',
+        properties: {},
+      }
+
+      expect(validator.validate(schema, {}).valid).toBe(true)
+      schema.properties['age'] = ConditionalBuilder.start(() => true).then('number!').toSchema()
+
+      const result = validator.validate(schema, { age: 'bad' })
+      expect(result.valid).toBe(false)
+      expect(result.errors?.[0]?.path).toBe('age')
+    })
+
+    it('P1-23: smart coercion handles nullable and safe composition type declarations', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          age: { type: ['number', 'null'] },
+          score: { anyOf: [{ type: 'number' }, { type: 'null' }] },
+          count: { oneOf: [{ type: 'integer' }, { type: 'null' }] },
+          enabled: { type: ['boolean', 'null'], enum: [true, false, null] },
+          profile: {
+            type: ['object', 'null'],
+            properties: {
+              level: { type: ['integer', 'null'] },
+            },
+          },
+          flags: {
+            type: 'array',
+            items: { type: ['boolean', 'null'] },
+          },
+        },
+      }
+
+      const result = validate(schema, {
+        age: '18',
+        score: '20',
+        count: '3',
+        enabled: 'true',
+        profile: { level: '2' },
+        flags: ['true', 'false', null],
+      })
+
+      expect(result.valid).toBe(true)
+      expect(result.data).toEqual({
+        age: 18,
+        score: 20,
+        count: 3,
+        enabled: true,
+        profile: { level: 2 },
+        flags: [true, false, null],
+      })
+
+      expect(validate({
+        type: 'object',
+        properties: {
+          value: { anyOf: [{ type: 'number' }, { type: 'boolean' }] },
+        },
+      }, { value: '1' }).valid).toBe(false)
+
+      expect(validate({ type: 'object' }, { age: '18' }).data).toEqual({ age: '18' })
+    })
+
+    it('P1-23: root smart coercion uses the current mutable schema shape', () => {
+      const schema: {
+        type: 'object'
+        properties: Record<string, unknown>
+      } = {
+        type: 'object',
+        properties: {},
+      }
+
+      expect(validate(schema, { age: '18' }).valid).toBe(true)
+      schema.properties['age'] = { type: ['number', 'null'] }
+
+      const result = validate(schema, { age: '18' })
+      expect(result.valid).toBe(true)
+      expect(result.data).toEqual({ age: 18 })
+    })
+
+    it('P1-22: validateAsync handles conditional runtime else and string branches', async () => {
+      const validator = new Validator()
+      const conditionalElse = ConditionalBuilder
+        .start(() => false)
+        .then(true)
+        .else({
+          type: 'string',
+          _customValidators: [
+            async (value: unknown) => value === 'ok' || 'else failed',
+          ],
+        })
+        .toSchema()
+
+      await expect(validator.validateAsync(conditionalElse, 'bad')).rejects.toMatchObject({
+        errors: [expect.objectContaining({ message: 'else failed' })],
+      })
+
+      const conditionalString = ConditionalBuilder
+        .start(() => true)
+        .then('string')
+        .toSchema()
+
+      await expect(validator.validateAsync(conditionalString, 'ok')).resolves.toBe('ok')
+
+      const conditionalBuilder = ConditionalBuilder
+        .start(() => true)
+        .then({ toSchema: () => ({ type: 'string' }) } as unknown as string)
+        .toSchema()
+
+      await expect(validator.validateAsync(conditionalBuilder, 'ok')).resolves.toBe('ok')
+    })
+
     it('P1-22: public Validator executes conditionals behind local JSON Schema refs', () => {
       const validator = new Validator()
       const conditionalNumber = ConditionalBuilder.start(() => true).then('number!').toSchema()

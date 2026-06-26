@@ -76,6 +76,18 @@ describe('Validator', () => {
       validator.clearCache()
     })
 
+    it('invalidates compiled schema cache when schema references change', () => {
+      const refSchema = { $ref: 'https://example.test/MutableName' } as any
+
+      validator.addSchema('https://example.test/MutableName', { type: 'string', minLength: 2 })
+      expect(validator.validate(refSchema, 'A').valid).toBe(false)
+
+      validator.removeSchema('https://example.test/MutableName')
+      validator.addSchema('https://example.test/MutableName', { type: 'string', minLength: 1 })
+
+      expect(validator.validate(refSchema, 'A').valid).toBe(true)
+    })
+
     it('wraps invalid custom keyword definitions', () => {
       expect(() => validator.addKeyword('type', { keyword: 'type' } as any)).toThrow("Failed to add keyword 'type'")
     })
@@ -279,6 +291,21 @@ describe('Validator', () => {
       } as any
       await expect(validator.validateAsync(conditionalSchema, 'value')).rejects.toThrow('then rejected')
       await expect(validator.validateAsync(conditionalSchema, 1)).rejects.toThrow('else rejected')
+    })
+
+    it('normalizes per-call custom validator messages from mixed message table values', async () => {
+      const schema = {
+        type: 'string',
+        _customValidators: [() => false],
+      } as any
+
+      await expect(validator.validateAsync(schema, 'value', {
+        messages: {
+          CUSTOM_VALIDATION_FAILED: { message: 'custom validator rejected' },
+          unusedNull: null,
+          unusedNumber: 123,
+        } as any,
+      })).rejects.toThrow('custom validator rejected')
     })
 
     it('runs custom validators in object and array schema applicator paths', async () => {

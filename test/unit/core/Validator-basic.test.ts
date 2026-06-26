@@ -188,6 +188,19 @@ describe('Validator', () => {
       expect(results[1].valid).toBe(true)
       expect(results[2].valid).toBe(false)
     })
+
+    it('should pass options to each batch validation item', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          age: { type: 'number' },
+        },
+      }
+
+      const results = validator.validateBatch(schema, [{ age: '18' }], { smartCoerce: false })
+
+      expect(results[0].valid).toBe(false)
+    })
   })
 
   describe('addKeyword()', () => {

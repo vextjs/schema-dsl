@@ -110,19 +110,23 @@ export abstract class BaseExporter<TOptions extends ExporterOptions = ExporterOp
       }
     }
 
-    if (schema.properties) {
-      for (const [key, child] of Object.entries(schema.properties)) {
-        losses.push(...this._collectUnsupportedKeywordLosses(child, unsupportedKeywords, `${path}.properties.${key}`))
+    for (const key of ['properties', 'patternProperties', 'dependentSchemas', 'dependencies', 'definitions', '$defs']) {
+      const children = record[key]
+      if (!children || typeof children !== 'object' || Array.isArray(children)) continue
+      for (const [childKey, child] of Object.entries(children as Record<string, unknown>)) {
+        if (Array.isArray(child)) continue
+        losses.push(...this._collectUnsupportedKeywordLosses(child as JSONSchemaInput, unsupportedKeywords, `${path}.${key}.${childKey}`))
       }
     }
 
-    if (schema.items) {
-      if (Array.isArray(schema.items)) {
-        schema.items.forEach((child, index) => {
-          losses.push(...this._collectUnsupportedKeywordLosses(child, unsupportedKeywords, `${path}.items[${index}]`))
+    for (const key of ['items', 'prefixItems']) {
+      const children = record[key]
+      if (Array.isArray(children)) {
+        children.forEach((child, index) => {
+          losses.push(...this._collectUnsupportedKeywordLosses(child as JSONSchemaInput, unsupportedKeywords, `${path}.${key}[${index}]`))
         })
-      } else {
-        losses.push(...this._collectUnsupportedKeywordLosses(schema.items, unsupportedKeywords, `${path}.items`))
+      } else if (children !== undefined) {
+        losses.push(...this._collectUnsupportedKeywordLosses(children as JSONSchemaInput, unsupportedKeywords, `${path}.${key}`))
       }
     }
 
@@ -130,10 +134,15 @@ export abstract class BaseExporter<TOptions extends ExporterOptions = ExporterOp
       const children = record[key]
       if (Array.isArray(children)) {
         children.forEach((child, index) => {
-          if (child && typeof child === 'object' && !Array.isArray(child)) {
-            losses.push(...this._collectUnsupportedKeywordLosses(child as JSONSchema, unsupportedKeywords, `${path}.${key}[${index}]`))
-          }
+          losses.push(...this._collectUnsupportedKeywordLosses(child as JSONSchemaInput, unsupportedKeywords, `${path}.${key}[${index}]`))
         })
+      }
+    }
+
+    for (const key of ['additionalProperties', 'propertyNames', 'contains', 'not', 'if', 'then', 'else', 'unevaluatedItems', 'unevaluatedProperties']) {
+      const child = record[key]
+      if (child !== undefined) {
+        losses.push(...this._collectUnsupportedKeywordLosses(child as JSONSchemaInput, unsupportedKeywords, `${path}.${key}`))
       }
     }
 
