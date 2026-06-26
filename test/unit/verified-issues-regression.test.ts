@@ -345,6 +345,45 @@ describe('verified issue regressions', () => {
       expect(prefixItemsWithItems.errors?.[0]?.path).toBe('0')
     })
 
+    it('P1-22: prefixItems conditionals behind local refs keep the root ref scope', () => {
+      const validator = new Validator()
+      const conditionalNumber = ConditionalBuilder.start(() => true).then('number!').toSchema()
+
+      const result = validator.validate({
+        type: 'array',
+        prefixItems: [{ $ref: '#/$defs/A' }],
+        $defs: {
+          A: { $ref: '#/$defs/B' },
+          B: conditionalNumber,
+        },
+      }, ['bad'])
+
+      expect(result.valid).toBe(false)
+      expect(result.errors?.[0]?.path).toBe('0')
+      expect(result.errors?.some(error => String(error.message ?? '').includes("can't resolve reference"))).toBe(false)
+    })
+
+    it('P1-22: conditional internal validation preserves the requested error format', () => {
+      const validator = new Validator()
+      const passthroughConditional = ConditionalBuilder.start(() => true).then(true).toSchema()
+      const schema = {
+        if: passthroughConditional,
+        then: {
+          type: 'number',
+          allOf: [passthroughConditional],
+        },
+      }
+
+      const formatted = validator.validate(schema, 'bad', { format: true })
+      const raw = validator.validate(schema, 'bad', { format: false })
+
+      expect(formatted.valid).toBe(false)
+      expect(formatted.errors?.[0]).toHaveProperty('path')
+      expect(formatted.errors?.[0]).not.toHaveProperty('instancePath')
+      expect(raw.valid).toBe(false)
+      expect(raw.errors?.[0]).toHaveProperty('instancePath')
+    })
+
     it('P1-22: public Validator executes conditionals behind local JSON Schema refs', () => {
       const validator = new Validator()
       const conditionalNumber = ConditionalBuilder.start(() => true).then('number!').toSchema()

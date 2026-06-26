@@ -434,7 +434,7 @@ export class ConditionalValidator {
                 const childSchema = prefixItems[index]
                 if (!this._hasConditionalChild(childSchema, rootSchema)) continue
                 const childPath = path ? `${path}/${index}` : String(index)
-                errors.push(...this._validateSchemaNode(childSchema, data[index], childPath, options, rootData, null, rootSchema, seenRefs))
+                errors.push(...this._runConditionalNodes(childSchema, data[index], childPath, options, rootData, null, rootSchema, seenRefs))
             }
         }
 
@@ -444,7 +444,7 @@ export class ConditionalValidator {
             let firstConditionalErrors: ValidationErrorItem[] | null = null
 
             for (let index = 0; index < data.length; index++) {
-                if (!this.hooks.validateSchema(cleanContains, data[index], { ...options, format: false }).valid) continue
+                if (!this.hooks.validateSchema(cleanContains, data[index], options).valid) continue
                 const childPath = path ? `${path}/${index}` : String(index)
                 const childErrors = this._runConditionalNodes(containsSchema, data[index], childPath, options, rootData, null, rootSchema, seenRefs)
                 if (childErrors.length === 0) {
@@ -469,7 +469,7 @@ export class ConditionalValidator {
 
             for (const childSchema of anyOfSchemas) {
                 const clean = this._stripConditionalNodes(childSchema) as JSONSchema
-                if (!this.hooks.validateSchema(clean, data, { ...options, format: false }).valid) continue
+                if (!this.hooks.validateSchema(clean, data, options).valid) continue
                 if (!this._hasConditionalChild(childSchema, rootSchema)) {
                     matched = true
                     break
@@ -493,7 +493,7 @@ export class ConditionalValidator {
 
             for (const childSchema of oneOfSchemas) {
                 const clean = this._stripConditionalNodes(childSchema) as JSONSchema
-                if (!this.hooks.validateSchema(clean, data, { ...options, format: false }).valid) continue
+                if (!this.hooks.validateSchema(clean, data, options).valid) continue
                 if (!this._hasConditionalChild(childSchema, rootSchema)) {
                     matches += 1
                     continue
@@ -522,7 +522,7 @@ export class ConditionalValidator {
             const ifHasConditional = this._hasConditionalChild(internalSchema.if, rootSchema)
             const conditionMatched = ifHasConditional
                 ? this._validateSchemaNode(internalSchema.if, data, path, options, rootData, fieldName, rootSchema, seenRefs).length === 0
-                : this.hooks.validateSchema(this._stripConditionalNodes(internalSchema.if) as JSONSchema, data, { ...options, format: false }).valid
+                : this.hooks.validateSchema(this._stripConditionalNodes(internalSchema.if) as JSONSchema, data, options).valid
             const branch = conditionMatched ? internalSchema.then : internalSchema.else
 
             if (branch !== undefined && ifHasConditional) {
@@ -562,7 +562,7 @@ export class ConditionalValidator {
     ): ValidationErrorItem[] {
         const clean = this._stripConditionalNodes(schema) as JSONSchema
         const errors: ValidationErrorItem[] = []
-        const baseResult = this.hooks.validateSchema(clean, data, { ...options, format: false })
+        const baseResult = this.hooks.validateSchema(clean, data, options)
 
         if (!baseResult.valid) {
             errors.push(...(baseResult.errors ?? []).map(err => this._prefixError(err, path)))
