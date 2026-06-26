@@ -60,6 +60,8 @@ const result = validate(schema, { email: 'test@example.com' });
 
 **Recommendation**: If your project is `type: module` / ESM, give priority to using `.cjs`, `.json`, `.jsonc`, `.json5`, as the compatibility is the most stable.
 
+`.js` / `.cjs` locale files are executed as trusted Node code. If the locale directory can contain untrusted files, configure `s.config({ i18n: '/path/to/locales', codeLocaleFiles: 'deny' })` to load only `.json`, `.jsonc`, and `.json5`.
+
 ---
 
 ## DSL syntax issues

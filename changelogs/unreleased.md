@@ -1,5 +1,11 @@
 # Unreleased
 
+## 2026-06-26
+
+- Hardened schema object construction and validation for reserved property names such as `__proto__`, including DSL object parsing, schema utility merges, conditional/custom-validator stripping paths, exporter examples, v1-compatible `JSONSchemaCore`, and `Validator.quickValidate()`.
+- Bounded the static `Validator.quickValidate()` AJV schema cache with LRU eviction, explicit `clearQuickValidateCache()`, cache stats, and `resetRuntimeState()` cleanup.
+- Added compatibility-safe i18n hardening through `codeLocaleFiles: 'deny'`, letting trusted deployments keep `.js/.cjs` locale packs while untrusted locale directories can stay JSON-only.
+
 ## 2026-06-24
 
 - Fixed follow-up validation edge cases so conditional validation honors `{ allErrors: false }` after merging base and conditional errors, runs conditionals through Draft 7 `dependencies` and local `definitions` / `$defs` `$ref` targets including nested local refs and encoded JSON Pointer segments, preserves `prefixItems + items` semantics during conditional stripping, keeps boolean `false` schemas in `SchemaUtils.pick()`, prunes dependent constraints in `SchemaUtils.omit()`, and makes `SchemaHelper` stable comparison/hash generation distinguish runtime function references and circular arrays.

@@ -11,6 +11,7 @@
  */
 
 import type { JSONSchema } from '../types/schema.js'
+import { createSchemaRecord, setSchemaRecordValue } from './schemaRecord.js'
 
 // ==================== Type aliases ====================
 
@@ -178,25 +179,43 @@ export class TypeConverter {
   // ========== Schema merging ==========
 
   static mergeSchemas(...schemas: JSONSchema[]): JSONSchema {
-    const result: Record<string, unknown> = {}
+    const result = createSchemaRecord<unknown>()
 
     for (const schema of schemas) {
       for (const [key, value] of Object.entries(schema)) {
         if (key === 'properties') {
-          result['properties'] = {
-            ...((result['properties'] as Record<string, unknown>) ?? {}),
-            ...(value as Record<string, unknown>),
-          }
+          setSchemaRecordValue(
+            result,
+            'properties',
+            TypeConverter._mergePropertyMaps(
+              (result['properties'] as Record<string, unknown> | undefined) ?? {},
+              value as Record<string, unknown>,
+            )
+          )
         } else if (key === 'required') {
           const existing = (result['required'] as string[]) ?? []
-          result['required'] = [...new Set([...existing, ...(value as string[])])]
+          setSchemaRecordValue(result, 'required', [...new Set([...existing, ...(value as string[])])])
         } else {
-          result[key] = value
+          setSchemaRecordValue(result, key, value)
         }
       }
     }
 
     return result as JSONSchema
+  }
+
+  private static _mergePropertyMaps(
+    base: Record<string, unknown>,
+    extension: Record<string, unknown>
+  ): Record<string, unknown> {
+    const result = createSchemaRecord<unknown>()
+    for (const [key, value] of Object.entries(base)) {
+      setSchemaRecordValue(result, key, value)
+    }
+    for (const [key, value] of Object.entries(extension)) {
+      setSchemaRecordValue(result, key, value)
+    }
+    return result
   }
 
   // ========== Constraint extraction ==========
@@ -209,10 +228,10 @@ export class TypeConverter {
       'enum', 'format', 'const',
     ] as const
 
-    const result: Record<string, unknown> = {}
+    const result = createSchemaRecord<unknown>()
     for (const key of constraintKeys) {
       if (key in schema) {
-        result[key] = (schema as Record<string, unknown>)[key]
+        setSchemaRecordValue(result, key, (schema as Record<string, unknown>)[key])
       }
     }
     return result

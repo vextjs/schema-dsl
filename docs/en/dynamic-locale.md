@@ -29,10 +29,13 @@ import path from 'path';
 // ========== Configuration when the application starts (only executed once) ==========
 
 //Method 1: Pass in the directory path (recommended)⭐
-// Node >=18: Automatically scan.js (CommonJS),.cjs,.json,.jsonc,.json5 files in the directory
+// Node >=18: Automatically scan .js (CommonJS), .cjs, .json, .jsonc, .json5 files in the directory
 s.config({
   i18n: path.join(__dirname, 'locales')
 });
+
+// For data-only or untrusted locale directories, use:
+// s.config({ i18n: path.join(__dirname, 'locales'), codeLocaleFiles: 'deny' });
 
 //Method 2: Directly pass in the object
 s.config({

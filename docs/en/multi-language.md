@@ -9,7 +9,7 @@ Common entrances:
 - Scan language packs from directory: `s.config({ i18n: '/path/to/locales' })`
 - Single validation coverage language: `validator.validate(schema, data, { locale: 'en-US' })`
 
-Currently i18n directory scanning supports these language pack files: `.js`, `.cjs`, `.json`, `.jsonc`, `.json5`.
+Currently i18n directory scanning supports these language pack files: `.js`, `.cjs`, `.json`, `.jsonc`, `.json5`. `.js` / `.cjs` files are trusted code files and remain enabled by default for compatibility; use `s.config({ i18n: '/path/to/locales', codeLocaleFiles: 'deny' })` for JSON-only directory loading.
 
 For more information, see:
 

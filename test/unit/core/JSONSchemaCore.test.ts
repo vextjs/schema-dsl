@@ -28,6 +28,23 @@ describe('JSONSchemaCore direct compatibility facade', () => {
     expect(core.getSchema()).toBe(core.toSchema())
   })
 
+  it('treats __proto__ as a normal property name in the v1-compatible chain API', () => {
+    const core = new JSONSchemaCore()
+      .type('object')
+      .property('__proto__', { type: 'string' })
+      .properties({ name: { type: 'string' } })
+      .required('__proto__')
+
+    const schema = core.toSchema()
+
+    expect(Object.getPrototypeOf(schema.properties)).toBeNull()
+    expect(Object.prototype.hasOwnProperty.call(schema.properties, '__proto__')).toBe(true)
+    expect(schema.properties?.['__proto__']).toEqual({ type: 'string' })
+    expect(core.validate(JSON.parse('{"__proto__":"ok","name":"Ada"}')).valid).toBe(true)
+    expect(core.validate(JSON.parse('{"__proto__":123,"name":"Ada"}')).valid).toBe(false)
+    expect(core.validate({ name: 'Ada' }).valid).toBe(false)
+  })
+
   it('supports scalar decorators and validation through the facade', () => {
     const core = new JSONSchemaCore({ type: 'string' })
       .format('email')

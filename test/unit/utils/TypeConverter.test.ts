@@ -137,6 +137,21 @@ describe('TypeConverter - helper utilities', () => {
     })
   })
 
+  it('merges __proto__ properties without mutating result prototype', () => {
+    const extensionProperties = Object.create(null)
+    extensionProperties['__proto__'] = { type: 'string' }
+
+    const merged = TypeConverter.mergeSchemas(
+      { type: 'object', properties: {} },
+      { properties: extensionProperties, required: ['__proto__'] } as any,
+    )
+
+    expect(Object.getPrototypeOf(merged.properties)).toBeNull()
+    expect(Object.prototype.hasOwnProperty.call(merged.properties, '__proto__')).toBe(true)
+    expect(merged.properties?.['__proto__']).toEqual({ type: 'string' })
+    expect(merged.required).toEqual(['__proto__'])
+  })
+
   it('extracts only validation constraints from a schema', () => {
     expect(TypeConverter.extractConstraints({
       type: 'string',

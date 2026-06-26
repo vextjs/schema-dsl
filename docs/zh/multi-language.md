@@ -9,7 +9,7 @@
 - 从目录扫描语言包：`s.config({ i18n: '/path/to/locales' })`
 - 单次验证覆盖语言：`validator.validate(schema, data, { locale: 'en-US' })`
 
-当前 i18n 目录扫描支持这些语言包文件：`.js`、`.cjs`、`.json`、`.jsonc`、`.json5`。
+当前 i18n 目录扫描支持这些语言包文件：`.js`、`.cjs`、`.json`、`.jsonc`、`.json5`。`.js` / `.cjs` 属于可信代码文件，默认仍为兼容而启用；如需只从目录加载 JSON 系列文件，可使用 `s.config({ i18n: '/path/to/locales', codeLocaleFiles: 'deny' })`。
 
 更多内容请见：
 

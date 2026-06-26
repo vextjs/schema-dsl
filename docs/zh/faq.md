@@ -60,6 +60,8 @@ const result = validate(schema, { email: 'test@example.com' });
 
 **推荐**：如果你的项目是 `type: module` / ESM，优先使用 `.cjs`、`.json`、`.jsonc`、`.json5`，兼容性最稳定。
 
+`.js` / `.cjs` 语言包会作为可信 Node 代码执行。如果 locale 目录可能包含不可信文件，请配置 `s.config({ i18n: '/path/to/locales', codeLocaleFiles: 'deny' })`，仅加载 `.json`、`.jsonc`、`.json5`。
+
 ---
 
 ## DSL 语法问题

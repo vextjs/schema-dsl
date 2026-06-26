@@ -1,5 +1,6 @@
 import type { JSONSchema } from '../types/schema.js'
 import type { TypeDefinition } from './TypeRegistry.js'
+import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 
 /** Callback type for the afterCompile hook (synchronous only). */
 export type AfterCompileHook = (schema: JSONSchema) => void
@@ -55,12 +56,12 @@ export const SchemaCompiler = {
    * Strip internal keys and return a clean JSON Schema (used by toJsonSchema() output).
    */
   toJsonSchema(schema: JSONSchema, internalKeys: ReadonlySet<string>): JSONSchema {
-    const result: JSONSchema = {}
+    const result = createSchemaRecord<unknown>()
     for (const [k, v] of Object.entries(schema)) {
       if (!internalKeys.has(k)) {
-        result[k] = v
+        setSchemaRecordValue(result, k, v)
       }
     }
-    return result
+    return result as JSONSchema
   },
 }

@@ -135,6 +135,26 @@ describe('i18n Subdirectory Merge', () => {
       expect(Locale.getMessageText('test.json5.key', {}, 'zh-CN')).toBe('JSON5 locale pack')
     })
 
+    it('can deny executable .js/.cjs locale files while keeping data files', () => {
+      const root = createTmpLocales({
+        'zh-CN.cjs': 'module.exports = { "test.code.key": "Code locale pack" };',
+        'zh-CN.json': '{"test.data.key":"Data locale pack"}'
+      })
+      dsl.config({ i18n: { localesPath: root, codeLocaleFiles: 'deny' } as any })
+      expect(Locale.getMessageText('test.code.key', {}, 'zh-CN')).toBe('test.code.key')
+      expect(Locale.getMessageText('test.data.key', {}, 'zh-CN')).toBe('Data locale pack')
+    })
+
+    it('top-level codeLocaleFiles deny applies to string i18n paths', () => {
+      const root = createTmpLocales({
+        'zh-CN.cjs': 'module.exports = { "test.string.code": "String path code" };',
+        'zh-CN.json5': "{ 'test.string.data': 'String path data' }"
+      })
+      dsl.config({ i18n: root, codeLocaleFiles: 'deny' } as any)
+      expect(Locale.getMessageText('test.string.code', {}, 'zh-CN')).toBe('test.string.code')
+      expect(Locale.getMessageText('test.string.data', {}, 'zh-CN')).toBe('String path data')
+    })
+
   })
 
   describe('F2 Duplicate Key Conflict Detection', () => {

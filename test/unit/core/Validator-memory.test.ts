@@ -147,4 +147,34 @@ describe('Validator memory lifecycle', () => {
     expect(getRemoveAdditionalAjvCacheSize(validator)).toBe(0)
     expect((validator as unknown as { _removeAdditionalAjv: unknown })._removeAdditionalAjv).toBeNull()
   })
+
+  it('should bound static quickValidate schema cache and allow clearing it', () => {
+    const internal = Validator as unknown as { _quickValidateCacheMaxSize: number }
+    const originalMaxSize = internal._quickValidateCacheMaxSize
+    internal._quickValidateCacheMaxSize = 8
+    Validator.clearQuickValidateCache()
+
+    try {
+      for (let i = 0; i < 25; i += 1) {
+        const field = `field${i}`
+        const schema = {
+          type: 'object',
+          properties: {
+            [field]: { type: 'string' },
+          },
+          required: [field],
+        }
+        expect(Validator.quickValidate(schema, { [field]: 'ok' })).toBe(true)
+      }
+
+      expect(Validator.getQuickValidateCacheStats()).toEqual({ size: 8, maxSize: 8 })
+
+      Validator.clearQuickValidateCache()
+      expect(Validator.getQuickValidateCacheStats()).toEqual({ size: 0, maxSize: 8 })
+      expect((Validator as unknown as { _quickValidateAjv: unknown })._quickValidateAjv).toBeNull()
+    } finally {
+      internal._quickValidateCacheMaxSize = originalMaxSize
+      Validator.clearQuickValidateCache()
+    }
+  })
 })

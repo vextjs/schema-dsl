@@ -5,6 +5,7 @@
 import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 import { BaseExporter, type ExporterOptions, type ExportReport, type ExportReportOptions } from './BaseExporter.js'
 import { TypeConverter } from '../utils/TypeConverter.js'
+import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 
 // ==================== Type definitions ====================
 
@@ -117,7 +118,7 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
 
   private _convertSchema(schema: JSONSchemaInput): Record<string, unknown> {
     if (!isObjectSchema(schema)) return {}
-    const result: Record<string, unknown> = {}
+    const result = createSchemaRecord<unknown>()
 
     if (schema.type) {
       result['bsonType'] = TypeConverter.toMongoDBType(schema.type as string | string[])
@@ -128,9 +129,9 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
     }
 
     if (schema.properties) {
-      result['properties'] = {}
+      result['properties'] = createSchemaRecord<unknown>()
       for (const [key, value] of Object.entries(schema.properties)) {
-        ;(result['properties'] as Record<string, unknown>)[key] = this._convertSchema(value)
+        setSchemaRecordValue(result['properties'] as Record<string, unknown>, key, this._convertSchema(value))
       }
     }
 

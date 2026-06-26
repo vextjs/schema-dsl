@@ -15,6 +15,8 @@ import { CONDITIONAL_RUNTIME_STATE, type ConditionalRuntimeState } from './Condi
 import { DslParser, type DslParseOptions } from '../parser/DslParser.js'
 import type { RuntimeIssueSource } from './RuntimeIssueFormatter.js'
 import { SchemaCompileError } from '../errors/SchemaCompileError.js'
+import { CACHE } from '../config/constants.js'
+import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 
 // Non-AJV custom option keys (V-Y01 fix: filter before passing to new Ajv())
 const NON_AJV_KEYS = new Set([
@@ -39,6 +41,8 @@ type InternalSchema = JSONSchema & {
 // Performance: share empty array on valid path to avoid `{ errors: [] }` allocation every time
 const EMPTY_ERRORS: ValidationErrorItem[] = []
 const FLAT_LOCALE_CACHE_MAX_SIZE = 32
+const QUICK_VALIDATE_CACHE_MAX_SIZE = CACHE.SCHEMA_CACHE.MAX_SIZE
+const AJV_SKIPPED_PROPERTY_NAMES = ['__proto__'] as const
 
 export const SCHEMA_DSL_CACHE_KEY = Symbol.for('schema-dsl.schemaCacheKey')
 
@@ -171,6 +175,11 @@ export class Validator {
 
   // V-Y07 fix: static singleton Ajv
   private static _quickValidateAjv: InstanceType<typeof Ajv> | null = null
+  private static _quickValidateSchemaMap = new WeakMap<object, string>()
+  private static _quickValidateSchemaKeyCounter = 0
+  private static _quickValidateCacheMaxSize = QUICK_VALIDATE_CACHE_MAX_SIZE
+  private static readonly _quickValidateSchemaRefs = new Map<string, JSONSchemaInput>()
+  private static readonly _quickValidateSchemaLru = new Map<string, true>()
 
   constructor(options: ValidatorOptions = {}) {
     // V-Y01 fix: filter non-AJV options
@@ -303,7 +312,7 @@ export class Validator {
       const source = value as Record<string, unknown>
       const runtimeState = (source as { [CONDITIONAL_RUNTIME_STATE]?: ConditionalRuntimeState })[CONDITIONAL_RUNTIME_STATE]
       let changed = false
-      const next: Record<string, unknown> = {}
+      const next = createSchemaRecord<unknown>()
 
       for (const [key, child] of Object.entries(source)) {
         if (key === '_customValidators') {
@@ -312,7 +321,7 @@ export class Validator {
         }
 
         const stripped = strip(child)
-        next[key] = stripped
+        setSchemaRecordValue(next, key, stripped)
         if (stripped !== child) changed = true
       }
 
@@ -726,16 +735,148 @@ export class Validator {
    * Quick validate (V-Y07 fix: reuses singleton Ajv instead of creating new Ajv each time).
    */
   static quickValidate(schema: JSONSchemaInput, data: unknown): boolean {
+    return Validator._quickValidateInternal(schema, data, new WeakSet<object>())
+  }
+
+  private static _quickValidateInternal(
+    schema: JSONSchemaInput,
+    data: unknown,
+    seen: WeakSet<object>
+  ): boolean {
+    const ajv = Validator._getQuickValidateAjv()
+    const cacheKey = Validator._rememberQuickValidateSchema(schema)
+    try {
+      const valid = ajv.validate(schema, data) as boolean
+      if (cacheKey) Validator._touchQuickValidateSchema(cacheKey)
+      return valid && Validator._quickValidateAjvSkippedProperties(schema, data, seen)
+    } catch {
+      if (cacheKey) Validator._releaseQuickValidateSchema(cacheKey)
+      return false
+    }
+  }
+
+  static clearQuickValidateCache(): void {
+    if (Validator._quickValidateAjv) {
+      Validator._releaseAllQuickValidateSchemas()
+      Validator._quickValidateAjv.removeSchema()
+      Validator._quickValidateAjv = null
+    }
+    Validator._quickValidateSchemaMap = new WeakMap<object, string>()
+    Validator._quickValidateSchemaKeyCounter = 0
+  }
+
+  static getQuickValidateCacheStats(): { size: number; maxSize: number } {
+    return {
+      size: Validator._quickValidateSchemaLru.size,
+      maxSize: Validator._quickValidateCacheMaxSize,
+    }
+  }
+
+  private static _getQuickValidateAjv(): InstanceType<typeof Ajv> {
     if (!Validator._quickValidateAjv) {
       Validator._quickValidateAjv = new Ajv()
         ; (addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(Validator._quickValidateAjv)
       CustomKeywords.registerAll(Validator._quickValidateAjv)
     }
-    try {
-      return Validator._quickValidateAjv.validate(schema, data) as boolean
-    } catch {
-      return false
+    return Validator._quickValidateAjv
+  }
+
+  private static _rememberQuickValidateSchema(schema: JSONSchemaInput): string | null {
+    if (!schema || typeof schema !== 'object') return null
+
+    let cacheKey = Validator._quickValidateSchemaMap.get(schema)
+    if (!cacheKey) {
+      cacheKey = `quick:${++Validator._quickValidateSchemaKeyCounter}`
+      Validator._quickValidateSchemaMap.set(schema, cacheKey)
     }
+
+    if (Validator._quickValidateSchemaRefs.has(cacheKey)) {
+      Validator._touchQuickValidateSchema(cacheKey)
+      return cacheKey
+    }
+
+    Validator._ensureQuickValidateCapacity()
+    Validator._quickValidateSchemaRefs.set(cacheKey, schema)
+    Validator._touchQuickValidateSchema(cacheKey)
+    return cacheKey
+  }
+
+  private static _ensureQuickValidateCapacity(): void {
+    const maxSize = Math.max(1, Validator._quickValidateCacheMaxSize)
+    while (Validator._quickValidateSchemaLru.size >= maxSize) {
+      const oldestKey = Validator._quickValidateSchemaLru.keys().next().value as string | undefined
+      if (!oldestKey) return
+      Validator._releaseQuickValidateSchema(oldestKey)
+    }
+  }
+
+  private static _releaseQuickValidateSchema(cacheKey: string): void {
+    const schemaRef = Validator._quickValidateSchemaRefs.get(cacheKey)
+    if (schemaRef && typeof schemaRef === 'object' && Validator._quickValidateAjv) {
+      try {
+        Validator._quickValidateAjv.removeSchema(schemaRef)
+      } catch {
+        // AJV may already have pruned this schema; bookkeeping still needs cleanup.
+      }
+    }
+    Validator._quickValidateSchemaRefs.delete(cacheKey)
+    Validator._quickValidateSchemaLru.delete(cacheKey)
+  }
+
+  private static _releaseAllQuickValidateSchemas(): void {
+    for (const cacheKey of Array.from(Validator._quickValidateSchemaRefs.keys())) {
+      Validator._releaseQuickValidateSchema(cacheKey)
+    }
+    Validator._quickValidateSchemaRefs.clear()
+    Validator._quickValidateSchemaLru.clear()
+  }
+
+  private static _touchQuickValidateSchema(cacheKey: string): void {
+    Validator._quickValidateSchemaLru.delete(cacheKey)
+    Validator._quickValidateSchemaLru.set(cacheKey, true)
+  }
+
+  private static _quickValidateAjvSkippedProperties(
+    schema: JSONSchemaInput,
+    data: unknown,
+    seen = new WeakSet<object>()
+  ): boolean {
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return true
+
+    const schemaObject = schema as object
+    if (seen.has(schemaObject)) return true
+    seen.add(schemaObject)
+
+    const source = schema as Record<string, unknown>
+    const dataRecord = data && typeof data === 'object' && !Array.isArray(data)
+      ? data as Record<string, unknown>
+      : null
+    const properties = source['properties']
+    const required = Array.isArray(source['required']) ? source['required'].map(String) : []
+
+    for (const propertyName of AJV_SKIPPED_PROPERTY_NAMES) {
+      const hasOwnData = !!dataRecord && Object.prototype.hasOwnProperty.call(dataRecord, propertyName)
+      if (required.includes(propertyName) && !hasOwnData) return false
+      if (properties && typeof properties === 'object' && !Array.isArray(properties)
+        && Object.prototype.hasOwnProperty.call(properties, propertyName)
+        && hasOwnData) {
+        const childSchema = (properties as Record<string, JSONSchemaInput>)[propertyName]
+        if (childSchema && typeof childSchema === 'object' && !Array.isArray(childSchema) && seen.has(childSchema as object)) continue
+        if (!Validator._quickValidateInternal(childSchema, dataRecord[propertyName], seen)) return false
+      }
+    }
+
+    if (!properties || typeof properties !== 'object' || Array.isArray(properties) || !dataRecord) {
+      return true
+    }
+
+    for (const [key, childSchema] of Object.entries(properties as Record<string, JSONSchemaInput>)) {
+      if ((AJV_SKIPPED_PROPERTY_NAMES as readonly string[]).includes(key)) continue
+      if (!Object.prototype.hasOwnProperty.call(dataRecord, key)) continue
+      if (!Validator._quickValidateAjvSkippedProperties(childSchema, dataRecord[key], seen)) return false
+    }
+
+    return true
   }
 
   // ─── Internal Implementation ───────────────────────────────────────────
@@ -801,9 +942,11 @@ export class Validator {
         const cacheKey = this._getRemoveAdditionalCacheKey(cleanSchema)
         const validate = this._compileRemoveAdditionalSchema(cleanSchema, cacheKey)
         const valid = this._runWithActiveOptions(options, () => validate(data) as boolean)
-        if (valid) return { valid: true, data, errors: EMPTY_ERRORS }
+        const skippedPropertyErrors = this._validateAjvSkippedProperties(cleanSchema, data, options, messages, locale, shouldFormat)
+        if (valid && skippedPropertyErrors.length === 0) return { valid: true, data, errors: EMPTY_ERRORS }
         const fmtErrors = this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat, options)
-        return { valid: false, data, errors: fmtErrors, errorMessage: fmtErrors[0]?.message }
+        const errors = [...fmtErrors, ...skippedPropertyErrors]
+        return { valid: false, data, errors, errorMessage: errors[0]?.message }
       } catch (error) {
         return this._internalError(error, data)
       }
@@ -823,9 +966,14 @@ export class Validator {
 
     try {
       const valid = this._runWithActiveOptions(options, () => validate(data) as boolean)
-      if (valid) return { valid: true, data, errors: EMPTY_ERRORS }
+      const skippedPropertyErrors =
+        typeof schema === 'function'
+          ? EMPTY_ERRORS
+          : this._validateAjvSkippedProperties(schema, data, options, messages, locale, shouldFormat)
+      if (valid && skippedPropertyErrors.length === 0) return { valid: true, data, errors: EMPTY_ERRORS }
       const fmtErrors2 = this._formatErrors(validate.errors ?? [], messages, locale, shouldFormat, options)
-      return { valid: false, data, errors: fmtErrors2, errorMessage: fmtErrors2[0]?.message }
+      const errors = [...fmtErrors2, ...skippedPropertyErrors]
+      return { valid: false, data, errors, errorMessage: errors[0]?.message }
     } catch (error) {
       return this._internalError(error, data)
     }
@@ -1118,6 +1266,93 @@ export class Validator {
 
   private _joinPath(base: string, child: string): string {
     return base ? `${base}/${child}` : child
+  }
+
+  private _validateAjvSkippedProperties(
+    schema: JSONSchemaInput,
+    data: unknown,
+    options: ValidateOptions,
+    messages: ErrorMessages,
+    locale: string,
+    shouldFormat: boolean,
+    path = '',
+    seen = new WeakSet<object>()
+  ): ValidationErrorItem[] {
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return []
+
+    const schemaObject = schema as object
+    if (seen.has(schemaObject)) return []
+    seen.add(schemaObject)
+
+    const source = schema as Record<string, unknown>
+    const errors: ValidationErrorItem[] = []
+    const dataRecord = data && typeof data === 'object' && !Array.isArray(data)
+      ? data as Record<string, unknown>
+      : null
+    const properties = source['properties']
+    const required = Array.isArray(source['required']) ? source['required'].map(String) : []
+
+    for (const propertyName of AJV_SKIPPED_PROPERTY_NAMES) {
+      const hasOwnData = !!dataRecord && Object.prototype.hasOwnProperty.call(dataRecord, propertyName)
+      if (required.includes(propertyName) && !hasOwnData) {
+        errors.push(...this._formatErrors([{
+          keyword: 'required',
+          instancePath: path ? `/${path}` : '',
+          params: { missingProperty: propertyName },
+          message: `must have required property '${propertyName}'`,
+          parentSchema: source,
+        }], messages, locale, shouldFormat, options))
+      }
+
+      if (properties && typeof properties === 'object' && !Array.isArray(properties)
+        && Object.prototype.hasOwnProperty.call(properties, propertyName)
+        && hasOwnData) {
+        const childSchema = (properties as Record<string, JSONSchemaInput>)[propertyName]
+        const childResult = this._validateInternal(childSchema, dataRecord[propertyName], options)
+        if (!childResult.valid) {
+          const childPath = this._joinPath(path, propertyName)
+          errors.push(...(childResult.errors ?? []).map(error => this._prefixSkippedPropertyError(error, childPath)))
+        }
+      }
+    }
+
+    if (!properties || typeof properties !== 'object' || Array.isArray(properties) || !dataRecord) {
+      return errors
+    }
+
+    for (const [key, childSchema] of Object.entries(properties as Record<string, JSONSchemaInput>)) {
+      if ((AJV_SKIPPED_PROPERTY_NAMES as readonly string[]).includes(key)) continue
+      if (!Object.prototype.hasOwnProperty.call(dataRecord, key)) continue
+      errors.push(...this._validateAjvSkippedProperties(
+        childSchema,
+        dataRecord[key],
+        options,
+        messages,
+        locale,
+        shouldFormat,
+        this._joinPath(path, key),
+        seen
+      ))
+    }
+
+    return errors
+  }
+
+  private _prefixSkippedPropertyError(error: ValidationErrorItem, path: string): ValidationErrorItem {
+    const record = error as unknown as Record<string, unknown>
+    const rawPath =
+      typeof record['path'] === 'string'
+        ? record['path']
+        : typeof record['instancePath'] === 'string'
+          ? record['instancePath'].replace(/^\//, '')
+          : ''
+    const ownPath = !rawPath || rawPath === 'value' ? '' : rawPath
+    const nextPath = ownPath ? this._joinPath(path, ownPath) : path
+    return {
+      ...error,
+      path: nextPath,
+      field: nextPath,
+    }
   }
 
   private _resolveLocalRef(rootSchema: unknown, ref: string): unknown {

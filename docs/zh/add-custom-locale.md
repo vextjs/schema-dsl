@@ -8,6 +8,7 @@
 >
 > **目录加载（Node >=18）默认支持的语言文件格式**：`.js`（CommonJS）、`.cjs`、`.json`、`.jsonc`、`.json5`。  
 > **推荐**：如果你的应用是 `type: module` / ESM 项目，优先使用 `.cjs`、`.json`、`.jsonc`、`.json5`。
+> **可信目录说明**：`.js` / `.cjs` 语言包会由 Node 执行。仅在应用自有、可信的 locale 目录中使用；如果目录只应作为数据来源，配置 `codeLocaleFiles: 'deny'`，仅加载 `.json`、`.jsonc`、`.json5`。
 
 ---
 
@@ -61,6 +62,15 @@ import path from 'path';
 // 自动递归扫描 locales/ 下所有子目录，同语言文件合并为一个完整语言包
 s.config({
   i18n: path.join(__dirname, 'locales')
+});
+```
+
+如果该目录只应作为数据目录，或不是可信代码来源，可以禁用代码语言包并保留 JSON 系列文件：
+
+```javascript
+s.config({
+  i18n: path.join(__dirname, 'locales'),
+  codeLocaleFiles: 'deny'
 });
 ```
 

@@ -9,6 +9,7 @@
 
 import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 import { cloneSchemaValue } from './schemaClone.js'
+import { createSchemaRecord, setSchemaRecordValue } from './schemaRecord.js'
 
 const JSON_SCHEMA_KEYWORDS = new Set([
   '$schema',
@@ -170,15 +171,17 @@ export class SchemaHelper {
    * @param prefix - Property path prefix.
    */
   static flattenSchema(schema: JSONSchema, prefix = ''): Record<string, JSONSchemaInput> {
-    const result: Record<string, JSONSchemaInput> = {}
+    const result = createSchemaRecord<JSONSchemaInput>()
 
     if (schema.properties) {
       for (const [key, value] of Object.entries(schema.properties)) {
         const fullKey = prefix ? `${prefix}.${key}` : key
         if (isObjectSchema(value) && value.type === 'object' && value.properties) {
-          Object.assign(result, this.flattenSchema(value, fullKey))
+          for (const [nestedKey, nestedValue] of Object.entries(this.flattenSchema(value, fullKey))) {
+            setSchemaRecordValue(result, nestedKey, nestedValue)
+          }
         } else {
-          result[fullKey] = value
+          setSchemaRecordValue(result, fullKey, value)
         }
       }
     }

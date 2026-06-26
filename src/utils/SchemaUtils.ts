@@ -9,6 +9,7 @@ import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 import { DslAdapter } from '../adapters/DslAdapter.js'
 import { cloneSchemaValue } from './schemaClone.js'
 import { isRawJsonSchemaLike } from './schemaInput.js'
+import { createSchemaRecord, setSchemaRecordValue } from './schemaRecord.js'
 
 // Internal: chainable schema wrapper type
 interface ChainableSchema extends JSONSchema {
@@ -62,22 +63,30 @@ export class SchemaUtils {
 
     for (const [key, value] of Object.entries(extSchema)) {
       if (key !== 'properties' && key !== 'required') {
-        result[key] = cloneSchemaValue(value)
+        setSchemaRecordValue(result, key, cloneSchemaValue(value))
       }
     }
 
     // Merge extension schema (deep-merge same-name nested objects instead of replacing)
     if (extSchema.properties) {
-      result['properties'] = this._mergeProperties(
-        (result['properties'] as Record<string, unknown> | undefined) ?? {},
-        extSchema.properties as Record<string, unknown>,
+      setSchemaRecordValue(
+        result,
+        'properties',
+        this._mergeProperties(
+          (result['properties'] as Record<string, unknown> | undefined) ?? {},
+          extSchema.properties as Record<string, unknown>,
+        )
       )
     }
     if (extSchema.required) {
-      result['required'] = [...new Set([
-        ...(Array.isArray(result['required']) ? result['required'] as string[] : []),
-        ...extSchema.required,
-      ])]
+      setSchemaRecordValue(
+        result,
+        'required',
+        [...new Set([
+          ...(Array.isArray(result['required']) ? result['required'] as string[] : []),
+          ...extSchema.required,
+        ])]
+      )
     }
     if (Array.isArray(result['required']) && result['required'].length === 0) {
       delete result['required']
@@ -92,15 +101,17 @@ export class SchemaUtils {
   static pick(schema: JSONSchema, fields: string[]): ChainableSchema {
     const result = this._clone(schema)
     result['type'] = 'object'
-    result['properties'] = {} as Record<string, unknown>
+    result['properties'] = createSchemaRecord<unknown>()
     result['required'] = [] as string[]
 
     for (const field of fields) {
       if (schema.properties && Object.prototype.hasOwnProperty.call(schema.properties, field)) {
         const propertySchema = schema.properties[field]
-        ;(result['properties'] as Record<string, unknown>)[field] = isObjectSchema(propertySchema)
-          ? this._clone(propertySchema)
-          : cloneSchemaValue(propertySchema)
+        setSchemaRecordValue(
+          result['properties'] as Record<string, unknown>,
+          field,
+          isObjectSchema(propertySchema) ? this._clone(propertySchema) : cloneSchemaValue(propertySchema)
+        )
         if (schema.required?.includes(field)) {
           (result['required'] as string[]).push(field)
         }
@@ -372,10 +383,13 @@ export class SchemaUtils {
     base: Record<string, unknown>,
     ext: Record<string, unknown>,
   ): Record<string, unknown> {
-    const result = cloneSchemaValue(base)
+    const result = createSchemaRecord<unknown>()
+    for (const [key, baseVal] of Object.entries(base)) {
+      setSchemaRecordValue(result, key, cloneSchemaValue(baseVal))
+    }
     for (const [key, extVal] of Object.entries(ext)) {
       const baseVal = result[key]
-      result[key] = SchemaUtils._mergeSchemaValue(baseVal, extVal)
+      setSchemaRecordValue(result, key, SchemaUtils._mergeSchemaValue(baseVal, extVal))
     }
     return result
   }
@@ -394,14 +408,15 @@ export class SchemaUtils {
     const result = cloneSchemaValue(baseVal)
     for (const [key, value] of Object.entries(extVal)) {
       if (key === 'properties' && SchemaUtils._isPlainRecord(result[key]) && SchemaUtils._isPlainRecord(value)) {
-        result[key] = SchemaUtils._mergeProperties(
-          result[key] as Record<string, unknown>,
-          value as Record<string, unknown>,
+        setSchemaRecordValue(
+          result,
+          key,
+          SchemaUtils._mergeProperties(result[key] as Record<string, unknown>, value as Record<string, unknown>)
         )
       } else if (key === 'required' && Array.isArray(result[key]) && Array.isArray(value)) {
-        result[key] = [...new Set([...(result[key] as unknown[]), ...value])]
+        setSchemaRecordValue(result, key, [...new Set([...(result[key] as unknown[]), ...value])])
       } else {
-        result[key] = cloneSchemaValue(value)
+        setSchemaRecordValue(result, key, cloneSchemaValue(value))
       }
     }
     return result
@@ -439,11 +454,11 @@ export class SchemaUtils {
 
     const dependentRequired = schema['dependentRequired']
     if (this._isPlainRecord(dependentRequired)) {
-      const next: Record<string, string[]> = {}
+      const next = createSchemaRecord<string[]>()
       for (const [field, dependencies] of Object.entries(dependentRequired)) {
         if (!fieldSet.has(field) || !Array.isArray(dependencies)) continue
         const kept = dependencies.map(String).filter(dependency => fieldSet.has(dependency))
-        if (kept.length > 0) next[field] = kept
+        if (kept.length > 0) setSchemaRecordValue(next, field, kept)
       }
       if (Object.keys(next).length > 0) {
         schema['dependentRequired'] = next
@@ -456,11 +471,11 @@ export class SchemaUtils {
 
     const dependencies = schema['dependencies']
     if (this._isPlainRecord(dependencies)) {
-      const next: Record<string, unknown> = {}
+      const next = createSchemaRecord<unknown>()
       for (const [field, dependency] of Object.entries(dependencies)) {
         if (!fieldSet.has(field) || !Array.isArray(dependency)) continue
         const kept = dependency.map(String).filter(dependentField => fieldSet.has(dependentField))
-        if (kept.length > 0) next[field] = kept
+        if (kept.length > 0) setSchemaRecordValue(next, field, kept)
       }
       if (Object.keys(next).length > 0) {
         schema['dependencies'] = next
@@ -476,7 +491,10 @@ export class SchemaUtils {
   }
 
   private static _makeChainable(schema: JSONSchema): ChainableSchema {
-    const chainable = Object.assign({}, schema) as Record<string, unknown>
+    const chainable = createSchemaRecord<unknown>()
+    for (const [key, value] of Object.entries(schema)) {
+      setSchemaRecordValue(chainable, key, value)
+    }
 
     Object.defineProperty(chainable, '_isChainable', {
       value: true, enumerable: false, configurable: false,
@@ -498,10 +516,10 @@ export class SchemaUtils {
   }
 
   private static _extractSchema(chainable: ChainableSchema | Record<string, unknown>): Record<string, unknown> {
-    const schema: Record<string, unknown> = {}
+    const schema = createSchemaRecord<unknown>()
     for (const key of Object.keys(chainable)) {
       if (key !== '_isChainable') {
-        schema[key] = chainable[key]
+        setSchemaRecordValue(schema, key, chainable[key])
       }
     }
     return schema

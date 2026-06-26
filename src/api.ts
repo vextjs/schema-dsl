@@ -397,8 +397,14 @@ function _normalizeSchemaInput(schema: _JSONSchemaInput | _DslDefinition | _IDsl
 // ==================== i18n locale directory scan ====================
 
 const _LOCALE_NAME_RE = /^[a-z]{2,3}(-[A-Z]{2,4})?$/
-const _LOCALE_REQUIRE_EXTENSIONS = new Set(['.js', '.cjs', '.json'])
+const _LOCALE_CODE_EXTENSIONS = new Set(['.js', '.cjs'])
+const _LOCALE_REQUIRE_EXTENSIONS = new Set(['.json'])
 const _LOCALE_TEXT_EXTENSIONS = new Set(['.jsonc', '.json5'])
+const _LOCALE_EXTENSIONS = new Set([
+  ..._LOCALE_CODE_EXTENSIONS,
+  ..._LOCALE_REQUIRE_EXTENSIONS,
+  ..._LOCALE_TEXT_EXTENSIONS,
+])
 
 function _normalizeLocaleModule(moduleValue: unknown): Record<string, _LocaleMessage> | null {
   if (!moduleValue || typeof moduleValue !== 'object' || Array.isArray(moduleValue)) return null
@@ -415,10 +421,20 @@ function _normalizeLocaleModule(moduleValue: unknown): Record<string, _LocaleMes
   return raw as Record<string, _LocaleMessage>
 }
 
-function _loadLocaleFile(fullPath: string, ext: string, _require: NodeRequire): Record<string, _LocaleMessage> | null {
+function _loadLocaleFile(
+  fullPath: string,
+  ext: string,
+  _require: NodeRequire,
+  allowCodeLocaleFiles: boolean
+): Record<string, _LocaleMessage> | null {
   if (_LOCALE_TEXT_EXTENSIONS.has(ext)) {
     const rawText = readFileSync(fullPath, 'utf8')
     return _normalizeLocaleModule(JSON5.parse(rawText) as Record<string, _LocaleMessage>)
+  }
+
+  if (_LOCALE_CODE_EXTENSIONS.has(ext)) {
+    if (!allowCodeLocaleFiles) return null
+    return _normalizeLocaleModule(_require(fullPath) as Record<string, _LocaleMessage>)
   }
 
   if (_LOCALE_REQUIRE_EXTENSIONS.has(ext)) {
@@ -428,7 +444,8 @@ function _loadLocaleFile(fullPath: string, ext: string, _require: NodeRequire): 
   return null
 }
 
-function _loadLocalesFromDir(dirPath: string, strict = false): void {
+function _loadLocalesFromDir(dirPath: string, strict = false, codeLocaleFiles: 'allow' | 'deny' = 'allow'): void {
+  const allowCodeLocaleFiles = codeLocaleFiles !== 'deny'
   let _require: NodeRequire
   try {
     // ESM: import.meta.url is defined
@@ -460,13 +477,13 @@ function _loadLocalesFromDir(dirPath: string, strict = false): void {
         scanDir(fullPath)
       } else {
         const ext = extname(entry).toLowerCase()
-        if (!_LOCALE_REQUIRE_EXTENSIONS.has(ext) && !_LOCALE_TEXT_EXTENSIONS.has(ext)) continue
+        if (!_LOCALE_EXTENSIONS.has(ext)) continue
 
         const locale = basename(entry, ext)
         // Only load files that look like locale identifiers (e.g., zh-CN, en-US, zh, en)
         if (_LOCALE_NAME_RE.test(locale)) {
           try {
-            const messages = _loadLocaleFile(fullPath, ext, _require)
+            const messages = _loadLocaleFile(fullPath, ext, _require, allowCodeLocaleFiles)
             if (messages && typeof messages === 'object') {
               // Conflict detection
               if (!registeredKeys.has(locale)) registeredKeys.set(locale, new Map())
@@ -504,6 +521,7 @@ function _loadLocalesFromDir(dirPath: string, strict = false): void {
 
 function _dslConfig(options: Partial<_DslConfigOptions> = {}): void {
   const strict = (options as Record<string, unknown>)['strict'] === true
+  const codeLocaleFiles = options.codeLocaleFiles === 'deny' ? 'deny' : 'allow'
   _TypeRegistry.setStrict(strict)
 
   if (options.patterns) {
@@ -533,10 +551,11 @@ function _dslConfig(options: Partial<_DslConfigOptions> = {}): void {
   if (options.i18n) {
     if (typeof options.i18n === 'string') {
       // Directory path: scan recursively for locale files
-      _loadLocalesFromDir(options.i18n, strict)
+      _loadLocalesFromDir(options.i18n, strict, codeLocaleFiles)
     } else if (typeof options.i18n === 'object' && 'localesPath' in options.i18n) {
       // { localesPath: string } form
-      _loadLocalesFromDir((options.i18n as { localesPath: string }).localesPath, strict)
+      const i18nOptions = options.i18n as { localesPath: string; codeLocaleFiles?: 'allow' | 'deny' }
+      _loadLocalesFromDir(i18nOptions.localesPath, strict, i18nOptions.codeLocaleFiles ?? codeLocaleFiles)
     } else if (typeof options.i18n === 'object' && 'locales' in options.i18n) {
       // v1 / docs compat: { locales: { locale: messages } }
       const locales = (options.i18n as { locales: Record<string, Record<string, string>> }).locales
@@ -596,6 +615,7 @@ function _defaultParseOptions(options: _DslParseOptions = {}): _DslParseOptions 
  */
 export function resetRuntimeState(): void {
   resetDefaultValidator()
+  _Validator.clearQuickValidateCache()
   _DslBuilder.clearCustomTypes()
   _resetDslNamespaceExtensions(_dslWithNS)
   _DEFAULT_DSL_EXTENSION_REGISTRY.clear()

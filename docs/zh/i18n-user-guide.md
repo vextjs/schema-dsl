@@ -121,6 +121,8 @@ s.config({
 });
 ```
 
+如果 locale 目录只应作为数据目录，或不是可信代码来源，可以在顶层或 `i18n` 对象内设置 `codeLocaleFiles: 'deny'`，跳过 `.js` / `.cjs`，仅加载 `.json`、`.jsonc`、`.json5`。
+
 **语言包文件**（`i18n/labels/zh-CN.cjs`）:
 ```javascript
 module.exports = {

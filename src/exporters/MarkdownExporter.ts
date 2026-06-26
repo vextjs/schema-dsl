@@ -10,6 +10,7 @@
 
 import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
 import { BaseExporter, type ExporterOptions, type ExportReport, type ExportReportOptions } from './BaseExporter.js'
+import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 
 // ==================== Type definitions ====================
 
@@ -278,14 +279,14 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
 
   private static _buildExample(schema: JSONSchema): unknown {
     if (schema.properties) {
-      const obj: Record<string, unknown> = {}
+      const obj = createSchemaRecord<unknown>()
       for (const [key, prop] of Object.entries(schema.properties)) {
         const isRequired = !!(
           (isObjectSchema(prop) && (prop as Record<string, unknown>)['_required'] === true) ||
           schema.required?.includes(key)
         )
         if (isRequired) {
-          obj[key] = this._getExampleValue(prop)
+          setSchemaRecordValue(obj, key, this._getExampleValue(prop))
         }
       }
       return obj

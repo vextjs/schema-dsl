@@ -492,6 +492,10 @@ s.config({
   // i18n: built-in locale path, inline locale bundle, { localesPath }, or { locales }
   i18n: './locales',
 
+  // Directory i18n loading keeps .js/.cjs enabled by default for compatibility.
+  // Use 'deny' when the locale directory is not a trusted code source.
+  codeLocaleFiles: 'deny',
+
   // Default locale, default is 'en-US'
   defaultLocale: 'zh-CN',
 
@@ -514,6 +518,7 @@ s.config({
 | Field | Type | Default | Description |
 |------|------|------|------|
 | `i18n` | `string | object` | - | locale directory or inline locale object |
+| `codeLocaleFiles` | `'allow' | 'deny'` | `'allow'` | whether directory loading may execute `.js` / `.cjs` locale files |
 | `defaultLocale` | `string` | `'en-US'` | default locale |
 | `cache` | `CacheOptions` | - | `maxSize` / `ttl` / `enabled` / `statsEnabled` |
 | `strict` | `boolean` | `false` | when `true`, unknown DSL types throw `Error` |
@@ -1028,6 +1033,14 @@ Quick validation.
 ```javascript
 const ok = Validator.quickValidate(schema, data);
 ```
+
+#### `Validator.clearQuickValidateCache()`
+
+Clears the static `quickValidate()` AJV schema cache and releases its singleton AJV instance. The next `quickValidate()` call recreates the validator lazily.
+
+#### `Validator.getQuickValidateCacheStats()`
+
+Returns `{ size, maxSize }` for the static `quickValidate()` schema cache.
 
 ---
 

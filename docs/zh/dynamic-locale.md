@@ -34,6 +34,9 @@ s.config({
   i18n: path.join(__dirname, 'locales')
 });
 
+// 如果 locale 目录只应作为数据目录，或不是可信代码来源，可使用：
+// s.config({ i18n: path.join(__dirname, 'locales'), codeLocaleFiles: 'deny' });
+
 // 方式二：直接传入对象
 s.config({
   i18n: {

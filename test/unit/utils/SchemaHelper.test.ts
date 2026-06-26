@@ -118,6 +118,19 @@ describe('SchemaHelper', () => {
             })
         })
 
+        it('flattens __proto__ properties without mutating result prototype', () => {
+            const properties = Object.create(null)
+            properties['__proto__'] = { type: 'string' }
+            const flat = SchemaHelper.flattenSchema({
+                type: 'object',
+                properties,
+            } as any)
+
+            expect(Object.prototype.hasOwnProperty.call(flat, '__proto__')).toBe(true)
+            expect(Object.getPrototypeOf(flat)).toBeNull()
+            expect(flat['__proto__']).toEqual({ type: 'string' })
+        })
+
         it('returns field paths for nested objects and array item objects', () => {
             expect(SchemaHelper.getFieldPaths(complexSchema as any)).toEqual([
                 'id',

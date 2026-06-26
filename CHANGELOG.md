@@ -8,7 +8,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-No changes yet.
+### Fixed
+
+- Hardened schema object construction and validation for reserved property names such as `__proto__`, bounded the static `Validator.quickValidate()` AJV schema cache, and added a compatibility-safe `codeLocaleFiles: 'deny'` option for JSON-only i18n directory loading.
 
 ---
 

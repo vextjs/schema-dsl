@@ -308,6 +308,23 @@ describe('Validator', () => {
       })).rejects.toThrow('custom validator rejected')
     })
 
+    it('preserves __proto__ properties while stripping custom validators for AJV', async () => {
+      const properties = Object.create(null)
+      properties['__proto__'] = {
+        type: 'string',
+        _customValidators: [() => true],
+      }
+
+      const schema = {
+        type: 'object',
+        required: ['__proto__'],
+        properties,
+      } as any
+
+      await expect(validator.validateAsync(schema, JSON.parse('{"__proto__":"ok"}'))).resolves.toEqual(JSON.parse('{"__proto__":"ok"}'))
+      await expect(validator.validateAsync(schema, JSON.parse('{"__proto__":123}'))).rejects.toThrow('Validation failed')
+    })
+
     it('runs custom validators in object and array schema applicator paths', async () => {
       await expect(validator.validateAsync({
         type: 'object',

@@ -465,6 +465,10 @@ s.config({
   // i18n：内置语言包路径 / 内联 locale bundle / { localesPath } / { locales }
   i18n: './locales',
 
+  // 目录加载默认保留 .js/.cjs 兼容行为。
+  // 当 locale 目录不是可信代码来源时，使用 'deny' 仅加载 JSON 系列文件。
+  codeLocaleFiles: 'deny',
+
   // 默认语言（默认 'en-US'）
   defaultLocale: 'zh-CN',
 
@@ -486,6 +490,7 @@ s.config({
 | 字段 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `i18n` | `string \| object` | — | 语言包路径或内联对象 |
+| `codeLocaleFiles` | `'allow' \| 'deny'` | `'allow'` | 目录加载时是否允许执行 `.js` / `.cjs` 语言包 |
 | `defaultLocale` | `string` | `'en-US'` | 默认语言 |
 | `cache` | `CacheOptions` | — | `maxSize` / `ttl` / `enabled` / `statsEnabled` |
 | `strict` | `boolean` | `false` | `true` 时解析未知 DSL 类型抛出 Error |
@@ -976,6 +981,14 @@ const validator = Validator.create();
 ```javascript
 const ok = Validator.quickValidate(schema, data);
 ```
+
+#### `Validator.clearQuickValidateCache()`
+
+清理静态 `quickValidate()` AJV schema cache，并释放其 singleton AJV 实例。下一次调用 `quickValidate()` 时会懒加载重建。
+
+#### `Validator.getQuickValidateCacheStats()`
+
+返回静态 `quickValidate()` schema cache 的 `{ size, maxSize }`。
 
 ---
 

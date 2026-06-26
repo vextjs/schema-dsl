@@ -7,6 +7,7 @@ import { Locale } from './Locale.js'
 import { CONDITIONAL_RUNTIME_STATE, type ConditionalRuntimeState } from './ConditionalRuntime.js'
 import { cloneSchemaValue } from '../utils/schemaClone.js'
 import { isRawJsonSchemaLike } from '../utils/schemaInput.js'
+import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 
 const EMPTY_ERRORS: ValidationErrorItem[] = []
 
@@ -236,7 +237,7 @@ export class ConditionalValidator {
 
         const props = source['properties']
         if (props && typeof props === 'object' && !Array.isArray(props)) {
-            const nextProps: Record<string, unknown> = {}
+            const nextProps = createSchemaRecord<unknown>()
             const omitted = new Set<string>()
 
             for (const [key, child] of Object.entries(props as Record<string, unknown>)) {
@@ -244,7 +245,7 @@ export class ConditionalValidator {
                     omitted.add(key)
                     continue
                 }
-                nextProps[key] = this._stripConditionalNodes(child, rootSchema, seenRefs)
+                setSchemaRecordValue(nextProps, key, this._stripConditionalNodes(child, rootSchema, seenRefs))
             }
 
             result['properties'] = nextProps
@@ -299,40 +300,57 @@ export class ConditionalValidator {
         for (const key of ['patternProperties', 'definitions', '$defs']) {
             const map = source[key]
             if (map && typeof map === 'object' && !Array.isArray(map)) {
-                result[key] = Object.fromEntries(
-                    Object.entries(map as Record<string, unknown>).map(([childKey, child]) => [childKey, this._stripConditionalNodes(child, rootSchema, seenRefs)])
-                )
+                result[key] = this._stripSchemaMap(map as Record<string, unknown>, rootSchema, seenRefs)
             }
         }
 
         const dependentSchemas = source['dependentSchemas']
         if (dependentSchemas && typeof dependentSchemas === 'object' && !Array.isArray(dependentSchemas)) {
-            const stripped = Object.fromEntries(
-                Object.entries(dependentSchemas as Record<string, unknown>).map(([childKey, child]) => [childKey, this._stripConditionalNodes(child, rootSchema, seenRefs)])
-            )
+            const stripped = this._stripSchemaMap(dependentSchemas as Record<string, unknown>, rootSchema, seenRefs)
             const dependencies = result['dependencies']
             result['dependencies'] =
                 dependencies && typeof dependencies === 'object' && !Array.isArray(dependencies)
-                    ? { ...(dependencies as Record<string, unknown>), ...stripped }
+                    ? this._mergeSchemaMaps(dependencies as Record<string, unknown>, stripped)
                     : stripped
             delete result['dependentSchemas']
         }
 
         const dependencies = source['dependencies']
         if (dependencies && typeof dependencies === 'object' && !Array.isArray(dependencies)) {
-            const stripped = Object.fromEntries(
-                Object.entries(dependencies as Record<string, unknown>).map(([childKey, child]) => [
+            const stripped = createSchemaRecord<unknown>()
+            for (const [childKey, child] of Object.entries(dependencies as Record<string, unknown>)) {
+                setSchemaRecordValue(
+                    stripped,
                     childKey,
-                    Array.isArray(child) ? [...child] : this._stripConditionalNodes(child, rootSchema, seenRefs),
-                ])
-            )
+                    Array.isArray(child) ? [...child] : this._stripConditionalNodes(child, rootSchema, seenRefs)
+                )
+            }
             const existing = result['dependencies']
             result['dependencies'] =
                 existing && typeof existing === 'object' && !Array.isArray(existing)
-                    ? { ...(existing as Record<string, unknown>), ...stripped }
+                    ? this._mergeSchemaMaps(existing as Record<string, unknown>, stripped)
                     : stripped
         }
 
+        return result
+    }
+
+    private _stripSchemaMap(map: Record<string, unknown>, rootSchema: unknown, seenRefs: Set<string>): Record<string, unknown> {
+        const result = createSchemaRecord<unknown>()
+        for (const [key, child] of Object.entries(map)) {
+            setSchemaRecordValue(result, key, this._stripConditionalNodes(child, rootSchema, seenRefs))
+        }
+        return result
+    }
+
+    private _mergeSchemaMaps(base: Record<string, unknown>, extension: Record<string, unknown>): Record<string, unknown> {
+        const result = createSchemaRecord<unknown>()
+        for (const [key, value] of Object.entries(base)) {
+            setSchemaRecordValue(result, key, value)
+        }
+        for (const [key, value] of Object.entries(extension)) {
+            setSchemaRecordValue(result, key, value)
+        }
         return result
     }
 

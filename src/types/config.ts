@@ -26,10 +26,12 @@ export type CacheManagerOptions = CacheOptions
 /**
  * I18n configuration type.
  */
+export type I18nCodeLocaleFilesMode = 'allow' | 'deny'
+
 export type I18nConfig =
   | string                          // Path to locale directory (Node >=18: .js/.cjs/.json/.jsonc/.json5)
   | Record<string, ErrorMessages>   // Inline locale bundle
-  | { localesPath: string }         // Locale directory — object form (Node >=18: .js/.cjs/.json/.jsonc/.json5)
+  | { localesPath: string; codeLocaleFiles?: I18nCodeLocaleFilesMode } // Locale directory — object form
   | { locales: Record<string, ErrorMessages> } // v1/doc-compatible wrapper
 
 /**
@@ -49,6 +51,8 @@ export interface DslConfigOptions {
   }
   /** Default locale (default 'en-US'). */
   defaultLocale?: string
+  /** Whether directory i18n loading may execute .js/.cjs locale packs (default 'allow' for compatibility). */
+  codeLocaleFiles?: I18nCodeLocaleFilesMode
   /** Strict type resolution: throw on unknown types instead of warn + fallback to string. */
   strict?: boolean
 }

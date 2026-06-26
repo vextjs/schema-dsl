@@ -1,5 +1,6 @@
 import type { JSONSchema } from '../types/schema.js'
 import { Validator } from './Validator.js'
+import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 
 /**
  * JSONSchemaCore — v1 compatibility facade.
@@ -21,13 +22,20 @@ export class JSONSchemaCore {
   }
 
   property(name: string, schema: JSONSchema): this {
-    if (!this.schema.properties) this.schema.properties = {}
-    this.schema.properties[name] = schema
+    if (!this.schema.properties) this.schema.properties = createSchemaRecord<JSONSchema>()
+    setSchemaRecordValue(this.schema.properties, name, schema)
     return this
   }
 
   properties(properties: Record<string, JSONSchema>): this {
-    this.schema.properties = { ...(this.schema.properties ?? {}), ...properties }
+    const next = createSchemaRecord<JSONSchema>()
+    for (const [key, value] of Object.entries(this.schema.properties ?? {})) {
+      setSchemaRecordValue(next, key, value)
+    }
+    for (const [key, value] of Object.entries(properties)) {
+      setSchemaRecordValue(next, key, value)
+    }
+    this.schema.properties = next
     return this
   }
 

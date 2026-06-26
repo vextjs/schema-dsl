@@ -16,6 +16,7 @@ import {
   isJsonSchemaFactoryInputLike,
   isRawJsonSchemaLike as isRawJsonSchemaInputLike,
 } from '../utils/schemaInput.js'
+import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 
 /**
  * DslParser — unified entry point for parsing DSL strings and object definitions
@@ -243,9 +244,20 @@ function _schemaForTarget(targetField: string, dslValue: unknown, options?: DslP
   const s = _resolveDsl(dslValue, _withPath(options, targetField))
   const isRequired = s._required
   _cleanRequiredMarks(s)
-  const result: JSONSchema = { properties: { [targetField]: s } }
+  const properties = createSchemaRecord<JSONSchema>()
+  setSchemaRecordValue(properties, targetField, s)
+  const result: JSONSchema = { properties }
   if (isRequired) result.required = [targetField]
   return result
+}
+
+function _schemaForConstProperty(field: string, value: unknown): JSONSchema {
+  const properties = createSchemaRecord<JSONSchema>()
+  setSchemaRecordValue(properties, field, { const: value })
+  return {
+    properties,
+    required: [field],
+  }
 }
 
 function _coerceConditionConst(rawValue: string, conditionSchema?: JSONSchema): string | number | boolean {
@@ -305,10 +317,7 @@ function _buildMatchSchema(
     }
 
     return {
-      if: {
-        properties: { [conditionField]: { const: _coerceConditionConst(val, conditionSchema) } },
-        required: [conditionField],
-      },
+      if: _schemaForConstProperty(conditionField, _coerceConditionConst(val, conditionSchema)),
       then: thenSchema,
       else: build(index + 1),
     }
@@ -342,10 +351,7 @@ function _buildIfSchema(conditionField: string, targetField: string, thenDsl: un
   }
 
   return {
-    if: {
-      properties: { [conditionField]: { const: true } },
-      required: [conditionField],
-    },
+    if: _schemaForConstProperty(conditionField, true),
     then: thenResult,
     else: elseResult,
   }
@@ -535,7 +541,7 @@ export const DslParser = {
   parseObject(dslObj: DslDefinition, options?: DslParseOptions): JSONSchema {
     const schema: JSONSchema = {
       type: 'object',
-      properties: {},
+      properties: createSchemaRecord<JSONSchema>(),
       required: [],
     }
     const pendingConditionalSchemas: Array<() => JSONSchema> = []
@@ -597,7 +603,7 @@ export const DslParser = {
       _copyHiddenSchemaProperties(fieldSchema as object, cleanSchema as object)
       _cleanRequiredMarks(cleanSchema)
 
-        ; (schema.properties as Record<string, JSONSchema>)[fieldKey] = cleanSchema
+        setSchemaRecordValue(schema.properties as Record<string, JSONSchema>, fieldKey, cleanSchema)
     }
 
     if (pendingConditionalSchemas.length > 0) {

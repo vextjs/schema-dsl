@@ -1,5 +1,6 @@
 import { DslBuilder } from '../core/DslBuilder.js'
 import { cloneSchemaValue } from '../utils/schemaClone.js'
+import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 import type {
   DslDefinition,
   DslExtensionDefinition,
@@ -219,9 +220,11 @@ function toSchemaForArrayItem(item: DslFactoryInput, options: DslNamespaceOption
     const { _required, ...rest } = schema as JSONSchema & { _required?: boolean }
     void _required
     if (rest.properties) {
-      rest.properties = Object.fromEntries(
-        Object.entries(rest.properties).map(([key, child]) => [key, stripRequired(child) as JSONSchema])
-      )
+      const properties = createSchemaRecord<JSONSchema>()
+      for (const [key, child] of Object.entries(rest.properties)) {
+        setSchemaRecordValue(properties, key, stripRequired(child) as JSONSchema)
+      }
+      rest.properties = properties
     }
     if (Array.isArray(rest.items)) {
       rest.items = rest.items.map(item => stripRequired(item) as JSONSchema)

@@ -121,6 +121,8 @@ s.config({
 });
 ```
 
+For data-only or untrusted locale directories, use `codeLocaleFiles: 'deny'` at the top level or inside the `i18n` object to skip `.js` / `.cjs` and load only `.json`, `.jsonc`, and `.json5`.
+
 **Language pack file** (`i18n/labels/zh-CN.cjs`):
 ```javascript
 module.exports = {

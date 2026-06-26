@@ -270,6 +270,19 @@ describe('MarkdownExporter', () => {
       expect(result).toContain('"unknown": null')
     })
 
+    it('should include __proto__ as a normal field in examples', () => {
+      const properties = Object.create(null)
+      properties['__proto__'] = { type: 'string', default: 'literal' }
+
+      const result = MarkdownExporter.export({
+        type: 'object',
+        required: ['__proto__'],
+        properties,
+      } as any, { locale: 'en-US' })
+
+      expect(result).toContain('"__proto__": "literal"')
+    })
+
     it('should render one-sided length, range and item constraints', () => {
       const result = MarkdownExporter.export({
         type: 'object',

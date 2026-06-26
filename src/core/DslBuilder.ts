@@ -14,6 +14,7 @@ import { DslParser, isRawJsonSchemaFactoryInput, type DslParseOptions } from '..
 import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
 import { cloneSchemaValue } from '../utils/schemaClone.js'
+import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 import safeRegex from 'safe-regex'
 import type { Validator as ValidatorInstance } from './Validator.js'
 import type { ValidationResult } from '../types/validate.js'
@@ -297,9 +298,11 @@ export class DslBuilder {
       const { _required, ...rest } = current as JSONSchema & { _required?: boolean }
       void _required
       if (rest.properties) {
-        rest.properties = Object.fromEntries(
-          Object.entries(rest.properties).map(([key, child]) => [key, clean(child) as JSONSchema])
-        )
+        const properties = createSchemaRecord<JSONSchema>()
+        for (const [key, child] of Object.entries(rest.properties)) {
+          setSchemaRecordValue(properties, key, clean(child) as JSONSchema)
+        }
+        rest.properties = properties
       }
       if (Array.isArray(rest.items)) {
         rest.items = rest.items.map(item => clean(item) as JSONSchema)

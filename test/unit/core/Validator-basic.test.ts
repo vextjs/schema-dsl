@@ -94,6 +94,16 @@ describe('Validator', () => {
       expect(result.errors!.length).toBeGreaterThan(0)
     })
 
+    it('should validate __proto__ fields produced by object DSL schemas', () => {
+      const definition = Object.create(null)
+      definition['__proto__!'] = 'string'
+      const schema = dsl(definition)
+
+      expect(validator.validate(schema, JSON.parse('{"__proto__":"ok"}')).valid).toBe(true)
+      expect(validator.validate(schema, JSON.parse('{"__proto__":123}')).valid).toBe(false)
+      expect(validator.validate(schema, {}).valid).toBe(false)
+    })
+
     it('should validate string length constraints', () => {
       const schema = { type: 'string', minLength: 3, maxLength: 10 }
 
@@ -271,6 +281,20 @@ describe('Validator', () => {
       const schema = { type: 'string' }
       expect(Validator.quickValidate(schema, 'test')).toBe(true)
       expect(Validator.quickValidate(schema, 123)).toBe(false)
+    })
+
+    it('Validator.quickValidate() should honor __proto__ own-property schemas', () => {
+      const properties = Object.create(null)
+      properties['__proto__'] = { type: 'string' }
+      const schema = {
+        type: 'object',
+        required: ['__proto__'],
+        properties,
+      } as any
+
+      expect(Validator.quickValidate(schema, JSON.parse('{"__proto__":"ok"}'))).toBe(true)
+      expect(Validator.quickValidate(schema, JSON.parse('{"__proto__":123}'))).toBe(false)
+      expect(Validator.quickValidate(schema, {})).toBe(false)
     })
   })
 })

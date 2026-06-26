@@ -65,6 +65,22 @@ describe('MongoDBExporter', () => {
       expect(props.active.bsonType).toBe('bool')
     })
 
+    it('should export __proto__ properties as own MongoDB schema properties', () => {
+      const properties = Object.create(null)
+      properties['__proto__'] = { type: 'string' }
+
+      const result = exporter.export({
+        type: 'object',
+        properties,
+        required: ['__proto__'],
+      } as any)
+      const props = (result as any).$jsonSchema.properties
+
+      expect(Object.prototype.hasOwnProperty.call(props, '__proto__')).toBe(true)
+      expect(Object.getPrototypeOf(props)).toBeNull()
+      expect(props['__proto__'].bsonType).toBe('string')
+    })
+
     it('should convert string constraints', () => {
       const jsonSchema = {
         type: 'string',

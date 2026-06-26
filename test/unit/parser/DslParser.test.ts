@@ -140,6 +140,18 @@ describe('DslParser', () => {
       const schema = DslParser.parseObject({ name: 'string' })
       expect(schema.required ?? []).not.toContain('name')
     })
+
+    it('preserves __proto__ as an own schema property', () => {
+      const input = Object.create(null) as Record<string, string>
+      input['__proto__!'] = 'string'
+
+      const schema = DslParser.parseObject(input)
+
+      expect(Object.prototype.hasOwnProperty.call(schema.properties, '__proto__')).toBe(true)
+      expect(Object.getPrototypeOf(schema.properties)).toBeNull()
+      expect(schema.properties?.['__proto__']?.type).toBe('string')
+      expect(schema.required).toContain('__proto__')
+    })
   })
 
   describe('parseString() — negative tests', () => {

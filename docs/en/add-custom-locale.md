@@ -8,6 +8,7 @@ This guide will teach you how to add a custom language pack or extend an existin
 >
 > **Language file formats supported by directory loading (Node >=18) by default**: `.js` (CommonJS), `.cjs`, `.json`, `.jsonc`, `.json5`.
 > **Recommendation**: If your application is a `type: module` / ESM project, give priority to using `.cjs`, `.json`, `.jsonc`, `.json5`.
+> **Trusted directory note**: `.js` / `.cjs` locale files are executed by Node. Keep them for trusted application-owned locale directories, or configure `codeLocaleFiles: 'deny'` to load only `.json`, `.jsonc`, and `.json5`.
 
 ---
 
@@ -61,6 +62,15 @@ import path from 'path';
 // Automatically recursively scan all subdirectories under locales/ and merge the same language files into a complete language package
 s.config({
   i18n: path.join(__dirname, 'locales')
+});
+```
+
+If the directory is data-only or not a trusted code source, disable code locale files while keeping JSON-family files:
+
+```javascript
+s.config({
+  i18n: path.join(__dirname, 'locales'),
+  codeLocaleFiles: 'deny'
 });
 ```
 

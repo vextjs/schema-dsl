@@ -118,6 +118,40 @@ describe('ConditionalValidator', () => {
     expect(hooks.validateSchema).toHaveBeenCalled()
   })
 
+  it('preserves __proto__ properties while stripping conditional nodes', () => {
+    const conditionalNumber: ConditionalInternalSchema = {
+      _isConditional: true,
+      conditions: [{ then: { type: 'number' } }],
+      _evaluateCondition: () => ({ result: true }),
+    }
+    const properties = Object.create(null)
+    properties['__proto__'] = { type: 'string' }
+    properties['score'] = conditionalNumber
+
+    const { validator, hooks } = createValidator({
+      validateSchema: vi.fn((schema: JSONSchema, data: unknown): ValidationResult<unknown> => {
+        const props = (schema as any).properties
+        if (props && Object.prototype.hasOwnProperty.call(props, '__proto__')) {
+          expect(Object.getPrototypeOf(props)).toBeNull()
+          if (typeof (data as Record<string, unknown>)['__proto__'] !== 'string') {
+            return { valid: false, data, errors: [issue('__proto__', 'must be string', 'type')], errorMessage: 'must be string' }
+          }
+        }
+        return { valid: true, data, errors: [] }
+      }),
+    })
+
+    const result = validator.validateWithConditionals({
+      type: 'object',
+      required: ['__proto__'],
+      properties,
+    } as ConditionalInternalSchema, JSON.parse('{"__proto__":123,"score":1}'), {})
+
+    expect(result.valid).toBe(false)
+    expect(result.errors?.[0]).toMatchObject({ path: '__proto__', keyword: 'type' })
+    expect(hooks.validateSchema).toHaveBeenCalled()
+  })
+
   it('validates missing nested conditional objects through a partial schema', () => {
     const nestedMissing = issue('/profile', 'profile required', 'required')
     const { validator } = createValidator({
