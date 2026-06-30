@@ -211,6 +211,24 @@ describe('Validator', () => {
 
       expect(results[0].valid).toBe(false)
     })
+
+    it('should prewarm the compile cache while preserving per-item validation behavior', () => {
+      const batchValidator = new Validator({ cache: { maxSize: 10, statsEnabled: true } })
+      const schema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+        required: ['name'],
+      }
+
+      const results = batchValidator.validateBatch(schema, [{ name: 'John' }, { name: 'Jane' }, {}])
+      const stats = batchValidator.getCacheStats()
+
+      expect(results.map(result => result.valid)).toEqual([true, true, false])
+      expect(stats.size).toBe(1)
+      expect(stats.hits).toBeGreaterThanOrEqual(results.length)
+    })
   })
 
   describe('addKeyword()', () => {

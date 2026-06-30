@@ -35,6 +35,16 @@ function getFlatLocaleCacheSize(validator: InstanceType<typeof Validator>): numb
   return internal._flatLocaleCache.size
 }
 
+function getPatternMatcherCacheSize(validator: InstanceType<typeof Validator>): number {
+  const internal = validator as unknown as { _patternMatcherCache: Map<string, unknown> }
+  return internal._patternMatcherCache.size
+}
+
+function getConditionalPatternMatcherCacheSize(validator: InstanceType<typeof Validator>): number {
+  const internal = validator as unknown as { _conditionalValidator: { _patternMatcherCache: Map<string, unknown> } }
+  return internal._conditionalValidator._patternMatcherCache.size
+}
+
 describe('Validator memory lifecycle', () => {
   beforeEach(() => {
     resetRuntimeState()
@@ -146,6 +156,49 @@ describe('Validator memory lifecycle', () => {
     expect(getRemoveAdditionalManagedCacheSize(validator)).toBe(0)
     expect(getRemoveAdditionalAjvCacheSize(validator)).toBe(0)
     expect((validator as unknown as { _removeAdditionalAjv: unknown })._removeAdditionalAjv).toBeNull()
+  })
+
+  it('should bound patternProperties matcher caches and clear them', () => {
+    const validator = new Validator({ cache: { maxSize: 8 } })
+
+    for (let i = 0; i < 25; i += 1) {
+      const schema = {
+        type: 'object',
+        patternProperties: {
+          [`^x_${i}_`]: { type: 'string' },
+        },
+        additionalProperties: { type: 'number' },
+      }
+
+      expect(validator.validate(schema, { [`x_${i}_name`]: 'ok', extra: 1 }).valid).toBe(true)
+    }
+
+    expect(getPatternMatcherCacheSize(validator)).toBeLessThanOrEqual(8)
+
+    const conditionalNumber = {
+      _isConditional: true,
+      conditions: [{ then: { type: 'number' } }],
+      _evaluateCondition: () => ({ result: true }),
+    }
+
+    for (let i = 0; i < 25; i += 1) {
+      const schema = {
+        type: 'object',
+        patternProperties: {
+          [`^conditional_${i}_`]: conditionalNumber,
+        },
+        additionalProperties: conditionalNumber,
+      }
+
+      expect(validator.validate(schema, { [`conditional_${i}_value`]: 1, extra: 2 }).valid).toBe(true)
+    }
+
+    expect(getConditionalPatternMatcherCacheSize(validator)).toBeLessThanOrEqual(8)
+
+    validator.clearCache()
+
+    expect(getPatternMatcherCacheSize(validator)).toBe(0)
+    expect(getConditionalPatternMatcherCacheSize(validator)).toBe(0)
   })
 
   it('should bound static quickValidate schema cache and allow clearing it', () => {

@@ -8,9 +8,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+---
+
+## [2.1.1] - 2026-06-30
+
 ### Fixed
 
 - Hardened schema object construction and validation for reserved property names such as `__proto__`, bounded the static `Validator.quickValidate()` AJV schema cache, and added a compatibility-safe `codeLocaleFiles: 'deny'` option for JSON-only i18n directory loading.
+- Bounded `patternProperties` matcher reuse in both normal and conditional validation paths, including `clearCache()` cleanup, to reduce repeated `RegExp` allocation without introducing an unbounded long-lived map.
+- Prewarmed `Validator.validateBatch()` through the managed compile cache while keeping each item on the same validation path as `validate()`.
+- Expanded exporter loss reporting to follow local `$ref` targets and avoid recursive traversal loops when schema objects contain circular references.
 
 ---
 
@@ -54,6 +63,7 @@ All notable changes to this project will be documented in this file.
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.1.1] | 2026-06-30 | Patch | Validation cache lifecycle tightening, batch compile reuse, and local `$ref` exporter loss reporting [View](./changelogs/v2.1.1.md) |
 | [2.1.0] | 2026-06-26 | Minor | Side-effect controlled entries, runtime isolation, shared `s` namespace, declarative extensions, array item DSL support, and deep validation hardening [View](./changelogs/v2.1.0.md) |
 | [2.0.11] | 2026-06-15 | Patch | ESM/CJS shared custom type registry for vext dev route validation and OpenAPI generation [View](./changelogs/v2.0.11.md) |
 | [2.0.10] | 2026-06-13 | Patch | Legacy DSL aliases, structured unknown-type diagnostics, and downstream adapter delegation support [View](./changelogs/v2.0.10.md) |
@@ -286,7 +296,8 @@ All notable changes to this project will be documented in this file.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/vextjs/schema-dsl/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/vextjs/schema-dsl/compare/v2.0.11...v2.1.0
 [2.0.11]: https://github.com/vextjs/schema-dsl/compare/v2.0.10...v2.0.11
 [2.0.10]: https://github.com/vextjs/schema-dsl/compare/v2.0.9...v2.0.10

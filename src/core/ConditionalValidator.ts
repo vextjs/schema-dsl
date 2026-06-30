@@ -8,6 +8,7 @@ import { CONDITIONAL_RUNTIME_STATE, type ConditionalRuntimeState } from './Condi
 import { cloneSchemaValue } from '../utils/schemaClone.js'
 import { isRawJsonSchemaLike } from '../utils/schemaInput.js'
 import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
+import { CACHE } from '../config/constants.js'
 
 const EMPTY_ERRORS: ValidationErrorItem[] = []
 
@@ -29,11 +30,18 @@ interface ConditionalValidatorHooks {
     getMessageText?(key: string, params: Record<string, unknown>, options: ValidateOptions): string
     parseString?(dsl: string, options?: DslParseOptions): JSONSchema
     parseObject?(dsl: DslDefinition, options?: DslParseOptions): JSONSchema
+    getPatternCacheMaxSize?(): number
     parseOptions?: DslParseOptions
 }
 
 export class ConditionalValidator {
+    private readonly _patternMatcherCache = new Map<string, RegExp | null>()
+
     constructor(private readonly hooks: ConditionalValidatorHooks) { }
+
+    clearPatternCache(): void {
+        this._patternMatcherCache.clear()
+    }
 
     hasAnyConditional(schema: ConditionalInternalSchema): boolean {
         return this._hasAnyConditional(schema, new WeakSet<object>())
@@ -650,11 +658,41 @@ export class ConditionalValidator {
     }
 
     private _createPatternMatcher(pattern: string): RegExp | null {
+        const maxSize = this.hooks.getPatternCacheMaxSize?.() ?? CACHE.SCHEMA_CACHE.MAX_SIZE
+        if (maxSize <= 0) return this._compilePatternMatcher(pattern)
+
+        if (this._patternMatcherCache.has(pattern)) {
+            const matcher = this._patternMatcherCache.get(pattern) ?? null
+            this._touchPatternMatcher(pattern, matcher)
+            return matcher
+        }
+
+        const matcher = this._compilePatternMatcher(pattern)
+        this._rememberPatternMatcher(pattern, matcher, maxSize)
+        return matcher
+    }
+
+    private _compilePatternMatcher(pattern: string): RegExp | null {
         try {
             return new RegExp(pattern)
         } catch {
             return null
         }
+    }
+
+    private _rememberPatternMatcher(pattern: string, matcher: RegExp | null, maxSize: number): void {
+        const effectiveMaxSize = Math.max(1, maxSize)
+        while (this._patternMatcherCache.size >= effectiveMaxSize) {
+            const oldestKey = this._patternMatcherCache.keys().next().value as string | undefined
+            if (oldestKey === undefined) return
+            this._patternMatcherCache.delete(oldestKey)
+        }
+        this._patternMatcherCache.set(pattern, matcher)
+    }
+
+    private _touchPatternMatcher(pattern: string, matcher: RegExp | null): void {
+        this._patternMatcherCache.delete(pattern)
+        this._patternMatcherCache.set(pattern, matcher)
     }
 
     private _createPatternMatchers(patternProperties: unknown): RegExp[] {

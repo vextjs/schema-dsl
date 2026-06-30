@@ -248,6 +248,49 @@ describe('MySQLExporter', () => {
         '$.properties.flags.items[0]:pattern',
       ]))
     })
+
+    it('reports unsupported keyword losses behind local $ref targets', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          dynamic: { $ref: '#/$defs/Dynamic' },
+        },
+        $defs: {
+          Dynamic: {
+            type: 'string',
+            const: 'x-ray',
+            pattern: '^x-',
+          },
+        },
+      } as JSONSchema
+
+      const report = new MySQLExporter().exportWithReport('users', schema)
+      const lossKeys = report.losses.map(loss => `${loss.path}:${loss.keyword}`)
+
+      expect(lossKeys).toEqual(expect.arrayContaining([
+        '$.properties.dynamic:$ref',
+        '$.properties.dynamic.$ref(#/$defs/Dynamic):const',
+        '$.properties.dynamic.$ref(#/$defs/Dynamic):pattern',
+        '$.$defs.Dynamic:const',
+        '$.$defs.Dynamic:pattern',
+      ]))
+    })
+
+    it('does not recurse forever when export loss reporting sees circular schema graphs', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string', pattern: '^x-' },
+        },
+      } as JSONSchema & { properties: Record<string, unknown> }
+      schema.properties['self'] = schema
+
+      const report = new MySQLExporter().exportWithReport('users', schema)
+      const lossKeys = report.losses.map(loss => `${loss.path}:${loss.keyword}`)
+
+      expect(report.output).toContain('CREATE TABLE')
+      expect(lossKeys).toContain('$.properties.name:pattern')
+    })
   })
 })
 

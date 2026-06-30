@@ -160,6 +160,7 @@ export class Validator {
   private readonly _removeAdditionalCache = new Map<string, AjvValidateFn>()
   private readonly _removeAdditionalSchemaRefs = new Map<string, JSONSchemaInput>()
   private readonly _removeAdditionalSchemaLru = new Map<string, true>()
+  private readonly _patternMatcherCache = new Map<string, RegExp | null>()
 
   private readonly _conditionalValidator = new ConditionalValidator({
     validateSchema: <T>(schema: JSONSchemaInput, data: T, options: ValidateOptions): ValidationResult<T> => this._validateInternal(schema, data, options),
@@ -168,6 +169,7 @@ export class Validator {
       this._getMessageText(key, params, options, 'conditional'),
     parseString: (dsl: string): JSONSchema => DslParser.parseString(dsl, this._parseOptions),
     parseObject: (dsl: DslDefinition): JSONSchema => DslParser.parseObject(dsl, this._parseOptions),
+    getPatternCacheMaxSize: (): number => this._cache.options.enabled ? this._cache.options.maxSize : 0,
   })
 
   // V-Y03 fix: cached removeAdditional Ajv instance (no longer new Validator each time)
@@ -452,12 +454,8 @@ export class Validator {
     if (schema.patternProperties && data && typeof data === 'object' && !Array.isArray(data)) {
       const record = data as Record<string, unknown>
       for (const [pattern, childSchema] of Object.entries(schema.patternProperties as Record<string, JSONSchema>)) {
-        let matcher: RegExp
-        try {
-          matcher = new RegExp(pattern)
-        } catch {
-          continue
-        }
+        const matcher = this._createPatternMatcher(pattern)
+        if (!matcher) continue
         for (const [key, value] of Object.entries(record)) {
           if (!matcher.test(key)) continue
           const childPath = path ? `${path}/${key}` : key
@@ -471,13 +469,9 @@ export class Validator {
       const record = data as Record<string, unknown>
       const declaredProperties = new Set(Object.keys(schema.properties ?? {}))
       const patternEntries = Object.entries((schema.patternProperties as Record<string, JSONSchema> | undefined) ?? {})
-      const patternMatchers = patternEntries.flatMap(([pattern]) => {
-        try {
-          return [new RegExp(pattern)]
-        } catch {
-          return []
-        }
-      })
+      const patternMatchers = patternEntries
+        .map(([pattern]) => this._createPatternMatcher(pattern))
+        .filter((matcher): matcher is RegExp => matcher !== null)
 
       for (const [key, value] of Object.entries(record)) {
         if (declaredProperties.has(key)) continue
@@ -666,6 +660,7 @@ export class Validator {
    */
   validateBatch<T = unknown>(schema: JSONSchemaInput, dataArray: T[], options: ValidateOptions = {}): ValidationResult<T>[] {
     if (!Array.isArray(dataArray)) throw new Error('Data must be an array')
+    this._prewarmBatchCompileCache(schema)
     return dataArray.map(data => this.validate(schema, data, options))
   }
 
@@ -722,6 +717,8 @@ export class Validator {
       this._removeAdditionalAjv = null
     }
     this._flatLocaleCache.clear()
+    this._patternMatcherCache.clear()
+    this._conditionalValidator.clearPatternCache()
   }
   getCacheStats(): CacheStats { return this._cache.getStats() }
 
@@ -1379,12 +1376,60 @@ export class Validator {
     return decoded.replace(/~1/g, '/').replace(/~0/g, '~')
   }
 
+  private _prewarmBatchCompileCache(schema: JSONSchemaInput): void {
+    if (!this._cache.options.enabled || this._cache.options.maxSize <= 0) return
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return
+    if (typeof (schema as Record<string, unknown>)['toSchema'] === 'function') return
+
+    const internalSchema = schema as InternalSchema
+    if (internalSchema._isConditional || internalSchema._removeAdditional) return
+    if (this._conditionalValidator.hasAnyConditional(internalSchema)) return
+
+    try {
+      const cacheKey = this._getSchemaCacheKey(schema)
+      this._compileWithManagedCache(schema, cacheKey)
+    } catch {
+      // Preserve validateBatch() behavior: each item reports compile errors through validate().
+    }
+  }
+
   private _createPatternMatcher(pattern: string): RegExp | null {
+    if (!this._cache.options.enabled || this._cache.options.maxSize <= 0) {
+      return this._compilePatternMatcher(pattern)
+    }
+
+    if (this._patternMatcherCache.has(pattern)) {
+      const matcher = this._patternMatcherCache.get(pattern) ?? null
+      this._touchPatternMatcher(pattern, matcher)
+      return matcher
+    }
+
+    const matcher = this._compilePatternMatcher(pattern)
+    this._rememberPatternMatcher(pattern, matcher)
+    return matcher
+  }
+
+  private _compilePatternMatcher(pattern: string): RegExp | null {
     try {
       return new RegExp(pattern)
     } catch {
       return null
     }
+  }
+
+  private _rememberPatternMatcher(pattern: string, matcher: RegExp | null): void {
+    const maxSize = Math.max(1, this._cache.options.maxSize)
+    while (this._patternMatcherCache.size >= maxSize) {
+      const oldestKey = this._patternMatcherCache.keys().next().value as string | undefined
+      if (oldestKey === undefined) return
+      this._patternMatcherCache.delete(oldestKey)
+    }
+    this._patternMatcherCache.set(pattern, matcher)
+  }
+
+  private _touchPatternMatcher(pattern: string, matcher: RegExp | null): void {
+    this._patternMatcherCache.delete(pattern)
+    this._patternMatcherCache.set(pattern, matcher)
   }
 
   private _coerceNumber(value: unknown): unknown {
