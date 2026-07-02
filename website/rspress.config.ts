@@ -317,6 +317,7 @@ export default defineConfig({
     enabled: true
   },
   themeConfig: {
+    localeRedirect: 'never',
     nav: englishNav,
     locales: [
       {
