@@ -179,6 +179,7 @@ type _CachedValidationPlan = {
   reason: _ValidationPlanUnsupportedReason | null
 }
 type _RootFastValidationEntry = {
+  cacheKey?: string
   plan: _ValidationPlan | null
   directValidate?: ((data: unknown) => boolean) | null
   coerceCandidates?: _SchemaCoerceCandidates | null
@@ -379,6 +380,8 @@ function _invalidateRootSchemaCaches(): void {
   _rootFastValidationCache = new WeakMap<object, _RootFastValidationEntry>()
   _runtimeSchemaKeyCache = new WeakMap<object, string>()
   _runtimeSchemaKeyCounter = 0
+  _defaultValidator?.clearCache()
+  _noCoerceValidator?.clearCache()
 }
 
 function _isSchemaMapContainerKey(key: string): boolean {
@@ -784,22 +787,26 @@ function _tryRootFastValidate<T>(
   if (typeof source['toSchema'] === 'function') return null
 
   const cached = _rootFastValidationCache.get(schemaObject)
+  let cacheKey: string | null | undefined
   if (cached) {
     const markedKey = (schema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY]
-    if (typeof markedKey === 'string' && markedKey) {
+    cacheKey = _getSchemaCacheKey(schema as _JSONSchema)
+    if (cached.cacheKey && cacheKey !== cached.cacheKey) {
+      _invalidateRootSchemaCaches()
+    } else if (typeof markedKey === 'string' && markedKey) {
       return _executeRootFastEntry<T>(cached, data, shouldCoerce)
-    }
-    if (_isRootSchemaShapeGuardCurrent(schema as _JSONSchema, cached.shapeGuard)) {
+    } else if (_isRootSchemaShapeGuardCurrent(schema as _JSONSchema, cached.shapeGuard)) {
       return _executeRootFastEntry<T>(cached, data, shouldCoerce)
+    } else {
+      _invalidateRootSchemaCaches()
     }
-    _rootFastValidationCache.delete(schemaObject)
   }
 
   if (_isDslObject(schema)) return null
 
   const normalizedSchema = schema as _JSONSchema
   const markedKey = (normalizedSchema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY]
-  const cacheKey = _getSchemaCacheKey(normalizedSchema)
+  cacheKey = cacheKey ?? _getSchemaCacheKey(normalizedSchema)
   if (!cacheKey) return null
 
   const directValidate = _tryCreateRootPrimitiveUnionDirectValidator(normalizedSchema)
@@ -811,8 +818,8 @@ function _tryRootFastValidate<T>(
     ? _getSafePreCoerceCandidates(normalizedSchema)
     : null
   const entry: _RootFastValidationEntry = typeof markedKey === 'string' && markedKey
-    ? { plan, directValidate, coerceCandidates, preCoerceCandidates }
-    : { plan, directValidate, coerceCandidates, preCoerceCandidates, shapeGuard: _createRootSchemaShapeGuard(normalizedSchema) }
+    ? { cacheKey, plan, directValidate, coerceCandidates, preCoerceCandidates }
+    : { cacheKey, plan, directValidate, coerceCandidates, preCoerceCandidates, shapeGuard: _createRootSchemaShapeGuard(normalizedSchema) }
   if (!(typeof markedKey === 'string' && markedKey)) {
     _installRootSchemaMutationWatchers(normalizedSchema, new WeakSet<object>(), { wrapEntries: false })
   }

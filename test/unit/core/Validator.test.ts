@@ -186,6 +186,88 @@ describe('Validator', () => {
     })
   })
 
+  describe('AJV skipped property applicator coverage', () => {
+    function objectWithOwnProto(value: unknown): Record<string, unknown> {
+      const data = Object.create(null) as Record<string, unknown>
+      Object.defineProperty(data, '__proto__', {
+        value,
+        enumerable: true,
+        configurable: true,
+      })
+      return data
+    }
+
+    function schemaWithOwnProtoProperty(child: unknown, required = false): Record<string, unknown> {
+      const properties = Object.create(null) as Record<string, unknown>
+      Object.defineProperty(properties, '__proto__', {
+        value: child,
+        enumerable: true,
+        configurable: true,
+      })
+      return {
+        type: 'object',
+        properties,
+        ...(required ? { required: ['__proto__'] } : {}),
+      }
+    }
+
+    it('quickValidate applies secondary checks for skipped properties and applicators', () => {
+      const quickSkipped = (Validator as any)._quickValidateAjvSkippedProperties as (
+        schema: unknown,
+        data: unknown,
+        seen?: WeakSet<object>
+      ) => boolean
+
+      expect(quickSkipped(schemaWithOwnProtoProperty({ type: 'string' }, true), {}, new WeakSet())).toBe(false)
+      expect(quickSkipped(schemaWithOwnProtoProperty({ type: 'string' }), objectWithOwnProto(1), new WeakSet())).toBe(false)
+      expect(quickSkipped({ anyOf: [{ type: 'string' }] }, 1, new WeakSet())).toBe(false)
+      expect(quickSkipped({ oneOf: [{ type: 'number' }, { type: 'integer' }] }, 1, new WeakSet())).toBe(false)
+      expect(quickSkipped({ if: { type: 'number' }, then: { not: { type: 'number' } } }, 1, new WeakSet())).toBe(false)
+      expect(quickSkipped({ not: { type: 'number' } }, 1, new WeakSet())).toBe(false)
+      expect(quickSkipped({ prefixItems: [schemaWithOwnProtoProperty({ type: 'string' })] }, [objectWithOwnProto(1)], new WeakSet())).toBe(false)
+      expect(quickSkipped({
+        prefixItems: [{ type: 'string' }],
+        items: schemaWithOwnProtoProperty({ type: 'string' }),
+      }, ['ok', objectWithOwnProto(1)], new WeakSet())).toBe(false)
+      expect(quickSkipped({ contains: schemaWithOwnProtoProperty({ type: 'string' }) }, [objectWithOwnProto(1)], new WeakSet())).toBe(false)
+    })
+
+    it('formats secondary validation errors for skipped properties and array applicators', () => {
+      const internal = validator as any
+      const context = internal._createErrorFormatContext({})
+      const validateSkipped = (schema: unknown, data: unknown) => internal._validateAjvSkippedProperties(
+        schema,
+        data,
+        {},
+        context.messages,
+        context.locale,
+        context.shouldFormat
+      )
+
+      expect(validateSkipped(schemaWithOwnProtoProperty({ type: 'string' }, true), {}))
+        .toEqual(expect.arrayContaining([expect.objectContaining({ keyword: 'required' })]))
+      expect(validateSkipped(schemaWithOwnProtoProperty({ type: 'string' }), objectWithOwnProto(1)))
+        .toEqual(expect.arrayContaining([expect.objectContaining({ keyword: 'type' })]))
+      expect(validateSkipped({ anyOf: [{ type: 'string' }] }, 1))
+        .toEqual(expect.arrayContaining([expect.objectContaining({ keyword: 'anyOf' })]))
+      expect(validateSkipped({ oneOf: [{ type: 'number' }, { type: 'integer' }] }, 1))
+        .toEqual(expect.arrayContaining([expect.objectContaining({ keyword: 'oneOf' })]))
+      expect(validateSkipped({ if: { type: 'number' }, then: { not: { type: 'number' } } }, 1))
+        .toEqual(expect.arrayContaining([expect.objectContaining({ keyword: 'not' })]))
+      expect(validateSkipped({ not: { type: 'number' } }, 1))
+        .toEqual(expect.arrayContaining([expect.objectContaining({ keyword: 'not' })]))
+      expect(validateSkipped({ prefixItems: [schemaWithOwnProtoProperty({ type: 'string' })] }, [objectWithOwnProto(1)]))
+        .toEqual(expect.arrayContaining([expect.objectContaining({ keyword: 'type', path: '0/__proto__' })]))
+      expect(validateSkipped({
+        prefixItems: [{ type: 'string' }],
+        items: schemaWithOwnProtoProperty({ type: 'string' }),
+      }, ['ok', objectWithOwnProto(1)]))
+        .toEqual(expect.arrayContaining([expect.objectContaining({ keyword: 'type', path: '1/__proto__' })]))
+      expect(validateSkipped({ contains: schemaWithOwnProtoProperty({ type: 'string' }) }, [objectWithOwnProto(1)]))
+        .toEqual(expect.arrayContaining([expect.objectContaining({ keyword: 'contains' })]))
+    })
+  })
+
   describe('validateAsync()', () => {
     it('async validate valid data — returns data directly', async () => {
       const schema = { type: 'string' as const, minLength: 1 }

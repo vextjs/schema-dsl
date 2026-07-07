@@ -46,6 +46,44 @@ describe('Official Plugin Entry Compatibility', () => {
     expect(ajv.formats?.['phone-cn']).toBeUndefined()
   })
 
+  it('should expose custom-format addFormat behavior including bank-card checksum branches', () => {
+    const formats: Record<string, { validate: RegExp | ((value: string) => boolean) }> = {}
+    const registeredTypes: Record<string, unknown> = {}
+    const fakeAjv = {
+      addFormat: (name: string, definition: { validate: RegExp | ((value: string) => boolean) }) => {
+        formats[name] = definition
+      },
+    }
+    const fakeBuilder = {
+      registerType: (name: string, schema: unknown) => {
+        registeredTypes[name] = schema
+      },
+    } as unknown as typeof DslBuilder
+
+    customFormatPlugin.addCustomFormats(fakeAjv, fakeBuilder)
+
+    expect(formats['phone-cn'].validate).toBeInstanceOf(RegExp)
+    expect(registeredTypes['bank-card']).toMatchObject({
+      type: 'string',
+      minLength: 16,
+      maxLength: 19,
+    })
+
+    const bankCard = formats['bank-card'].validate
+    expect(typeof bankCard).toBe('function')
+    if (typeof bankCard !== 'function') throw new Error('expected bank-card function validator')
+
+    expect(bankCard('4111111111111111')).toBe(true)
+    expect(bankCard('4111111111111112')).toBe(false)
+    expect(bankCard('not-a-card')).toBe(false)
+  })
+
+  it('should reject custom-format installation when the core validator API is missing', () => {
+    expect(() => customFormatPlugin.install({} as typeof schemaDsl)).toThrow(
+      'getDefaultValidator() is not available'
+    )
+  })
+
   it('should register order-id type via official custom-type-example plugin entry', () => {
     pluginManager.register(customTypeExamplePlugin)
     pluginManager.install(schemaDsl, 'custom-type-example')
@@ -53,6 +91,22 @@ describe('Official Plugin Entry Compatibility', () => {
     expect(DslBuilder.hasType('order-id')).toBe(true)
     expect(validate(dsl({ orderId: 'order-id!' }), { orderId: 'ORD202401010001' }).valid).toBe(true)
     expect(validate(dsl({ orderId: 'order-id!' }), { orderId: 'BAD' }).valid).toBe(false)
+  })
+
+  it('should register dynamic custom-type-example factories lazily', () => {
+    pluginManager.register(customTypeExamplePlugin)
+    pluginManager.install(schemaDsl, 'custom-type-example')
+
+    expect(validate(dsl({ age: 'dynamic-age!' }), { age: 18 }).valid).toBe(true)
+    expect(validate(dsl({ age: 'dynamic-age!' }), { age: -1 }).valid).toBe(false)
+  })
+
+  it('should reject custom-type-example installation when registerType is unavailable', () => {
+    expect(() => customTypeExamplePlugin.install({
+      DslBuilder: {},
+    } as unknown as typeof schemaDsl)).toThrow(
+      'DslBuilder.registerType is not available'
+    )
   })
 
   it('should clean custom-type-example DSL types when uninstalled', () => {

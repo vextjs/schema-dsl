@@ -17,6 +17,7 @@ import defaultDsl, {
   uninstallStringExtensions,
   validate,
   validateAsync,
+  resetRuntimeState,
 } from '../../src/index.js'
 import type { DslConditionMarker } from '../../src/index.js'
 
@@ -132,6 +133,122 @@ describe('v1 entry compatibility', () => {
       then: { properties: { value: { type: 'string' } }, required: ['value'] },
       else: { properties: { value: { type: 'number' } }, required: ['value'] },
     })
+  })
+
+  it('dsl main entry should reject invalid definitions and invalid conditional shorthand', () => {
+    expect(() => dsl(null as any)).toThrow('[schema-dsl] Invalid DSL definition')
+    expect(() => dsl(['string'] as any)).toThrow('[schema-dsl] Invalid DSL definition')
+    expect(() => dsl.if('flag' as any)).toThrow('Condition must be a function')
+  })
+
+  it('top-level validate() should use root primitive-union fast paths without losing cache invalidation', () => {
+    resetRuntimeState()
+
+    try {
+      const schema = {
+        type: ['integer', 'null'] as unknown[],
+        title: 'fast primitive union',
+      }
+
+      expect(validate(schema, 1, { coerce: false }).valid).toBe(true)
+      expect(validate(schema, null, { coerce: false }).valid).toBe(true)
+      expect(validate(schema, Number.POSITIVE_INFINITY, { coerce: false }).valid).toBe(false)
+
+      schema.type = ['boolean', 'null']
+
+      expect(validate(schema, true, { coerce: false }).valid).toBe(true)
+      expect(validate(schema, 1, { coerce: false }).valid).toBe(false)
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
+  it('top-level validate() should pre-coerce raw JSON Schema object fast paths safely', () => {
+    resetRuntimeState()
+
+    try {
+      const schema = {
+        type: 'object',
+        properties: {
+          count: { type: 'number' },
+          enabled: { type: 'boolean' },
+          values: { type: 'array', items: { type: 'integer' } },
+          profile: {
+            type: 'object',
+            properties: {
+              age: { type: 'integer' },
+            },
+            required: ['age'],
+          },
+        },
+        required: ['count', 'enabled', 'values', 'profile'],
+      }
+
+      const result = validate(schema, {
+        count: '12',
+        enabled: 'false',
+        values: ['1', '2'],
+        profile: { age: '30' },
+      })
+
+      expect(result.valid).toBe(true)
+      expect(result.data).toEqual({
+        count: 12,
+        enabled: false,
+        values: [1, 2],
+        profile: { age: 30 },
+      })
+      expect(validate(schema, {
+        count: 'not-a-number',
+        enabled: 'false',
+        values: ['1'],
+        profile: { age: '30' },
+      }).valid).toBe(false)
+      expect(validate(schema, {
+        count: '12',
+        enabled: 'false',
+        values: ['1'],
+        profile: { age: '30' },
+      }, { coerce: false }).valid).toBe(false)
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
+  it('top-level validateAsync() should handle simple custom scalar fast paths and errors', async () => {
+    await expect(validateAsync({
+      type: 'number',
+      _customValidators: [(value: unknown) => value === 1],
+    }, 1)).resolves.toBe(1)
+    await expect(validateAsync({
+      type: 'integer',
+      _customValidators: [(value: unknown) => value === 2],
+    }, 2)).resolves.toBe(2)
+    await expect(validateAsync({
+      type: 'boolean',
+      _customValidators: [(value: unknown) => value === true],
+    }, true)).resolves.toBe(true)
+    await expect(validateAsync({
+      type: 'null',
+      _customValidators: [(value: unknown) => value === null],
+    }, null)).resolves.toBeNull()
+
+    await expect(validateAsync({
+      type: 'number',
+      _customValidators: [() => false],
+    }, 1)).rejects.toThrow()
+    await expect(validateAsync({
+      type: 'number',
+      _customValidators: [() => 'custom async message'],
+    }, 1)).rejects.toThrow('custom async message')
+    await expect(validateAsync({
+      type: 'number',
+      _customValidators: [() => ({ error: true, message: 'object async message' })],
+    }, 1)).rejects.toThrow('object async message')
+    await expect(validateAsync({
+      type: 'number',
+      _customValidators: [() => { throw new Error('async boom') }],
+    }, 1)).rejects.toThrow('async boom')
   })
 
   it('top-level validate() should accept a DSL object directly and preserve coerce behaviour', () => {

@@ -3,6 +3,8 @@
 ## 2026-07-07
 
 - **FastPlan correctness**: Fixed root raw JSON Schema cache invalidation for caller-owned nested constraint mutations and made root simple custom-validator fast paths honor the active global Locale default messages.
+- **FastPlan cache safety**: Invalidates root fast-path metadata and Validator compile caches when caller-owned raw schema top-level shapes change, preventing stale validation after mutable schema reuse.
+- **CI coverage guard**: Added regression coverage for FastPlan fallback reasons, smart coercion metadata, public-entry fast paths, plugin example branches, and AJV skipped-property applicators so the coverage gate matches the remote CI route.
 - **FastPlan Phase 3 verification**: Re-ran local Node.js v20.20.2 / Windows x64 benchmarks after the primitive/enum optimization review. The library baseline is S1 simple valid `~1.672M ops/s`, S2 invalid without i18n formatting `~169K ops/s`, and S3 nested valid `~1.443M ops/s`; repeated Zod scenario runs were `15/19`, `16/19`, and `16/19`, with U1 union string and E1 enum as the stable remaining Zod-leading scenarios and several near-1x scenarios treated as benchmark noise, not public performance claims.
 - **Docs consistency**: Synced the FAQ and design philosophy benchmark tables with the maintained 2026-07-07 performance-guide baseline.
 

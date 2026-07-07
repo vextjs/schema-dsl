@@ -3,7 +3,11 @@ import {
   compileValidationPlan,
   executeValidationPlan,
 } from '../../../src/core/ValidationPlan.js'
-import { SchemaRuntimeMetadataStore } from '../../../src/core/SchemaRuntimeMetadataStore.js'
+import {
+  applySmartCoerce,
+  getSchemaCoerceCandidates,
+  SchemaRuntimeMetadataStore,
+} from '../../../src/core/SchemaRuntimeMetadataStore.js'
 import type { SchemaRuntimeMetadata } from '../../../src/core/SchemaRuntimeMetadataStore.js'
 import { dsl, resetRuntimeState, validate, Validator } from '../../../src/index.js'
 
@@ -18,6 +22,30 @@ function createMetadata(cacheKey: string): SchemaRuntimeMetadata {
 }
 
 describe('ValidationPlan', () => {
+  it('compiles boolean true schemas and rejects non-object or false schemas explicitly', () => {
+    const always = compileValidationPlan(true, { cacheKey: 'schema:boolean-true' })
+
+    expect(always.status).toBe('compiled')
+    if (always.status !== 'compiled') throw new Error('expected compiled plan')
+    expect(executeValidationPlan(always.plan, { anything: ['goes'] })).toEqual({
+      status: 'valid',
+      data: { anything: ['goes'] },
+    })
+
+    expect(compileValidationPlan(false, { cacheKey: 'schema:boolean-false' })).toEqual({
+      status: 'unsupported',
+      reason: 'unsupported-schema',
+    })
+    expect(compileValidationPlan(null, { cacheKey: 'schema:null' })).toEqual({
+      status: 'unsupported',
+      reason: 'non-object-schema',
+    })
+    expect(compileValidationPlan(['string'], { cacheKey: 'schema:array-input' })).toEqual({
+      status: 'unsupported',
+      reason: 'non-object-schema',
+    })
+  })
+
   it('compiles primitive scalar schemas and returns valid only for definite matches', () => {
     const result = compileValidationPlan({ type: 'string' }, { cacheKey: 'schema:test' })
 
@@ -165,6 +193,192 @@ describe('ValidationPlan', () => {
     })
   })
 
+  it('rejects unsupported fast-plan shapes with stable reasons', () => {
+    const circular: any = { type: 'object', properties: {} }
+    circular.properties.self = circular
+
+    const cases = [
+      { schema: { anyOf: [], title: 'empty union' }, reason: 'unsupported-schema' },
+      { schema: { anyOf: [{ type: 'string' }], unknown: true }, reason: 'unsupported-keyword' },
+      { schema: { type: 'array', minItems: '1' }, reason: 'unsupported-schema' },
+      { schema: { type: 'array', items: [{ type: 'string' }] }, reason: 'unsupported-schema' },
+      { schema: { type: 'object', required: ['name', 42] }, reason: 'unsupported-schema' },
+      { schema: { type: 'object', properties: [] }, reason: 'unsupported-schema' },
+      { schema: { enum: [{ value: 'not-scalar' }] }, reason: 'unsupported-enum' },
+      { schema: { const: { value: 'not-scalar' } }, reason: 'unsupported-enum' },
+      { schema: { type: 'string', minLength: '1' }, reason: 'unsupported-schema' },
+      { schema: { type: 'number', exclusiveMinimum: true }, reason: 'unsupported-schema' },
+      { schema: { type: 'string', pattern: 42 }, reason: 'unsupported-schema' },
+      { schema: { type: 'string', pattern: '[' }, reason: 'invalid-pattern' },
+      { schema: { type: 'string', _customValidators: 'not-array' }, reason: 'unsupported-schema' },
+      { schema: circular, reason: 'unsupported-schema' },
+    ] as const
+
+    for (const entry of cases) {
+      expect(compileValidationPlan(entry.schema as any, {
+        cacheKey: `schema:unsupported:${entry.reason}`,
+      })).toEqual({
+        status: 'unsupported',
+        reason: entry.reason,
+      })
+    }
+  })
+
+  it('keeps nested defaults out of fast plans before AJV mutation can run', () => {
+    expect(compileValidationPlan({
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', default: 'anonymous' },
+          },
+        },
+      },
+    }, { cacheKey: 'schema:nested-default' })).toEqual({
+      status: 'unsupported',
+      reason: 'contains-default',
+    })
+  })
+
+  it('validates enum fast paths for every specialized enum size', () => {
+    const cases = [
+      { values: [], valid: 'none', invalid: 'none' },
+      { values: ['one'], valid: 'one', invalid: 'two' },
+      { values: ['one', 'two', 'three', 'four'], valid: 'four', invalid: 'five' },
+      { values: ['one', 'two', 'three', 'four', 'five'], valid: 'five', invalid: 'six' },
+    ]
+
+    for (const entry of cases) {
+      const result = compileValidationPlan({ enum: entry.values }, {
+        cacheKey: `schema:enum:${entry.values.length}`,
+      })
+
+      expect(result.status).toBe('compiled')
+      if (result.status !== 'compiled') throw new Error('expected compiled plan')
+
+      expect(executeValidationPlan(result.plan, entry.valid).status).toBe(entry.values.length === 0 ? 'fallback' : 'valid')
+      expect(executeValidationPlan(result.plan, entry.invalid)).toEqual({
+        status: 'fallback',
+        reason: 'data-mismatch',
+      })
+    }
+  })
+
+  it('validates scalar edge cases before taking the fast valid path', () => {
+    const number = compileValidationPlan({
+      type: ['integer', 'null'],
+      minimum: 1,
+      maximum: 5,
+      exclusiveMinimum: 1,
+      exclusiveMaximum: 5,
+    }, { cacheKey: 'schema:scalar-number-edges' })
+    const string = compileValidationPlan({
+      type: 'string',
+      const: 'rocky@example.com',
+      format: 'email',
+    }, { cacheKey: 'schema:scalar-string-edges' })
+    const ignoredCustomValidator = compileValidationPlan({
+      type: 'string',
+      _customValidators: [() => 'would fail in sync mode'],
+    }, {
+      cacheKey: 'schema:ignored-custom-validator',
+      customValidators: 'ignore',
+    })
+
+    expect(number.status).toBe('compiled')
+    expect(string.status).toBe('compiled')
+    expect(ignoredCustomValidator.status).toBe('compiled')
+    if (number.status !== 'compiled' || string.status !== 'compiled' || ignoredCustomValidator.status !== 'compiled') {
+      throw new Error('expected compiled plan')
+    }
+
+    expect(executeValidationPlan(number.plan, 3)).toMatchObject({ status: 'valid' })
+    expect(executeValidationPlan(number.plan, null)).toMatchObject({ status: 'valid' })
+    expect(executeValidationPlan(number.plan, Number.POSITIVE_INFINITY)).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+    expect(executeValidationPlan(number.plan, 1)).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+    expect(executeValidationPlan(number.plan, 5)).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+
+    expect(executeValidationPlan(string.plan, 'rocky@example.com')).toMatchObject({ status: 'valid' })
+    expect(executeValidationPlan(string.plan, 'alice@example.com')).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+    expect(executeValidationPlan(string.plan, 'not-an-email')).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+    expect(executeValidationPlan(ignoredCustomValidator.plan, 'alice')).toMatchObject({ status: 'valid' })
+  })
+
+  it('uses union validators for constrained branches and preserves anyOf or oneOf semantics', () => {
+    const anyOf = compileValidationPlan({
+      anyOf: [
+        { type: 'string', minLength: 3 },
+        { type: 'number', minimum: 10 },
+      ],
+    }, { cacheKey: 'schema:constrained-anyof' })
+    const oneOf = compileValidationPlan({
+      oneOf: [
+        { type: 'number', minimum: 1 },
+        { type: 'number', maximum: 10 },
+      ],
+    }, { cacheKey: 'schema:constrained-oneof' })
+
+    expect(anyOf.status).toBe('compiled')
+    expect(oneOf.status).toBe('compiled')
+    if (anyOf.status !== 'compiled' || oneOf.status !== 'compiled') throw new Error('expected compiled plan')
+
+    expect(executeValidationPlan(anyOf.plan, 'abc')).toMatchObject({ status: 'valid' })
+    expect(executeValidationPlan(anyOf.plan, 11)).toMatchObject({ status: 'valid' })
+    expect(executeValidationPlan(anyOf.plan, false)).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+    expect(executeValidationPlan(oneOf.plan, 0)).toMatchObject({ status: 'valid' })
+    expect(executeValidationPlan(oneOf.plan, 11)).toMatchObject({ status: 'valid' })
+    expect(executeValidationPlan(oneOf.plan, 5)).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+  })
+
+  it('keeps required-only properties and optional property validators in the object fast path', () => {
+    const result = compileValidationPlan({
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+      },
+      required: ['id'],
+    }, { cacheKey: 'schema:required-only-object' })
+
+    expect(result.status).toBe('compiled')
+    if (result.status !== 'compiled') throw new Error('expected compiled plan')
+
+    expect(executeValidationPlan(result.plan, { id: 1, name: 'rocky' })).toMatchObject({ status: 'valid' })
+    expect(executeValidationPlan(result.plan, { id: 1, name: 42 })).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+    expect(executeValidationPlan(result.plan, { name: 'rocky' })).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+    expect(executeValidationPlan(result.plan, ['not-object'])).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+  })
+
   it('falls back when scalar custom validators reject, throw, or return Promise-like values', () => {
     const cases = [
       { schema: { type: 'string', _customValidators: [() => false] }, data: 'alice' },
@@ -223,6 +437,102 @@ describe('ValidationPlan', () => {
     expect(next).not.toBe(first)
     expect(next.validationPlan).toBeUndefined()
     expect(next.validationPlanReason).toBeUndefined()
+
+    const replaced = store.get(schema, 'schema:test:changed', () => createMetadata('schema:test:changed'))
+    expect(replaced).not.toBe(next)
+    expect(replaced.cacheKey).toBe('schema:test:changed')
+  })
+
+  it('discovers and applies schema smart coercion candidates without mutating unchanged inputs', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        count: { type: 'number' },
+        enabled: { type: 'boolean' },
+        tags: { type: 'array', items: { type: 'integer' } },
+        flags: { type: 'array', items: { type: 'boolean' } },
+        profile: {
+          type: 'object',
+          properties: {
+            age: { oneOf: [{ type: 'integer' }, { type: 'null' }] },
+          },
+        },
+        ratio: { anyOf: [{ type: 'number' }, { type: 'null' }] },
+        enumNumber: { type: 'number', enum: [1, null] },
+        enumStringConflict: { type: 'number', enum: ['1'] },
+        mixedUnion: { anyOf: [{ type: 'number' }, { type: 'boolean' }] },
+        invalidUnionBranch: { anyOf: [null, { type: 'number' }] },
+      },
+    }
+
+    const candidates = getSchemaCoerceCandidates(schema as any)
+
+    expect(candidates).toEqual({
+      numbers: ['count', 'ratio', 'enumNumber'],
+      booleans: ['enabled'],
+      arrays: [
+        { key: 'tags', itemType: 'integer' },
+        { key: 'flags', itemType: 'boolean' },
+      ],
+      objects: [
+        {
+          key: 'profile',
+          candidates: {
+            numbers: ['age'],
+            booleans: [],
+            arrays: [],
+            objects: [],
+          },
+        },
+      ],
+    })
+
+    const input = {
+      count: ' 42 ',
+      enabled: 'TRUE',
+      tags: ['1', 'x', 2],
+      flags: ['false', 'no'],
+      profile: { age: '7' },
+      ratio: '3.5',
+      enumNumber: '1',
+      untouched: 'same',
+    }
+    const converted = applySmartCoerce(input, candidates)
+
+    expect(converted).toEqual({
+      count: 42,
+      enabled: true,
+      tags: [1, 'x', 2],
+      flags: [false, 'no'],
+      profile: { age: 7 },
+      ratio: 3.5,
+      enumNumber: 1,
+      untouched: 'same',
+    })
+    expect(input.count).toBe(' 42 ')
+
+    const emptyCandidates = getSchemaCoerceCandidates({
+      type: 'object',
+      properties: { name: { type: 'string' } },
+    } as any)
+    expect(emptyCandidates).toBeNull()
+    expect(getSchemaCoerceCandidates(true)).toBeNull()
+    expect(applySmartCoerce(input, null)).toBe(input)
+    expect(applySmartCoerce(['1'], candidates)).toEqual(['1'])
+  })
+
+  it('uses a single-number smart coercion shortcut only when conversion is needed', () => {
+    const candidates = getSchemaCoerceCandidates({
+      type: 'object',
+      properties: {
+        count: { type: 'number' },
+      },
+    } as any)
+    const unchanged = { count: 12 }
+    const converted = { count: '12' }
+
+    expect(applySmartCoerce(unchanged, candidates)).toBe(unchanged)
+    expect(applySmartCoerce(converted, candidates)).toEqual({ count: 12 })
   })
 
   it('uses Validator cache lifecycle for validation plans without changing invalid fallback behavior', () => {
