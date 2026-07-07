@@ -161,6 +161,8 @@ describe('verified issue regressions', () => {
       expect(validate({ type: 'string', format: 'email' }, 'user@example.com').valid).toBe(true)
       expect(validate({ type: 'string', format: 'email' }, 'not-email').valid).toBe(false)
       expect(validate({ title: 'string' }, 123).valid).toBe(true)
+      expect(validate({ default: 'fallback' }, undefined).valid).toBe(true)
+      expect(validate({ default: 1 }, 'anything').valid).toBe(true)
     })
 
     it('P0-33c: validate() keeps DSL object semantics when field names collide with JSON Schema keywords', () => {
@@ -187,6 +189,9 @@ describe('verified issue regressions', () => {
       expect(isRawJsonSchemaLike({ const: 'active' })).toBe(true)
       expect(isRawJsonSchemaLike({ format: 'email' })).toBe(true)
       expect(isRawJsonSchemaLike({ title: 'string' })).toBe(true)
+      expect(isRawJsonSchemaLike({ default: 'active' })).toBe(true)
+      expect(isRawJsonSchemaLike({ default: 1 })).toBe(true)
+      expect(isRawJsonSchemaLike({ default: 'string!' })).toBe(false)
       expect(isJsonSchemaFactoryInputLike({ items: [{ type: 'string' }, false] })).toBe(true)
       expect(isJsonSchemaFactoryInputLike({ contains: true })).toBe(true)
       expect(isJsonSchemaFactoryInputLike({ uniqueItems: true })).toBe(true)

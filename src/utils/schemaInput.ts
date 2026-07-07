@@ -109,7 +109,6 @@ function isJsonSchemaPropertiesMap(value: unknown): boolean {
 function hasJsonSchemaKeywordShape(key: string, value: unknown): boolean {
   if (key === 'type') return isJsonSchemaTypeValue(value)
   if (ALWAYS_JSON_SCHEMA_KEYWORDS.has(key)) return !isExplicitDslString(value)
-  if (key === 'default') return false
   if (JSON_SCHEMA_STRING_KEYWORDS.has(key)) return typeof value === 'string' && !isExplicitDslString(value)
   if (JSON_SCHEMA_NUMBER_KEYWORDS.has(key)) return typeof value === 'number'
   if (JSON_SCHEMA_BOOLEAN_KEYWORDS.has(key)) return typeof value === 'boolean'
@@ -123,7 +122,11 @@ function hasJsonSchemaKeywordShape(key: string, value: unknown): boolean {
 }
 
 export function isJsonSchemaFactoryInputLike(obj: Record<string, unknown>): boolean {
-  return Object.entries(obj).some(([key, value]) => hasJsonSchemaKeywordShape(key, value))
+  const entries = Object.entries(obj)
+  if (entries.length === 1 && entries[0]?.[0] === 'default') {
+    return !isExplicitDslString(entries[0][1])
+  }
+  return entries.some(([key, value]) => hasJsonSchemaKeywordShape(key, value))
 }
 
 export function isRawJsonSchemaLike(value: unknown): value is JSONSchema {

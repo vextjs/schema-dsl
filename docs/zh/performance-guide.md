@@ -10,15 +10,17 @@
 
 ## 当前 benchmark 基线
 
-最新本地运行结果：
+Release candidate 基线运行结果：
 
 | 场景 | schema-dsl 吞吐 |
 |------|-----------|
-| S1 简单有效对象 | ~1.672M ops/s |
-| S2 无效对象，不做 i18n 格式化 | ~169K ops/s |
-| S3 嵌套有效对象 | ~1.443M ops/s |
+| S1 简单有效对象 | ~2.145M ops/s |
+| S2 无效对象，不做 i18n 格式化 | ~197K ops/s |
+| S3 嵌套有效对象 | ~1.515M ops/s |
 
-环境：Node.js v20.20.2，Windows x64，运行时间 2026-07-07T03:20:24.821Z。
+环境：Node.js v20.20.2，Windows x64，运行时间 2026-07-07T06:39:15.758Z。
+
+同一次 release candidate full 运行中的扩展 Zod 场景矩阵记录为 schema-dsl 胜 14/19，Zod 胜 5/19。这个矩阵只作为本仓库的回归信号，不作为永久公开性能承诺。
 
 这些数字适合作为当前项目的回归基线。Node.js、依赖、schema 复杂度或错误格式化行为变化后，应重新运行 benchmark。
 

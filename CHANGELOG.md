@@ -12,6 +12,42 @@ _No unreleased changes._
 
 ---
 
+## [2.1.2] - 2026-07-07
+
+### Fixed
+
+- Fixed root smart schema classification for annotation-only JSON Schema inputs such as `{ default: 'fallback' }`, while preserving DSL object semantics for field names like `{ default: 'string!' }`.
+- Fixed root fast-path cache invalidation for caller-owned raw schema mutations so mutable schema reuse does not retain stale validation plans or compiled validators.
+- Added CI coverage for FastPlan fallback reasons, smart coercion metadata, public entry fast paths, official plugin examples, and AJV skipped-property applicators.
+
+### Changed
+
+- Updated the maintained release-candidate performance baseline from the Node.js v20.20.2 / Windows x64 full benchmark: S1 simple valid `~2.145M ops/s`, S2 invalid without i18n formatting `~197K ops/s`, and S3 nested valid `~1.515M ops/s`.
+- Re-ran the extended Zod scenario matrix and recorded the current actual result as schema-dsl `14/19` wins and Zod `5/19` wins. This remains an internal regression signal rather than a public "faster than Zod" claim.
+- Synchronized the performance guide, FAQ, and design philosophy pages with the current benchmark output.
+
+### Validation
+
+- `npx vitest run test/unit/verified-issues-regression.test.ts -t "P0-33"`
+- `npm run build`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test:types`
+- `npm test`
+- `npm run test:coverage`
+- `npm run test:interop`
+- `npm run test:version`
+- `npm run test:audit`
+- `npm run examples:typecheck`
+- `npm run examples:build`
+- `npm run examples:run`
+- `npm run bench:full`
+- `npm run bench:cache`
+- `npm run build` in `website/`
+- `npm publish --dry-run`
+
+---
+
 ## [2.1.1] - 2026-06-30
 
 ### Fixed
@@ -63,6 +99,7 @@ _No unreleased changes._
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.1.2] | 2026-07-07 | Patch | Release-readiness sync, raw JSON Schema `default` classification, FastPlan cache safety, and refreshed performance baselines [View](./changelogs/v2.1.2.md) |
 | [2.1.1] | 2026-06-30 | Patch | Validation cache lifecycle tightening, batch compile reuse, and local `$ref` exporter loss reporting [View](./changelogs/v2.1.1.md) |
 | [2.1.0] | 2026-06-26 | Minor | Side-effect controlled entries, runtime isolation, shared `s` namespace, declarative extensions, array item DSL support, and deep validation hardening [View](./changelogs/v2.1.0.md) |
 | [2.0.11] | 2026-06-15 | Patch | ESM/CJS shared custom type registry for vext dev route validation and OpenAPI generation [View](./changelogs/v2.0.11.md) |
@@ -296,7 +333,8 @@ _No unreleased changes._
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.1...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.2...HEAD
+[2.1.2]: https://github.com/vextjs/schema-dsl/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/vextjs/schema-dsl/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/vextjs/schema-dsl/compare/v2.0.11...v2.1.0
 [2.0.11]: https://github.com/vextjs/schema-dsl/compare/v2.0.10...v2.0.11

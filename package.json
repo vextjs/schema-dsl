@@ -1,6 +1,6 @@
 {
   "name": "schema-dsl",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "A concise JSON Schema validation library with DSL syntax, side-effect-controlled chainable APIs, and convenient validation helpers",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

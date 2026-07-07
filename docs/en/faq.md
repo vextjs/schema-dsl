@@ -221,19 +221,20 @@ console.log(result.data);
 
 ### Q: What is the performance of schema-dsl?
 
-**A**: The current benchmark should be read as project-local throughput evidence, not as a permanent marketing claim. The latest local run recorded:
+**A**: The current benchmark should be read as project-local throughput evidence, not as a permanent marketing claim. The release-candidate baseline run recorded:
 
 | Scenario | schema-dsl throughput |
 |------|-----------|
-| S1 simple valid object | ~1.672M ops/s |
-| S2 invalid object without i18n formatting | ~169K ops/s |
-| S3 nested valid object | ~1.443M ops/s |
+| S1 simple valid object | ~2.145M ops/s |
+| S2 invalid object without i18n formatting | ~197K ops/s |
+| S3 nested valid object | ~1.515M ops/s |
 
-**Environment**: Node.js v20.20.2, Windows x64, run time 2026-07-07T03:20:24.821Z.
+**Environment**: Node.js v20.20.2, Windows x64, run time 2026-07-07T06:39:15.758Z.
 
 **Conclusion**:
 - ✅ Hot-path validation is already in the million-ops/sec range on this local machine.
 - ✅ Built-in caching avoids repeated schema parsing on reused schema objects.
+- ✅ In the same full run, the extended Zod scenario matrix recorded schema-dsl 14/19 wins and Zod 5/19 wins.
 - ✅ Treat these numbers as a regression baseline; rerun the benchmark when runtime, dependency, or schema complexity changes.
 
 ---
