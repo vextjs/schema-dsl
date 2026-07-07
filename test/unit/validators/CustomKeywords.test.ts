@@ -1661,6 +1661,153 @@ describe('CustomKeywords - v1.0.2 new validators', () => {
       expect(validator.validate({ type: 'string', validate: () => { throw new Error('validate exploded') } } as any, 'value').errorMessage).toContain('validate exploded')
     })
 
+    it('runs legacy validate keyword through explicit sync and async paths', async () => {
+      const validator = new Validator()
+      let declaredAsyncCalls = 0
+      const declaredAsyncSchema = {
+        type: 'string',
+        validate: async (value: unknown) => {
+          declaredAsyncCalls += 1
+          return value === 'ok'
+        },
+      } as any
+
+      const syncResult = validator.validate(declaredAsyncSchema, 'bad')
+      expect(syncResult.valid).toBe(false)
+      expect(syncResult.errorMessage).toContain('Async validation not supported')
+      expect(declaredAsyncCalls).toBe(0)
+
+      try {
+        await validator.validateAsync(declaredAsyncSchema, 'bad')
+        throw new Error('validateAsync should reject invalid legacy validate keyword result')
+      } catch (error: any) {
+        expect(error.errors?.[0]).toMatchObject({
+          keyword: 'validate',
+          path: '',
+          message: 'Validation failed',
+        })
+      }
+      expect(declaredAsyncCalls).toBe(1)
+
+      await expect(validator.validateAsync(declaredAsyncSchema, 'ok')).resolves.toBe('ok')
+      expect(declaredAsyncCalls).toBe(2)
+
+      let promiseReturningCalls = 0
+      const promiseReturningSchema = {
+        type: 'string',
+        validate: (value: unknown) => {
+          promiseReturningCalls += 1
+          return Promise.resolve({ valid: value === 'ok', message: 'legacy async failed' })
+        },
+      } as any
+
+      const rootSync = validate(promiseReturningSchema, 'bad')
+      expect(rootSync.valid).toBe(false)
+      expect(rootSync.errorMessage).toContain('Async validation not supported')
+      expect(promiseReturningCalls).toBe(1)
+
+      await expect(validateAsync(promiseReturningSchema, 'bad')).rejects.toMatchObject({
+        errors: [expect.objectContaining({ keyword: 'validate', message: 'legacy async failed' })],
+      })
+      expect(promiseReturningCalls).toBe(2)
+    })
+
+    it('runs legacy validate keyword in nested validateAsync traversal', async () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          code: {
+            type: 'string',
+            validate: async (value: unknown) => ({ valid: value === 'ok', message: 'bad code' }),
+          },
+        },
+      } as any
+
+      await expect(validateAsync(schema, { code: 'bad' })).rejects.toMatchObject({
+        errors: [expect.objectContaining({ keyword: 'validate', path: 'code', message: 'bad code' })],
+      })
+      await expect(validateAsync(schema, { code: 'ok' })).resolves.toEqual({ code: 'ok' })
+    })
+
+    it('guards declared async legacy validate keyword when AJV keyword is invoked directly', () => {
+      const ajv = new Ajv()
+      let calls = 0
+      CustomKeywords.registerFunctionKeyword(ajv)
+
+      const compiled = ajv.compile({
+        type: 'string',
+        validate: async () => {
+          calls += 1
+          return false
+        },
+      } as any)
+
+      expect(compiled('ok')).toBe(false)
+      expect(calls).toBe(0)
+      expect(compiled.errors?.[0]).toMatchObject({
+        keyword: 'validate',
+      })
+      expect(compiled.errors?.[0]?.message).toContain('Async validation not supported')
+    })
+
+    it('guards legacy validate keyword inside conditional runtime branches', async () => {
+      let calls = 0
+      const conditional = dsl
+        .if(() => true)
+        .then({
+          type: 'string',
+          validate: async (value: unknown) => {
+            calls += 1
+            return value === 'ok'
+          },
+        } as any)
+        .else('string')
+        .toSchema()
+
+      const syncResult = validate(conditional, 'bad')
+      expect(syncResult.valid).toBe(false)
+      expect(syncResult.errorMessage).toContain('Async validation not supported')
+      expect(calls).toBe(0)
+
+      await expect(validateAsync(conditional, 'bad')).rejects.toMatchObject({
+        errors: [expect.objectContaining({ keyword: 'validate', path: '', message: 'Validation failed' })],
+      })
+      expect(calls).toBe(1)
+
+      await expect(validateAsync(conditional, 'ok')).resolves.toBe('ok')
+      expect(calls).toBe(2)
+    })
+
+    it('guards legacy validate keyword under AJV skipped __proto__ property traversal', async () => {
+      const properties = Object.create(null) as Record<string, unknown>
+      let calls = 0
+      Object.defineProperty(properties, '__proto__', {
+        value: {
+          type: 'string',
+          validate: async (value: unknown) => {
+            calls += 1
+            return value === 'ok'
+          },
+        },
+        enumerable: true,
+        configurable: true,
+      })
+      const schema = { type: 'object', properties, required: ['__proto__'] } as any
+
+      const syncResult = validate(schema, JSON.parse('{"__proto__":"bad"}'))
+      expect(syncResult.valid).toBe(false)
+      expect(syncResult.errorMessage).toContain('Async validation not supported')
+      expect(calls).toBe(0)
+
+      await expect(validateAsync(schema, JSON.parse('{"__proto__":"bad"}'))).rejects.toMatchObject({
+        errors: [expect.objectContaining({ keyword: 'validate', path: '__proto__', message: 'Validation failed' })],
+      })
+      expect(calls).toBe(1)
+
+      await expect(validateAsync(schema, JSON.parse('{"__proto__":"ok"}'))).resolves.toEqual(JSON.parse('{"__proto__":"ok"}'))
+      expect(calls).toBe(2)
+    })
+
     it('deep-compares required array objects and detects missing object values', () => {
       const schema = {
         type: 'array',

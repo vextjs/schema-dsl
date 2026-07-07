@@ -6,8 +6,8 @@ We currently provide security updates for the following versions:
 
 | Version | Supported |
 | ------- | --------- |
-| 2.0.x   | ✅        |
-| < 2.0   | ❌        |
+| 2.1.x   | ✅        |
+| < 2.1   | ❌        |
 
 ## Reporting a Vulnerability
 
@@ -130,5 +130,5 @@ Valid vulnerability reports will be credited in release notes (unless anonymity 
 
 ---
 
-**Last updated**: 2025-12-29
+**Last updated**: 2026-07-07
 **Contact**: rockyshi1993@gmail.com

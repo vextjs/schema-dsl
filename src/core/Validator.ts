@@ -348,7 +348,7 @@ export class Validator {
       const next = createSchemaRecord<unknown>()
 
       for (const [key, child] of Object.entries(source)) {
-        if (key === '_customValidators') {
+        if (key === '_customValidators' || (key === 'validate' && typeof child === 'function')) {
           changed = true
           continue
         }
@@ -472,6 +472,12 @@ export class Validator {
       }
     }
 
+    const legacyValidate = source['validate']
+    if (typeof legacyValidate === 'function') {
+      const legacyErr = await this._runLegacyValidateKeyword(legacyValidate as (value: unknown) => unknown, data, path, options)
+      if (legacyErr) return legacyErr
+    }
+
     if (schema.properties && data && typeof data === 'object' && !Array.isArray(data)) {
       const record = data as Record<string, unknown>
       for (const [key, childSchema] of Object.entries(schema.properties)) {
@@ -593,6 +599,53 @@ export class Validator {
     }
 
     return null
+  }
+
+  private async _runLegacyValidateKeyword(
+    validator: (value: unknown) => unknown,
+    data: unknown,
+    path: string,
+    options: ValidateOptions
+  ): Promise<ValidationErrorItem | null> {
+    try {
+      const result = await Promise.resolve(validator(data))
+      if (typeof result === 'boolean') {
+        return result
+          ? null
+          : this._createLegacyValidateKeywordError(
+            this._getMessageText('CUSTOM_VALIDATION_FAILED', {}, options, 'customKeyword'),
+            path
+          )
+      }
+      if (result !== null && typeof result === 'object') {
+        const record = result as Record<string, unknown>
+        if (typeof record['valid'] === 'boolean') {
+          return record['valid']
+            ? null
+            : this._createLegacyValidateKeywordError(
+              record['message']
+                ? String(record['message'])
+                : this._getMessageText('CUSTOM_VALIDATION_FAILED', {}, options, 'customKeyword'),
+              path
+            )
+        }
+      }
+      return null
+    } catch (error) {
+      return this._createLegacyValidateKeywordError(error instanceof Error ? error.message : String(error), path)
+    }
+  }
+
+  private _createLegacyValidateKeywordError(message: string, path: string): ValidationErrorItem {
+    return {
+      message,
+      path,
+      keyword: 'validate',
+      kind: 'custom',
+      params: {},
+      field: path,
+      type: 'validate',
+    }
   }
 
   private async _runCustomValidatorsForConditionalRuntime(

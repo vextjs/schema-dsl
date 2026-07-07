@@ -32,6 +32,27 @@ export class CustomKeywords {
     return options.getMessageText?.(key, params) ?? Locale.getMessageText(key)
   }
 
+  private static _isDeclaredAsyncFunction(value: unknown): boolean {
+    return typeof value === 'function' && value.constructor.name === 'AsyncFunction'
+  }
+
+  private static _isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+    return !!value
+      && (typeof value === 'object' || typeof value === 'function')
+      && typeof (value as { then?: unknown }).then === 'function'
+  }
+
+  private static _ignoreAsyncRejection(value: PromiseLike<unknown>): void {
+    const maybeCatch = (value as { catch?: unknown }).catch
+    if (typeof maybeCatch === 'function') {
+      try {
+        void maybeCatch.call(value, () => undefined)
+      } catch {
+        // Non-standard thenables may expose a throwing catch; validation still reports unsupported async usage.
+      }
+    }
+  }
+
   /**
    * Register all custom keywords on an AJV instance
    */
@@ -70,7 +91,7 @@ export class CustomKeywords {
 
       for (const validator of validators as unknown[]) {
         if (typeof validator !== 'function') continue
-        if (validator.constructor.name === 'AsyncFunction') {
+        if (CustomKeywords._isDeclaredAsyncFunction(validator)) {
           validate.errors = [{
             keyword: '_customValidators',
             message: 'Async validation not supported in sync validate(). Use validateAsync() instead.',
@@ -81,9 +102,10 @@ export class CustomKeywords {
         try {
           const result = (validator as (d: unknown) => unknown)(data)
 
-          if (result instanceof Promise) {
+          if (CustomKeywords._isPromiseLike(result)) {
             // BC-6: async validators are not supported in the synchronous AJV validate() path.
             // Return an explicit error so callers know to use validateAsync() instead.
+            CustomKeywords._ignoreAsyncRejection(result)
             validate.errors = [{
               keyword: '_customValidators',
               message: 'Async validation not supported in sync validate(). Use validateAsync() instead.',
@@ -174,8 +196,26 @@ export class CustomKeywords {
         return false
       }
 
+      if (CustomKeywords._isDeclaredAsyncFunction(schema)) {
+        validate.errors = [{
+          keyword: 'validate',
+          message: CustomKeywords._message(options, 'ASYNC_VALIDATION_NOT_SUPPORTED'),
+          params: {},
+        }]
+        return false
+      }
+
       try {
         const result = (schema as (d: unknown) => unknown)(data)
+        if (CustomKeywords._isPromiseLike(result)) {
+          CustomKeywords._ignoreAsyncRejection(result)
+          validate.errors = [{
+            keyword: 'validate',
+            message: CustomKeywords._message(options, 'ASYNC_VALIDATION_NOT_SUPPORTED'),
+            params: {},
+          }]
+          return false
+        }
         if (typeof result === 'boolean') {
           if (!result) {
             validate.errors = [{

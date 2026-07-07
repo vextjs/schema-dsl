@@ -7,5 +7,5 @@ contact_links:
     url: https://github.com/vextjs/schema-dsl/discussions
     about: 提问、分享想法或参与讨论
   - name: 📝 常见问题
-    url: https://github.com/vextjs/schema-dsl/blob/main/docs/faq.md
+    url: https://vextjs.github.io/schema-dsl/faq
     about: 查看常见问题解答
