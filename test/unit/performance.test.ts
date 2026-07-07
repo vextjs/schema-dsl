@@ -1,12 +1,25 @@
-﻿/**
+/**
  * Performance Tests
- * Ensure validation performance is within acceptable range
+ * Fast smoke checks that catch order-of-magnitude regressions.
+ *
+ * Formal rankings live in test/benchmarks/*.js. These tests intentionally keep
+ * broad thresholds so CI noise does not fail normal development, while still
+ * blocking a return to second-scale validation loops.
  */
 
 import { describe, it, expect } from 'vitest';
 import { dsl, validate } from '../../src/index.js';
 
 describe('Performance Tests', () => {
+  function measure(iterations: number, fn: () => void): { elapsedMs: number; opsPerSecond: number } {
+    const startedAt = performance.now();
+    for (let i = 0; i < iterations; i++) fn();
+    const elapsedMs = performance.now() - startedAt;
+    return {
+      elapsedMs,
+      opsPerSecond: iterations / (elapsedMs / 1000)
+    };
+  }
 
   it('should quickly validate large amounts of data', () => {
     const schema = dsl({
@@ -22,23 +35,18 @@ describe('Performance Tests', () => {
     };
 
     const iterations = 1000;
-    const start = Date.now();
-
-    for (let i = 0; i < iterations; i++) {
+    const { elapsedMs, opsPerSecond } = measure(iterations, () => {
       validate(schema, validData);
-    }
+    });
+    const avgTime = elapsedMs / iterations;
 
-    const elapsed = Date.now() - start;
-    const avgTime = elapsed / iterations;
-
-    console.log(`      ${iterations} validations elapsed: ${elapsed}ms`);
+    console.log(`      ${iterations} validations elapsed: ${elapsedMs.toFixed(1)}ms`);
     console.log(`      average per validation: ${avgTime.toFixed(3)}ms`);
+    console.log(`      throughput: ${opsPerSecond.toFixed(0)} ops/s`);
 
-    // assert: 1000 validations should complete within 5 seconds (avg 5ms each)
-    expect(elapsed).toBeLessThan(5000);
-
-    // assert: average per validation should be under 10ms
-    expect(avgTime).toBeLessThan(10);
+    expect(elapsedMs).toBeLessThan(1000);
+    expect(opsPerSecond).toBeGreaterThan(5_000);
+    expect(avgTime).toBeLessThan(1);
   });
 
   it('should quickly validate complex Schema', () => {
@@ -70,23 +78,18 @@ describe('Performance Tests', () => {
     };
 
     const iterations = 500;
-    const start = Date.now();
-
-    for (let i = 0; i < iterations; i++) {
+    const { elapsedMs, opsPerSecond } = measure(iterations, () => {
       validate(schema, validData);
-    }
+    });
+    const avgTime = elapsedMs / iterations;
 
-    const elapsed = Date.now() - start;
-    const avgTime = elapsed / iterations;
-
-    console.log(`      ${iterations} complex validations elapsed: ${elapsed}ms`);
+    console.log(`      ${iterations} complex validations elapsed: ${elapsedMs.toFixed(1)}ms`);
     console.log(`      average per validation: ${avgTime.toFixed(3)}ms`);
+    console.log(`      throughput: ${opsPerSecond.toFixed(0)} ops/s`);
 
-    // assert: 500 complex validations should complete within 5 seconds (avg 10ms each)
-    expect(elapsed).toBeLessThan(5000);
-
-    // assert: average per validation should be under 15ms
-    expect(avgTime).toBeLessThan(15);
+    expect(elapsedMs).toBeLessThan(1000);
+    expect(opsPerSecond).toBeGreaterThan(5_000);
+    expect(avgTime).toBeLessThan(2);
   });
 
   it('should quickly validate exact length (v1.0.3 new feature)', () => {
@@ -101,17 +104,14 @@ describe('Performance Tests', () => {
     };
 
     const iterations = 1000;
-    const start = Date.now();
-
-    for (let i = 0; i < iterations; i++) {
+    const { elapsedMs, opsPerSecond } = measure(iterations, () => {
       validate(schema, validData);
-    }
+    });
 
-    const elapsed = Date.now() - start;
+    console.log(`      ${iterations} exact length validations elapsed: ${elapsedMs.toFixed(1)}ms`);
+    console.log(`      throughput: ${opsPerSecond.toFixed(0)} ops/s`);
 
-    console.log(`      ${iterations} exact length validations elapsed: ${elapsed}ms`);
-
-    // assert: should be consistent with regular validation performance
-    expect(elapsed).toBeLessThan(5000);
+    expect(elapsedMs).toBeLessThan(1000);
+    expect(opsPerSecond).toBeGreaterThan(5_000);
   });
 });

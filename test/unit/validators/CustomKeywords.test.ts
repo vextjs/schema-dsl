@@ -6,7 +6,7 @@
 
 import Ajv from 'ajv';
 import { describe, it, expect } from 'vitest';
-import { dsl, validate, Validator } from '../../../src/index.js';
+import { dsl, Locale, validate, validateAsync, Validator } from '../../../src/index.js';
 import { CustomKeywords } from '../../../src/validators/CustomKeywords.js';
 
 describe('CustomKeywords - v1.0.2 new validators', () => {
@@ -1283,6 +1283,29 @@ describe('CustomKeywords - v1.0.2 new validators', () => {
       expect(validator.validate({ type: 'string', _customValidators: [() => Promise.resolve(true)] } as any, 'value').errorMessage).toContain('Async validation not supported')
       expect(validator.validate({ type: 'string', _customValidators: ['ignored', () => true] } as any, 'value').valid).toBe(true)
       expect(validator.validate({ type: 'string', _customValidators: 'not-an-array' } as any, 'value').valid).toBe(true)
+      expect(validate({ type: 'string', _customValidators: [(value: unknown) => value !== 'admin' || 'reserved'] } as any, 'alice').valid).toBe(true)
+      expect(validate({ type: 'string', _customValidators: [() => Promise.resolve(true)] } as any, 'value').errorMessage).toContain('Async validation not supported')
+    })
+
+    it('uses global locale for root simple custom validator failures', async () => {
+      Locale.setLocale('zh-CN')
+
+      try {
+        const syncResult = validate({ type: 'string', _customValidators: [() => false] } as any, 'value')
+        expect(syncResult.valid).toBe(false)
+        expect(syncResult.errorMessage).toBe('自定义验证失败')
+
+        let asyncError: any
+        try {
+          await validateAsync({ type: 'string', _customValidators: [async () => false] } as any, 'value')
+        } catch (error) {
+          asyncError = error
+        }
+
+        expect(asyncError?.errors?.[0]?.message).toBe('自定义验证失败')
+      } finally {
+        Locale.setLocale('en-US')
+      }
     })
 
     it('does not invoke declared async custom validators in sync validate()', async () => {

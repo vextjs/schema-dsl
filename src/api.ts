@@ -121,7 +121,12 @@ export type {
 
 // ==================== dsl function (main API) ====================
 
-import { DslBuilder as _DslBuilder } from './core/DslBuilder.js'
+import {
+  DslBuilder as _DslBuilder,
+  DSL_BUILDER_FAST_VALIDATE as _DSL_BUILDER_FAST_VALIDATE,
+  DSL_BUILDER_VALIDATION_SCHEMA as _DSL_BUILDER_VALIDATION_SCHEMA,
+  DSL_BUILDER_VALIDATION_SIGNATURE as _DSL_BUILDER_VALIDATION_SIGNATURE,
+} from './core/DslBuilder.js'
 import { TypeRegistry as _TypeRegistry } from './parser/TypeRegistry.js'
 import { DslParser as _DslParser } from './parser/DslParser.js'
 import { DslAdapter as _DslAdapter } from './adapters/DslAdapter.js'
@@ -135,6 +140,17 @@ import * as _CONSTANTS from './config/constants.js'
 import * as _exporters from './exporters/index.js'
 import { Validator as _Validator, SCHEMA_DSL_CACHE_KEY as _SCHEMA_DSL_CACHE_KEY, createSchemaCacheKey as _createSchemaCacheKey } from './core/Validator.js'
 import { I18nError as _I18nError } from './errors/I18nError.js'
+import { ValidationError as _ValidationError } from './errors/ValidationError.js'
+import {
+  applySmartCoerce as _applySmartCoerce,
+  getSchemaCoerceCandidates as _getSchemaCoerceCandidates,
+  type SchemaCoerceCandidates as _SchemaCoerceCandidates,
+} from './core/SchemaRuntimeMetadataStore.js'
+import {
+  compileValidationPlan as _compileValidationPlan,
+  type ValidationPlan as _ValidationPlan,
+  type ValidationPlanUnsupportedReason as _ValidationPlanUnsupportedReason,
+} from './core/ValidationPlan.js'
 import type { LocaleMessage as _LocaleMessage } from './locales/types.js'
 import type { JSONSchema as _JSONSchema, JSONSchemaInput as _JSONSchemaInput } from './types/schema.js'
 import type { SchemaIOOptions as _SchemaIOOptions } from './types/schema.js'
@@ -149,7 +165,7 @@ import type {
 } from './types/dsl.js'
 import type { IConditionalBuilder as _IConditionalBuilder } from './types/conditional.js'
 import type { DslConfigOptions as _DslConfigOptions } from './types/config.js'
-import type { ValidationResult as _ValidationResult } from './types/validate.js'
+import type { ValidationErrorItem as _ValidationErrorItem, ValidationResult as _ValidationResult } from './types/validate.js'
 import type { SchemaDslDiagnostic as _SchemaDslDiagnostic, SchemaDslUnknownTypeMode as _SchemaDslUnknownTypeMode } from './parser/TypeRegistry.js'
 import JSON5 from 'json5'
 import { createRequire } from 'node:module'
@@ -158,6 +174,34 @@ import { join, basename, extname } from 'node:path'
 
 type _DslBuilderPublic = _DslBuilder & _IDslBuilder
 type _DslParseOptions = NonNullable<Parameters<typeof _DslParser.parseString>[1]>
+type _CachedValidationPlan = {
+  plan: _ValidationPlan | null
+  reason: _ValidationPlanUnsupportedReason | null
+}
+type _RootFastValidationEntry = {
+  plan: _ValidationPlan | null
+  directValidate?: ((data: unknown) => boolean) | null
+  coerceCandidates?: _SchemaCoerceCandidates | null
+  preCoerceCandidates?: _SchemaCoerceCandidates | null
+  signature?: string
+  shapeGuard?: _RootSchemaShapeGuard
+}
+type _RootSchemaShapeGuard = {
+  typeRef: unknown
+  typeCount: number
+  typeSignature: string
+  propertiesRef: unknown
+  propertiesCount: number
+  requiredRef: unknown
+  requiredCount: number
+  anyOfRef: unknown
+  anyOfCount: number
+  oneOfRef: unknown
+  oneOfCount: number
+}
+type _RootSchemaWatcherOptions = {
+  wrapEntries?: boolean
+}
 
 export const CONSTANTS = _CONSTANTS
 export const exporters = _exporters
@@ -174,171 +218,6 @@ import * as _locales from './locales/index.js'
 
 // ==================== smartCoerceTypes ====================
 
-// Pre-compute the set of coercible field candidates from the current schema shape.
-// Avoids scanning all keys of `data` on every smartCoerceTypes call.
-// Only iterates fields that may need coercion (numbers/arrays/objects).
-type _CoerceCandidates = {
-  numbers: string[]   // fields with type: 'number' | 'integer'
-  booleans: string[]  // fields with type: 'boolean'
-  arrays: Array<{ key: string; itemType: 'number' | 'integer' | 'boolean' }>
-  objects: Array<{ key: string; schema: _JSONSchema }>   // nested objects with properties
-} | null   // null = no coercible fields
-
-function _schemaTypeIncludes(schema: _JSONSchema, type: string): boolean {
-  return schema.type === type || (Array.isArray(schema.type) && schema.type.includes(type))
-}
-
-function _directCoercibleType(schema: _JSONSchema): 'number' | 'integer' | 'boolean' | null {
-  if (_schemaTypeIncludes(schema, 'number')) return 'number'
-  if (_schemaTypeIncludes(schema, 'integer')) return 'integer'
-  if (_schemaTypeIncludes(schema, 'boolean')) return 'boolean'
-  return null
-}
-
-function _getCoercibleType(schema: _JSONSchema): 'number' | 'integer' | 'boolean' | null {
-  const direct = _directCoercibleType(schema)
-  if (direct) return direct
-
-  for (const key of ['anyOf', 'oneOf'] as const) {
-    const branches = schema[key] as _JSONSchema[] | undefined
-    if (!Array.isArray(branches)) continue
-
-    let target: 'number' | 'integer' | 'boolean' | null = null
-    let safeNullableUnion = true
-
-    for (const branch of branches) {
-      if (!branch || typeof branch !== 'object' || Array.isArray(branch)) {
-        safeNullableUnion = false
-        break
-      }
-
-      const branchType = _directCoercibleType(branch)
-      if (branchType) {
-        if (target && target !== branchType) {
-          safeNullableUnion = false
-          break
-        }
-        target = branchType
-      } else if (!_schemaTypeIncludes(branch, 'null')) {
-        safeNullableUnion = false
-        break
-      }
-    }
-
-    if (safeNullableUnion && target) return target
-  }
-
-  return null
-}
-
-function _getCoerceCandidates(schema: _JSONSchema): _CoerceCandidates {
-  const props = schema.properties as Record<string, _JSONSchema> | undefined
-  if (!props) return null
-
-  const numbers: string[] = []
-  const booleans: string[] = []
-  const arrays: Array<{ key: string; itemType: 'number' | 'integer' | 'boolean' }> = []
-  const objects: Array<{ key: string; schema: _JSONSchema }> = []
-
-  for (const [key, f] of Object.entries(props)) {
-    const ft = _getCoercibleType(f)
-    if (f.enum && !((ft === 'number' || ft === 'integer') && f.enum.every(v => typeof v === 'number' || v === null)) && !(ft === 'boolean' && f.enum.every(v => typeof v === 'boolean' || v === null))) {
-      continue
-    }
-    if (ft === 'number' || ft === 'integer') {
-      numbers.push(key)
-    } else if (ft === 'boolean') {
-      booleans.push(key)
-    } else if (_schemaTypeIncludes(f, 'array')) {
-      const itemSchema = f.items as _JSONSchema | undefined
-      const itemType = itemSchema && typeof itemSchema === 'object' && !Array.isArray(itemSchema) ? _getCoercibleType(itemSchema) : null
-      if (itemType) arrays.push({ key, itemType })
-    } else if (_schemaTypeIncludes(f, 'object') && f.properties) {
-      objects.push({ key, schema: f })
-    }
-  }
-
-  const result: _CoerceCandidates = (numbers.length || booleans.length || arrays.length || objects.length)
-    ? { numbers, booleans, arrays, objects }
-    : null
-  return result
-}
-
-function _coerceNumber(value: unknown): unknown {
-  if (typeof value !== 'string') return value
-  const trimmed = value.trim()
-  if (trimmed === '') return value
-  const num = Number(trimmed)
-  return Number.isFinite(num) ? num : value
-}
-
-function _coerceBoolean(value: unknown): unknown {
-  if (typeof value !== 'string') return value
-  const trimmed = value.trim().toLowerCase()
-  if (trimmed === 'true') return true
-  if (trimmed === 'false') return false
-  return value
-}
-
-function smartCoerceTypes(data: unknown, schema: _JSONSchema): unknown {
-  if (!data || typeof data !== 'object') return data
-
-  if (Array.isArray(data)) {
-    return data.map(item => smartCoerceTypes(item, schema))
-  }
-
-  // O5b: use pre-computed candidate list instead of Object.keys(data) scan
-  // Only processes fields known to potentially need coercion
-  const candidates = _getCoerceCandidates(schema)
-  if (!candidates) return data   // fast path: no coercible fields
-
-  let result: Record<string, unknown> | null = null
-  const src = data as Record<string, unknown>
-
-  for (const key of candidates.numbers) {
-    const value = src[key]
-    const converted = _coerceNumber(value)
-    if (converted !== value) {
-      if (!result) result = { ...src }
-      result[key] = converted
-    }
-  }
-
-  for (const key of candidates.booleans) {
-    const value = src[key]
-    const converted = _coerceBoolean(value)
-    if (converted !== value) {
-      if (!result) result = { ...src }
-      result[key] = converted
-    }
-  }
-
-  for (const { key, itemType } of candidates.arrays) {
-    const value = src[key]
-    if (Array.isArray(value)) {
-      const converted = value.map(item => {
-        if (itemType === 'boolean') return _coerceBoolean(item)
-        return _coerceNumber(item)
-      })
-      if (!result) result = { ...src }
-      result[key] = converted
-    }
-  }
-
-  for (const { key, schema: nestedSchema } of candidates.objects) {
-    const value = src[key]
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      const converted = smartCoerceTypes(value, nestedSchema)
-      if (converted !== value) {
-        if (!result) result = { ...src }
-        result[key] = converted
-      }
-    }
-  }
-
-  return result ?? data   // return original when no conversion needed (zero-copy)
-}
-
 // ==================== Top-level schema normalization (raw DSL object support) ====================
 
 function _isDslObject(schema: unknown): schema is _DslDefinition {
@@ -351,10 +230,23 @@ function _isDslObject(schema: unknown): schema is _DslDefinition {
   return !_isRawJsonSchemaLike(obj)
 }
 
-// Perf O6: cache _normalizeSchemaInput results for immutable raw JSON Schema objects only.
+// Perf O6: cache _normalizeSchemaInput results for raw JSON Schema object identity.
 // Plain DSL definition objects ({ email: 'email!' }) are mutable — skip cache to prevent
 // stale results when the caller mutates the object between validate() calls (N-04 fix).
+// User-owned raw JSON Schema objects are not marked with a fixed schema key; root fast-cache
+// entries install write-time invalidation for existing schema fields so hot reads stay fast.
 const _normalizeSchemaCache = new WeakMap<object, _JSONSchema>()
+type _CachedCoerceCandidates = {
+  cacheKey: string
+  candidates: _SchemaCoerceCandidates | null
+}
+let _coerceCandidatesCache = new WeakMap<object, _CachedCoerceCandidates>()
+let _validationPlanCache = new Map<string, _CachedValidationPlan>()
+let _rootFastValidationCache = new WeakMap<object, _RootFastValidationEntry>()
+let _runtimeSchemaKeyCache = new WeakMap<object, string>()
+let _runtimeSchemaKeyCounter = 0
+const _VALIDATION_PLAN_CACHE_MAX_SIZE = 5000
+const _EMPTY_VALIDATION_ERRORS = Object.freeze([]) as []
 
 function _markSchemaCacheKey(schema: _JSONSchema): _JSONSchema {
   const cacheKey = _createSchemaCacheKey(schema)
@@ -381,17 +273,552 @@ function _normalizeSchemaInput(schema: _JSONSchemaInput | _DslDefinition | _IDsl
     // Mutable builders: never cache — schema changes as chain methods are called
     return _markSchemaCacheKey((obj['toSchema'] as () => _JSONSchema)())
   }
+  const schemaObj = schema as object
+  const cached = _normalizeSchemaCache.get(schemaObj)
+  if (cached !== undefined) return cached
+
   if (_isDslObject(schema)) {
     // Plain DSL definition objects are mutable — skip cache
     return _markSchemaCacheKey(_DslAdapter.parseObject(schema, _defaultParseOptions()).toSchema())
   }
-  // Raw JSON Schema objects: safe to cache (treated as immutable by convention)
-  const schemaObj = schema as object
-  const cached = _normalizeSchemaCache.get(schemaObj)
-  if (cached !== undefined) return cached
+  // Raw JSON Schema objects are caller-owned. Cache only the normalized identity, not a fixed key.
   const result = schema as _JSONSchema
   _normalizeSchemaCache.set(schemaObj, result)
   return result
+}
+
+function _getCachedSchemaCoerceCandidates(schema: _JSONSchemaInput, cacheKeyOverride?: string | null): _SchemaCoerceCandidates | null {
+  if (!schema || typeof schema !== 'object') return null
+
+  const markedKey = (schema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY]
+  const cacheKey = cacheKeyOverride
+    || (typeof markedKey === 'string' && markedKey
+      ? markedKey
+      : _createSchemaCacheKey(schema))
+  if (!cacheKey) return _getSchemaCoerceCandidates(schema)
+
+  const cached = _coerceCandidatesCache.get(schema)
+  if (cached?.cacheKey === cacheKey) return cached.candidates
+
+  const candidates = _getSchemaCoerceCandidates(schema)
+  _coerceCandidatesCache.set(schema, { cacheKey, candidates })
+  return candidates
+}
+
+function _getSchemaCacheKey(schema: _JSONSchemaInput): string | null {
+  if (!schema || typeof schema !== 'object') return null
+  const markedKey = (schema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY]
+  if (typeof markedKey === 'string' && markedKey) return markedKey
+  const structuralKey = _createSchemaCacheKey(schema)
+  if (structuralKey) return structuralKey
+  let runtimeKey = _runtimeSchemaKeyCache.get(schema)
+  if (!runtimeKey) {
+    runtimeKey = `root_schema_${++_runtimeSchemaKeyCounter}`
+    _runtimeSchemaKeyCache.set(schema, runtimeKey)
+  }
+  return runtimeKey
+}
+
+function _createRootSchemaShapeGuard(schema: _JSONSchema): _RootSchemaShapeGuard {
+  const source = schema as Record<string, unknown>
+  const type = source['type']
+  const properties = source['properties']
+  const required = source['required']
+  const anyOf = source['anyOf']
+  const oneOf = source['oneOf']
+
+  return {
+    typeRef: type,
+    typeCount: Array.isArray(type) ? type.length : typeof type === 'string' ? 1 : -1,
+    typeSignature: _createRootSchemaTypeSignature(type),
+    propertiesRef: properties,
+    propertiesCount: properties && typeof properties === 'object' && !Array.isArray(properties)
+      ? Object.keys(properties as Record<string, unknown>).length
+      : -1,
+    requiredRef: required,
+    requiredCount: Array.isArray(required) ? required.length : -1,
+    anyOfRef: anyOf,
+    anyOfCount: Array.isArray(anyOf) ? anyOf.length : -1,
+    oneOfRef: oneOf,
+    oneOfCount: Array.isArray(oneOf) ? oneOf.length : -1,
+  }
+}
+
+function _isRootSchemaShapeGuardCurrent(schema: _JSONSchema, guard: _RootSchemaShapeGuard | undefined): boolean {
+  if (!guard) return true
+  const source = schema as Record<string, unknown>
+  const type = source['type']
+  const properties = source['properties']
+  const required = source['required']
+  const anyOf = source['anyOf']
+  const oneOf = source['oneOf']
+
+  return type === guard.typeRef
+    && (Array.isArray(type) ? type.length : typeof type === 'string' ? 1 : -1) === guard.typeCount
+    && _createRootSchemaTypeSignature(type) === guard.typeSignature
+    && properties === guard.propertiesRef
+    && (properties && typeof properties === 'object' && !Array.isArray(properties)
+      ? Object.keys(properties as Record<string, unknown>).length
+      : -1) === guard.propertiesCount
+    && required === guard.requiredRef
+    && (Array.isArray(required) ? required.length : -1) === guard.requiredCount
+    && anyOf === guard.anyOfRef
+    && (Array.isArray(anyOf) ? anyOf.length : -1) === guard.anyOfCount
+    && oneOf === guard.oneOfRef
+    && (Array.isArray(oneOf) ? oneOf.length : -1) === guard.oneOfCount
+}
+
+function _createRootSchemaTypeSignature(type: unknown): string {
+  if (Array.isArray(type)) return type.map(item => typeof item === 'string' ? item : '?').join('|')
+  return typeof type === 'string' ? type : ''
+}
+
+function _invalidateRootSchemaCaches(): void {
+  _coerceCandidatesCache = new WeakMap<object, _CachedCoerceCandidates>()
+  _validationPlanCache = new Map<string, _CachedValidationPlan>()
+  _rootFastValidationCache = new WeakMap<object, _RootFastValidationEntry>()
+  _runtimeSchemaKeyCache = new WeakMap<object, string>()
+  _runtimeSchemaKeyCounter = 0
+}
+
+function _isSchemaMapContainerKey(key: string): boolean {
+  return key === 'properties'
+    || key === 'patternProperties'
+    || key === '$defs'
+    || key === 'definitions'
+    || key === 'dependentSchemas'
+}
+
+function _installRootSchemaMutationWatchers(
+  value: unknown,
+  seen = new WeakSet<object>(),
+  options: _RootSchemaWatcherOptions = {},
+): boolean {
+  if (!value || typeof value !== 'object') return true
+
+  const objectValue = value as object
+  if (seen.has(objectValue)) return true
+  seen.add(objectValue)
+
+  const source = value as Record<string, unknown>
+  const shouldWrapEntries = options.wrapEntries !== false
+  let fullyWatched = true
+  for (const key of Object.keys(source)) {
+    if (key === '__proto__') continue
+    const descriptor = Object.getOwnPropertyDescriptor(source, key)
+    const child = source[key]
+    if (shouldWrapEntries && descriptor?.configurable && 'value' in descriptor && descriptor.writable !== false) {
+      let current = descriptor.value
+      try {
+        Object.defineProperty(source, key, {
+          enumerable: descriptor.enumerable === true,
+          configurable: true,
+          get: () => current,
+          set: (next: unknown) => {
+            if (next !== current) {
+              current = next
+              _invalidateRootSchemaCaches()
+              return
+            }
+            current = next
+          },
+        })
+      } catch {
+        // Non-configurable or exotic schema objects still validate; they just skip mutation watching.
+        fullyWatched = false
+      }
+    } else if (shouldWrapEntries && (!descriptor?.configurable || !('value' in descriptor) || descriptor.writable === false)) {
+      fullyWatched = false
+    }
+    if (!_installRootSchemaMutationWatchers(child, seen, {
+      wrapEntries: !_isSchemaMapContainerKey(key),
+    })) {
+      fullyWatched = false
+    }
+  }
+  return fullyWatched
+}
+
+function _rememberValidationPlan(cacheKey: string, entry: _CachedValidationPlan): void {
+  if (_validationPlanCache.has(cacheKey)) _validationPlanCache.delete(cacheKey)
+  _validationPlanCache.set(cacheKey, entry)
+  while (_validationPlanCache.size > _VALIDATION_PLAN_CACHE_MAX_SIZE) {
+    const oldestKey = _validationPlanCache.keys().next().value as string | undefined
+    if (oldestKey === undefined) break
+    _validationPlanCache.delete(oldestKey)
+  }
+}
+
+function _getCachedValidationPlan(schema: _JSONSchemaInput, cacheKeyOverride?: string | null): _ValidationPlan | null {
+  if (!schema || typeof schema !== 'object') return null
+  if (_defaultValidator && !_defaultValidator.cache.options.enabled) return null
+
+  const cacheKey = cacheKeyOverride || _getSchemaCacheKey(schema)
+  if (!cacheKey) return null
+
+  const cached = _validationPlanCache.get(cacheKey)
+  if (cached) {
+    _rememberValidationPlan(cacheKey, cached)
+    return cached.plan
+  }
+
+  const result = _compileValidationPlan(schema, {
+    cacheKey,
+    ajvOptions: { coerceTypes: false, removeAdditional: false },
+  })
+  if (result.status === 'compiled') {
+    _rememberValidationPlan(cacheKey, { plan: result.plan, reason: null })
+    return result.plan
+  }
+
+  _rememberValidationPlan(cacheKey, { plan: null, reason: result.reason })
+  return null
+}
+
+function _executeRootFastEntry<T>(
+  entry: _RootFastValidationEntry,
+  data: unknown,
+  shouldCoerce: boolean
+): _ValidationResult<T> | null {
+  const validate = entry.directValidate ?? entry.plan?.validate
+  if (!validate) return null
+  if (shouldCoerce && entry.preCoerceCandidates && _hasLikelyCoercibleInput(data, entry.preCoerceCandidates)) {
+    const coercedData = _applySmartCoerce(data, entry.preCoerceCandidates)
+    if (coercedData !== data && validate(coercedData)) {
+      return { valid: true, data: coercedData as T, errors: _EMPTY_VALIDATION_ERRORS }
+    }
+    return null
+  }
+  if (validate(data)) {
+    return { valid: true, data: data as T, errors: _EMPTY_VALIDATION_ERRORS }
+  }
+  if (!shouldCoerce || !entry.coerceCandidates) return null
+
+  const coercedData = _applySmartCoerce(data, entry.coerceCandidates)
+  if (coercedData !== data && validate(coercedData)) {
+    return { valid: true, data: coercedData as T, errors: _EMPTY_VALIDATION_ERRORS }
+  }
+  return null
+}
+
+function _hasLikelyCoercibleInput(data: unknown, candidates: _SchemaCoerceCandidates): boolean {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false
+
+  const source = data as Record<string, unknown>
+  for (const key of candidates.numbers) {
+    if (_isCoercibleNumberString(source[key])) return true
+  }
+  for (const key of candidates.booleans) {
+    if (_isCoercibleBooleanString(source[key])) return true
+  }
+  for (const { key, itemType } of candidates.arrays) {
+    const value = source[key]
+    if (!Array.isArray(value)) continue
+    for (const item of value) {
+      if (itemType === 'boolean'
+        ? _isCoercibleBooleanString(item)
+        : _isCoercibleNumberString(item)) {
+        return true
+      }
+    }
+  }
+  for (const { key, candidates: nestedCandidates } of candidates.objects) {
+    if (_hasLikelyCoercibleInput(source[key], nestedCandidates)) return true
+  }
+
+  return false
+}
+
+function _isCoercibleNumberString(value: unknown): boolean {
+  if (typeof value !== 'string') return false
+  const trimmed = value.trim()
+  return trimmed !== '' && Number.isFinite(Number(trimmed))
+}
+
+function _isCoercibleBooleanString(value: unknown): boolean {
+  if (typeof value !== 'string') return false
+  const trimmed = value.trim().toLowerCase()
+  return trimmed === 'true' || trimmed === 'false'
+}
+
+function _getSafePreCoerceCandidates(schema: _JSONSchemaInput): _SchemaCoerceCandidates | null {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return null
+  const props = (schema as _JSONSchema).properties as Record<string, _JSONSchema> | undefined
+  if (!props) return null
+
+  const numbers: string[] = []
+  const booleans: string[] = []
+  const arrays: _SchemaCoerceCandidates['arrays'] = []
+  const objects: _SchemaCoerceCandidates['objects'] = []
+
+  for (const [key, fieldSchema] of Object.entries(props)) {
+    if (!fieldSchema || typeof fieldSchema !== 'object' || Array.isArray(fieldSchema)) continue
+
+    const fieldType = _getSafePreCoercibleType(fieldSchema)
+    if (fieldSchema.enum && !_isSafePreCoerceEnum(fieldSchema.enum, fieldType)) continue
+
+    if (fieldType === 'number' || fieldType === 'integer') {
+      numbers.push(key)
+    } else if (fieldType === 'boolean') {
+      booleans.push(key)
+    } else if (_schemaTypeIncludes(fieldSchema, 'array')) {
+      const itemSchema = fieldSchema.items
+      const itemType = itemSchema && typeof itemSchema === 'object' && !Array.isArray(itemSchema)
+        ? _getSafePreCoercibleType(itemSchema as _JSONSchema)
+        : null
+      if (itemType) arrays.push({ key, itemType })
+    } else if (_schemaTypeIncludes(fieldSchema, 'object') && fieldSchema.properties) {
+      const nestedCandidates = _getSafePreCoerceCandidates(fieldSchema)
+      if (nestedCandidates) objects.push({ key, candidates: nestedCandidates })
+    }
+  }
+
+  return numbers.length || booleans.length || arrays.length || objects.length
+    ? { numbers, booleans, arrays, objects }
+    : null
+}
+
+function _getSafePreCoercibleType(schema: _JSONSchema): 'number' | 'integer' | 'boolean' | null {
+  const direct = _directSafePreCoercibleType(schema)
+  if (direct) return direct
+
+  for (const key of ['anyOf', 'oneOf'] as const) {
+    const branches = schema[key]
+    if (!Array.isArray(branches)) continue
+
+    let target: 'number' | 'integer' | 'boolean' | null = null
+    let safeNullableUnion = true
+
+    for (const branch of branches) {
+      if (!branch || typeof branch !== 'object' || Array.isArray(branch)) {
+        safeNullableUnion = false
+        break
+      }
+
+      const branchType = _directSafePreCoercibleType(branch as _JSONSchema)
+      if (branchType) {
+        if (target && target !== branchType) {
+          safeNullableUnion = false
+          break
+        }
+        target = branchType
+      } else if (!_schemaTypeIncludes(branch as _JSONSchema, 'null')) {
+        safeNullableUnion = false
+        break
+      }
+    }
+
+    if (safeNullableUnion && target) return target
+  }
+
+  return null
+}
+
+function _directSafePreCoercibleType(schema: _JSONSchema): 'number' | 'integer' | 'boolean' | null {
+  const type = schema.type
+  if (Array.isArray(type) && type.includes('string')) return null
+  if (_schemaTypeIncludes(schema, 'number')) return 'number'
+  if (_schemaTypeIncludes(schema, 'integer')) return 'integer'
+  if (_schemaTypeIncludes(schema, 'boolean')) return 'boolean'
+  return null
+}
+
+function _schemaTypeIncludes(schema: _JSONSchema, type: string): boolean {
+  return schema.type === type || (Array.isArray(schema.type) && schema.type.includes(type))
+}
+
+function _isSafePreCoerceEnum(values: unknown[], type: 'number' | 'integer' | 'boolean' | null): boolean {
+  if (type === 'number' || type === 'integer') {
+    return values.every(value => typeof value === 'number' || value === null)
+  }
+  if (type === 'boolean') {
+    return values.every(value => typeof value === 'boolean' || value === null)
+  }
+  return true
+}
+
+type _RootPrimitiveType = 'string' | 'number' | 'integer' | 'boolean' | 'null'
+
+const _ROOT_PRIMITIVE_UNION_ANNOTATION_KEYS = new Set([
+  '$id',
+  '$schema',
+  '$comment',
+  'title',
+  'description',
+  'examples',
+])
+
+function _tryCreateRootPrimitiveUnionDirectValidator(schema: _JSONSchema): ((data: unknown) => boolean) | null {
+  const types = _collectRootPrimitiveUnionTypes(schema)
+  return types ? _createRootPrimitiveTypePredicate(types) : null
+}
+
+function _collectRootPrimitiveUnionTypes(schema: _JSONSchema): _RootPrimitiveType[] | null {
+  const source = schema as Record<string, unknown>
+  const keys = Object.keys(source)
+
+  if (Array.isArray(source['type'])) {
+    if (!_onlyAllowedRootPrimitiveUnionKeys(keys, new Set(['type']))) return null
+    return _normalizeRootPrimitiveTypes(source['type'])
+  }
+
+  const unionKey = Array.isArray(source['anyOf'])
+    ? 'anyOf'
+    : Array.isArray(source['oneOf'])
+      ? 'oneOf'
+      : null
+  if (!unionKey) return null
+  if (!_onlyAllowedRootPrimitiveUnionKeys(keys, new Set([unionKey]))) return null
+
+  const types: _RootPrimitiveType[] = []
+  const seen = new Set<_RootPrimitiveType>()
+  for (const branch of source[unionKey] as unknown[]) {
+    if (!branch || typeof branch !== 'object' || Array.isArray(branch)) return null
+    const branchSource = branch as Record<string, unknown>
+    if (!_onlyAllowedRootPrimitiveUnionKeys(Object.keys(branchSource), new Set(['type']))) return null
+    const type = branchSource['type']
+    if (!_isRootPrimitiveType(type) || seen.has(type)) return null
+    seen.add(type)
+    types.push(type)
+  }
+
+  if (unionKey === 'oneOf' && seen.has('number') && seen.has('integer')) return null
+  return types.length > 1 ? types : null
+}
+
+function _onlyAllowedRootPrimitiveUnionKeys(keys: string[], structuralKeys: Set<string>): boolean {
+  for (const key of keys) {
+    if (!structuralKeys.has(key) && !_ROOT_PRIMITIVE_UNION_ANNOTATION_KEYS.has(key)) return false
+  }
+  return true
+}
+
+function _normalizeRootPrimitiveTypes(value: unknown[]): _RootPrimitiveType[] | null {
+  const types: _RootPrimitiveType[] = []
+  const seen = new Set<_RootPrimitiveType>()
+  for (const item of value) {
+    if (!_isRootPrimitiveType(item) || seen.has(item)) return null
+    seen.add(item)
+    types.push(item)
+  }
+  return types.length > 1 ? types : null
+}
+
+function _isRootPrimitiveType(value: unknown): value is _RootPrimitiveType {
+  return value === 'string'
+    || value === 'number'
+    || value === 'integer'
+    || value === 'boolean'
+    || value === 'null'
+}
+
+function _createRootPrimitiveTypePredicate(types: _RootPrimitiveType[]): (data: unknown) => boolean {
+  const acceptsString = types.includes('string')
+  const acceptsNumber = types.includes('number')
+  const acceptsInteger = types.includes('integer')
+  const acceptsBoolean = types.includes('boolean')
+  const acceptsNull = types.includes('null')
+
+  return (data: unknown): boolean => {
+    switch (typeof data) {
+      case 'string':
+        return acceptsString
+      case 'number':
+        return Number.isFinite(data) && (acceptsNumber || (acceptsInteger && Number.isInteger(data)))
+      case 'boolean':
+        return acceptsBoolean
+      default:
+        return data === null && acceptsNull
+    }
+  }
+}
+
+function _tryRootFastValidate<T>(
+  schema: _JSONSchemaInput | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
+  data: unknown,
+  shouldCoerce: boolean
+): _ValidationResult<T> | null {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return null
+  if (_defaultValidator && !_defaultValidator.cache.options.enabled) return null
+
+  const schemaObject = schema as object
+  const source = schema as Record<string, unknown>
+  if (source['_isConditional']) return null
+
+  if (schema instanceof _DslBuilder) {
+    return schema[_DSL_BUILDER_FAST_VALIDATE](data) as _ValidationResult<T> | null
+  }
+
+  const builderFastValidate = (schema as Record<PropertyKey, unknown>)[_DSL_BUILDER_FAST_VALIDATE]
+  if (typeof builderFastValidate === 'function') {
+    return (builderFastValidate as (data: unknown) => _ValidationResult<T> | null).call(schema, data)
+  }
+
+  const builderValidationSchema = (schema as Record<PropertyKey, unknown>)[_DSL_BUILDER_VALIDATION_SCHEMA]
+  if (typeof builderValidationSchema === 'function') {
+    const validationSchema = (builderValidationSchema as () => _JSONSchema).call(schema)
+    const signatureValue = (validationSchema as Record<PropertyKey, unknown>)[_DSL_BUILDER_VALIDATION_SIGNATURE]
+    const signature = typeof signatureValue === 'string' ? signatureValue : undefined
+    const cached = signature ? _rootFastValidationCache.get(schemaObject) : undefined
+    if (cached && cached.signature === signature) {
+      return _executeRootFastEntry<T>(cached, data, shouldCoerce)
+    }
+
+    const normalizedSchema = (validationSchema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY]
+      ? validationSchema
+      : _markSchemaCacheKey(validationSchema)
+    const plan = _getCachedValidationPlan(normalizedSchema)
+    const coerceCandidates = _schemaMayHaveSmartCoerceCandidates(normalizedSchema)
+      ? _getCachedSchemaCoerceCandidates(normalizedSchema)
+      : null
+    const preCoerceCandidates = coerceCandidates
+      ? _getSafePreCoerceCandidates(normalizedSchema)
+      : null
+    const entry: _RootFastValidationEntry = signature
+      ? { plan, coerceCandidates, preCoerceCandidates, signature }
+      : { plan, coerceCandidates, preCoerceCandidates }
+    if (signature) _rootFastValidationCache.set(schemaObject, entry)
+    return _executeRootFastEntry<T>(entry, data, shouldCoerce)
+  }
+
+  if (typeof source['toSchema'] === 'function') return null
+
+  const cached = _rootFastValidationCache.get(schemaObject)
+  if (cached) {
+    const markedKey = (schema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY]
+    if (typeof markedKey === 'string' && markedKey) {
+      return _executeRootFastEntry<T>(cached, data, shouldCoerce)
+    }
+    if (_isRootSchemaShapeGuardCurrent(schema as _JSONSchema, cached.shapeGuard)) {
+      return _executeRootFastEntry<T>(cached, data, shouldCoerce)
+    }
+    _rootFastValidationCache.delete(schemaObject)
+  }
+
+  if (_isDslObject(schema)) return null
+
+  const normalizedSchema = schema as _JSONSchema
+  const markedKey = (normalizedSchema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY]
+  const cacheKey = _getSchemaCacheKey(normalizedSchema)
+  if (!cacheKey) return null
+
+  const directValidate = _tryCreateRootPrimitiveUnionDirectValidator(normalizedSchema)
+  const plan = directValidate ? null : _getCachedValidationPlan(normalizedSchema, cacheKey)
+  const coerceCandidates = !directValidate && _schemaMayHaveSmartCoerceCandidates(normalizedSchema)
+    ? _getCachedSchemaCoerceCandidates(normalizedSchema, cacheKey)
+    : null
+  const preCoerceCandidates = coerceCandidates
+    ? _getSafePreCoerceCandidates(normalizedSchema)
+    : null
+  const entry: _RootFastValidationEntry = typeof markedKey === 'string' && markedKey
+    ? { plan, directValidate, coerceCandidates, preCoerceCandidates }
+    : { plan, directValidate, coerceCandidates, preCoerceCandidates, shapeGuard: _createRootSchemaShapeGuard(normalizedSchema) }
+  if (!(typeof markedKey === 'string' && markedKey)) {
+    _installRootSchemaMutationWatchers(normalizedSchema, new WeakSet<object>(), { wrapEntries: false })
+  }
+  _rootFastValidationCache.set(schemaObject, entry)
+
+  return _executeRootFastEntry<T>(entry, data, shouldCoerce)
 }
 
 // ==================== i18n locale directory scan ====================
@@ -594,6 +1021,10 @@ export { _getDefaultValidator as getDefaultValidator }
 export function resetDefaultValidator(): void {
   _defaultValidator = null
   _noCoerceValidator = null
+  _validationPlanCache = new Map<string, _CachedValidationPlan>()
+  _rootFastValidationCache = new WeakMap<object, _RootFastValidationEntry>()
+  _runtimeSchemaKeyCache = new WeakMap<object, string>()
+  _runtimeSchemaKeyCounter = 0
 }
 
 // Initial PATTERNS snapshot — used by resetRuntimeState() to restore user-overridden values
@@ -615,6 +1046,11 @@ function _defaultParseOptions(options: _DslParseOptions = {}): _DslParseOptions 
  */
 export function resetRuntimeState(): void {
   resetDefaultValidator()
+  _coerceCandidatesCache = new WeakMap<object, _CachedCoerceCandidates>()
+  _validationPlanCache = new Map<string, _CachedValidationPlan>()
+  _rootFastValidationCache = new WeakMap<object, _RootFastValidationEntry>()
+  _runtimeSchemaKeyCache = new WeakMap<object, string>()
+  _runtimeSchemaKeyCounter = 0
   _Validator.clearQuickValidateCache()
   _DslBuilder.clearCustomTypes()
   _resetDslNamespaceExtensions(_dslWithNS)
@@ -634,9 +1070,158 @@ function _restorePatternGroup<T>(target: Record<string, T>, snapshot: Record<str
 // ==================== Convenience validation functions ====================
 
 const _PRE_COERCED_VALIDATE_OPTION = '__schemaDslPreCoerced'
+const _EMPTY_VALIDATE_OPTIONS = Object.freeze({}) as Record<string, unknown>
+const _EMPTY_PRE_COERCED_VALIDATE_OPTIONS = Object.freeze({
+  [_PRE_COERCED_VALIDATE_OPTION]: true,
+}) as Record<string, unknown>
 
 function _shouldSmartCoerce(options: Record<string, unknown>): boolean {
   return options['coerce'] !== false && options['smartCoerce'] !== false && options['coerceTypes'] !== false
+}
+
+function _schemaMayHaveSmartCoerceCandidates(schema: _JSONSchemaInput): schema is _JSONSchema {
+  return !!schema && typeof schema === 'object' && !Array.isArray(schema)
+    && typeof (schema as Record<string, unknown>)['properties'] === 'object'
+}
+
+function _hasTopLevelCustomValidators(schema: unknown): boolean {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return false
+  const validators = (schema as Record<string, unknown>)['_customValidators']
+  return Array.isArray(validators) && validators.length > 0
+}
+
+function _isSimpleAsyncCustomScalarSchema(schema: unknown): schema is _JSONSchema & { _customValidators: Array<(value: unknown) => unknown> } {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return false
+  const source = schema as Record<string, unknown>
+  const type = source['type']
+  if (type !== 'string' && type !== 'number' && type !== 'integer' && type !== 'boolean' && type !== 'null') return false
+  if (!Array.isArray(source['_customValidators']) || source['_customValidators'].length === 0 || !source['_customValidators'].every(fn => typeof fn === 'function')) return false
+
+  for (const key of Object.keys(source)) {
+    if (key !== 'type' && key !== '_customValidators'
+      && key !== '$id' && key !== '$schema' && key !== '$comment'
+      && key !== 'title' && key !== 'description' && key !== 'examples'
+      && key !== '_label' && key !== '_description' && key !== '_required' && key !== '_customMessages') {
+      return false
+    }
+  }
+  return true
+}
+
+function _matchesSimpleScalarType(type: unknown, data: unknown): boolean {
+  switch (type) {
+    case 'string':
+      return typeof data === 'string'
+    case 'number':
+      return typeof data === 'number' && Number.isFinite(data)
+    case 'integer':
+      return typeof data === 'number' && Number.isInteger(data)
+    case 'boolean':
+      return typeof data === 'boolean'
+    case 'null':
+      return data === null
+    default:
+      return false
+  }
+}
+
+async function _trySimpleAsyncCustomValidate<T>(
+  schema: unknown,
+  data: unknown,
+  options: Record<string, unknown>
+): Promise<{ handled: true; data: T } | { handled: false }> {
+  if (options !== _EMPTY_VALIDATE_OPTIONS && Object.keys(options).length > 0) return { handled: false }
+  if (!_isSimpleAsyncCustomScalarSchema(schema)) return { handled: false }
+  if (!_matchesSimpleScalarType((schema as Record<string, unknown>)['type'], data)) return { handled: false }
+
+  for (const validator of schema._customValidators) {
+    let result: unknown
+    try {
+      result = await Promise.resolve(validator(data))
+    } catch (error) {
+      throw _createTopLevelCustomValidationError(error instanceof Error ? error.message : String(error), data)
+    }
+
+    if (result === false) {
+      throw _createTopLevelCustomValidationError(_getTopLevelCustomValidationDefaultMessage(), data)
+    }
+    if (typeof result === 'string') {
+      throw _createTopLevelCustomValidationError(result, data)
+    }
+    if (result !== null && typeof result === 'object' && (result as Record<string, unknown>)['error']) {
+      throw _createTopLevelCustomValidationError(
+        String((result as Record<string, unknown>)['message'] ?? _getTopLevelCustomValidationDefaultMessage()),
+        data
+      )
+    }
+  }
+
+  return { handled: true, data: data as T }
+}
+
+function _trySimpleSyncCustomValidate<T>(
+  schema: unknown,
+  data: unknown,
+  options: Record<string, unknown>
+): _ValidationResult<T> | null {
+  if (options !== _EMPTY_VALIDATE_OPTIONS && Object.keys(options).length > 0) return null
+  if (!_isSimpleAsyncCustomScalarSchema(schema)) return null
+  if (!_matchesSimpleScalarType((schema as Record<string, unknown>)['type'], data)) return null
+
+  for (const validator of schema._customValidators) {
+    let result: unknown
+    try {
+      result = validator(data)
+    } catch (error) {
+      return _createTopLevelCustomValidationResult(error instanceof Error ? error.message : String(error), data as T)
+    }
+
+    if (result && typeof result === 'object' && typeof (result as { then?: unknown }).then === 'function') {
+      return _createTopLevelCustomValidationResult(_getTopLevelAsyncValidationNotSupportedMessage(), data as T)
+    }
+    if (result === false) {
+      return _createTopLevelCustomValidationResult(_getTopLevelCustomValidationDefaultMessage(), data as T)
+    }
+    if (typeof result === 'string') {
+      return _createTopLevelCustomValidationResult(result, data as T)
+    }
+    if (result !== null && typeof result === 'object' && (result as Record<string, unknown>)['error']) {
+      return _createTopLevelCustomValidationResult(
+        String((result as Record<string, unknown>)['message'] ?? _getTopLevelCustomValidationDefaultMessage()),
+        data as T
+      )
+    }
+  }
+
+  return { valid: true, data: data as T, errors: _EMPTY_VALIDATION_ERRORS }
+}
+
+function _getTopLevelCustomValidationDefaultMessage(): string {
+  return _Locale.getMessageText('CUSTOM_VALIDATION_FAILED')
+}
+
+function _getTopLevelAsyncValidationNotSupportedMessage(): string {
+  return _Locale.getMessageText('ASYNC_VALIDATION_NOT_SUPPORTED')
+}
+
+function _createTopLevelCustomValidationError(message: string, data: unknown): _ValidationError {
+  return new _ValidationError([_createTopLevelCustomValidationItem(message)], data)
+}
+
+function _createTopLevelCustomValidationResult<T>(message: string, data: T): _ValidationResult<T> {
+  const item = _createTopLevelCustomValidationItem(message)
+  return { valid: false, data, errors: [item], errorMessage: item.message }
+}
+
+function _createTopLevelCustomValidationItem(message: string): _ValidationErrorItem {
+  return {
+    message,
+    path: '',
+    keyword: '_customValidators',
+    params: {},
+    field: '',
+    type: '_customValidators',
+  }
 }
 
 /**
@@ -646,16 +1231,47 @@ function _shouldSmartCoerce(options: Record<string, unknown>): boolean {
 export function validate<T = unknown>(
   schema: _JSONSchemaInput | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
   data: unknown,
-  options: Record<string, unknown> = {},
+  options: Record<string, unknown> = _EMPTY_VALIDATE_OPTIONS,
 ): _ValidationResult<T> {
-  const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = _shouldSmartCoerce(options)
-  // Use candidate fields instead of scanning all input keys.
-  const coercedData = shouldCoerce && typeof normalizedSchema === 'object' && _getCoerceCandidates(normalizedSchema)
-    ? smartCoerceTypes(data, normalizedSchema)
+  const isFastBuilder = schema instanceof _DslBuilder
+    && (!_defaultValidator || _defaultValidator.cache.options.enabled)
+  if (isFastBuilder) {
+    const builderFastResult = (schema as _DslBuilder)[_DSL_BUILDER_FAST_VALIDATE](data)
+    if (builderFastResult) return builderFastResult as _ValidationResult<T>
+  }
+
+  const hasTopLevelCustomValidators = _hasTopLevelCustomValidators(schema)
+  const directFastResult = isFastBuilder || hasTopLevelCustomValidators
+    ? null
+    : _tryRootFastValidate<T>(schema, data, shouldCoerce)
+  if (directFastResult) return directFastResult
+
+  const simpleCustomResult = _trySimpleSyncCustomValidate<T>(schema, data, options)
+  if (simpleCustomResult) return simpleCustomResult
+
+  const customSchemaFastResult = hasTopLevelCustomValidators && !isFastBuilder
+    ? _tryRootFastValidate<T>(schema, data, shouldCoerce)
+    : null
+  if (customSchemaFastResult) return customSchemaFastResult
+
+  const normalizedSchema = _normalizeSchemaInput(schema)
+  const coerceCandidates = shouldCoerce && _schemaMayHaveSmartCoerceCandidates(normalizedSchema)
+    ? _getCachedSchemaCoerceCandidates(normalizedSchema)
+    : null
+  const coercedData = coerceCandidates
+    ? _applySmartCoerce(data, coerceCandidates)
     : data
+  const validationPlan = _getCachedValidationPlan(normalizedSchema)
+  if (validationPlan?.validate(coercedData)) {
+    return { valid: true, data: coercedData as T, errors: _EMPTY_VALIDATION_ERRORS }
+  }
   const validator = shouldCoerce ? _getDefaultValidator() : _getNoCoerceValidator()
-  const validateOptions = shouldCoerce ? { ...options, [_PRE_COERCED_VALIDATE_OPTION]: true } : options
+  const validateOptions = shouldCoerce
+    ? options === _EMPTY_VALIDATE_OPTIONS || Object.keys(options).length === 0
+      ? _EMPTY_PRE_COERCED_VALIDATE_OPTIONS
+      : { ...options, [_PRE_COERCED_VALIDATE_OPTION]: true }
+    : options
   return validator.validate(normalizedSchema, coercedData as T, validateOptions)
 }
 
@@ -665,16 +1281,25 @@ export function validate<T = unknown>(
 export async function validateAsync<T = unknown>(
   schema: _JSONSchemaInput | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
   data: unknown,
-  options: Record<string, unknown> = {},
+  options: Record<string, unknown> = _EMPTY_VALIDATE_OPTIONS,
 ): Promise<T> {
+  const simpleAsyncResult = await _trySimpleAsyncCustomValidate<T>(schema, data, options)
+  if (simpleAsyncResult.handled) return simpleAsyncResult.data
+
   const normalizedSchema = _normalizeSchemaInput(schema)
   const shouldCoerce = _shouldSmartCoerce(options)
-  // Use candidate fields instead of scanning all input keys.
-  const coercedData = shouldCoerce && typeof normalizedSchema === 'object' && _getCoerceCandidates(normalizedSchema)
-    ? smartCoerceTypes(data, normalizedSchema)
+  const coerceCandidates = shouldCoerce && _schemaMayHaveSmartCoerceCandidates(normalizedSchema)
+    ? _getCachedSchemaCoerceCandidates(normalizedSchema)
+    : null
+  const coercedData = coerceCandidates
+    ? _applySmartCoerce(data, coerceCandidates)
     : data
   const validator = shouldCoerce ? _getDefaultValidator() : _getNoCoerceValidator()
-  const validateOptions = shouldCoerce ? { ...options, [_PRE_COERCED_VALIDATE_OPTION]: true } : options
+  const validateOptions = shouldCoerce
+    ? options === _EMPTY_VALIDATE_OPTIONS || Object.keys(options).length === 0
+      ? _EMPTY_PRE_COERCED_VALIDATE_OPTIONS
+      : { ...options, [_PRE_COERCED_VALIDATE_OPTION]: true }
+    : options
   return validator.validateAsync(normalizedSchema, coercedData as T, validateOptions)
 }
 

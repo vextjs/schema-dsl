@@ -15,6 +15,7 @@ import { TypeRegistry } from '../parser/TypeRegistry.js'
 import { PATTERNS } from '../config/patterns.js'
 import { cloneSchemaValue } from '../utils/schemaClone.js'
 import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
+import { compileValidationPlan, type ValidationPlan } from './ValidationPlan.js'
 import safeRegex from 'safe-regex'
 import type { Validator as ValidatorInstance } from './Validator.js'
 import type { ValidationResult } from '../types/validate.js'
@@ -24,6 +25,7 @@ import type { SchemaDslPatternRegistry } from '../types/runtime.js'
 
 type CustomValidatorFn = (value: unknown) => unknown
 type CustomTypeSchema = JSONSchema | (() => JSONSchema)
+type JsonScalar = string | number | boolean | null
 
 export interface DslBuilderOptions {
   parseOptions?: DslParseOptions
@@ -38,6 +40,9 @@ interface DslBuilderRuntimeState {
 }
 
 const DSL_BUILDER_STATE_KEY = Symbol.for('schema-dsl.v2.DslBuilder.state')
+export const DSL_BUILDER_VALIDATION_SCHEMA = Symbol.for('schema-dsl.v2.DslBuilder.validationSchema')
+export const DSL_BUILDER_VALIDATION_SIGNATURE = Symbol.for('schema-dsl.v2.DslBuilder.validationSignature')
+export const DSL_BUILDER_FAST_VALIDATE = Symbol.for('schema-dsl.v2.DslBuilder.fastValidate')
 
 function getRuntimeState(): DslBuilderRuntimeState {
   const host = globalThis as typeof globalThis & Record<symbol, DslBuilderRuntimeState | undefined>
@@ -60,6 +65,86 @@ const PASSWORD_PATTERNS: Record<string, RegExp> = {
 }
 const PASSWORD_MIN_LENGTHS: Record<string, number> = {
   weak: 6, medium: 8, strong: 8, veryStrong: 10,
+}
+const EMPTY_FAST_VALIDATION_ERRORS = Object.freeze([]) as []
+const SIMPLE_DIRECT_FAST_SCHEMA_KEYS = new Set([
+  '$id',
+  '$schema',
+  '$comment',
+  'title',
+  'description',
+  'examples',
+  '_label',
+  '_description',
+  '_required',
+  '_customMessages',
+  'type',
+  'enum',
+  'const',
+])
+
+function isJsonScalar(value: unknown): value is JsonScalar {
+  return value === null || typeof value === 'string' || typeof value === 'boolean'
+    || (typeof value === 'number' && Number.isFinite(value))
+}
+
+function isBuilderPrimitiveType(value: unknown): value is 'string' | 'number' | 'integer' | 'boolean' | 'null' {
+  return value === 'string'
+    || value === 'number'
+    || value === 'integer'
+    || value === 'boolean'
+    || value === 'null'
+}
+
+function createBuilderPrimitiveTypePredicate(type: unknown): ((value: unknown) => boolean) | null {
+  if (type === undefined) return null
+  const values = Array.isArray(type) ? type : [type]
+  if (values.length === 0 || !values.every(isBuilderPrimitiveType)) return null
+
+  const acceptsString = values.includes('string')
+  const acceptsNumber = values.includes('number')
+  const acceptsInteger = values.includes('integer')
+  const acceptsBoolean = values.includes('boolean')
+  const acceptsNull = values.includes('null')
+
+  return (value: unknown): boolean => {
+    switch (typeof value) {
+      case 'string':
+        return acceptsString
+      case 'number':
+        return Number.isFinite(value) && (acceptsNumber || (acceptsInteger && Number.isInteger(value)))
+      case 'boolean':
+        return acceptsBoolean
+      default:
+        return value === null && acceptsNull
+    }
+  }
+}
+
+function createBuilderEnumPredicate(values: JsonScalar[]): (value: unknown) => boolean {
+  switch (values.length) {
+    case 0:
+      return () => false
+    case 1: {
+      const first = values[0]
+      return (value: unknown): boolean => value === first
+    }
+    case 2: {
+      const first = values[0]
+      const second = values[1]
+      return (value: unknown): boolean => value === first || value === second
+    }
+    case 3: {
+      const first = values[0]
+      const second = values[1]
+      const third = values[2]
+      return (value: unknown): boolean => value === first || value === second || value === third
+    }
+    default: {
+      const enumSet = new Set(values)
+      return (value: unknown): boolean => enumSet.has(value as JsonScalar)
+    }
+  }
 }
 
 // ==================== DslBuilder ====================
@@ -89,6 +174,16 @@ export class DslBuilder {
   private readonly _validatorFactory: (() => ValidatorInstance | Promise<ValidatorInstance>) | undefined
   private readonly _validatorGuard: (() => void) | undefined
   private readonly _cacheValidator: boolean
+  private _schemaVersion = 0
+  private _stateVersion = 0
+  private _validationSchemaCache: JSONSchema | null = null
+  private _validationSchemaSignature: string | null = null
+  private _validationPlanCache: ValidationPlan | null = null
+  private _validationFastPredicate: ((data: unknown) => boolean) | null = null
+  private _validationPlanSchemaVersion = -1
+  private _validationPlanStateVersion = -1
+  private _validationPlanRequired = false
+  private _validationPlanOptional = false
 
   // ==================== Constructor ====================
 
@@ -122,17 +217,53 @@ export class DslBuilder {
     this._validatorGuard = options.validatorGuard
     this._cacheValidator = options.cacheValidator ?? true
 
-    this._baseSchema = DslBuilder._parseBody(s, this._parseOptions)
+    this._baseSchema = this._trackBaseSchema(DslBuilder._parseBody(s, this._parseOptions))
   }
 
   static fromSchema(schema: JSONSchema, options: DslBuilderOptions = {}): DslBuilder {
     const builder = new DslBuilder('any', options)
     const cloned = cloneSchemaValue(schema)
     const { _required, ...baseSchema } = cloned as JSONSchema & { _required?: boolean }
-    builder._baseSchema = baseSchema
+    builder._baseSchema = builder._trackBaseSchema(baseSchema)
     builder._required = _required === true
     builder._optional = false
+    builder._markValidationSchemaDirty()
     return builder
+  }
+
+  private _markValidationSchemaDirty(): void {
+    this._stateVersion += 1
+    this._validationSchemaCache = null
+    this._validationSchemaSignature = null
+    this._validationPlanCache = null
+    this._validationFastPredicate = null
+    this._validationPlanSchemaVersion = -1
+    this._validationPlanStateVersion = -1
+  }
+
+  private _trackBaseSchema(schema: JSONSchema): JSONSchema {
+    return new Proxy(schema, {
+      set: (target, property, value): boolean => {
+        const record = target as Record<PropertyKey, unknown>
+        if (record[property] !== value) {
+          record[property] = value
+          this._schemaVersion += 1
+          this._markValidationSchemaDirty()
+          return true
+        }
+        record[property] = value
+        return true
+      },
+      deleteProperty: (target, property): boolean => {
+        const record = target as Record<PropertyKey, unknown>
+        if (property in record) {
+          delete record[property]
+          this._schemaVersion += 1
+          this._markValidationSchemaDirty()
+        }
+        return true
+      },
+    })
   }
 
   // ==================== Internal Parsing ====================
@@ -379,6 +510,7 @@ export class DslBuilder {
     this._baseSchema.pattern = source
     if (message) {
       this._customMessages['string.pattern'] = message
+      this._markValidationSchemaDirty()
     }
     return this
   }
@@ -388,6 +520,7 @@ export class DslBuilder {
    */
   messages(msgs: Record<string, string>): this {
     Object.assign(this._customMessages, msgs)
+    this._markValidationSchemaDirty()
     return this
   }
 
@@ -401,6 +534,7 @@ export class DslBuilder {
    */
   label(text: string): this {
     this._label = text
+    this._markValidationSchemaDirty()
     return this
   }
 
@@ -409,6 +543,7 @@ export class DslBuilder {
    */
   description(text: string): this {
     this._description = text
+    this._markValidationSchemaDirty()
     return this
   }
 
@@ -436,6 +571,7 @@ export class DslBuilder {
   optional(): this {
     this._required = false
     this._optional = true
+    this._markValidationSchemaDirty()
     return this
   }
 
@@ -455,6 +591,7 @@ export class DslBuilder {
   required(): this {
     this._required = true
     this._optional = false
+    this._markValidationSchemaDirty()
     return this
   }
 
@@ -466,6 +603,7 @@ export class DslBuilder {
       throw new Error('[schema-dsl] Custom validator must be a function')
     }
     this._customValidators.push(validatorFn)
+    this._markValidationSchemaDirty()
     return this
   }
 
@@ -848,6 +986,90 @@ export class DslBuilder {
     schema._required = this._required
 
     return schema
+  }
+
+  [DSL_BUILDER_VALIDATION_SCHEMA](): JSONSchema {
+    const signature = this._getValidationSchemaSignature()
+    if (this._validationSchemaCache && this._validationSchemaSignature === signature) {
+      return this._validationSchemaCache
+    }
+
+    const schema = this.toSchema()
+    this._attachValidationSchemaSignature(schema, signature)
+    this._validationSchemaCache = schema
+    this._validationSchemaSignature = signature
+    return schema
+  }
+
+  [DSL_BUILDER_FAST_VALIDATE](data: unknown): ValidationResult<unknown> | null {
+    if (this._validationPlanSchemaVersion !== this._schemaVersion
+      || this._validationPlanStateVersion !== this._stateVersion
+      || this._validationPlanRequired !== this._required
+      || this._validationPlanOptional !== this._optional) {
+      this._validationPlanCache = null
+      this._validationFastPredicate = this._tryCreateSimpleDirectFastPredicate()
+      if (!this._validationFastPredicate) {
+        const signature = this._getValidationSchemaSignature()
+        const schema = this[DSL_BUILDER_VALIDATION_SCHEMA]()
+        const result = compileValidationPlan(schema, {
+          cacheKey: `builder:${signature}`,
+          ajvOptions: { coerceTypes: false, removeAdditional: false },
+        })
+        this._validationPlanCache = result.status === 'compiled' ? result.plan : null
+        this._validationFastPredicate = this._validationPlanCache?.validate ?? null
+      }
+      this._validationPlanSchemaVersion = this._schemaVersion
+      this._validationPlanStateVersion = this._stateVersion
+      this._validationPlanRequired = this._required
+      this._validationPlanOptional = this._optional
+    }
+
+    return this._validationFastPredicate?.(data)
+      ? { valid: true, data, errors: EMPTY_FAST_VALIDATION_ERRORS }
+      : null
+  }
+
+  private _tryCreateSimpleDirectFastPredicate(): ((data: unknown) => boolean) | null {
+    if (this._customValidators.length > 0 || this._whenConditions.length > 0) return null
+
+    const source = this._baseSchema as Record<string, unknown>
+    for (const key of Object.keys(source)) {
+      if (!SIMPLE_DIRECT_FAST_SCHEMA_KEYS.has(key)) return null
+    }
+
+    const typePredicate = createBuilderPrimitiveTypePredicate(source['type'])
+    if (source['type'] !== undefined && !typePredicate) return null
+
+    const enumValues = source['enum']
+    let enumPredicate: ((value: unknown) => boolean) | null = null
+    if (enumValues !== undefined) {
+      if (!Array.isArray(enumValues) || !enumValues.every(isJsonScalar)) return null
+      enumPredicate = createBuilderEnumPredicate(enumValues as JsonScalar[])
+    }
+
+    const hasConst = Object.prototype.hasOwnProperty.call(source, 'const')
+    const constValue = source['const']
+    if (hasConst && !isJsonScalar(constValue)) return null
+    if (!typePredicate && !enumPredicate && !hasConst) return null
+
+    return (value: unknown): boolean => {
+      if (typePredicate && !typePredicate(value)) return false
+      if (enumPredicate && !enumPredicate(value)) return false
+      if (hasConst && value !== constValue) return false
+      return true
+    }
+  }
+
+  private _attachValidationSchemaSignature(schema: JSONSchema, signature: string): void {
+    Object.defineProperty(schema, DSL_BUILDER_VALIDATION_SIGNATURE, {
+      value: signature,
+      enumerable: false,
+      configurable: true,
+    })
+  }
+
+  private _getValidationSchemaSignature(): string {
+    return `${this._schemaVersion}|${this._stateVersion}|${this._required ? 1 : 0}|${this._optional ? 1 : 0}`
   }
 
   /**

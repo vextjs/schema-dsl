@@ -1,31 +1,19 @@
 /**
  * schema-dsl Performance Benchmark Comparison
  *
- * Run: npm run bench  (or node test/benchmarks/library-comparison.js)
+ * Run:
+ *   npm run bench
+ *   node test/benchmarks/library-comparison.js --smoke --json
+ *
  * Prerequisites: npm run build (requires dist/ output)
- *
- * ── Tier Description ────────────────────────────────────────────────────────
- *
- * [Tier 1: JSON Schema validators (same dimension)]
- *   schema-dsl  — this project, built on AJV, providing DSL syntax + i18n + coerce + cache
- *   ajv (raw)   — AJV used directly (the underlying engine of schema-dsl), measures DSL layer overhead
- *   Zod         — popular TS-first schema library, not JSON Schema but same use case
- *   Joi         — classic validation library, not JSON Schema
- *
- * [Tier 2: code-generation validators (different dimension, for reference only)]
- *   fastest-validator — custom code-generation engine, no JSON Schema compliance, fast but limited
- *     - no JSON Schema support ($ref / anyOf / if-then-else etc.)
- *     - no i18n error messages
- *     - email validation is a simple regex, not RFC-compliant
- *     - comparison purpose: understand the performance gap between native code-gen vs JSON Schema compliance
- *
- * Test scenarios:
- *   S1 - simple object (valid data)
- *   S2 - simple object (invalid data / error collection, no i18n formatting)
- *   S3 - nested object (valid data)
  */
 
 import { createRequire } from 'node:module'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { execSync } from 'node:child_process'
+import { cpus } from 'node:os'
 import { Bench } from 'tinybench'
 import { dsl, validate } from '../../dist/index.js'
 import { z } from 'zod'
@@ -36,6 +24,18 @@ import addFormats from 'ajv-formats'
 const require = createRequire(import.meta.url)
 const FastestValidator = require('fastest-validator')
 const fv = new FastestValidator()
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+const args = process.argv.slice(2)
+const isSmoke = args.includes('--smoke')
+const shouldWriteJson = args.includes('--json') || args.includes('--json-only')
+const isJsonOnly = args.includes('--json-only')
+const outputPath = getArgValue('--output')
+const benchOptions = isSmoke
+  ? { time: 300, iterations: 30 }
+  : { time: 2000, iterations: 100 }
 
 // ── Raw AJV (direct usage, bypassing the schema-dsl layer) ──────────────────
 const rawAjv = new Ajv({ allErrors: true })
@@ -53,13 +53,12 @@ const SIMPLE_VALID = {
 }
 
 const SIMPLE_INVALID = {
-  username: 'jo',              // too short (min:3)
+  username: 'jo',
   email: 'not-an-email',
-  age: 15,                    // below 18
-  tags: [],                   // min:1 items
+  age: 15,
+  tags: [],
 }
 
-// ─── schema-dsl (S1/S2) ─────────────────────────────────────────────────────
 const sdSimple = dsl({
   username: 'string:3-32!',
   email: 'email!',
@@ -67,7 +66,6 @@ const sdSimple = dsl({
   tags: 'array:1-10<string>',
 })
 
-// ─── Raw AJV (equivalent JSON Schema, no DSL layer overhead) ────────────────
 const ajvSimpleJsonSchema = {
   type: 'object',
   properties: {
@@ -81,7 +79,6 @@ const ajvSimpleJsonSchema = {
 }
 const ajvSimpleValidate = rawAjv.compile(ajvSimpleJsonSchema)
 
-// ─── Zod ─────────────────────────────────────────────────────────────────────
 const zodSimple = z.object({
   username: z.string().min(3).max(32),
   email: z.string().email(),
@@ -89,7 +86,6 @@ const zodSimple = z.object({
   tags: z.array(z.string()).min(1).max(10),
 })
 
-// ─── Joi ─────────────────────────────────────────────────────────────────────
 const joiSimple = Joi.object({
   username: Joi.string().min(3).max(32).required(),
   email: Joi.string().email({ tlds: { allow: false } }).required(),
@@ -97,7 +93,6 @@ const joiSimple = Joi.object({
   tags: Joi.array().items(Joi.string()).min(1).max(10).required(),
 })
 
-// ─── fastest-validator (code generation, for reference only) ────────────────
 const fvSimpleCheck = fv.compile({
   username: { type: 'string', min: 3, max: 32 },
   email: { type: 'email' },
@@ -121,7 +116,6 @@ const NESTED_VALID = {
   tags: ['js', 'ts'],
 }
 
-// schema-dsl: standard nesting syntax
 const sdNested = dsl({
   username: 'string:3-32!',
   email: 'email!',
@@ -138,7 +132,6 @@ const sdNested = dsl({
   tags: 'array:1-10<string>',
 })
 
-// Raw AJV nested (equivalent JSON Schema)
 const ajvNestedJsonSchema = {
   type: 'object',
   properties: {
@@ -161,7 +154,6 @@ const ajvNestedJsonSchema = {
 }
 const ajvNestedValidate = rawAjv.compile(ajvNestedJsonSchema)
 
-// Zod nested
 const zodNested = z.object({
   username: z.string().min(3).max(32),
   email: z.string().email(),
@@ -174,7 +166,6 @@ const zodNested = z.object({
   tags: z.array(z.string()).min(1).max(10),
 })
 
-// Joi nested
 const joiNested = Joi.object({
   username: Joi.string().min(3).max(32).required(),
   email: Joi.string().email({ tlds: { allow: false } }).required(),
@@ -187,13 +178,13 @@ const joiNested = Joi.object({
   tags: Joi.array().items(Joi.string()).min(1).max(10).required(),
 })
 
-// fastest-validator nested (code generation, for reference only)
 const fvNestedCheck = fv.compile({
   username: { type: 'string', min: 3, max: 32 },
   email: { type: 'email' },
   age: { type: 'number', min: 18, max: 120 },
   address: {
-    type: 'object', props: {
+    type: 'object',
+    props: {
       street: { type: 'string' },
       city: { type: 'string' },
       zipCode: { type: 'string', length: 6 },
@@ -202,9 +193,14 @@ const fvNestedCheck = fv.compile({
   tags: { type: 'array', items: 'string', min: 1, max: 10 },
 })
 
-// ─────────────────────────────────────────────────────────────────
-// Utilities
-// ─────────────────────────────────────────────────────────────────
+const TIER1 = ['schema-dsl', 'ajv (raw)', 'zod', 'joi']
+const TIER2 = ['fastest-validator']
+
+function getArgValue(name) {
+  const index = args.indexOf(name)
+  if (index === -1) return null
+  return args[index + 1] ?? null
+}
 
 function formatOps(hz) {
   if (hz >= 1_000_000) return `${(hz / 1_000_000).toFixed(3)} M ops/s`
@@ -212,14 +208,92 @@ function formatOps(hz) {
   return `${hz.toFixed(2)} ops/s`
 }
 
-// Tier 1: JSON Schema compliance level (includes raw AJV, schema-dsl, Zod, Joi)
-const TIER1 = ['schema-dsl', 'ajv (raw)', 'zod', 'joi']
-// Reference: code-generation level (different dimension, for reference only)
-const TIER2 = ['fastest-validator']
+function toMicroseconds(milliseconds) {
+  return milliseconds * 1000
+}
+
+function toSeconds(milliseconds) {
+  return milliseconds / 1000
+}
+
+function getPackageVersion(name) {
+  try {
+    return require(`${name}/package.json`).version ?? null
+  } catch {
+    return null
+  }
+}
+
+function getGitSha() {
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: join(__dirname, '..', '..') })
+      .toString()
+      .trim()
+  } catch {
+    return null
+  }
+}
+
+function createRunMetadata() {
+  return {
+    mode: isSmoke ? 'smoke' : 'full',
+    node: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    cpu: cpus()[0]?.model ?? null,
+    gitSha: getGitSha(),
+    packageVersion: require('../../package.json').version,
+    dependencies: {
+      ajv: getPackageVersion('ajv'),
+      'ajv-formats': getPackageVersion('ajv-formats'),
+      fastestValidator: getPackageVersion('fastest-validator'),
+      joi: getPackageVersion('joi'),
+      tinybench: getPackageVersion('tinybench'),
+      zod: getPackageVersion('zod'),
+    },
+    benchOptions,
+    startedAt: new Date().toISOString(),
+  }
+}
+
+function collectBenchResult(scenarioId, title, bench, schemaDslTaskName) {
+  const tasks = bench.tasks.map(task => {
+    const hz = task.result?.hz ?? 0
+    const meanMs = task.result?.mean ?? 0
+    const p99Ms = task.result?.p99 ?? 0
+    return {
+      name: task.name,
+      hz,
+      opsPerSecond: hz,
+      meanMs,
+      meanSeconds: toSeconds(meanMs),
+      meanMicroseconds: toMicroseconds(meanMs),
+      p99Ms,
+      p99Seconds: toSeconds(p99Ms),
+      p99Microseconds: toMicroseconds(p99Ms),
+      samples: task.result?.samples?.length ?? 0,
+    }
+  })
+
+  const hzByName = Object.fromEntries(tasks.map(task => [task.name, task.hz]))
+  const schemaDslHz = hzByName[schemaDslTaskName] ?? 0
+  const ratios = Object.fromEntries(tasks.map(task => [
+    task.name,
+    schemaDslHz > 0 ? task.hz / schemaDslHz : null,
+  ]))
+
+  return {
+    id: scenarioId,
+    title,
+    schemaDslTaskName,
+    schemaDslHz,
+    ratiosVsSchemaDsl: ratios,
+    tasks,
+  }
+}
 
 function printTable(title, bench, tier1Override) {
   const tier1 = tier1Override ?? TIER1
-  const byName = Object.fromEntries(bench.tasks.map(t => [t.name, t]))
   const results = bench.tasks
     .map(t => ({ name: t.name, hz: t.result?.hz ?? 0, p99: t.result?.p99 ?? 0, mean: t.result?.mean ?? 0 }))
     .sort((a, b) => b.hz - a.hz)
@@ -227,173 +301,166 @@ function printTable(title, bench, tier1Override) {
   const tier1Results = results.filter(r => tier1.includes(r.name))
   const tier2Results = results.filter(r => TIER2.includes(r.name))
 
-  console.log(`\n${'─'.repeat(80)}`)
+  console.log(`\n${'-'.repeat(80)}`)
   console.log(`  ${title}`)
-  console.log('─'.repeat(80))
+  console.log('-'.repeat(80))
 
-  const header = `  ${'Library'.padEnd(26)}  ${'ops/sec'.padStart(18)}  ${'avg(μs)'.padStart(10)}  ${'p99(μs)'.padStart(10)}  vs fastest`
+  const header = `  ${'Library'.padEnd(26)}  ${'ops/sec'.padStart(18)}  ${'avg(us)'.padStart(10)}  ${'p99(us)'.padStart(10)}  vs fastest`
   console.log(header)
-  console.log('─'.repeat(80))
+  console.log('-'.repeat(80))
 
-  // Tier 1: same-dimension comparison
-  console.log('  [Tier 1 — JSON Schema Compliant Validators]')
+  console.log('  [Tier 1 - JSON Schema Compliant Validators]')
   const tier1Fastest = tier1Results[0]?.hz ?? 1
   tier1Results.forEach((r, i) => {
     const ratio = tier1Fastest / r.hz
-    const ratioStr = i === 0 ? '⚡ baseline' : `${ratio.toFixed(2)}x slower`
-    const mark = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '  '
+    const ratioStr = i === 0 ? 'baseline' : `${ratio.toFixed(2)}x slower`
+    const mark = i === 0 ? '[1]' : i === 1 ? '[2]' : i === 2 ? '[3]' : '   '
     console.log(
       `  ${mark} ${r.name.padEnd(24)}  ${formatOps(r.hz).padStart(18)}  ` +
-      `${((r.mean || 0) * 1e6).toFixed(1).padStart(9)}  ` +
-      `${((r.p99 || 0) * 1e6).toFixed(1).padStart(9)}  ${ratioStr}`
+      `${toMicroseconds(r.mean || 0).toFixed(3).padStart(9)}  ` +
+      `${toMicroseconds(r.p99 || 0).toFixed(3).padStart(9)}  ${ratioStr}`
     )
   })
 
   if (tier2Results.length) {
-    console.log('\n  [Reference — Code-generation Engines (non-JSON Schema, different dimension)]')
+    console.log('\n  [Reference - Code-generation Engines (non-JSON Schema, different dimension)]')
     tier2Results.forEach(r => {
       const ratio = tier1Fastest / r.hz
       const ratioStr = r.hz > tier1Fastest
         ? `${(r.hz / tier1Fastest).toFixed(2)}x faster than tier1`
         : `${ratio.toFixed(2)}x slower than tier1`
       console.log(
-        `  ⚡ ${r.name.padEnd(24)}  ${formatOps(r.hz).padStart(18)}  ` +
-        `${((r.mean || 0) * 1e6).toFixed(1).padStart(9)}  ` +
-        `${((r.p99 || 0) * 1e6).toFixed(1).padStart(9)}  ${ratioStr}`
+        `  [*] ${r.name.padEnd(24)}  ${formatOps(r.hz).padStart(18)}  ` +
+        `${toMicroseconds(r.mean || 0).toFixed(3).padStart(9)}  ` +
+        `${toMicroseconds(r.p99 || 0).toFixed(3).padStart(9)}  ${ratioStr}`
       )
     })
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Scenario S1: Simple Object (valid data)
-// ─────────────────────────────────────────────────────────────────────────────
+async function runBenchmark(title, configure, tier1Override, scenarioId, schemaDslTaskName) {
+  const bench = new Bench(benchOptions)
+  configure(bench)
+  await bench.warmup()
+  await bench.run()
+  if (!isJsonOnly) printTable(title, bench, tier1Override)
+  return collectBenchResult(scenarioId, title, bench, schemaDslTaskName)
+}
 
 async function runS1() {
-  const bench = new Bench({ time: 2000, iterations: 100 })
-  bench
-    .add('schema-dsl',        () => validate(sdSimple, SIMPLE_VALID))
-    .add('ajv (raw)',         () => ajvSimpleValidate(SIMPLE_VALID))
-    .add('zod',               () => zodSimple.safeParse(SIMPLE_VALID))
-    .add('joi',               () => joiSimple.validate(SIMPLE_VALID))
-    .add('fastest-validator', () => fvSimpleCheck(SIMPLE_VALID))
-  await bench.warmup()
-  await bench.run()
-  printTable('S1: Simple Object Validation (valid data)', bench)
-  return bench
+  return runBenchmark(
+    'S1: Simple Object Validation (valid data)',
+    bench => bench
+      .add('schema-dsl', () => validate(sdSimple, SIMPLE_VALID))
+      .add('ajv (raw)', () => ajvSimpleValidate(SIMPLE_VALID))
+      .add('zod', () => zodSimple.safeParse(SIMPLE_VALID))
+      .add('joi', () => joiSimple.validate(SIMPLE_VALID))
+      .add('fastest-validator', () => fvSimpleCheck(SIMPLE_VALID)),
+    TIER1,
+    'S1',
+    'schema-dsl'
+  )
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Scenario S2: Invalid Data — fair comparison (schema-dsl disables i18n formatting, same conditions as other libraries)
-// Note: the default validate() does full i18n template rendering (an added-value feature); other libraries return raw errors.
-//       S2 uses { format: false } to disable formatting for a true apples-to-apples comparison.
-// ─────────────────────────────────────────────────────────────────────────────
 
 async function runS2() {
-  const bench = new Bench({ time: 2000, iterations: 100 })
-  bench
-    .add('schema-dsl (no-fmt)', () => validate(sdSimple, SIMPLE_INVALID, { format: false }))
-    .add('ajv (raw)',            () => ajvSimpleValidate(SIMPLE_INVALID))
-    .add('zod',                  () => zodSimple.safeParse(SIMPLE_INVALID))
-    .add('joi',                  () => joiSimple.validate(SIMPLE_INVALID, { abortEarly: false }))
-    .add('fastest-validator',    () => fvSimpleCheck(SIMPLE_INVALID))
-  await bench.warmup()
-  await bench.run()
-  printTable('S2: Invalid Data — fair comparison (no i18n formatting)', bench,
-    ['schema-dsl (no-fmt)', 'ajv (raw)', 'zod', 'joi'])
-  return bench
+  return runBenchmark(
+    'S2: Invalid Data - fair comparison (no i18n formatting)',
+    bench => bench
+      .add('schema-dsl (no-fmt)', () => validate(sdSimple, SIMPLE_INVALID, { format: false }))
+      .add('ajv (raw)', () => ajvSimpleValidate(SIMPLE_INVALID))
+      .add('zod', () => zodSimple.safeParse(SIMPLE_INVALID))
+      .add('joi', () => joiSimple.validate(SIMPLE_INVALID, { abortEarly: false }))
+      .add('fastest-validator', () => fvSimpleCheck(SIMPLE_INVALID)),
+    ['schema-dsl (no-fmt)', 'ajv (raw)', 'zod', 'joi'],
+    'S2',
+    'schema-dsl (no-fmt)'
+  )
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Scenario S3: Nested Object (valid data)
-// ─────────────────────────────────────────────────────────────────────────────
 
 async function runS3() {
-  const bench = new Bench({ time: 2000, iterations: 100 })
-  bench
-    .add('schema-dsl',        () => validate(sdNested, NESTED_VALID))
-    .add('ajv (raw)',         () => ajvNestedValidate(NESTED_VALID))
-    .add('zod',               () => zodNested.safeParse(NESTED_VALID))
-    .add('joi',               () => joiNested.validate(NESTED_VALID))
-    .add('fastest-validator', () => fvNestedCheck(NESTED_VALID))
-  await bench.warmup()
-  await bench.run()
-  printTable('S3: Nested Object Validation (valid data)', bench)
-  return bench
+  return runBenchmark(
+    'S3: Nested Object Validation (valid data)',
+    bench => bench
+      .add('schema-dsl', () => validate(sdNested, NESTED_VALID))
+      .add('ajv (raw)', () => ajvNestedValidate(NESTED_VALID))
+      .add('zod', () => zodNested.safeParse(NESTED_VALID))
+      .add('joi', () => joiNested.validate(NESTED_VALID))
+      .add('fastest-validator', () => fvNestedCheck(NESTED_VALID)),
+    TIER1,
+    'S3',
+    'schema-dsl'
+  )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Overall Summary
-// ─────────────────────────────────────────────────────────────────────────────
-
-function printSummary(benchmarks) {
+function printSummary(scenarios) {
   const libs = ['schema-dsl', 'ajv (raw)', 'zod', 'joi', 'fastest-validator']
-  console.log(`\n${'═'.repeat(80)}`)
-  console.log('  📊 Overall Summary (schema-dsl as baseline, cross-library comparison)')
-  console.log('═'.repeat(80))
+  const summaryColWidth = 20
+  console.log(`\n${'='.repeat(80)}`)
+  console.log('  Overall Summary (schema-dsl as baseline, cross-library comparison)')
+  console.log('='.repeat(80))
 
-  const hdr = `  ${'Scenario'.padEnd(18)}` + libs.map(l => l.padStart(16)).join('')
+  const hdr = `  ${'Scenario'.padEnd(18)}` + libs.map(l => l.padStart(summaryColWidth)).join('')
   console.log(hdr)
-  console.log('─'.repeat(80))
+  console.log('-'.repeat(80))
 
-  benchmarks.forEach(({ name, bench, sdKey }) => {
-    if (!bench) return
-    const hz = Object.fromEntries(bench.tasks.map(t => [t.name, t.result?.hz ?? 0]))
-    // sdKey is used for specially named schema-dsl entries like S2
-    const sdName = sdKey ?? 'schema-dsl'
+  scenarios.forEach(scenario => {
+    const hz = Object.fromEntries(scenario.tasks.map(task => [task.name, task.hz]))
+    const sdName = scenario.schemaDslTaskName
     const sds = hz[sdName] || 1
-    const row = `  ${name.padEnd(18)}` + libs.map(lib => {
-      // For S2, map the schema-dsl column to the actual task name
+    const row = `  ${scenario.id.padEnd(18)}` + libs.map(lib => {
       const actualLib = lib === 'schema-dsl' ? sdName : lib
       const v = hz[actualLib]
-      if (!v) return '           N/A'.padStart(16)
-      if (actualLib === sdName) return '    baseline'.padStart(16)
+      if (!v) return 'N/A'.padStart(summaryColWidth)
+      if (actualLib === sdName) return 'baseline'.padStart(summaryColWidth)
       const ratio = v / sds
       const label = ratio >= 1
-        ? `×${ratio.toFixed(2)} faster`
-        : `×${(sds / v).toFixed(2)} slower`
-      return label.padStart(16)
+        ? `x${ratio.toFixed(2)} faster`
+        : `x${(sds / v).toFixed(2)} slower`
+      return label.padStart(summaryColWidth)
     }).join('')
     console.log(row)
   })
   console.log()
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Main Entry
-// ─────────────────────────────────────────────────────────────────
+function writeJsonReport(payload) {
+  const target = outputPath ?? join(__dirname, '.tmp', `library-comparison-${payload.metadata.mode}-${Date.now()}.json`)
+  payload.metadata.jsonReport = target
+  mkdirSync(dirname(target), { recursive: true })
+  writeFileSync(target, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
+  if (!isJsonOnly) console.log(`  JSON report: ${target}`)
+  return target
+}
 
-console.log('\n╔══════════════════════════════════════════════════════════════════════════════╗')
-console.log('║    schema-dsl Performance Benchmark (Tiered: JSON Schema vs Code-gen)       ║')
-console.log('╚══════════════════════════════════════════════════════════════════════════════╝')
-console.log(`\n  Node.js  : ${process.version}`)
-console.log(`  Platform : ${process.platform} / ${process.arch}`)
-console.log(`  Date     : ${new Date().toISOString()}`)
-console.log('\n  ⏳ Running, each scenario takes warmup + 2 s measurement, please wait...')
-console.log('  ℹ️  ajv (raw) is the underlying engine of schema-dsl; the gap = schema-dsl layer overhead')
-console.log('  ⚠️  fastest-validator uses code generation (not JSON Schema), for reference only, different dimension')
-console.log('  ℹ️  S2 = fair comparison: no i18n formatting in any library (schema-dsl uses { format: false })\n')
+if (!isJsonOnly) {
+  console.log('\n+------------------------------------------------------------------------------+')
+  console.log('|    schema-dsl Performance Benchmark (Tiered: JSON Schema vs Code-gen)       |')
+  console.log('+------------------------------------------------------------------------------+')
+  console.log(`\n  Node.js  : ${process.version}`)
+  console.log(`  Platform : ${process.platform} / ${process.arch}`)
+  console.log(`  Mode     : ${isSmoke ? 'smoke' : 'full'}`)
+  console.log(`  Date     : ${new Date().toISOString()}`)
+  console.log(`\n  Running, each scenario uses ${benchOptions.time}ms measurement.`)
+  console.log('  avg(us)/p99(us) are converted from tinybench millisecond samples.')
+  console.log('  S2 = fair comparison: no i18n formatting in any library.\n')
+}
 
-const s1  = await runS1()
-const s2  = await runS2()
-const s3  = await runS3()
+const metadata = createRunMetadata()
+const scenarios = [await runS1(), await runS2(), await runS3()]
+metadata.finishedAt = new Date().toISOString()
 
-printSummary([
-  { name: 'S1 simple(valid)',   bench: s1 },
-  { name: 'S2 invalid(no-fmt)', bench: s2, sdKey: 'schema-dsl (no-fmt)' },
-  { name: 'S3 nested(valid)',   bench: s3 },
-])
+if (!isJsonOnly) {
+  printSummary(scenarios)
+  console.log('  fastest-validator is a code-generation engine, not a JSON Schema equivalent.')
+  console.log('  schema-dsl overhead is measured against raw AJV for JSON Schema-layer attribution.')
+  console.log('\n  Benchmark complete\n')
+}
 
-console.log('  ── fastest-validator architecture difference ──────────────────────────────')
-console.log('  fastest-validator speed source (code-generation engine, a different technical approach from JSON Schema):')
-console.log('  • compile() compiles the schema into a native JS function (direct if/typeof operations, no interpretation layer)')
-console.log('  • no JSON Schema standard compliance (no $ref / anyOf / if-then-else / format spec support)')
-console.log('  • email validation = simple /@/ regex, not RFC 5322; AJV + ajv-formats is a full implementation')
-console.log('  • no i18n error messages, no type coercion, no conditional validation')
-console.log('  • trade-off: limited functionality, cannot be used in JSON Schema standard scenarios')
-console.log()
-console.log('  ── schema-dsl DSL layer overhead (relative to ajv raw) ──────────────────')
-console.log('  schema-dsl adds on top of AJV: DSL parsing + i18n error formatting + coerce + cache')
-console.log('  overhead = the difference between schema-dsl and ajv (raw); see per-scenario data above')
-console.log()
-console.log('  ✅ Benchmark complete\n')
+const payload = { metadata, scenarios }
+if (shouldWriteJson) {
+  writeJsonReport(payload)
+}
+
+if (isJsonOnly) {
+  console.log(JSON.stringify(payload, null, 2))
+}

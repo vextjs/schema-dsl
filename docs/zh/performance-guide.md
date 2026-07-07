@@ -14,11 +14,11 @@
 
 | 场景 | schema-dsl 吞吐 |
 |------|-----------|
-| S1 简单有效对象 | ~1.320M ops/s |
-| S2 无效对象，不做 i18n 格式化 | ~1.235M ops/s |
-| S3 嵌套有效对象 | ~1.007M ops/s |
+| S1 简单有效对象 | ~1.672M ops/s |
+| S2 无效对象，不做 i18n 格式化 | ~169K ops/s |
+| S3 嵌套有效对象 | ~1.443M ops/s |
 
-环境：Node.js v20.20.2，Windows x64，运行时间 2026-06-22T14:19:51.306Z。
+环境：Node.js v20.20.2，Windows x64，运行时间 2026-07-07T03:20:24.821Z。
 
 这些数字适合作为当前项目的回归基线。Node.js、依赖、schema 复杂度或错误格式化行为变化后，应重新运行 benchmark。
 
@@ -92,7 +92,9 @@ app.post('/users', (req, res) => {
 
 ```powershell
 npm test
-npm run bench
+npm run bench:smoke
+npm run bench:full
+npm run bench:cache
 ```
 
 ---

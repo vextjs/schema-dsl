@@ -14,11 +14,11 @@ Latest local run:
 
 | Scenario | schema-dsl throughput |
 |------|-----------|
-| S1 simple valid object | ~1.320M ops/s |
-| S2 invalid object without i18n formatting | ~1.235M ops/s |
-| S3 nested valid object | ~1.007M ops/s |
+| S1 simple valid object | ~1.672M ops/s |
+| S2 invalid object without i18n formatting | ~169K ops/s |
+| S3 nested valid object | ~1.443M ops/s |
 
-Environment: Node.js v20.20.2, Windows x64, run time 2026-06-22T14:19:51.306Z.
+Environment: Node.js v20.20.2, Windows x64, run time 2026-07-07T03:20:24.821Z.
 
 Use these numbers as a regression baseline for this project. Re-run the benchmark when Node.js, dependencies, schema complexity, or error formatting behavior changes.
 
@@ -92,7 +92,9 @@ For truly one-off, high-cardinality dynamic schemas, isolate that path and keep 
 
 ```powershell
 npm test
-npm run bench
+npm run bench:smoke
+npm run bench:full
+npm run bench:cache
 ```
 
 ---

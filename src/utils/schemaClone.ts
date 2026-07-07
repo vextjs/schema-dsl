@@ -39,6 +39,14 @@ export function cloneSchemaValue<T>(value: T, seen = new WeakMap<object, unknown
     if (!descriptor) continue
     if ('value' in descriptor) {
       descriptor.value = cloneSchemaValue(descriptor.value, seen)
+    } else if (typeof descriptor.get === 'function') {
+      Object.defineProperty(target, key, {
+        value: cloneSchemaValue(descriptor.get.call(value), seen),
+        enumerable: descriptor.enumerable === true,
+        configurable: descriptor.configurable === true,
+        writable: true,
+      })
+      continue
     }
     Object.defineProperty(target, key, descriptor)
   }

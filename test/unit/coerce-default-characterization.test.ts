@@ -21,6 +21,21 @@ describe('Top-level validate coerce behavior characterization', () => {
     expect(result.data).toEqual({ age: 42 })
   })
 
+  it('should preserve strings when the schema explicitly accepts string or number', () => {
+    const result = validate(
+      {
+        type: 'object',
+        properties: {
+          value: { type: ['string', 'number'] },
+        },
+      },
+      { value: '42' }
+    )
+
+    expect(result.valid).toBe(true)
+    expect(result.data).toEqual({ value: '42' })
+  })
+
   it('should coerce string booleans by default', () => {
     const result = validate(
       {

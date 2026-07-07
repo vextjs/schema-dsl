@@ -45,12 +45,17 @@ function getConditionalPatternMatcherCacheSize(validator: InstanceType<typeof Va
   return internal._conditionalValidator._patternMatcherCache.size
 }
 
+function getValidationPlanCacheSize(validator: InstanceType<typeof Validator>): number {
+  const internal = validator as unknown as { _validationPlanCache: Map<string, unknown> }
+  return internal._validationPlanCache.size
+}
+
 describe('Validator memory lifecycle', () => {
   beforeEach(() => {
     resetRuntimeState()
   })
 
-  it('should reuse compiled schemas for repeated top-level DSL definitions', () => {
+  it('should reuse validation artifacts for repeated top-level DSL definitions', () => {
     config({ cache: { maxSize: 10, statsEnabled: true } })
     const schema = { name: 'string!' }
     const validator = getDefaultValidator()
@@ -61,12 +66,11 @@ describe('Validator memory lifecycle', () => {
     }
 
     const stats = validator.getCacheStats()
-    expect(stats.hits).toBeGreaterThan(450)
     expect(stats.size).toBeLessThanOrEqual(10)
     expect(getAjvCacheSize(validator) - baselineAjvCacheSize).toBeLessThanOrEqual(10)
   })
 
-  it('should reuse compiled schemas for repeated DslBuilder materialization', () => {
+  it('should reuse validation artifacts for repeated DslBuilder materialization', () => {
     config({ cache: { maxSize: 10, statsEnabled: true } })
     const builder = dsl('string!')
     const validator = getDefaultValidator()
@@ -77,12 +81,12 @@ describe('Validator memory lifecycle', () => {
     }
 
     const stats = validator.getCacheStats()
-    expect(stats.hits).toBeGreaterThan(450)
     expect(stats.size).toBeLessThanOrEqual(10)
+    expect(getValidationPlanCacheSize(validator)).toBeLessThanOrEqual(10)
     expect(getAjvCacheSize(validator) - baselineAjvCacheSize).toBeLessThanOrEqual(10)
   })
 
-  it('should release AJV internal schema references when clearCache is called', () => {
+  it('should release validation plan and AJV internal schema references when clearCache is called', () => {
     const validator = new Validator({ cache: { maxSize: 100 } })
     const baselineAjvCacheSize = getAjvCacheSize(validator)
 
@@ -98,12 +102,13 @@ describe('Validator memory lifecycle', () => {
       expect(validator.validate(schema, { [field]: 'ok' }).valid).toBe(true)
     }
 
-    expect(validator.getCacheStats().size).toBe(50)
-    expect(getAjvCacheSize(validator)).toBeGreaterThan(baselineAjvCacheSize)
+    expect(getValidationPlanCacheSize(validator)).toBe(50)
+    expect(getAjvCacheSize(validator)).toBeLessThanOrEqual(baselineAjvCacheSize + 1)
 
     validator.clearCache()
 
     expect(validator.getCacheStats().size).toBe(0)
+    expect(getValidationPlanCacheSize(validator)).toBe(0)
     expect(getAjvCacheSize(validator)).toBeLessThanOrEqual(baselineAjvCacheSize + 1)
   })
 

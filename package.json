@@ -134,6 +134,10 @@
     "test:version": "node -e \"const p=require('./package.json');const {VERSION}=require('./dist/index.cjs');if(p.version!==VERSION)throw new Error('Version mismatch: '+p.version+' vs '+VERSION);console.log('Version OK:',p.version)\"",
     "test:all:with-audit": "npm run lint && npm run build && npm run test:interop && npm run typecheck && npm run test:types && npm test && npm run test:version && npm run test:audit",
     "bench": "node test/benchmarks/library-comparison.js",
+    "bench:zod": "node test/benchmarks/zod-scenario-matrix.js --json",
+    "bench:smoke": "node test/benchmarks/library-comparison.js --smoke --json && node test/benchmarks/entry-matrix.js --smoke --json && node test/benchmarks/zod-scenario-matrix.js --smoke --json",
+    "bench:full": "node test/benchmarks/library-comparison.js --json && node test/benchmarks/entry-matrix.js --json && node test/benchmarks/zod-scenario-matrix.js --json",
+    "bench:cache": "node test/benchmarks/cache-stability.js --json",
     "prepublishOnly": "npm run test:all:with-audit && npm pack --dry-run"
   },
   "keywords": [
@@ -220,6 +224,7 @@
     "eslint": "9.39.4",
     "fastest-validator": "1.19.1",
     "joi": "18.1.2",
+    "tinybench": "2.9.0",
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "vitest": "3.2.6",

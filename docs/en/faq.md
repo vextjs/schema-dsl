@@ -225,11 +225,11 @@ console.log(result.data);
 
 | Scenario | schema-dsl throughput |
 |------|-----------|
-| S1 simple valid object | ~1.185M ops/s |
-| S2 invalid object without i18n formatting | ~1.178M ops/s |
-| S3 nested valid object | ~941K ops/s |
+| S1 simple valid object | ~1.672M ops/s |
+| S2 invalid object without i18n formatting | ~169K ops/s |
+| S3 nested valid object | ~1.443M ops/s |
 
-**Environment**: Node.js v20.20.2, Windows x64, run time 2026-06-18T08:49:22.365Z.
+**Environment**: Node.js v20.20.2, Windows x64, run time 2026-07-07T03:20:24.821Z.
 
 **Conclusion**:
 - ✅ Hot-path validation is already in the million-ops/sec range on this local machine.
