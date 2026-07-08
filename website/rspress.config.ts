@@ -307,6 +307,8 @@ export default defineConfig({
   ],
   markdown: {
     link: {
+      // Rspress can flag repo-relative Markdown links that are valid outside the site build.
+      // Use `npm run docs:linkcheck` for local Markdown and sidebar/nav targets.
       checkDeadLinks: false
     }
   },

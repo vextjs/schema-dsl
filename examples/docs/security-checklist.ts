@@ -9,6 +9,7 @@ import { s, validate } from '../../dist/pure.js'
 //   ✓ Pattern-restrict — reduce injection surface
 //   ✓ Enum-restrict — only allow known roles/states
 //   ✓ Allowlist URLs — avoid open redirects
+//   ✓ Treat executable locale files as trusted application code
 // ============================================================
 
 // ============================================================
@@ -104,3 +105,14 @@ console.log('security.upload.tooLarge   =', validate(uploadSchema, {
   mimeType:  'image/jpeg',
   sizeBytes: 20_000_000,               // 20 MB — exceeds limit
 }).valid)  // false
+
+// ============================================================
+// 5. Locale loading policy — deny executable locale files for data-only dirs
+// ============================================================
+
+const dataOnlyLocalePolicy = {
+  i18n: './locales',
+  codeLocaleFiles: 'deny' as const,
+}
+
+console.log('security.locale.denyCode    =', dataOnlyLocalePolicy.codeLocaleFiles === 'deny')  // true

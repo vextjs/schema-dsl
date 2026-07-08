@@ -12,6 +12,28 @@ _No unreleased changes._
 
 ---
 
+## [2.1.3] - 2026-07-08
+
+### Changed
+
+- Added a bilingual security checklist note that executable `.js` / `.cjs` locale files must be treated as trusted application code.
+- Documented `codeLocaleFiles: 'deny'` for data-only or untrusted locale directories.
+- Made performance smoke tests use a small best-of sample window to reduce transient host-load noise.
+- Added a no-dependency `npm run docs:linkcheck` command for README / docs Markdown relative links and Rspress sidebar/nav local targets.
+- Included `docs:linkcheck` in `npm run test:all:with-audit` and documented it in the README development script list.
+
+### Validation
+
+- `npm run docs:linkcheck`
+- `npx vitest run test/unit/performance.test.ts`
+- `npm run examples:run`
+- `npm run test:all:with-audit`
+- `npm run build` in `website/`
+- dist ESM/CJS import smoke
+- `npm pack --dry-run --json`
+
+---
+
 ## [2.1.2] - 2026-07-07
 
 ### Fixed
@@ -102,6 +124,7 @@ _No unreleased changes._
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.1.3] | 2026-07-08 | Patch | Docs security checklist hardening, less noisy performance smoke, and docs linkcheck release gate [View](./changelogs/v2.1.3.md) |
 | [2.1.2] | 2026-07-07 | Patch | Release-readiness sync, raw JSON Schema `default` classification, legacy validate async handling, FastPlan cache safety, and refreshed performance baselines [View](./changelogs/v2.1.2.md) |
 | [2.1.1] | 2026-06-30 | Patch | Validation cache lifecycle tightening, batch compile reuse, and local `$ref` exporter loss reporting [View](./changelogs/v2.1.1.md) |
 | [2.1.0] | 2026-06-26 | Minor | Side-effect controlled entries, runtime isolation, shared `s` namespace, declarative extensions, array item DSL support, and deep validation hardening [View](./changelogs/v2.1.0.md) |
@@ -321,14 +344,6 @@ _No unreleased changes._
 - **Exporters**: escape Markdown table cell content in `MarkdownExporter`, so field names, constraint text, and multiline descriptions containing `|` or newlines no longer break rendered tables.
 - **Tests**: add focused regression coverage for unsafe regex rejection while preserving the existing invalid-regex error path.
 
----
-
-## [Unreleased]
-
-- No unreleased changes.
-
----
-
 ## Links
 
 - [GitHub Repository](https://github.com/vextjs/schema-dsl)
@@ -336,7 +351,8 @@ _No unreleased changes._
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.2...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.3...HEAD
+[2.1.3]: https://github.com/vextjs/schema-dsl/compare/v2.1.2...v2.1.3
 [2.1.2]: https://github.com/vextjs/schema-dsl/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/vextjs/schema-dsl/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/vextjs/schema-dsl/compare/v2.0.11...v2.1.0

@@ -640,6 +640,7 @@ try {
 npm run build      # compile TypeScript
 npm run test       # run tests
 npm run typecheck  # type check
+npm run docs:linkcheck # check docs links
 ```
 
 Local documentation preview:
