@@ -148,11 +148,11 @@ Performance is important, but it is not mixed into the design philosophy page as
 
 | Scenario | schema-dsl throughput |
 |------|-----------|
-| S1 simple valid object | ~2.145M ops/s |
-| S2 invalid object without i18n formatting | ~197K ops/s |
-| S3 nested valid object | ~1.515M ops/s |
+| S1 simple valid object | ~1.813M ops/s |
+| S2 invalid object without i18n formatting | ~223K ops/s |
+| S3 nested valid object | ~1.291M ops/s |
 
-Environment: Node.js v20.20.2, Windows x64, run time 2026-07-07T06:39:15.758Z. The same full run recorded schema-dsl 14/19 wins in the extended Zod scenario matrix.
+Environment: Node.js v20.20.2, Windows x64, run time 2026-07-09T02:26:07.697Z. The same full run recorded schema-dsl 12/19 wins in the extended Zod scenario matrix.
 
 For tuning guidance, see [Performance Optimization Guide](performance-guide.md).
 

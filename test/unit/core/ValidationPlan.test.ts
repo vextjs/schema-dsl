@@ -575,6 +575,79 @@ describe('ValidationPlan', () => {
     }
   })
 
+  it('invalidates root fast cache when caller-owned raw JSON Schema nested constraints are added', () => {
+    resetRuntimeState()
+
+    try {
+      const schema: any = {
+        type: 'object',
+        properties: {
+          age: { type: 'number' },
+        },
+        required: ['age'],
+      }
+
+      expect(validate(schema, { age: 31 }, { format: false }).valid).toBe(true)
+
+      schema.properties.age.maximum = 30
+
+      const result = validate(schema, { age: 31 }, { format: false })
+      expect(result.valid).toBe(false)
+      expect(result.errors?.[0]?.keyword).toBe('maximum')
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
+  it('invalidates root fast cache when caller-owned raw JSON Schema property schemas are replaced', () => {
+    resetRuntimeState()
+
+    try {
+      const schema: any = {
+        type: 'object',
+        properties: {
+          age: { type: 'number' },
+        },
+        required: ['age'],
+      }
+
+      expect(validate(schema, { age: 19 }, { format: false }).valid).toBe(true)
+
+      schema.properties.age = { type: 'string', minLength: 2 }
+
+      const numberResult = validate(schema, { age: 19 }, { format: false })
+      expect(numberResult.valid).toBe(false)
+      expect(numberResult.errors?.[0]?.keyword).toBe('type')
+      expect(validate(schema, { age: 'ok' }, { format: false }).valid).toBe(true)
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
+  it('invalidates root fast cache when caller-owned raw JSON Schema required arrays change', () => {
+    resetRuntimeState()
+
+    try {
+      const schema: any = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          age: { type: 'number' },
+        },
+      }
+
+      expect(validate(schema, { name: 'rocky' }, { format: false }).valid).toBe(true)
+
+      schema.required = ['age']
+
+      const result = validate(schema, { name: 'rocky' }, { format: false })
+      expect(result.valid).toBe(false)
+      expect(result.errors?.[0]?.keyword).toBe('required')
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
   it('invalidates root primitive union direct fast path when caller-owned branch types mutate', () => {
     resetRuntimeState()
 
@@ -591,6 +664,28 @@ describe('ValidationPlan', () => {
       schema.anyOf[0]!.type = 'boolean'
 
       expect(validate(schema, 'hello', { format: false }).valid).toBe(false)
+      expect(validate(schema, true, { format: false }).valid).toBe(true)
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
+  it('invalidates root primitive union direct fast path when caller-owned branches are replaced', () => {
+    resetRuntimeState()
+
+    try {
+      const schema: any = {
+        anyOf: [
+          { type: 'string' },
+          { type: 'number' },
+        ],
+      }
+
+      expect(validate(schema, 42, { format: false }).valid).toBe(true)
+
+      schema.anyOf[1] = { type: 'boolean' }
+
+      expect(validate(schema, 42, { format: false }).valid).toBe(false)
       expect(validate(schema, true, { format: false }).valid).toBe(true)
     } finally {
       resetRuntimeState()

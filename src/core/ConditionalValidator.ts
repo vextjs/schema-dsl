@@ -9,6 +9,7 @@ import { cloneSchemaValue } from '../utils/schemaClone.js'
 import { isRawJsonSchemaLike } from '../utils/schemaInput.js'
 import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 import { CACHE } from '../config/constants.js'
+import { iterConditionalSchemaChildren } from './ir/ConditionalTraversal.js'
 
 const EMPTY_ERRORS: ValidationErrorItem[] = []
 
@@ -722,28 +723,6 @@ export class ConditionalValidator {
     }
 
     private _iterSchemaChildren(schema: ConditionalInternalSchema): unknown[] {
-        const children: unknown[] = []
-        if (schema.properties) children.push(...Object.values(schema.properties))
-        if (schema.items) children.push(...(Array.isArray(schema.items) ? schema.items : [schema.items]))
-        if (schema.allOf) children.push(...schema.allOf)
-        if (schema.anyOf) children.push(...schema.anyOf)
-        if (schema.oneOf) children.push(...schema.oneOf)
-        if (schema.not) children.push(schema.not)
-        if (schema.if) children.push(schema.if)
-        if (schema.then) children.push(schema.then)
-        if (schema.else) children.push(schema.else)
-        for (const value of [schema.additionalProperties, schema.propertyNames, schema.contains, schema.unevaluatedItems, schema.unevaluatedProperties]) {
-            if (value && typeof value === 'object') children.push(value)
-        }
-        for (const map of [schema.patternProperties, schema.dependentSchemas, schema.definitions, schema.$defs]) {
-            if (map && typeof map === 'object' && !Array.isArray(map)) children.push(...Object.values(map))
-        }
-        const dependencies = (schema as Record<string, unknown>)['dependencies']
-        if (dependencies && typeof dependencies === 'object' && !Array.isArray(dependencies)) {
-            children.push(...Object.values(dependencies as Record<string, unknown>).filter(child => !Array.isArray(child)))
-        }
-        const prefixItems = (schema as Record<string, unknown>)['prefixItems']
-        if (Array.isArray(prefixItems)) children.push(...prefixItems)
-        return children
+        return iterConditionalSchemaChildren(schema).map(entry => entry.child)
     }
 }

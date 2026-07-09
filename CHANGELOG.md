@@ -12,6 +12,49 @@ _No unreleased changes._
 
 ---
 
+## [2.1.4] - 2026-07-09
+
+### Added
+
+- Added internal-only `SchemaIR` / `RuleIR` / `SchemaGraph` helpers and projections for JSON Schema, runtime metadata, Conditional metadata, and exporter loss analysis.
+- Added focused regression coverage for IR parity, conditional projection, exporter projection, and root raw schema cache invalidation.
+
+### Changed
+
+- Routed internal Validator/exporter follow-up work through IR projection helpers without adding public package exports.
+- Kept Conditional projection lazy on the hot path and added `bench:conditional` for targeted Conditional regression evidence.
+- Reduced repeated structural cache-key work on public `validate(schema, data)` for reused raw JSON Schema objects.
+- Added lighter root schema shape guards, schema-map mutation watchers, and primitive union bitmask validation for successful hot-path checks.
+- Refreshed the maintained performance baseline from `npm run bench:full`: S1 simple valid `~1.813M ops/s`, S2 invalid without i18n formatting `~223K ops/s`, and S3 nested valid `~1.291M ops/s`.
+- Recorded the latest extended Zod scenario matrix as schema-dsl `12/19` wins and Zod `7/19` wins. This remains a regression signal, not a public "faster than Zod" claim.
+
+### Fixed
+
+- Ensured caller-owned raw JSON Schema mutation scenarios invalidate root fast-cache entries when nested constraints are added, property schemas are replaced, required arrays change, or primitive union branches are replaced.
+
+### Validation
+
+- `npm run typecheck`
+- `npm run lint`
+- `npm run test:types`
+- `npm test`
+- `npm run test:coverage`
+- `npm run build`
+- `npm run test:interop`
+- `npm run test:version`
+- `npm run docs:linkcheck`
+- `npm run examples:typecheck`
+- `npm run examples:build`
+- `npm run examples:run`
+- `npm run bench:full`
+- `npm run bench:cache`
+- `npm run bench:conditional`
+- `npm run build` in `website/`
+- `npm pack --dry-run`
+- `npm run prepublishOnly`
+
+---
+
 ## [2.1.3] - 2026-07-08
 
 ### Changed
@@ -124,6 +167,7 @@ _No unreleased changes._
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.1.4] | 2026-07-09 | Patch | Internal IR foundation, Conditional hot-path laziness, root raw schema cache optimization, and refreshed performance baseline [View](./changelogs/v2.1.4.md) |
 | [2.1.3] | 2026-07-08 | Patch | Docs security checklist hardening, less noisy performance smoke, and docs linkcheck release gate [View](./changelogs/v2.1.3.md) |
 | [2.1.2] | 2026-07-07 | Patch | Release-readiness sync, raw JSON Schema `default` classification, legacy validate async handling, FastPlan cache safety, and refreshed performance baselines [View](./changelogs/v2.1.2.md) |
 | [2.1.1] | 2026-06-30 | Patch | Validation cache lifecycle tightening, batch compile reuse, and local `$ref` exporter loss reporting [View](./changelogs/v2.1.1.md) |
@@ -351,7 +395,8 @@ _No unreleased changes._
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.3...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.4...HEAD
+[2.1.4]: https://github.com/vextjs/schema-dsl/compare/v2.1.3...v2.1.4
 [2.1.3]: https://github.com/vextjs/schema-dsl/compare/v2.1.2...v2.1.3
 [2.1.2]: https://github.com/vextjs/schema-dsl/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/vextjs/schema-dsl/compare/v2.1.0...v2.1.1

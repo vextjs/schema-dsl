@@ -28,6 +28,9 @@ import {
   type ValidationPlan,
   type ValidationPlanUnsupportedReason,
 } from './ValidationPlan.js'
+import { createJsonSchemaIR } from './ir/JsonSchemaToIR.js'
+import { createExecutionPlanProjection } from './ir/RuntimeMetadataToIR.js'
+import type { SchemaIRProjection } from '../types/ir.js'
 
 // Non-AJV custom option keys (V-Y01 fix: filter before passing to new Ajv())
 const NON_AJV_KEYS = new Set([
@@ -1106,7 +1109,10 @@ export class Validator {
     const validationPlan = schemaMetadata
       ? this._getOrCompileValidationPlan(objectSchema, schemaMetadata)
       : null
-    if (validationPlan?.validate(data)) {
+    const validationProjection = schemaMetadata
+      ? this._getSchemaIRProjection(objectSchema, schemaMetadata)
+      : null
+    if (validationProjection?.projections.validation?.safe === true && validationPlan?.validate(data)) {
       return { valid: true, data, errors: EMPTY_ERRORS }
     }
 
@@ -1181,6 +1187,7 @@ export class Validator {
         if (customValidatorMode === 'sync') {
           metadata.validationPlan = cached.plan
           metadata.validationPlanReason = cached.reason
+          metadata.irProjection = undefined
         }
         return cached.plan
       }
@@ -1192,24 +1199,46 @@ export class Validator {
       customValidators: customValidatorMode,
     })
     if (result.status === 'compiled') {
+      if (customValidatorMode === 'sync') {
+        metadata.validationPlan = result.plan
+        metadata.validationPlanReason = null
+        metadata.irProjection = undefined
+      }
       if (usePlanCache) {
-        if (customValidatorMode === 'sync') {
-          metadata.validationPlan = result.plan
-          metadata.validationPlanReason = null
-        }
         this._rememberValidationPlanCacheEntry(planCacheKey, { plan: result.plan, reason: null })
       }
       return result.plan
     }
 
+    if (customValidatorMode === 'sync') {
+      metadata.validationPlan = null
+      metadata.validationPlanReason = result.reason
+      metadata.irProjection = undefined
+    }
     if (usePlanCache) {
-      if (customValidatorMode === 'sync') {
-        metadata.validationPlan = null
-        metadata.validationPlanReason = result.reason
-      }
       this._rememberValidationPlanCacheEntry(planCacheKey, { plan: null, reason: result.reason })
     }
     return null
+  }
+
+  private _getSchemaIRProjection(
+    schema: (JSONSchemaInput & object) | null,
+    metadata: SchemaRuntimeMetadata
+  ): SchemaIRProjection | null {
+    if (!schema) return null
+    if (metadata.irProjection !== undefined) return metadata.irProjection
+    if (
+      !metadata.hasConditionals
+      && metadata.validationPlan === undefined
+      && metadata.validationPlanReason === undefined
+    ) return null
+
+    try {
+      metadata.irProjection = createExecutionPlanProjection(createJsonSchemaIR(schema), metadata)
+    } catch {
+      metadata.irProjection = null
+    }
+    return metadata.irProjection
   }
 
   private async _tryValidateAsyncFastPath<T>(

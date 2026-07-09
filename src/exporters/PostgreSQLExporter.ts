@@ -110,7 +110,7 @@ export class PostgreSQLExporter extends BaseExporter<PostgreSQLExporterOptions> 
   }
 
   exportWithReport(tableName: string, jsonSchema: JSONSchema, options: ExportReportOptions = {}): ExportReport<string> {
-    return this._createExportReport(this.export(tableName, jsonSchema), jsonSchema, options, POSTGRESQL_UNSUPPORTED_REPORT_KEYWORDS)
+    return this._createExportReport(this.export(tableName, jsonSchema), jsonSchema, options, POSTGRESQL_UNSUPPORTED_REPORT_KEYWORDS, 'postgresql')
   }
 
   /**

@@ -81,7 +81,7 @@ export class MongoDBExporter extends BaseExporter<MongoDBExporterOptions> {
   }
 
   exportWithReport(jsonSchema: JSONSchema, options: ExportReportOptions = {}): ExportReport<MongoDBValidationSchema> {
-    return this._createExportReport(this.export(jsonSchema), jsonSchema, options, MONGODB_UNSUPPORTED_REPORT_KEYWORDS)
+    return this._createExportReport(this.export(jsonSchema), jsonSchema, options, MONGODB_UNSUPPORTED_REPORT_KEYWORDS, 'mongodb')
   }
 
   /**

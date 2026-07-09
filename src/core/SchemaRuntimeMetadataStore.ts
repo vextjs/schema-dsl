@@ -1,4 +1,5 @@
 import type { JSONSchema, JSONSchemaInput } from '../types/schema.js'
+import type { SchemaIRProjection } from '../types/ir.js'
 import type { ValidationPlan, ValidationPlanUnsupportedReason } from './ValidationPlan.js'
 
 export type SchemaCoerceScalarType = 'number' | 'integer' | 'boolean'
@@ -18,6 +19,7 @@ export interface SchemaRuntimeMetadata {
   coerceCandidates: SchemaCoerceCandidates | null
   validationPlan?: ValidationPlan | null
   validationPlanReason?: ValidationPlanUnsupportedReason | null
+  irProjection?: SchemaIRProjection | null | undefined
 }
 
 export class SchemaRuntimeMetadataStore {

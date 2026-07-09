@@ -102,7 +102,7 @@ export class MySQLExporter extends BaseExporter<MySQLExporterOptions> {
   }
 
   exportWithReport(tableName: string, jsonSchema: JSONSchema, options: ExportReportOptions = {}): ExportReport<string> {
-    return this._createExportReport(this.export(tableName, jsonSchema), jsonSchema, options, MYSQL_UNSUPPORTED_REPORT_KEYWORDS)
+    return this._createExportReport(this.export(tableName, jsonSchema), jsonSchema, options, MYSQL_UNSUPPORTED_REPORT_KEYWORDS, 'mysql')
   }
 
   /**

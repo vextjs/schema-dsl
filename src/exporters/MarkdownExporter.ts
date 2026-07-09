@@ -52,7 +52,7 @@ export class MarkdownExporter extends BaseExporter<MarkdownExporterOptions> {
     options?: Partial<MarkdownExporterOptions>,
     reportOptions: ExportReportOptions = {},
   ): ExportReport<string> {
-    return this._createExportReport(this.export(schema, options), schema, reportOptions, [])
+    return this._createExportReport(this.export(schema, options), schema, reportOptions, [], 'markdown')
   }
 
   /**

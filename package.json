@@ -1,6 +1,6 @@
 {
   "name": "schema-dsl",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "A concise JSON Schema validation library with DSL syntax, side-effect-controlled chainable APIs, and convenient validation helpers",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -136,6 +136,7 @@
     "test:all:with-audit": "npm run lint && npm run build && npm run test:interop && npm run typecheck && npm run test:types && npm test && npm run test:version && npm run test:audit && npm run docs:linkcheck",
     "bench": "node test/benchmarks/library-comparison.js",
     "bench:zod": "node test/benchmarks/zod-scenario-matrix.js --json",
+    "bench:conditional": "node test/benchmarks/conditional-regression.js --json",
     "bench:smoke": "node test/benchmarks/library-comparison.js --smoke --json && node test/benchmarks/entry-matrix.js --smoke --json && node test/benchmarks/zod-scenario-matrix.js --smoke --json",
     "bench:full": "node test/benchmarks/library-comparison.js --json && node test/benchmarks/entry-matrix.js --json && node test/benchmarks/zod-scenario-matrix.js --json",
     "bench:cache": "node test/benchmarks/cache-stability.js --json",

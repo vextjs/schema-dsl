@@ -181,24 +181,30 @@ type _CachedValidationPlan = {
 type _RootFastValidationEntry = {
   cacheKey?: string
   plan: _ValidationPlan | null
-  directValidate?: ((data: unknown) => boolean) | null
+  directMask?: number
   coerceCandidates?: _SchemaCoerceCandidates | null
   preCoerceCandidates?: _SchemaCoerceCandidates | null
   signature?: string
   shapeGuard?: _RootSchemaShapeGuard
 }
 type _RootSchemaShapeGuard = {
-  typeRef: unknown
-  typeCount: number
-  typeSignature: string
-  propertiesRef: unknown
-  propertiesCount: number
-  requiredRef: unknown
-  requiredCount: number
-  anyOfRef: unknown
-  anyOfCount: number
-  oneOfRef: unknown
-  oneOfCount: number
+  objects: _RootSchemaObjectShapeGuard[]
+  valueObjects: _RootSchemaObjectValueGuard[]
+  arrays: _RootSchemaArrayGuard[]
+}
+type _RootSchemaObjectShapeGuard = {
+  ref: Record<string, unknown>
+  keyCount: number
+}
+type _RootSchemaObjectValueGuard = {
+  ref: Record<string, unknown>
+  keys: string[]
+  values: unknown[]
+}
+type _RootSchemaArrayGuard = {
+  ref: unknown[]
+  length: number
+  values?: unknown[]
 }
 type _RootSchemaWatcherOptions = {
   wrapEntries?: boolean
@@ -320,58 +326,88 @@ function _getSchemaCacheKey(schema: _JSONSchemaInput): string | null {
   return runtimeKey
 }
 
-function _createRootSchemaShapeGuard(schema: _JSONSchema): _RootSchemaShapeGuard {
-  const source = schema as Record<string, unknown>
-  const type = source['type']
-  const properties = source['properties']
-  const required = source['required']
-  const anyOf = source['anyOf']
-  const oneOf = source['oneOf']
-
-  return {
-    typeRef: type,
-    typeCount: Array.isArray(type) ? type.length : typeof type === 'string' ? 1 : -1,
-    typeSignature: _createRootSchemaTypeSignature(type),
-    propertiesRef: properties,
-    propertiesCount: properties && typeof properties === 'object' && !Array.isArray(properties)
-      ? Object.keys(properties as Record<string, unknown>).length
-      : -1,
-    requiredRef: required,
-    requiredCount: Array.isArray(required) ? required.length : -1,
-    anyOfRef: anyOf,
-    anyOfCount: Array.isArray(anyOf) ? anyOf.length : -1,
-    oneOfRef: oneOf,
-    oneOfCount: Array.isArray(oneOf) ? oneOf.length : -1,
-  }
+function _createRootSchemaShapeGuard(schema: _JSONSchema, exhaustiveValues = false): _RootSchemaShapeGuard {
+  const guard: _RootSchemaShapeGuard = { objects: [], valueObjects: [], arrays: [] }
+  _collectRootSchemaShapeGuard(schema, guard, new WeakSet<object>(), {
+    trackValues: true,
+    exhaustiveValues,
+  })
+  return guard
 }
 
 function _isRootSchemaShapeGuardCurrent(schema: _JSONSchema, guard: _RootSchemaShapeGuard | undefined): boolean {
   if (!guard) return true
-  const source = schema as Record<string, unknown>
-  const type = source['type']
-  const properties = source['properties']
-  const required = source['required']
-  const anyOf = source['anyOf']
-  const oneOf = source['oneOf']
+  if (schema !== guard.objects[0]?.ref) return false
 
-  return type === guard.typeRef
-    && (Array.isArray(type) ? type.length : typeof type === 'string' ? 1 : -1) === guard.typeCount
-    && _createRootSchemaTypeSignature(type) === guard.typeSignature
-    && properties === guard.propertiesRef
-    && (properties && typeof properties === 'object' && !Array.isArray(properties)
-      ? Object.keys(properties as Record<string, unknown>).length
-      : -1) === guard.propertiesCount
-    && required === guard.requiredRef
-    && (Array.isArray(required) ? required.length : -1) === guard.requiredCount
-    && anyOf === guard.anyOfRef
-    && (Array.isArray(anyOf) ? anyOf.length : -1) === guard.anyOfCount
-    && oneOf === guard.oneOfRef
-    && (Array.isArray(oneOf) ? oneOf.length : -1) === guard.oneOfCount
+  for (const objectGuard of guard.objects) {
+    if (Object.keys(objectGuard.ref).length !== objectGuard.keyCount) return false
+  }
+
+  for (const objectGuard of guard.valueObjects) {
+    const keys = Object.keys(objectGuard.ref)
+    if (keys.length !== objectGuard.keys.length) return false
+
+    for (let index = 0; index < keys.length; index++) {
+      const key = keys[index]
+      if (key !== objectGuard.keys[index]) return false
+      if (objectGuard.ref[key] !== objectGuard.values[index]) return false
+    }
+  }
+
+  for (const arrayGuard of guard.arrays) {
+    if (arrayGuard.ref.length !== arrayGuard.length) return false
+    if (!arrayGuard.values) continue
+
+    for (let index = 0; index < arrayGuard.length; index++) {
+      if (arrayGuard.ref[index] !== arrayGuard.values[index]) return false
+    }
+  }
+
+  return true
 }
 
-function _createRootSchemaTypeSignature(type: unknown): string {
-  if (Array.isArray(type)) return type.map(item => typeof item === 'string' ? item : '?').join('|')
-  return typeof type === 'string' ? type : ''
+function _collectRootSchemaShapeGuard(
+  value: unknown,
+  guard: _RootSchemaShapeGuard,
+  seen: WeakSet<object>,
+  options: { trackValues: boolean; exhaustiveValues: boolean },
+): void {
+  if (!value || typeof value !== 'object') return
+
+  const objectValue = value as object
+  if (seen.has(objectValue)) return
+  seen.add(objectValue)
+
+  if (Array.isArray(value)) {
+    guard.arrays.push(options.exhaustiveValues
+      ? { ref: value, length: value.length, values: value.slice() }
+      : { ref: value, length: value.length })
+    for (const item of value) {
+      _collectRootSchemaShapeGuard(item, guard, seen, {
+        trackValues: false,
+        exhaustiveValues: options.exhaustiveValues,
+      })
+    }
+    return
+  }
+
+  const source = value as Record<string, unknown>
+  const keys = Object.keys(source)
+  guard.objects.push({ ref: source, keyCount: keys.length })
+  if (options.trackValues || options.exhaustiveValues) {
+    guard.valueObjects.push({
+      ref: source,
+      keys,
+      values: keys.map(key => source[key]),
+    })
+  }
+
+  for (const key of keys) {
+    _collectRootSchemaShapeGuard(source[key], guard, seen, {
+      trackValues: false,
+      exhaustiveValues: options.exhaustiveValues,
+    })
+  }
 }
 
 function _invalidateRootSchemaCaches(): void {
@@ -382,14 +418,6 @@ function _invalidateRootSchemaCaches(): void {
   _runtimeSchemaKeyCounter = 0
   _defaultValidator?.clearCache()
   _noCoerceValidator?.clearCache()
-}
-
-function _isSchemaMapContainerKey(key: string): boolean {
-  return key === 'properties'
-    || key === 'patternProperties'
-    || key === '$defs'
-    || key === 'definitions'
-    || key === 'dependentSchemas'
 }
 
 function _installRootSchemaMutationWatchers(
@@ -434,7 +462,7 @@ function _installRootSchemaMutationWatchers(
       fullyWatched = false
     }
     if (!_installRootSchemaMutationWatchers(child, seen, {
-      wrapEntries: !_isSchemaMapContainerKey(key),
+      wrapEntries: true,
     })) {
       fullyWatched = false
     }
@@ -483,7 +511,13 @@ function _executeRootFastEntry<T>(
   data: unknown,
   shouldCoerce: boolean
 ): _ValidationResult<T> | null {
-  const validate = entry.directValidate ?? entry.plan?.validate
+  if (entry.directMask) {
+    return _matchesRootPrimitiveTypeMask(data, entry.directMask)
+      ? { valid: true, data: data as T, errors: _EMPTY_VALIDATION_ERRORS }
+      : null
+  }
+
+  const validate = entry.plan?.validate
   if (!validate) return null
   if (shouldCoerce && entry.preCoerceCandidates && _hasLikelyCoercibleInput(data, entry.preCoerceCandidates)) {
     const coercedData = _applySmartCoerce(data, entry.preCoerceCandidates)
@@ -641,6 +675,11 @@ function _isSafePreCoerceEnum(values: unknown[], type: 'number' | 'integer' | 'b
 }
 
 type _RootPrimitiveType = 'string' | 'number' | 'integer' | 'boolean' | 'null'
+const _ROOT_PRIMITIVE_STRING_FLAG = 1
+const _ROOT_PRIMITIVE_NUMBER_FLAG = 1 << 1
+const _ROOT_PRIMITIVE_INTEGER_FLAG = 1 << 2
+const _ROOT_PRIMITIVE_BOOLEAN_FLAG = 1 << 3
+const _ROOT_PRIMITIVE_NULL_FLAG = 1 << 4
 
 const _ROOT_PRIMITIVE_UNION_ANNOTATION_KEYS = new Set([
   '$id',
@@ -651,9 +690,9 @@ const _ROOT_PRIMITIVE_UNION_ANNOTATION_KEYS = new Set([
   'examples',
 ])
 
-function _tryCreateRootPrimitiveUnionDirectValidator(schema: _JSONSchema): ((data: unknown) => boolean) | null {
+function _tryCreateRootPrimitiveUnionDirectMask(schema: _JSONSchema): number {
   const types = _collectRootPrimitiveUnionTypes(schema)
-  return types ? _createRootPrimitiveTypePredicate(types) : null
+  return types ? _createRootPrimitiveTypeMask(types) : 0
 }
 
 function _collectRootPrimitiveUnionTypes(schema: _JSONSchema): _RootPrimitiveType[] | null {
@@ -715,24 +754,42 @@ function _isRootPrimitiveType(value: unknown): value is _RootPrimitiveType {
     || value === 'null'
 }
 
-function _createRootPrimitiveTypePredicate(types: _RootPrimitiveType[]): (data: unknown) => boolean {
-  const acceptsString = types.includes('string')
-  const acceptsNumber = types.includes('number')
-  const acceptsInteger = types.includes('integer')
-  const acceptsBoolean = types.includes('boolean')
-  const acceptsNull = types.includes('null')
-
-  return (data: unknown): boolean => {
-    switch (typeof data) {
+function _createRootPrimitiveTypeMask(types: _RootPrimitiveType[]): number {
+  let mask = 0
+  for (const type of types) {
+    switch (type) {
       case 'string':
-        return acceptsString
+        mask |= _ROOT_PRIMITIVE_STRING_FLAG
+        break
       case 'number':
-        return Number.isFinite(data) && (acceptsNumber || (acceptsInteger && Number.isInteger(data)))
+        mask |= _ROOT_PRIMITIVE_NUMBER_FLAG
+        break
+      case 'integer':
+        mask |= _ROOT_PRIMITIVE_INTEGER_FLAG
+        break
       case 'boolean':
-        return acceptsBoolean
-      default:
-        return data === null && acceptsNull
+        mask |= _ROOT_PRIMITIVE_BOOLEAN_FLAG
+        break
+      case 'null':
+        mask |= _ROOT_PRIMITIVE_NULL_FLAG
+        break
     }
+  }
+  return mask
+}
+
+function _matchesRootPrimitiveTypeMask(data: unknown, mask: number): boolean {
+  switch (typeof data) {
+    case 'string':
+      return (mask & _ROOT_PRIMITIVE_STRING_FLAG) !== 0
+    case 'number':
+      return Number.isFinite(data)
+        && ((mask & _ROOT_PRIMITIVE_NUMBER_FLAG) !== 0
+          || ((mask & _ROOT_PRIMITIVE_INTEGER_FLAG) !== 0 && Number.isInteger(data)))
+    case 'boolean':
+      return (mask & _ROOT_PRIMITIVE_BOOLEAN_FLAG) !== 0
+    default:
+      return data === null && (mask & _ROOT_PRIMITIVE_NULL_FLAG) !== 0
   }
 }
 
@@ -790,16 +847,15 @@ function _tryRootFastValidate<T>(
   let cacheKey: string | null | undefined
   if (cached) {
     const markedKey = (schema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY]
-    cacheKey = _getSchemaCacheKey(schema as _JSONSchema)
-    if (cached.cacheKey && cacheKey !== cached.cacheKey) {
-      _invalidateRootSchemaCaches()
-    } else if (typeof markedKey === 'string' && markedKey) {
+    if (typeof markedKey === 'string' && markedKey) {
       return _executeRootFastEntry<T>(cached, data, shouldCoerce)
-    } else if (_isRootSchemaShapeGuardCurrent(schema as _JSONSchema, cached.shapeGuard)) {
-      return _executeRootFastEntry<T>(cached, data, shouldCoerce)
-    } else {
-      _invalidateRootSchemaCaches()
     }
+
+    if (_isRootSchemaShapeGuardCurrent(schema as _JSONSchema, cached.shapeGuard)) {
+      return _executeRootFastEntry<T>(cached, data, shouldCoerce)
+    }
+
+    _invalidateRootSchemaCaches()
   }
 
   if (_isDslObject(schema)) return null
@@ -809,20 +865,28 @@ function _tryRootFastValidate<T>(
   cacheKey = cacheKey ?? _getSchemaCacheKey(normalizedSchema)
   if (!cacheKey) return null
 
-  const directValidate = _tryCreateRootPrimitiveUnionDirectValidator(normalizedSchema)
-  const plan = directValidate ? null : _getCachedValidationPlan(normalizedSchema, cacheKey)
-  const coerceCandidates = !directValidate && _schemaMayHaveSmartCoerceCandidates(normalizedSchema)
+  const directMask = _tryCreateRootPrimitiveUnionDirectMask(normalizedSchema)
+  const plan = directMask ? null : _getCachedValidationPlan(normalizedSchema, cacheKey)
+  const coerceCandidates = !directMask && _schemaMayHaveSmartCoerceCandidates(normalizedSchema)
     ? _getCachedSchemaCoerceCandidates(normalizedSchema, cacheKey)
     : null
   const preCoerceCandidates = coerceCandidates
     ? _getSafePreCoerceCandidates(normalizedSchema)
     : null
+  const hasMarkedKey = typeof markedKey === 'string' && markedKey
+  const mutationWatchersInstalled = hasMarkedKey
+    ? true
+    : _installRootSchemaMutationWatchers(normalizedSchema, new WeakSet<object>(), { wrapEntries: false })
   const entry: _RootFastValidationEntry = typeof markedKey === 'string' && markedKey
-    ? { cacheKey, plan, directValidate, coerceCandidates, preCoerceCandidates }
-    : { cacheKey, plan, directValidate, coerceCandidates, preCoerceCandidates, shapeGuard: _createRootSchemaShapeGuard(normalizedSchema) }
-  if (!(typeof markedKey === 'string' && markedKey)) {
-    _installRootSchemaMutationWatchers(normalizedSchema, new WeakSet<object>(), { wrapEntries: false })
-  }
+    ? { cacheKey, plan, directMask, coerceCandidates, preCoerceCandidates }
+    : {
+      cacheKey,
+      plan,
+      directMask,
+      coerceCandidates,
+      preCoerceCandidates,
+      shapeGuard: _createRootSchemaShapeGuard(normalizedSchema, !mutationWatchersInstalled),
+    }
   _rootFastValidationCache.set(schemaObject, entry)
 
   return _executeRootFastEntry<T>(entry, data, shouldCoerce)
