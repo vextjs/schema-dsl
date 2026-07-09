@@ -3,8 +3,8 @@ pageType: home
 
 hero:
   name: schema-dsl
-  text: 简洁强大的 JSON Schema 验证库
-  tagline: DSL 语法 · 链式 API · 多格式导出 · 完整 TypeScript 支持
+  text: 渐进式 TypeScript Schema DSL
+  tagline: 简洁字段规则 · 渐进式 s API · 验证 · Schema 复用 · 导出 · 国际化
   image:
     src: /favicon.svg
     alt: schema-dsl logo
@@ -20,18 +20,18 @@ hero:
       link: https://github.com/vextjs/schema-dsl
 
 features:
-  - title: DSL 语法
-    details: 用紧凑 DSL 字符串或对象定义验证规则，覆盖常见字段、约束与组合场景。
-  - title: 高性能验证
-    details: 基于 AJV 8 封装，支持同步、异步和批量验证，并提供缓存管理能力。
+  - title: 渐进式 Schema 编写
+    details: 用 DSL 字符串、s('...') 种子构建器或可发现的 s.xxx() 工厂编写简洁字段规则。
+  - title: 验证运行时
+    details: 支持同步、异步和批量验证，并通过 AJV fallback 与缓存感知运行时保持可靠行为。
   - title: 多格式导出
     details: 同一份 schema 可导出到 MongoDB、MySQL、PostgreSQL 和 Markdown 文档。
   - title: 国际化
     details: 内置多语言错误消息与动态 locale 切换，适合服务端和前端共享校验规则。
   - title: 扩展与插件
-    details: 支持自定义 DSL 类型、格式和插件封装。
+    details: 支持自定义 DSL 类型、格式、验证器和插件封装，并覆盖纯 DSL、种子构建器与命名空间工厂入口。
   - title: TypeScript 友好
-    details: 提供完整类型声明，便于在现代 Node.js 与 TypeScript 项目中直接集成。
+    details: 提供 TypeScript 类型声明与可发现的命名空间工厂，便于在现代 Node.js 与 TypeScript 项目中集成。
 ---
 
 ## 入口导航

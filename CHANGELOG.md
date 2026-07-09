@@ -12,6 +12,29 @@ _No unreleased changes._
 
 ---
 
+## [2.1.5] - 2026-07-09
+
+### Changed
+
+- Refreshed README, documentation home pages, package metadata, and website metadata around the progressive TypeScript schema DSL positioning.
+- Updated the maintained local performance baseline from `npm run bench:full`: S1 simple valid `~2.132M ops/s`, S2 invalid without i18n formatting `~193K ops/s`, and S3 nested valid `~1.129M ops/s`.
+- Recorded the latest extended Zod scenario matrix as schema-dsl `14/19` wins and Zod `5/19` wins. This remains a regression signal, not a public "faster than Zod" claim.
+
+### Fixed
+
+- Fixed root fast-cache invalidation when caller-owned raw JSON Schema dynamic containers are captured before validation and later used to replace existing child schemas.
+- Added public `validate()` regression coverage for saved `properties` and `$defs` references so stale fast plans do not survive child-schema replacement.
+
+### Validation
+
+- `npx vitest run test/unit/core/ValidationPlan.test.ts -t "saved raw JSON Schema"`
+- `npm run build`
+- dist CJS root fast-cache alias mutation smoke
+- `npm run bench:full`
+- `npm run bench:cache`
+
+---
+
 ## [2.1.4] - 2026-07-09
 
 ### Added
@@ -167,6 +190,7 @@ _No unreleased changes._
 
 | Version | Date | Type | Key Theme |
 |---------|------|------|-----------|
+| [2.1.5] | 2026-07-09 | Patch | Root fast-cache alias invalidation fix, package metadata refresh, and updated local performance baseline [View](./changelogs/v2.1.5.md) |
 | [2.1.4] | 2026-07-09 | Patch | Internal IR foundation, Conditional hot-path laziness, root raw schema cache optimization, and refreshed performance baseline [View](./changelogs/v2.1.4.md) |
 | [2.1.3] | 2026-07-08 | Patch | Docs security checklist hardening, less noisy performance smoke, and docs linkcheck release gate [View](./changelogs/v2.1.3.md) |
 | [2.1.2] | 2026-07-07 | Patch | Release-readiness sync, raw JSON Schema `default` classification, legacy validate async handling, FastPlan cache safety, and refreshed performance baselines [View](./changelogs/v2.1.2.md) |
@@ -395,7 +419,8 @@ _No unreleased changes._
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.4...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.5...HEAD
+[2.1.5]: https://github.com/vextjs/schema-dsl/compare/v2.1.4...v2.1.5
 [2.1.4]: https://github.com/vextjs/schema-dsl/compare/v2.1.3...v2.1.4
 [2.1.3]: https://github.com/vextjs/schema-dsl/compare/v2.1.2...v2.1.3
 [2.1.2]: https://github.com/vextjs/schema-dsl/compare/v2.1.1...v2.1.2

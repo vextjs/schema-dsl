@@ -1051,6 +1051,8 @@ export class DslBuilder {
     const constValue = source['const']
     if (hasConst && !isJsonScalar(constValue)) return null
     if (!typePredicate && !enumPredicate && !hasConst) return null
+    if (!typePredicate && enumPredicate && !hasConst) return enumPredicate
+    if (typePredicate && !enumPredicate && !hasConst) return typePredicate
 
     return (value: unknown): boolean => {
       if (typePredicate && !typePredicate(value)) return false

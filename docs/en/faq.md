@@ -225,16 +225,16 @@ console.log(result.data);
 
 | Scenario | schema-dsl throughput |
 |------|-----------|
-| S1 simple valid object | ~1.813M ops/s |
-| S2 invalid object without i18n formatting | ~223K ops/s |
-| S3 nested valid object | ~1.291M ops/s |
+| S1 simple valid object | ~2.132M ops/s |
+| S2 invalid object without i18n formatting | ~193K ops/s |
+| S3 nested valid object | ~1.129M ops/s |
 
-**Environment**: Node.js v20.20.2, Windows x64, run time 2026-07-09T02:26:07.697Z.
+**Environment**: Node.js v20.20.2, Windows x64, run time 2026-07-09T07:16:27.341Z.
 
 **Conclusion**:
 - ✅ Hot-path validation is already in the million-ops/sec range on this local machine.
 - ✅ Built-in caching avoids repeated schema parsing on reused schema objects.
-- ✅ In the same full run, the extended Zod scenario matrix recorded schema-dsl 12/19 wins and Zod 7/19 wins.
+- ✅ In the same full run, the extended Zod scenario matrix recorded schema-dsl 14/19 wins and Zod 5/19 wins.
 - ✅ Treat these numbers as a regression baseline; rerun the benchmark when runtime, dependency, or schema complexity changes.
 
 ---

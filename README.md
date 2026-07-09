@@ -2,7 +2,7 @@
 
 # 🎯 schema-dsl
 
-**Declare field rules with the simplest DSL — let one schema drive validation, derivation, export, and documentation.**
+**Progressive TypeScript schema DSL for concise, serializable field rules — one schema for validation, reuse, export, documentation, and i18n.**
 
 📚 **Documentation**: [https://vextjs.github.io/schema-dsl](https://vextjs.github.io/schema-dsl)
 
@@ -84,7 +84,7 @@ Then that **same set of rules** continues to power:
 
 ## ✨ Why schema-dsl?
 
-### 🎯 Minimal DSL — 65% less code
+### 🎯 Concise field rules — less boilerplate
 
 <table>
 <tr>

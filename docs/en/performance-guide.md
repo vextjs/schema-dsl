@@ -14,13 +14,13 @@ Current project baseline run:
 
 | Scenario | schema-dsl throughput |
 |------|-----------|
-| S1 simple valid object | ~1.813M ops/s |
-| S2 invalid object without i18n formatting | ~223K ops/s |
-| S3 nested valid object | ~1.291M ops/s |
+| S1 simple valid object | ~2.132M ops/s |
+| S2 invalid object without i18n formatting | ~193K ops/s |
+| S3 nested valid object | ~1.129M ops/s |
 
-Environment: Node.js v20.20.2, Windows x64, run time 2026-07-09T02:26:07.697Z.
+Environment: Node.js v20.20.2, Windows x64, run time 2026-07-09T07:16:27.341Z.
 
-The same full run's extended Zod scenario matrix recorded schema-dsl wins in 12/19 scenarios and Zod wins in 7/19 scenarios. Treat that matrix as a regression signal for this repository, not as a permanent public performance claim.
+The same full run's extended Zod scenario matrix recorded schema-dsl wins in 14/19 scenarios and Zod wins in 5/19 scenarios. Treat that matrix as a regression signal for this repository, not as a permanent public performance claim.
 
 Use these numbers as a regression baseline for this project. Re-run the benchmark when Node.js, dependencies, schema complexity, or error formatting behavior changes.
 

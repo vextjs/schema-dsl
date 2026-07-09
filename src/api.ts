@@ -194,17 +194,21 @@ type _RootSchemaShapeGuard = {
 }
 type _RootSchemaObjectShapeGuard = {
   ref: Record<string, unknown>
-  keyCount: number
+  keys: string[]
+  exact: boolean
 }
 type _RootSchemaObjectValueGuard = {
   ref: Record<string, unknown>
   keys: string[]
   values: unknown[]
+  exact: boolean
 }
 type _RootSchemaArrayGuard = {
   ref: unknown[]
   length: number
+  keys?: string[]
   values?: unknown[]
+  exact: boolean
 }
 type _RootSchemaWatcherOptions = {
   wrapEntries?: boolean
@@ -252,8 +256,103 @@ let _validationPlanCache = new Map<string, _CachedValidationPlan>()
 let _rootFastValidationCache = new WeakMap<object, _RootFastValidationEntry>()
 let _runtimeSchemaKeyCache = new WeakMap<object, string>()
 let _runtimeSchemaKeyCounter = 0
+const _rootSchemaDynamicContainerProxyCache = new WeakMap<object, Record<string | symbol, unknown>>()
+const _rootSchemaDynamicContainerProxies = new WeakSet<object>()
 const _VALIDATION_PLAN_CACHE_MAX_SIZE = 5000
 const _EMPTY_VALIDATION_ERRORS = Object.freeze([]) as []
+const _ROOT_SCHEMA_WATCH_KEYS = [
+  '$comment',
+  '$defs',
+  '$id',
+  '$ref',
+  '$schema',
+  '_customMessages',
+  '_customValidators',
+  '_description',
+  '_evaluateCondition',
+  '_isConditional',
+  '_label',
+  '_required',
+  '_runtimeOnlyConditional',
+  '_whenConditions',
+  'additionalProperties',
+  'allOf',
+  'alphanum',
+  'anyOf',
+  'const',
+  'contains',
+  'dateFormat',
+  'dateGreater',
+  'dateLess',
+  'default',
+  'definitions',
+  'dependencies',
+  'dependentSchemas',
+  'description',
+  'else',
+  'enum',
+  'examples',
+  'exactLength',
+  'exclusiveMaximum',
+  'exclusiveMinimum',
+  'format',
+  'idCard',
+  'if',
+  'includesRequired',
+  'items',
+  'jsonString',
+  'lowercase',
+  'maxItems',
+  'maxLength',
+  'maximum',
+  'minItems',
+  'minLength',
+  'minimum',
+  'multipleOf',
+  'not',
+  'oneOf',
+  'passwordStrength',
+  'pattern',
+  'patternProperties',
+  'port',
+  'precision',
+  'prefixItems',
+  'properties',
+  'propertyNames',
+  'regex',
+  'required',
+  'requiredAll',
+  'strictSchema',
+  'then',
+  'title',
+  'trim',
+  'type',
+  'unevaluatedItems',
+  'unevaluatedProperties',
+  'unique',
+  'uniqueItems',
+  'uppercase',
+  'validate',
+] as const
+const _ROOT_SCHEMA_ARRAY_MUTATORS = [
+  'copyWithin',
+  'fill',
+  'pop',
+  'push',
+  'reverse',
+  'shift',
+  'sort',
+  'splice',
+  'unshift',
+] as const
+const _ROOT_SCHEMA_DYNAMIC_KEY_CONTAINER_KEYS = new Set([
+  '$defs',
+  'definitions',
+  'dependencies',
+  'dependentSchemas',
+  'patternProperties',
+  'properties',
+])
 
 function _markSchemaCacheKey(schema: _JSONSchema): _JSONSchema {
   const cacheKey = _createSchemaCacheKey(schema)
@@ -331,31 +430,53 @@ function _createRootSchemaShapeGuard(schema: _JSONSchema, exhaustiveValues = fal
   _collectRootSchemaShapeGuard(schema, guard, new WeakSet<object>(), {
     trackValues: true,
     exhaustiveValues,
-  })
+    exactObjects: true,
+    exactArrays: true,
+  }, null)
+  return guard
+}
+
+function _createRootSchemaMutationGuard(schema: _JSONSchema): _RootSchemaShapeGuard {
+  const guard: _RootSchemaShapeGuard = { objects: [], valueObjects: [], arrays: [] }
+  _collectRootSchemaShapeGuard(schema, guard, new WeakSet<object>(), {
+    trackValues: false,
+    exhaustiveValues: false,
+    exactObjects: false,
+    exactArrays: false,
+  }, null)
   return guard
 }
 
 function _isRootSchemaShapeGuardCurrent(schema: _JSONSchema, guard: _RootSchemaShapeGuard | undefined): boolean {
   if (!guard) return true
-  if (schema !== guard.objects[0]?.ref) return false
+  if (guard.objects[0] && schema !== guard.objects[0].ref) return false
 
   for (const objectGuard of guard.objects) {
-    if (Object.keys(objectGuard.ref).length !== objectGuard.keyCount) return false
+    if (objectGuard.exact && Object.keys(objectGuard.ref).length !== objectGuard.keys.length) return false
+    for (const key of objectGuard.keys) {
+      if (!Object.prototype.hasOwnProperty.call(objectGuard.ref, key)) return false
+    }
   }
 
   for (const objectGuard of guard.valueObjects) {
-    const keys = Object.keys(objectGuard.ref)
-    if (keys.length !== objectGuard.keys.length) return false
+    const keys = objectGuard.exact ? Object.keys(objectGuard.ref) : objectGuard.keys
+    if (objectGuard.exact && keys.length !== objectGuard.keys.length) return false
 
-    for (let index = 0; index < keys.length; index++) {
-      const key = keys[index]
-      if (key !== objectGuard.keys[index]) return false
+    for (let index = 0; index < objectGuard.keys.length; index++) {
+      const key = objectGuard.keys[index]
+      if (objectGuard.exact && keys[index] !== key) return false
       if (objectGuard.ref[key] !== objectGuard.values[index]) return false
     }
   }
 
   for (const arrayGuard of guard.arrays) {
     if (arrayGuard.ref.length !== arrayGuard.length) return false
+    if (arrayGuard.exact && Object.keys(arrayGuard.ref).length !== (arrayGuard.keys?.length ?? 0)) return false
+    if (arrayGuard.keys) {
+      for (const key of arrayGuard.keys) {
+        if (!Object.prototype.hasOwnProperty.call(arrayGuard.ref, key)) return false
+      }
+    }
     if (!arrayGuard.values) continue
 
     for (let index = 0; index < arrayGuard.length; index++) {
@@ -370,7 +491,8 @@ function _collectRootSchemaShapeGuard(
   value: unknown,
   guard: _RootSchemaShapeGuard,
   seen: WeakSet<object>,
-  options: { trackValues: boolean; exhaustiveValues: boolean },
+  options: { trackValues: boolean; exhaustiveValues: boolean; exactObjects: boolean; exactArrays: boolean },
+  parentKey: string | null,
 ): void {
   if (!value || typeof value !== 'object') return
 
@@ -379,26 +501,36 @@ function _collectRootSchemaShapeGuard(
   seen.add(objectValue)
 
   if (Array.isArray(value)) {
+    const keys = Object.keys(value)
     guard.arrays.push(options.exhaustiveValues
-      ? { ref: value, length: value.length, values: value.slice() }
-      : { ref: value, length: value.length })
+      ? { ref: value, length: value.length, keys, values: value.slice(), exact: options.exactArrays }
+      : { ref: value, length: value.length, keys, exact: options.exactArrays })
     for (const item of value) {
       _collectRootSchemaShapeGuard(item, guard, seen, {
         trackValues: false,
         exhaustiveValues: options.exhaustiveValues,
-      })
+        exactObjects: options.exactObjects,
+        exactArrays: options.exactArrays,
+      }, null)
     }
     return
   }
 
   const source = value as Record<string, unknown>
   const keys = Object.keys(source)
-  guard.objects.push({ ref: source, keyCount: keys.length })
-  if (options.trackValues || options.exhaustiveValues) {
+  const isDynamicContainer = parentKey !== null && _ROOT_SCHEMA_DYNAMIC_KEY_CONTAINER_KEYS.has(parentKey)
+  const isWatchedDynamicContainer = isDynamicContainer
+    && _rootSchemaDynamicContainerProxies.has(objectValue)
+  const exactObject = options.exactObjects || (isDynamicContainer && !isWatchedDynamicContainer)
+  if (!isWatchedDynamicContainer || options.exactObjects) {
+    guard.objects.push({ ref: source, keys, exact: exactObject })
+  }
+  if ((options.trackValues || options.exhaustiveValues) && (!isWatchedDynamicContainer || options.exactObjects)) {
     guard.valueObjects.push({
       ref: source,
       keys,
       values: keys.map(key => source[key]),
+      exact: exactObject,
     })
   }
 
@@ -406,7 +538,9 @@ function _collectRootSchemaShapeGuard(
     _collectRootSchemaShapeGuard(source[key], guard, seen, {
       trackValues: false,
       exhaustiveValues: options.exhaustiveValues,
-    })
+      exactObjects: options.exactObjects,
+      exactArrays: options.exactArrays,
+    }, key)
   }
 }
 
@@ -424,6 +558,7 @@ function _installRootSchemaMutationWatchers(
   value: unknown,
   seen = new WeakSet<object>(),
   options: _RootSchemaWatcherOptions = {},
+  parentKey: string | null = null,
 ): boolean {
   if (!value || typeof value !== 'object') return true
 
@@ -433,37 +568,162 @@ function _installRootSchemaMutationWatchers(
 
   const source = value as Record<string, unknown>
   const shouldWrapEntries = options.wrapEntries !== false
+  const isDynamicKeyContainer = parentKey !== null && _ROOT_SCHEMA_DYNAMIC_KEY_CONTAINER_KEYS.has(parentKey)
+  const keys = Array.isArray(value) || isDynamicKeyContainer
+    ? Object.keys(source)
+    : _rootSchemaWatcherKeys(source)
   let fullyWatched = true
-  for (const key of Object.keys(source)) {
+  if (Array.isArray(value) && !_installRootSchemaArrayMutationWatchers(value)) {
+    fullyWatched = false
+  }
+
+  for (const key of keys) {
     if (key === '__proto__') continue
     const descriptor = Object.getOwnPropertyDescriptor(source, key)
-    const child = source[key]
+    if (!descriptor) {
+      if (shouldWrapEntries && !Array.isArray(value) && !_installRootSchemaMissingKeywordWatcher(source, key)) {
+        fullyWatched = false
+      }
+      continue
+    }
+
+    let child = source[key]
+    child = _rootSchemaWatchedDynamicContainerValue(key, child)
+    // Dynamic containers still wrap existing keys so raw caller-held refs invalidate caches on assignment.
     if (shouldWrapEntries && descriptor?.configurable && 'value' in descriptor && descriptor.writable !== false) {
-      let current = descriptor.value
-      try {
-        Object.defineProperty(source, key, {
-          enumerable: descriptor.enumerable === true,
-          configurable: true,
-          get: () => current,
-          set: (next: unknown) => {
-            if (next !== current) {
-              current = next
-              _invalidateRootSchemaCaches()
-              return
-            }
-            current = next
-          },
-        })
-      } catch {
-        // Non-configurable or exotic schema objects still validate; they just skip mutation watching.
+      if (!_installRootSchemaExistingKeywordWatcher(source, key, descriptor, child)) {
         fullyWatched = false
       }
     } else if (shouldWrapEntries && (!descriptor?.configurable || !('value' in descriptor) || descriptor.writable === false)) {
       fullyWatched = false
     }
-    if (!_installRootSchemaMutationWatchers(child, seen, {
-      wrapEntries: true,
-    })) {
+    if (!_installRootSchemaMutationWatchers(child, seen, { wrapEntries: true }, key)) {
+      fullyWatched = false
+    }
+  }
+  return fullyWatched
+}
+
+function _rootSchemaWatcherKeys(source: Record<string, unknown>): string[] {
+  const keys = Object.keys(source)
+  for (const key of _ROOT_SCHEMA_WATCH_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(source, key)) keys.push(key)
+  }
+  return keys
+}
+
+function _installRootSchemaExistingKeywordWatcher(
+  source: Record<string, unknown>,
+  key: string,
+  descriptor: PropertyDescriptor,
+  initialValue: unknown = descriptor.value,
+): boolean {
+  let current = initialValue
+  try {
+    Object.defineProperty(source, key, {
+      enumerable: descriptor.enumerable === true,
+      configurable: true,
+      get: () => current,
+      set: (next: unknown) => {
+        const watchedNext = _rootSchemaWatchedDynamicContainerValue(key, next)
+        if (watchedNext !== current) {
+          current = watchedNext
+          _invalidateRootSchemaCaches()
+          return
+        }
+        current = watchedNext
+      },
+    })
+    return true
+  } catch {
+    // Non-configurable or exotic schema objects still validate; they just use the exact guard.
+    return false
+  }
+}
+
+function _rootSchemaWatchedDynamicContainerValue(key: string, value: unknown): unknown {
+  if (!_ROOT_SCHEMA_DYNAMIC_KEY_CONTAINER_KEYS.has(key)) return value
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value
+
+  const objectValue = value as object
+  if (_rootSchemaDynamicContainerProxies.has(objectValue)) return value
+
+  const cached = _rootSchemaDynamicContainerProxyCache.get(objectValue)
+  if (cached) return cached
+
+  const target = value as Record<string | symbol, unknown>
+  const proxy = new Proxy(target, {
+    set(currentTarget, property, next, receiver) {
+      const previous = Reflect.get(currentTarget, property, receiver)
+      const result = Reflect.set(currentTarget, property, next, receiver)
+      if (result && previous !== next) _invalidateRootSchemaCaches()
+      return result
+    },
+    deleteProperty(currentTarget, property) {
+      const existed = Object.prototype.hasOwnProperty.call(currentTarget, property)
+      const result = Reflect.deleteProperty(currentTarget, property)
+      if (result && existed) _invalidateRootSchemaCaches()
+      return result
+    },
+    defineProperty(currentTarget, property, descriptor) {
+      const previous = Reflect.getOwnPropertyDescriptor(currentTarget, property)
+      const result = Reflect.defineProperty(currentTarget, property, descriptor)
+      if (result && previous !== descriptor) _invalidateRootSchemaCaches()
+      return result
+    },
+  })
+  _rootSchemaDynamicContainerProxyCache.set(objectValue, proxy)
+  _rootSchemaDynamicContainerProxies.add(proxy)
+  return proxy
+}
+
+function _installRootSchemaMissingKeywordWatcher(source: Record<string, unknown>, key: string): boolean {
+  if (!Object.isExtensible(source)) return false
+  try {
+    Object.defineProperty(source, key, {
+      enumerable: false,
+      configurable: true,
+      get: () => undefined,
+      set: (next: unknown) => {
+        try {
+          Object.defineProperty(source, key, {
+            value: next,
+            enumerable: true,
+            configurable: true,
+            writable: true,
+          })
+        } finally {
+          _invalidateRootSchemaCaches()
+        }
+      },
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+function _installRootSchemaArrayMutationWatchers(array: unknown[]): boolean {
+  let fullyWatched = true
+  for (const method of _ROOT_SCHEMA_ARRAY_MUTATORS) {
+    const descriptor = Object.getOwnPropertyDescriptor(array, method)
+    if (descriptor && (!descriptor.configurable || typeof descriptor.value !== 'function')) {
+      fullyWatched = false
+      continue
+    }
+
+    try {
+      Object.defineProperty(array, method, {
+        value: (...args: unknown[]) => {
+          const result = (Array.prototype[method] as (...items: unknown[]) => unknown).apply(array, args)
+          _invalidateRootSchemaCaches()
+          return result
+        },
+        enumerable: false,
+        configurable: true,
+        writable: true,
+      })
+    } catch {
       fullyWatched = false
     }
   }
@@ -876,7 +1136,7 @@ function _tryRootFastValidate<T>(
   const hasMarkedKey = typeof markedKey === 'string' && markedKey
   const mutationWatchersInstalled = hasMarkedKey
     ? true
-    : _installRootSchemaMutationWatchers(normalizedSchema, new WeakSet<object>(), { wrapEntries: false })
+    : _installRootSchemaMutationWatchers(normalizedSchema, new WeakSet<object>(), { wrapEntries: true })
   const entry: _RootFastValidationEntry = typeof markedKey === 'string' && markedKey
     ? { cacheKey, plan, directMask, coerceCandidates, preCoerceCandidates }
     : {
@@ -885,7 +1145,9 @@ function _tryRootFastValidate<T>(
       directMask,
       coerceCandidates,
       preCoerceCandidates,
-      shapeGuard: _createRootSchemaShapeGuard(normalizedSchema, !mutationWatchersInstalled),
+      shapeGuard: mutationWatchersInstalled
+        ? _createRootSchemaMutationGuard(normalizedSchema)
+        : _createRootSchemaShapeGuard(normalizedSchema, true),
     }
   _rootFastValidationCache.set(schemaObject, entry)
 

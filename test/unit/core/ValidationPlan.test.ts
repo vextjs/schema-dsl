@@ -379,6 +379,38 @@ describe('ValidationPlan', () => {
     })
   })
 
+  it('validates flat required numeric objects without accepting invalid numeric fields', () => {
+    const result = compileValidationPlan({
+      type: 'object',
+      properties: {
+        count: { type: 'number', minimum: 0, maximum: 10 },
+        index: { type: 'integer', minimum: 1 },
+      },
+      required: ['count', 'index'],
+    }, { cacheKey: 'schema:flat-required-numeric-object' })
+
+    expect(result.status).toBe('compiled')
+    if (result.status !== 'compiled') throw new Error('expected compiled plan')
+
+    expect(executeValidationPlan(result.plan, { count: 5, index: 1 })).toMatchObject({ status: 'valid' })
+    expect(executeValidationPlan(result.plan, { count: 11, index: 1 })).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+    expect(executeValidationPlan(result.plan, { count: 5, index: 1.5 })).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+    expect(executeValidationPlan(result.plan, { count: 5 })).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+    expect(executeValidationPlan(result.plan, { count: '5', index: 1 })).toEqual({
+      status: 'fallback',
+      reason: 'data-mismatch',
+    })
+  })
+
   it('falls back when scalar custom validators reject, throw, or return Promise-like values', () => {
     const cases = [
       { schema: { type: 'string', _customValidators: [() => false] }, data: 'alice' },
@@ -624,6 +656,61 @@ describe('ValidationPlan', () => {
     }
   })
 
+  it('invalidates root fast cache when saved raw JSON Schema properties reference replaces child schemas', () => {
+    resetRuntimeState()
+
+    try {
+      const properties: any = {
+        age: { type: 'number' },
+      }
+      const schema: any = {
+        type: 'object',
+        properties,
+        required: ['age'],
+      }
+
+      expect(validate(schema, { age: 19 }, { format: false }).valid).toBe(true)
+
+      properties.age = { type: 'string', minLength: 2 }
+
+      const numberResult = validate(schema, { age: 19 }, { format: false })
+      expect(numberResult.valid).toBe(false)
+      expect(numberResult.errors?.[0]?.keyword).toBe('type')
+      expect(validate(schema, { age: 'ok' }, { format: false }).valid).toBe(true)
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
+  it('invalidates root fast cache when saved raw JSON Schema $defs reference replaces ref targets', () => {
+    resetRuntimeState()
+
+    try {
+      const definitions: any = {
+        Age: { type: 'number' },
+      }
+      const schema: any = {
+        type: 'object',
+        properties: {
+          age: { $ref: '#/$defs/Age' },
+        },
+        required: ['age'],
+        $defs: definitions,
+      }
+
+      expect(validate(schema, { age: 19 }, { format: false }).valid).toBe(true)
+
+      definitions.Age = { type: 'string', minLength: 2 }
+
+      const numberResult = validate(schema, { age: 19 }, { format: false })
+      expect(numberResult.valid).toBe(false)
+      expect(numberResult.errors?.[0]?.keyword).toBe('type')
+      expect(validate(schema, { age: 'ok' }, { format: false }).valid).toBe(true)
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
   it('invalidates root fast cache when caller-owned raw JSON Schema required arrays change', () => {
     resetRuntimeState()
 
@@ -639,6 +726,75 @@ describe('ValidationPlan', () => {
       expect(validate(schema, { name: 'rocky' }, { format: false }).valid).toBe(true)
 
       schema.required = ['age']
+
+      const result = validate(schema, { name: 'rocky' }, { format: false })
+      expect(result.valid).toBe(false)
+      expect(result.errors?.[0]?.keyword).toBe('required')
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
+  it('invalidates root fast cache when caller-owned raw JSON Schema constraints are deleted', () => {
+    resetRuntimeState()
+
+    try {
+      const schema: any = {
+        type: 'object',
+        properties: {
+          age: { type: 'number', maximum: 30 },
+        },
+        required: ['age'],
+      }
+
+      expect(validate(schema, { age: 31 }, { format: false }).valid).toBe(false)
+
+      delete schema.properties.age.maximum
+
+      expect(validate(schema, { age: 31 }, { format: false }).valid).toBe(true)
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
+  it('invalidates root fast cache when caller-owned raw JSON Schema property keys are deleted', () => {
+    resetRuntimeState()
+
+    try {
+      const schema: any = {
+        type: 'object',
+        properties: {
+          age: { type: 'number' },
+        },
+        required: ['age'],
+      }
+
+      expect(validate(schema, { age: 'old' }, { format: false }).valid).toBe(false)
+
+      delete schema.properties.age
+
+      expect(validate(schema, { age: 'old' }, { format: false }).valid).toBe(true)
+    } finally {
+      resetRuntimeState()
+    }
+  })
+
+  it('invalidates root fast cache when caller-owned raw JSON Schema arrays mutate in place', () => {
+    resetRuntimeState()
+
+    try {
+      const schema: any = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          age: { type: 'number' },
+        },
+        required: ['name'],
+      }
+
+      expect(validate(schema, { name: 'rocky' }, { format: false }).valid).toBe(true)
+
+      schema.required.push('age')
 
       const result = validate(schema, { name: 'rocky' }, { format: false })
       expect(result.valid).toBe(false)

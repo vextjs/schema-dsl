@@ -284,20 +284,20 @@ export default defineConfig({
   logo: '/favicon.svg',
   logoText: 'schema-dsl',
   globalStyles: path.join(__dirname, 'styles', 'schema-dsl.css'),
-  description: 'A concise and powerful JSON Schema validation library with DSL syntax, chainable APIs, multi-format export, and TypeScript support.',
+  description: 'Progressive TypeScript schema DSL for concise, serializable field rules, validation, schema reuse, multi-format export, i18n, and runtime isolation.',
   outDir: 'dist',
   locales: [
     {
       lang: 'en',
       label: 'English',
       title: 'schema-dsl',
-      description: 'A concise and powerful JSON Schema validation library.'
+      description: 'Progressive TypeScript schema DSL for concise field rules, validation, schema reuse, export, i18n, and runtime isolation.'
     },
     {
       lang: 'zh',
       label: '简体中文',
       title: 'schema-dsl',
-      description: '简洁强大的 JSON Schema 验证库。'
+      description: '渐进式 TypeScript Schema DSL，用简洁字段规则驱动验证、Schema 复用、导出、国际化和运行时隔离。'
     }
   ],
   plugins: [
@@ -326,7 +326,7 @@ export default defineConfig({
         lang: 'en',
         label: 'English',
         title: 'schema-dsl',
-        description: 'A concise and powerful JSON Schema validation library.',
+        description: 'Progressive TypeScript schema DSL for concise field rules, validation, schema reuse, export, i18n, and runtime isolation.',
         nav: englishNav,
         sidebar: {
           '/': englishSidebar
@@ -336,7 +336,7 @@ export default defineConfig({
         lang: 'zh',
         label: '简体中文',
         title: 'schema-dsl',
-        description: '简洁强大的 JSON Schema 验证库。',
+        description: '渐进式 TypeScript Schema DSL，用简洁字段规则驱动验证、Schema 复用、导出、国际化和运行时隔离。',
         nav: chineseNav,
         sidebar: {
           '/zh/': chineseSidebar

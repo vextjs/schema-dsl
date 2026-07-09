@@ -467,6 +467,16 @@ function createScalarValidator(node: ScalarPlanNode): (data: unknown) => boolean
   if (!node.customValidators && !hasStringConstraints && !hasNumberConstraints && node.constValue === NO_CONST && !node.enumValues && node.types) {
     return createTypeUnionValidator(node.types)
   }
+  if (!node.customValidators && !hasStringConstraints && node.constValue === NO_CONST && !node.enumValues && node.types?.length === 1
+    && (node.types[0] === 'number' || node.types[0] === 'integer')) {
+    return createNumberValidator(
+      node.types[0] === 'integer',
+      node.minimum,
+      node.maximum,
+      node.exclusiveMinimum,
+      node.exclusiveMaximum
+    )
+  }
 
   const typeCheck = node.types ? createTypeUnionValidator(node.types) : null
   const enumCheck = node.enumValues ? createEnumValidator(node.enumValues) : null
@@ -556,6 +566,9 @@ function createObjectValidator(node: ObjectPlanNode): (data: unknown) => boolean
   const deepPathValidator = createDeepObjectPathValidator(node)
   if (deepPathValidator) return deepPathValidator
 
+  const numericObjectValidator = createFlatRequiredNumericObjectValidator(node)
+  if (numericObjectValidator) return numericObjectValidator
+
   const requiredSet = new Set(node.required)
   const requiredPropertyValidators: ObjectPropertyValidator[] = []
   const optionalPropertyValidators: ObjectPropertyValidator[] = []
@@ -580,6 +593,55 @@ function createObjectValidator(node: ObjectPlanNode): (data: unknown) => boolean
     }
     for (const [key, validate] of optionalPropertyValidators) {
       if (Object.prototype.hasOwnProperty.call(record, key) && !validate(record[key])) return false
+    }
+    return true
+  }
+}
+
+function createFlatRequiredNumericObjectValidator(node: ObjectPlanNode): ((data: unknown) => boolean) | null {
+  if (node.properties.length === 0 || node.required.length !== node.properties.length) return null
+
+  const requiredSet = new Set(node.required)
+  const keys: string[] = []
+  const integerOnlyFlags: boolean[] = []
+  const minimums: Array<number | null> = []
+  const maximums: Array<number | null> = []
+  const exclusiveMinimums: Array<number | null> = []
+  const exclusiveMaximums: Array<number | null> = []
+
+  for (const [key, child] of node.properties) {
+    if (!requiredSet.delete(key) || child.kind !== 'scalar') return null
+    if (child.customValidators || child.enumValues || child.constValue !== NO_CONST || child.minLength !== null
+      || child.maxLength !== null || child.pattern !== null || child.format !== null) return null
+    if (!child.types || child.types.length !== 1 || (child.types[0] !== 'number' && child.types[0] !== 'integer')) return null
+
+    keys.push(key)
+    integerOnlyFlags.push(child.types[0] === 'integer')
+    minimums.push(child.minimum)
+    maximums.push(child.maximum)
+    exclusiveMinimums.push(child.exclusiveMinimum)
+    exclusiveMaximums.push(child.exclusiveMaximum)
+  }
+  if (requiredSet.size > 0) return null
+  const propertyCount = keys.length
+
+  return (data: unknown): boolean => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return false
+    const record = data as Record<string, unknown>
+    for (let index = 0; index < propertyCount; index++) {
+      const key = keys[index]!
+      if (!Object.prototype.hasOwnProperty.call(record, key)) return false
+      const value = record[key]
+      if (typeof value !== 'number' || !Number.isFinite(value)) return false
+      if (integerOnlyFlags[index] && !Number.isInteger(value)) return false
+      const minimum = minimums[index]
+      if (minimum !== null && value < minimum) return false
+      const maximum = maximums[index]
+      if (maximum !== null && value > maximum) return false
+      const exclusiveMinimum = exclusiveMinimums[index]
+      if (exclusiveMinimum !== null && value <= exclusiveMinimum) return false
+      const exclusiveMaximum = exclusiveMaximums[index]
+      if (exclusiveMaximum !== null && value >= exclusiveMaximum) return false
     }
     return true
   }
@@ -639,6 +701,24 @@ function isDeclaredAsyncFunction(value: unknown): boolean {
 
 function isPromiseLike(value: unknown): boolean {
   return !!value && typeof value === 'object' && typeof (value as { then?: unknown }).then === 'function'
+}
+
+function createNumberValidator(
+  integerOnly: boolean,
+  minimum: number | null,
+  maximum: number | null,
+  exclusiveMinimum: number | null,
+  exclusiveMaximum: number | null
+): (value: unknown) => boolean {
+  return (value: unknown): boolean => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return false
+    if (integerOnly && !Number.isInteger(value)) return false
+    if (minimum !== null && value < minimum) return false
+    if (maximum !== null && value > maximum) return false
+    if (exclusiveMinimum !== null && value <= exclusiveMinimum) return false
+    if (exclusiveMaximum !== null && value >= exclusiveMaximum) return false
+    return true
+  }
 }
 
 function createPrimitiveTypeCheck(type: PrimitiveType): (value: unknown) => boolean {
