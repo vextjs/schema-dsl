@@ -1,6 +1,6 @@
 # JSON Schema 基础
 
-schema-dsl 生成的是 JSON Schema Draft 7 风格的对象，并额外保留少量内部字段供验证器使用。
+schema-dsl 以 JSON Schema Draft 7 为基础，并额外保留少量内部字段供验证器使用。它也会执行部分较新版本的 applicator 关键字，包括 `minContains` / `maxContains`；这项扩展不表示完整支持 Draft 2019-09 或 2020-12。
 
 常见字段：
 
@@ -12,6 +12,8 @@ schema-dsl 生成的是 JSON Schema Draft 7 风格的对象，并额外保留少
 - `format`
 - `enum`
 - `items`
+- `additionalItems`
+- `contains`，以及 schema-dsl 的 `minContains` / `maxContains` 范围支持
 
 对外输出纯净 JSON Schema 时，请使用 `toJsonSchema()`。
 
@@ -29,6 +31,14 @@ const objectSchema = s({
 	age: s('number:18-100')
 });
 // s({ ... }) 入口直接返回 Draft 7 风格对象
+
+const containsRangeSchema = {
+	type: 'array',
+	contains: { type: 'number' },
+	minContains: 2,
+	maxContains: 3
+};
+// validate()、validateAsync() 与 compile() 会一致执行该范围约束。
 ```
 
 ---

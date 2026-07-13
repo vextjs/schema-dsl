@@ -61,6 +61,17 @@ export class TransformSchemaDslError extends Error {
   }
 }
 
+export class BabelPeerDependencyError extends Error {
+  readonly code = 'SCHEMA_DSL_BABEL_PEER_MISSING' as const
+
+  constructor(cause: unknown) {
+    super(`${BABEL_PEER_MESSAGE} Run: npm install -D @babel/parser @babel/traverse @babel/generator @babel/types`, {
+      cause,
+    })
+    this.name = 'BabelPeerDependencyError'
+  }
+}
+
 const DEFAULT_IMPORT_FROM = 'schema-dsl/pure'
 const DEFAULT_METHODS = STRING_EXTENSION_METHODS
 type ParseFunction = typeof parse
@@ -101,7 +112,7 @@ function loadBabelRuntime(): BabelRuntime {
     }
     return babelRuntime
   } catch (error) {
-    throw new Error(`${BABEL_PEER_MESSAGE} Cause: ${error instanceof Error ? error.message : String(error)}`)
+    throw new BabelPeerDependencyError(error)
   }
 }
 
@@ -191,6 +202,10 @@ export function transformSchemaDsl(source: string, options: TransformSchemaDslOp
   try {
     ast = parseCode(source, createParserOptions(filename))
   } catch (error) {
+    if (error instanceof BabelPeerDependencyError
+      || (error && typeof error === 'object' && (error as { code?: unknown }).code === 'SCHEMA_DSL_BABEL_PEER_MISSING')) {
+      throw error
+    }
     const warning = createWarning('parse-error', error instanceof Error ? error.message : String(error), filename)
     warn(warning)
     return { code: source, changed: false, warnings }

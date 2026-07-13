@@ -174,6 +174,7 @@ await pluginManager.runHook('onBeforeValidate', schema, data);
 | `plugin:uninstalled` | 插件卸载成功 | `(plugin)` |
 | `plugin:error` | 插件安装 / 卸载失败 | `({ plugin, error })` |
 | `hook:error` | hook 执行失败 | `({ hookName, handler, error })` |
+| `plugins:clear-error` | `clear()` 中至少一个插件卸载失败 | `({ cleared, failures })` |
 | `plugins:cleared` | `clear()` 完成后 | `()` |
 
 ### 示例
@@ -266,7 +267,7 @@ pluginManager.on('hook:error', ({ hookName, error }) => {
 
 ### `clear([core])`
 
-逐个卸载所有插件，清空注册表和 hooks，最后触发 `plugins:cleared`。
+逐个尝试卸载所有插件。单个卸载失败不会阻止后续插件继续清理；遍历结束后会通过 `plugins:clear-error` 提供已清理名称与失败项，并在本轮结束后抛出 `AggregateError`。卸载失败的插件会保留在注册表中，便于调用方检查或重试。只有全部卸载成功时，才会清空调用方添加的 hooks 并触发 `plugins:cleared`。
 
 ### 属性
 

@@ -13,6 +13,7 @@ export interface SchemaCoerceCandidates {
 
 export interface SchemaRuntimeMetadata {
   cacheKey: string
+  schemaValid?: boolean
   hasConditionals: boolean
   hasDeclaredAsyncCustomValidators: boolean
   hasAjvSkippedProperties: boolean

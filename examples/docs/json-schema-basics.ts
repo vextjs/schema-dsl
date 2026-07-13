@@ -81,7 +81,28 @@ console.log('json-schema-basics.arr.type     =', tagsSchema.type)             //
 console.log('json-schema-basics.arr.items    =', tagsSchema.items?.type)      // 'string'
 
 // ============================================================
-// 6. Validation works with either the builder or the JSON Schema
+// 6. Draft 7 baseline with contains range extension
+// ============================================================
+
+const containsRangeSchema = {
+  type: 'array' as const,
+  contains: { type: 'number' as const },
+  minContains: 2,
+  maxContains: 3,
+}
+
+const containsRangeValid = validate(containsRangeSchema, [1, 'x', 2])
+const containsRangeInvalid = validate(containsRangeSchema, [1, 'x'])
+
+console.log('json-schema-basics.contains.valid   =', containsRangeValid.valid)    // true
+console.log('json-schema-basics.contains.invalid =', containsRangeInvalid.valid)  // false
+
+if (!containsRangeValid.valid || containsRangeInvalid.valid) {
+  throw new Error('contains range validation contract drifted')
+}
+
+// ============================================================
+// 7. Validation works with either the builder or the JSON Schema
 // ============================================================
 
 const r1 = validate(emailField, 'hello@example.com')

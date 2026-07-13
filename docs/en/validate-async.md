@@ -64,7 +64,7 @@ class ValidationError extends Error {
 
 ### method
 
-#### 1. `toJSON()` - ​​Convert to JSON (for API responses)
+#### 1. `toJSON()` - Convert to JSON (for API responses)
 
 ```javascript
 try {
@@ -82,7 +82,7 @@ try {
 }
 ```
 
-#### 2. `getFieldError(field)` - ​​Get the error of the specified field
+#### 2. `getFieldError(field)` - Get the error of the specified field
 
 ```javascript
 try {
@@ -93,7 +93,7 @@ try {
 }
 ```
 
-#### 3. `getFieldErrors()` - ​​Get error mapping for all fields
+#### 3. `getFieldErrors()` - Get error mapping for all fields
 
 ```javascript
 try {
@@ -104,7 +104,7 @@ try {
 }
 ```
 
-#### 4. `hasFieldError(field)` - ​​Check the field for errors
+#### 4. `hasFieldError(field)` - Check the field for errors
 
 ```javascript
 try {
@@ -116,7 +116,7 @@ try {
 }
 ```
 
-#### 5. `getErrorCount()` - ​​Get the number of errors
+#### 5. `getErrorCount()` - Get the number of errors
 
 ```javascript
 try {
@@ -423,11 +423,11 @@ app.listen(3000, () => {
 
 ### validateAsync(schema, data, options?)
 **Parameters**:
-- `schema` - ​​JSON Schema or DslBuilder instance
-- `data` - ​​Data to be validated
-- `options` - ​​Authentication options (optional)
-  - `locale` - ​​Language settings (such as 'zh-CN', 'en-US')
-  - `format` - ​​Whether there is a formatting error (default true)
+- `schema` - JSON Schema or DslBuilder instance
+- `data` - Data to be validated
+- `options` - Authentication options (optional)
+  - `locale` - Language settings (such as 'zh-CN', 'en-US')
+  - `format` - Whether there is a formatting error (default true)
 
 **return value**:
 - Validation passed: return processed data
@@ -454,17 +454,17 @@ new ValidationError(errors, data)
 
 **property**:
 - `name: 'ValidationError'`
-- `message: string` - ​​Friendly error message
-- `errors: Array<Object>` - ​​Formatted list of error items (such as `path`, `message`, `keyword`, `params`)
-- `data: any` - ​​raw input data
-- `statusCode: 400` - ​​HTTP status code
+- `message: string` - Friendly error message
+- `errors: Array<Object>` - Formatted list of error items (such as `path`, `message`, `keyword`, `params`)
+- `data: any` - raw input data
+- `statusCode: 400` - HTTP status code
 
 **method**:
-- `toJSON()` - ​​Convert to JSON format
-- `getFieldError(field)` - ​​Gets the error for the specified field
-- `getFieldErrors()` - ​​Get error mapping for all fields
-- `hasFieldError(field)` - ​​Check the field for errors
-- `getErrorCount()` - ​​Get the number of errors
+- `toJSON()` - Convert to JSON format
+- `getFieldError(field)` - Gets the error for the specified field
+- `getFieldErrors()` - Get error mapping for all fields
+- `hasFieldError(field)` - Check the field for errors
+- `getErrorCount()` - Get the number of errors
 
 ---
 

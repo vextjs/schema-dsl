@@ -18,7 +18,7 @@ validator.validate(schema, data, {
 
 This is the **most recommended** solution. There is no need to modify the global state and it supports concurrent requests.
 
-### 1.1 Configuration when the application starts (loading all languages ​​at once)
+### 1.1 Configuration when the application starts (loading all languages at once)
 
 Use `s.config` to load all custom language packs at once when the app starts.
 
@@ -57,7 +57,7 @@ s.config({
 // - No need to reload during runtime, switch directly
 ```
 
-### 1.2 Switch languages ​​directly during runtime (no need to reload)
+### 1.2 Switch languages directly during runtime (no need to reload)
 
 ```javascript
 import { s, validate } from 'schema-dsl/pure';
@@ -528,7 +528,7 @@ if (!result.valid) {
 
 **A**: Fall back to default language
 
-Do not directly pass the original `Accept-Language` header to `locale`; common values ​​​​in browsers will have `q=` weights, which should be parsed first and then rolled back.
+Do not directly pass the original `Accept-Language` header to `locale`; common values in browsers will have `q=` weights, which should be parsed first and then rolled back.
 
 ```javascript
 function parseAcceptLanguage(acceptLanguage) {

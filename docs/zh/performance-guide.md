@@ -10,17 +10,34 @@
 
 ## 当前 benchmark 基线
 
-当前项目基线运行结果：
+本节全部数值来自仓库跟踪的 `test/benchmarks/performance-docs-snapshot.json`，不再拼接不同 benchmark 报告。环境：Node.js v20.20.2、win32-x64、Zod 4.3.6；运行开始时间 2026-07-13T09:55:17.579Z。
 
-| 场景 | schema-dsl 吞吐 |
-|------|-----------|
-| S1 简单有效对象 | ~2.132M ops/s |
-| S2 无效对象，不做 i18n 格式化 | ~193K ops/s |
-| S3 嵌套有效对象 | ~1.129M ops/s |
+该 full 场景矩阵包含 19 个计入胜负的可比场景和 1 个不计入胜负的异步抛错诊断场景（`AV2_THROW`）；可比场景中 schema-dsl 胜 14/19，Zod 胜 5/19。接近持平的场景可能在不同运行中切换胜方，因此这个矩阵只作为本仓库的回归信号，不作为永久公开性能承诺。
 
-环境：Node.js v20.20.2，Windows x64，运行时间 2026-07-09T07:16:27.341Z。
+| ID | 场景 | schema-dsl | Zod | 结果 |
+|---|---|---:|---:|---|
+| S1 | 有效数据 | 1.792M | 1.427M | schema-dsl 1.26x |
+| S2 | 无效数据 | 158.10K | 12.77K | schema-dsl 12.38x |
+| S3 | 格式化 | 14.19K | 13.48K | schema-dsl 1.05x |
+| C1 | 类型转换 | 3.852M | 3.221M | schema-dsl 1.20x |
+| C2 | 关闭类型转换 | 635.40K | 29.86K | schema-dsl 21.28x |
+| U1 | 联合类型 | 2.723M | 10.295M | Zod 3.78x |
+| U2 | 联合类型 | 2.690M | 5.977M | Zod 2.22x |
+| E1 | 枚举 | 10.370M | 14.025M | Zod 1.35x |
+| A1 | 数组 | 1.061M | 268.34K | schema-dsl 3.95x |
+| A2 | 数组 | 33.43K | 27.63K | schema-dsl 1.21x |
+| D1 | 深层对象 | 777.96K | 2.101M | Zod 2.70x |
+| L1 | 大对象 | 110.41K | 83.25K | schema-dsl 1.33x |
+| COND1 | 条件分支 | 10.30K | 17.48K | Zod 1.70x |
+| COND2 | 条件分支 | 9.48K | 7.80K | schema-dsl 1.22x |
+| CV1 | 自定义规则 | 6.747M | 6.090M | schema-dsl 1.11x |
+| CV2 | 自定义规则 | 182.50K | 33.26K | schema-dsl 5.49x |
+| AV1 | 异步 | 1.943M | 1.021M | schema-dsl 1.90x |
+| AV2 | 异步 | 39.00K | 38.94K | schema-dsl 1.00x |
+| AV2_THROW | 异步抛错 | 40.55K | 29.75K | schema-dsl 1.36x |
+| COLD1 | 冷启动 | 13.60K | 7.34K | schema-dsl 1.85x |
 
-同一次 full 运行中的扩展 Zod 场景矩阵记录为 schema-dsl 胜 14/19，Zod 胜 5/19。这个矩阵只作为本仓库的回归信号，不作为永久公开性能承诺。
+矩阵的 JSON 报告会记录语义差异。这里比较的是双方最接近的受支持行为，不表示所有场景的内部实现语义完全相同。
 
 这些数字适合作为当前项目的回归基线。Node.js、依赖、schema 复杂度或错误格式化行为变化后，应重新运行 benchmark。
 
@@ -98,7 +115,11 @@ npm run bench:smoke
 npm run bench:conditional
 npm run bench:full
 npm run bench:cache
+npm run bench:guard:smoke
+npm run bench:guard:full
 ```
+
+回归门禁会对每个被跟踪的场景运行三次并取中位数。同一 Node.js、平台和 CPU 下，schema-dsl/Zod 比值必须不低于基线的 75%；绝对吞吐低于阈值时，只有同轮 Zod 也出现相同比例的主机负载下降才标记为 `CALIBRATED`，否则仍失败。环境不同时只使用同轮相对比值。这里的 Zod 是固定版本的校准负载，不构成产品性能宣传。
 
 ---
 

@@ -222,6 +222,8 @@ const partialContact = SchemaUtils.partial(schema, ['name', 'email']);
 
 `partialContact` 仍然包含 `age`；只有 `name` 和 `email` 会从顶层 `required` 列表中移除。如果你需要只保留这些字段，可以组合 `SchemaUtils.pick(schema, fields).partial()`。
 
+`pick()` 和 `omit()` 还会同步投影对象层级的 `allOf`、`dependencies`、`dependentRequired` 与 `dependentSchemas` 约束，避免被移除字段通过组合分支继续生效。无法安全保留语义时会明确拒绝投影：对象层级存在 `$ref`，或 `anyOf` / `oneOf` / `if` / `then` / `else` / `not` 分支仍引用被移除字段时，方法会抛出错误，而不是返回约束变弱的 schema。
+
 ---
 
 ## Schema 导出

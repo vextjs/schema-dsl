@@ -10,6 +10,7 @@ import { isRawJsonSchemaLike } from '../utils/schemaInput.js'
 import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 import { CACHE } from '../config/constants.js'
 import { iterConditionalSchemaChildren } from './ir/ConditionalTraversal.js'
+import { SCHEMA_DIRECT_POSITION_KEYS } from '../utils/schemaApplicators.js'
 
 const EMPTY_ERRORS: ValidationErrorItem[] = []
 
@@ -265,7 +266,8 @@ export class ConditionalValidator {
             }
         }
 
-        for (const key of ['items', 'additionalProperties', 'propertyNames', 'contains', 'then', 'else', 'unevaluatedItems', 'unevaluatedProperties']) {
+        for (const key of ['items', ...SCHEMA_DIRECT_POSITION_KEYS] as const) {
+            if (key === 'not' || key === 'if') continue
             if (key in source) result[key] = this._stripConditionalNodes(source[key], rootSchema, seenRefs)
         }
 
@@ -452,6 +454,18 @@ export class ConditionalValidator {
                 if (!childSchema || !this._hasConditionalChild(childSchema, rootSchema)) continue
                 const childPath = path ? `${path}/${index}` : String(index)
                 errors.push(...this._runConditionalNodes(childSchema, data[index], childPath, options, rootData, null, rootSchema, seenRefs))
+            }
+        }
+
+        const tupleItems = Array.isArray(internalSchema.items) ? internalSchema.items : null
+        const additionalItems = internalSchema.additionalItems
+        if (tupleItems && additionalItems && typeof additionalItems === 'object' && Array.isArray(data)) {
+            const hasConditionalAdditionalItems = this._hasConditionalChild(additionalItems, rootSchema)
+            if (hasConditionalAdditionalItems) {
+                for (let index = tupleItems.length; index < data.length; index++) {
+                    const childPath = path ? `${path}/${index}` : String(index)
+                    errors.push(...this._runConditionalNodes(additionalItems, data[index], childPath, options, rootData, null, rootSchema, seenRefs))
+                }
             }
         }
 

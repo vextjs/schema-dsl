@@ -19,7 +19,7 @@ The following schema-dsl attributes cannot be exported to a database schema (wil
 
 ### 1. Conditional validation logic ❌
 
-#### `s.match()` - ​​conditional field mapping
+#### `s.match()` - conditional field mapping
 
 ```javascript
 // ❌ Unable to export
@@ -40,7 +40,7 @@ const schema = s({
 
 ---
 
-#### `s.if()` - ​​Conditional validation
+#### `s.if()` - Conditional validation
 
 ```javascript
 // ❌ Unable to export

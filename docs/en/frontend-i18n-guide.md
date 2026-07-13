@@ -1,4 +1,4 @@
-# Dynamically switching languages ​​on the front end - a best practice guide
+# Dynamically switching languages on the front end - a best practice guide
 
 
 <a id="how-to-use"></a>

@@ -8,11 +8,11 @@ The chained DSL will generate internal fields such as `_label`, `_customMessages
 
 ### required synchronization
 
-After using `pick()`, `omit()`, `partial()`, you should check whether `required` meets expectations. The current implementation will handle the top-level required synchronously.
+`pick()`, `omit()`, and `partial()` synchronize `required` across supported nested Schema positions, including object properties, tuple and additional items, compositions, dependencies, and local definitions. `partial(schema, fields)` only makes the selected object-level fields optional while preserving unrelated constraints.
 
 ### deep copy limit
 
-`SchemaUtils.clone()` Based on JSON serialization, non-JSON values ​​such as functions and `RegExp` instances are not retained.
+`SchemaUtils.clone()` preserves function references, clones `RegExp` and `Date` values, supports circular references, and retains property descriptors. Functions remain runtime-only values: cloning does not make a Schema containing functions serializable or stable across processes.
 
 ---
 

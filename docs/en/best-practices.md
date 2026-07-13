@@ -81,10 +81,10 @@ const schema = s({
 ```
 
 **Available Presets**:
-- `username(preset?)` - ​​Username validation
-- `password(strength?)` - ​​Password strength validation
-- `phone(country?)` - ​​Mobile phone number validation
-- `slug()` - ​​URL slug validation
+- `username(preset?)` - Username validation
+- `password(strength?)` - Password strength validation
+- `phone(country?)` - Mobile phone number validation
+- `slug()` - URL slug validation
 
 ---
 
@@ -334,7 +334,7 @@ if (!depthCheck.valid) {
 // Avoid prototype pollution when validating data
 const validator = new Validator({
   removeAdditional: true, // Remove additional attributes
-  useDefaults: false // Do not automatically fill in default values ​​(if not needed)
+  useDefaults: false // Do not automatically fill in default values (if not needed)
 });
 ```
 

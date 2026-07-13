@@ -144,15 +144,7 @@ The parser and compiler are runtime components, so the same schema definition ca
 
 ## Performance Positioning
 
-Performance is important, but it is not mixed into the design philosophy page as a permanent comparison claim. The current local benchmark should be treated as a regression baseline:
-
-| Scenario | schema-dsl throughput |
-|------|-----------|
-| S1 simple valid object | ~2.132M ops/s |
-| S2 invalid object without i18n formatting | ~193K ops/s |
-| S3 nested valid object | ~1.129M ops/s |
-
-Environment: Node.js v20.20.2, Windows x64, run time 2026-07-09T07:16:27.341Z. The same full run recorded schema-dsl 14/19 wins in the extended Zod scenario matrix.
+Performance matters, but this design page does not duplicate comparison values that become stale. The tracked snapshot and performance guide are the single maintained source for current throughput, environment, 19 comparable scenarios, and one diagnostic scenario.
 
 For tuning guidance, see [Performance Optimization Guide](performance-guide.md).
 

@@ -203,8 +203,10 @@ export class PluginManager extends EventEmitter {
     if (!plugin) return this
 
     const effectiveCore = coreInstance === undefined ? this._installedCore : coreInstance
+    const installedByThisManager = this._installedPlugins.has(name)
 
-    if (typeof plugin.uninstall === 'function') {
+    // Registration does not acquire runtime resources; only the installing manager owns cleanup.
+    if (installedByThisManager && typeof plugin.uninstall === 'function') {
       try {
         plugin.uninstall(effectiveCore, this.context)
       } catch (error) {
@@ -262,20 +264,27 @@ export class PluginManager extends EventEmitter {
 
   /** v1 compat: clear all plugins (including hook cleanup). */
   clear(coreInstance?: unknown): this {
+    const cleared: string[] = []
+    const failures: Array<{ name: string; error: unknown }> = []
     for (const name of Array.from(this.plugins.keys())) {
       try {
         this.unregister(name, coreInstance)
-      } catch {
-        // v1 behavior: clear() ignores individual plugin uninstall errors and continues
+        cleared.push(name)
+      } catch (error) {
+        failures.push({ name, error })
       }
     }
-    this.plugins.clear()
-    this._pluginHooks.clear()
-    this._installedPlugins.clear()
-    // Clear all custom hooks (keep built-in pre-initialized entries but empty their handler arrays)
-    for (const [, list] of this.hooks) {
-      list.length = 0
+
+    if (failures.length > 0) {
+      this.emit('plugins:clear-error', { cleared, failures })
+      throw new AggregateError(
+        failures.map(failure => failure.error),
+        `[schema-dsl] Failed to clear plugins: ${failures.map(failure => failure.name).join(', ')}`,
+      )
     }
+
+    // Clear caller-added hooks after every plugin was unregistered successfully.
+    for (const list of this.hooks.values()) list.length = 0
     this.emit('plugins:cleared')
     return this
   }

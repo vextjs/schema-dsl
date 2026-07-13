@@ -222,6 +222,8 @@ const partialContact = SchemaUtils.partial(schema, ['name', 'email']);
 
 `partialContact` still contains `age`; only `name` and `email` are removed from the top-level `required` list. Use `SchemaUtils.pick(schema, fields).partial()` when you want a schema that contains only those fields.
 
+`pick()` and `omit()` also project object-level `allOf`, `dependencies`, `dependentRequired`, and `dependentSchemas` constraints so removed fields cannot survive through a composition branch. Projection is intentionally rejected when it cannot preserve meaning: a projected object-level `$ref`, or an `anyOf` / `oneOf` / `if` / `then` / `else` / `not` branch that still references an omitted field, throws an explicit error instead of returning a weaker schema.
+
 ---
 
 ## Schema export

@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "sourceReport": "zod-scenario-matrix-full-1783936598346.json",
+  "metadata": {
+    "node": "v20.20.2",
+    "platform": "win32-x64",
+    "cpu": "Intel(R) Core(TM) i7-9700 CPU @ 3.00GHz",
+    "zod": "4.3.6",
+    "startedAt": "2026-07-13T09:55:17.579Z",
+    "finishedAt": "2026-07-13T09:56:38.346Z",
+    "gitSha": "b985222",
+    "dirty": true
+  },
+  "summary": {
+    "total": 19,
+    "tableRows": 20,
+    "diagnosticComparisons": 1,
+    "schemaDslWins": 14,
+    "zodWins": 5,
+    "diagnosticIds": ["AV2_THROW"]
+  },
+  "scenarios": [
+    { "id": "S1", "zh": "有效数据", "en": "valid", "schemaDsl": 1792431.6415138256, "zod": 1427295.286352804 },
+    { "id": "S2", "zh": "无效数据", "en": "invalid", "schemaDsl": 158100.91824810114, "zod": 12769.237083688467 },
+    { "id": "S3", "zh": "格式化", "en": "format", "schemaDsl": 14192.914842511274, "zod": 13482.863823076254 },
+    { "id": "C1", "zh": "类型转换", "en": "coerce", "schemaDsl": 3852497.6147498908, "zod": 3220674.6779365186 },
+    { "id": "C2", "zh": "关闭类型转换", "en": "coerce off", "schemaDsl": 635402.6822988865, "zod": 29856.155070812474 },
+    { "id": "U1", "zh": "联合类型", "en": "union", "schemaDsl": 2722802.183160465, "zod": 10294604.528683543 },
+    { "id": "U2", "zh": "联合类型", "en": "union", "schemaDsl": 2690344.4619321097, "zod": 5976558.999992804 },
+    { "id": "E1", "zh": "枚举", "en": "enum", "schemaDsl": 10370290.999974608, "zod": 14025349.597561717 },
+    { "id": "A1", "zh": "数组", "en": "array", "schemaDsl": 1061062.9999983015, "zod": 268338.8121624028 },
+    { "id": "A2", "zh": "数组", "en": "array", "schemaDsl": 33425.806130338584, "zod": 27629.930925175842 },
+    { "id": "D1", "zh": "深层对象", "en": "deep", "schemaDsl": 777960.92220447, "zod": 2100871.7899158834 },
+    { "id": "L1", "zh": "大对象", "en": "large object", "schemaDsl": 110413.10565385396, "zod": 83251.95935058832 },
+    { "id": "COND1", "zh": "条件分支", "en": "conditional", "schemaDsl": 10295.670380198882, "zod": 17482.708038773333 },
+    { "id": "COND2", "zh": "条件分支", "en": "conditional", "schemaDsl": 9483.412028456392, "zod": 7803.84392312037 },
+    { "id": "CV1", "zh": "自定义规则", "en": "custom", "schemaDsl": 6746820.9999469835, "zod": 6090272.391038359 },
+    { "id": "CV2", "zh": "自定义规则", "en": "custom", "schemaDsl": 182499.70800024882, "zod": 33259.82704893566 },
+    { "id": "AV1", "zh": "异步", "en": "async", "schemaDsl": 1942609.6114619744, "zod": 1020898.7958185524 },
+    { "id": "AV2", "zh": "异步", "en": "async", "schemaDsl": 38996.96490277248, "zod": 38940.13163507826 },
+    { "id": "AV2_THROW", "zh": "异步抛错", "en": "async throw", "schemaDsl": 40550.88240238293, "zod": 29748.80960759691 },
+    { "id": "COLD1", "zh": "冷启动", "en": "cold", "schemaDsl": 13602.655852799287, "zod": 7336.9369023374 }
+  ]
+}

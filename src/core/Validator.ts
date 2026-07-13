@@ -18,6 +18,12 @@ import { SchemaCompileError } from '../errors/SchemaCompileError.js'
 import { CACHE } from '../config/constants.js'
 import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
 import {
+  SCHEMA_ARRAY_POSITION_KEYS,
+  SCHEMA_DEPENDENCY_MAP_POSITION_KEYS,
+  SCHEMA_DIRECT_POSITION_KEYS,
+  SCHEMA_MAP_POSITION_KEYS,
+} from '../utils/schemaApplicators.js'
+import {
   SchemaRuntimeMetadataStore,
   applySmartCoerce,
   getSchemaCoerceCandidates,
@@ -31,6 +37,14 @@ import {
 import { createJsonSchemaIR } from './ir/JsonSchemaToIR.js'
 import { createExecutionPlanProjection } from './ir/RuntimeMetadataToIR.js'
 import type { SchemaIRProjection } from '../types/ir.js'
+import { projectContainsRangesForAjv } from './ContainsRangeKeyword.js'
+import {
+  MutableSchemaCacheKeyTracker,
+  createSchemaCacheKey,
+  getMutableSchemaCacheState,
+} from './SchemaCacheKey.js'
+
+export { SCHEMA_DSL_CACHE_KEY, createSchemaCacheKey } from './SchemaCacheKey.js'
 
 // Non-AJV custom option keys (V-Y01 fix: filter before passing to new Ajv())
 const NON_AJV_KEYS = new Set([
@@ -43,7 +57,6 @@ const NON_AJV_KEYS = new Set([
 // AJV ValidateFunction type
 type AjvValidateFn = ValidateFunction
 type KeywordDefinitionInput = KeywordDefinition | ({ keyword?: string;[key: string]: unknown })
-type SchemaCacheKeyCarrier = JSONSchema & Record<symbol, unknown>
 type ErrorFormatContext = {
   shouldFormat: boolean
   locale: string
@@ -52,6 +65,10 @@ type ErrorFormatContext = {
 type ValidationPlanCacheEntry = {
   plan: ValidationPlan | null
   reason: ValidationPlanUnsupportedReason | null
+}
+type ManagedSchemaRef = {
+  executable: JSONSchemaInput
+  owner: object | null
 }
 type AsyncFastValidationResult<T> =
   | { status: 'valid'; data: T }
@@ -71,57 +88,27 @@ const FLAT_LOCALE_CACHE_MAX_SIZE = 32
 const QUICK_VALIDATE_CACHE_MAX_SIZE = CACHE.SCHEMA_CACHE.MAX_SIZE
 const AJV_SKIPPED_PROPERTY_NAMES = ['__proto__'] as const
 
-export const SCHEMA_DSL_CACHE_KEY = Symbol.for('schema-dsl.schemaCacheKey')
-
-export function createSchemaCacheKey(schema: unknown): string | null {
-  const serialized = stableStringify(schema, new WeakSet<object>())
-  return serialized === null ? null : `schema:${serialized}`
+function decodeLocalRefSegment(segment: string): string {
+  let decoded = segment
+  try {
+    decoded = decodeURIComponent(segment)
+  } catch {
+    decoded = segment
+  }
+  return decoded.replace(/~1/g, '/').replace(/~0/g, '~')
 }
 
-function stableStringify(value: unknown, seen: WeakSet<object>): string | null {
-  if (value === null) return 'null'
+function resolveLocalSchemaRef(rootSchema: unknown, ref: string): unknown {
+  if (!ref.startsWith('#')) return undefined
+  if (ref === '#') return rootSchema
+  if (!ref.startsWith('#/')) return undefined
 
-  switch (typeof value) {
-    case 'string':
-      return JSON.stringify(value)
-    case 'number':
-      return Number.isFinite(value) ? JSON.stringify(value) : null
-    case 'boolean':
-      return value ? 'true' : 'false'
-    case 'object':
-      break
-    default:
-      return null
+  let current = rootSchema
+  for (const rawSegment of ref.slice(2).split('/')) {
+    if (!current || typeof current !== 'object') return undefined
+    current = (current as Record<string, unknown>)[decodeLocalRefSegment(rawSegment)]
   }
-
-  if (Array.isArray(value)) {
-    const items: string[] = []
-    for (const item of value) {
-      const serialized = stableStringify(item, seen)
-      if (serialized === null) return null
-      items.push(serialized)
-    }
-    return `[${items.join(',')}]`
-  }
-
-  const obj = value as Record<string, unknown>
-  const proto = Object.getPrototypeOf(obj)
-  if (proto !== Object.prototype && proto !== null) return null
-  if (seen.has(obj)) return null
-
-  seen.add(obj)
-  const entries: string[] = []
-  for (const key of Object.keys(obj).sort()) {
-    const serialized = stableStringify(obj[key], seen)
-    if (serialized === null) {
-      seen.delete(obj)
-      return null
-    }
-    entries.push(`${JSON.stringify(key)}:${serialized}`)
-  }
-  seen.delete(obj)
-
-  return `{${entries.join(',')}}`
+  return current
 }
 
 /**
@@ -182,14 +169,15 @@ export class Validator {
   // WeakMap: schema object → unique cacheKey (avoids JSON.stringify)
   private readonly _schemaMap = new WeakMap<object, string>()
   private _schemaKeyCounter = 0
-  private readonly _compiledSchemaRefs = new Map<string, JSONSchemaInput>()
+  private readonly _compiledSchemaRefs = new Map<string, ManagedSchemaRef>()
   private readonly _compiledSchemaLru = new Map<string, true>()
   private readonly _removeAdditionalCache = new Map<string, AjvValidateFn>()
-  private readonly _removeAdditionalSchemaRefs = new Map<string, JSONSchemaInput>()
+  private readonly _removeAdditionalSchemaRefs = new Map<string, ManagedSchemaRef>()
   private readonly _removeAdditionalSchemaLru = new Map<string, true>()
   private readonly _patternMatcherCache = new Map<string, RegExp | null>()
   private readonly _metadataStore = new SchemaRuntimeMetadataStore()
   private readonly _validationPlanCache = new Map<string, ValidationPlanCacheEntry>()
+  private readonly _markedSchemaKeys = new MutableSchemaCacheKeyTracker()
 
   private readonly _conditionalValidator = new ConditionalValidator({
     validateSchema: <T>(schema: JSONSchemaInput, data: T, options: ValidateOptions): ValidationResult<T> => this._validateInternal(schema, data, options),
@@ -240,6 +228,8 @@ export class Validator {
     CustomKeywords.registerAll(this._ajv, {
       getMessageText: (key, params) =>
         this._getMessageText(key, params ?? {}, this._activeValidateOptions ?? {}, 'customKeyword'),
+      validateSchema: (schema, data) =>
+        this._validateInternal(schema, data, this._activeValidateOptions ?? EMPTY_VALIDATE_OPTIONS).valid,
     })
 
     const cacheOpts = options.cache === false
@@ -269,8 +259,15 @@ export class Validator {
    */
   compile(schema: JSONSchemaInput, cacheKey?: string | null): AjvValidateFn {
     const key = cacheKey || this._getSchemaCacheKey(schema)
+    const executableSchema = schema && typeof schema === 'object'
+      ? getMutableSchemaCacheState(schema)?.rawSchema as JSONSchemaInput | undefined ?? schema
+      : schema
     try {
-      return this._compileWithManagedCache(schema, key)
+      return this._compileWithManagedCache(
+        executableSchema,
+        key,
+        schema && typeof schema === 'object' ? schema : null,
+      )
     } catch (error) {
       throw new SchemaCompileError(error, schema)
     }
@@ -297,17 +294,52 @@ export class Validator {
       resolvedSchema = (obj['toSchema'] as () => JSONSchema)()
     }
 
+    let asyncSchemaMetadata: SchemaRuntimeMetadata | null = null
+    let asyncSchemaPreflightCompiled = false
+    if (resolvedSchema && typeof resolvedSchema === 'object' && !Array.isArray(resolvedSchema)) {
+      const cacheOwner = resolvedSchema as JSONSchemaInput & object
+      const objectSchema = (getMutableSchemaCacheState(cacheOwner)?.rawSchema ?? cacheOwner) as JSONSchemaInput & object
+      resolvedSchema = objectSchema as JSONSchema
+      const cacheKey = this._getSchemaCacheKey(cacheOwner)
+      asyncSchemaMetadata = this._getSchemaRuntimeMetadata(objectSchema, cacheKey)
+      if (!asyncSchemaMetadata.hasConditionals) {
+        const preflightSchema = this._stripCustomValidators(resolvedSchema, false)
+        try {
+          this._compileWithManagedCache(
+            preflightSchema,
+            this._getSchemaCacheKey(preflightSchema),
+            cacheOwner,
+          )
+        } catch (error) {
+          throw new SchemaCompileError(error, preflightSchema)
+        }
+        asyncSchemaPreflightCompiled = true
+      }
+    }
+
     if (typeof resolvedSchema !== 'function') {
       const fastResult = await this._tryValidateAsyncFastPath(resolvedSchema, data, options)
       if (fastResult.status === 'valid') return fastResult.data as T
     }
 
-    const validationSchema =
+    let validatedData = data
+    let validationOptions = options
+    if (asyncSchemaMetadata && this._shouldSmartCoerce(options)) {
+      validatedData = applySmartCoerce(data, asyncSchemaMetadata.coerceCandidates) as T
+      validationOptions = { ...options, __schemaDslPreCoerced: true }
+    }
+
+    let validationSchema =
       typeof resolvedSchema === 'function'
         ? resolvedSchema
-        : this._stripCustomValidators(resolvedSchema)
+        : this._hasValidAsyncApplicatorShapes(resolvedSchema)
+          ? this._stripCustomValidators(resolvedSchema, true)
+          : resolvedSchema
+    if (asyncSchemaPreflightCompiled && typeof validationSchema !== 'function') {
+      validationSchema = this._withoutRootSchemaId(validationSchema)
+    }
 
-    const result = this._validateInternal(validationSchema, data, options)
+    const result = this._validateInternal(validationSchema, validatedData, validationOptions)
     if (!result.valid) {
       const { ValidationError } = await import('../errors/ValidationError.js')
       throw new ValidationError(result.errors ?? [], data)
@@ -317,7 +349,7 @@ export class Validator {
     const customErr =
       typeof resolvedSchema === 'function'
         ? null
-        : await this._runCustomValidators(resolvedSchema, result.data, '', options, resolvedSchema)
+        : await this._runCustomValidators(resolvedSchema, result.data, '', validationOptions, resolvedSchema)
     if (customErr) {
       const { ValidationError } = await import('../errors/ValidationError.js')
       throw new ValidationError([customErr], data)
@@ -331,7 +363,7 @@ export class Validator {
    * AJV's sync keyword skips Promise-returning validators; this method runs the complete set in validateAsync.
    * Returns the first failing ValidationErrorItem, or null if all pass.
    */
-  private _stripCustomValidators(schema: JSONSchemaInput): JSONSchemaInput {
+  private _stripCustomValidators(schema: JSONSchemaInput, stripAsyncApplicators = false): JSONSchemaInput {
     const strip = (value: unknown): unknown => {
       if (Array.isArray(value)) {
         let changed = false
@@ -352,6 +384,19 @@ export class Validator {
 
       for (const [key, child] of Object.entries(source)) {
         if (key === '_customValidators' || (key === 'validate' && typeof child === 'function')) {
+          changed = true
+          continue
+        }
+        if (stripAsyncApplicators && (
+          key === 'oneOf'
+          || key === 'not'
+          || key === 'if'
+          || key === 'then'
+          || key === 'else'
+          || key === 'contains'
+          || key === 'minContains'
+          || key === 'maxContains'
+        )) {
           changed = true
           continue
         }
@@ -378,14 +423,16 @@ export class Validator {
         const strippedElse = strip(runtimeState.elseSchema)
         runtimeChanged = runtimeChanged || strippedElse !== runtimeState.elseSchema
 
-        if (runtimeChanged) {
-          changed = true
+        if (runtimeChanged) changed = true
+        if (changed) {
           Object.defineProperty(next, CONDITIONAL_RUNTIME_STATE, {
-            value: {
-              ...runtimeState,
-              conditions: strippedConditions,
-              elseSchema: strippedElse as ConditionalRuntimeState['elseSchema'],
-            },
+            value: runtimeChanged
+              ? {
+                ...runtimeState,
+                conditions: strippedConditions,
+                elseSchema: strippedElse as ConditionalRuntimeState['elseSchema'],
+              }
+              : runtimeState,
             enumerable: false,
             configurable: false,
             writable: false,
@@ -397,6 +444,50 @@ export class Validator {
     }
 
     return strip(schema) as JSONSchemaInput
+  }
+
+  private _hasValidAsyncApplicatorShapes(value: unknown, seen = new WeakSet<object>()): boolean {
+    if (typeof value === 'boolean') return true
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+    if (seen.has(value as object)) return true
+    seen.add(value as object)
+
+    const source = value as Record<string, unknown>
+    const allowDslBranch = source['_isConditional'] === true
+    const isSchemaValue = (candidate: unknown): boolean => {
+      return typeof candidate === 'boolean'
+        || Boolean(candidate && typeof candidate === 'object' && !Array.isArray(candidate))
+        || Boolean(allowDslBranch && (typeof candidate === 'string' || candidate === undefined))
+    }
+
+    for (const key of ['not', 'if', 'then', 'else', 'contains']) {
+      if (Object.prototype.hasOwnProperty.call(source, key) && !isSchemaValue(source[key])) return false
+    }
+
+    if (Object.prototype.hasOwnProperty.call(source, 'oneOf')) {
+      if (!Array.isArray(source['oneOf']) || !source['oneOf'].every(isSchemaValue)) return false
+    }
+
+    for (const key of ['minContains', 'maxContains']) {
+      if (!Object.prototype.hasOwnProperty.call(source, key)) continue
+      const bound = source[key]
+      if (typeof bound !== 'number' || !Number.isInteger(bound) || bound < 0) return false
+    }
+
+    return this._iterCustomValidatorSchemaChildren(source).every(child => {
+      return this._hasValidAsyncApplicatorShapes(child, seen)
+    })
+  }
+
+  private _withoutRootSchemaId(schema: JSONSchemaInput): JSONSchemaInput {
+    if (!schema || typeof schema !== 'object' || !Object.prototype.hasOwnProperty.call(schema, '$id')) return schema
+    const clone = createSchemaRecord<unknown>()
+    for (const key of Reflect.ownKeys(schema)) {
+      if (key === '$id') continue
+      const descriptor = Object.getOwnPropertyDescriptor(schema, key)
+      if (descriptor) Object.defineProperty(clone, key, descriptor)
+    }
+    return clone as JSONSchemaInput
   }
 
   private async _runCustomValidators(
@@ -538,12 +629,22 @@ export class Validator {
 
     if (schema.items && Array.isArray(data)) {
       const itemSchemas = Array.isArray(schema.items) ? schema.items : null
-      for (let i = 0; i < data.length; i++) {
+      const prefixItems = (schema as Record<string, unknown>)['prefixItems']
+      const startIndex = itemSchemas ? 0 : Array.isArray(prefixItems) ? prefixItems.length : 0
+      for (let i = startIndex; i < data.length; i++) {
         const childSchema = itemSchemas ? itemSchemas[i] : schema.items
         if (!childSchema || Array.isArray(childSchema)) continue
         const childPath = `${path}/${i}`.replace(/^\//, '')
         const err = await this._runCustomValidators(childSchema, data[i], childPath, options, rootSchema, seenRefs)
         if (err) return err
+      }
+
+      if (itemSchemas && schema.additionalItems && typeof schema.additionalItems === 'object') {
+        for (let i = itemSchemas.length; i < data.length; i++) {
+          const childPath = `${path}/${i}`.replace(/^\//, '')
+          const err = await this._runCustomValidators(schema.additionalItems, data[i], childPath, options, rootSchema, seenRefs)
+          if (err) return err
+        }
       }
     }
 
@@ -558,18 +659,25 @@ export class Validator {
       }
     }
 
-    if (schema.contains && Array.isArray(data)) {
-      const containsSchema = schema.contains as JSONSchema
-      const strippedContains = this._stripCustomValidators(containsSchema)
-      let firstContainsErr: ValidationErrorItem | null = null
+    if (schema.contains !== undefined && Array.isArray(data)) {
+      const containsSchema = schema.contains as JSONSchemaInput
+      let matches = 0
+      let firstError: ValidationErrorItem | null = null
       for (let i = 0; i < data.length; i++) {
-        if (!this._quickValidate(strippedContains, data[i])) continue
         const childPath = `${path}/${i}`.replace(/^\//, '')
-        const err = await this._runCustomValidators(containsSchema, data[i], childPath, options, rootSchema, seenRefs)
-        if (!err) return null
-        firstContainsErr ??= err
+        const result = await this._evaluateAsyncSchema(containsSchema, data[i], childPath, options, rootSchema, seenRefs)
+        if (result.matches) matches++
+        else firstError ??= result.error
       }
-      if (firstContainsErr) return firstContainsErr
+      const minContains = typeof schema.minContains === 'number' ? schema.minContains : 1
+      const maxContains = typeof schema.maxContains === 'number' ? schema.maxContains : Number.POSITIVE_INFINITY
+      if (matches < minContains || matches > maxContains) {
+        return this._createAsyncApplicatorError(
+          'contains',
+          path,
+          `must contain between ${minContains} and ${Number.isFinite(maxContains) ? maxContains : 'unlimited'} matching items${firstError ? `: ${firstError.message}` : ''}`,
+        )
+      }
     }
 
     const allOfSchemas = schema.allOf
@@ -592,12 +700,25 @@ export class Validator {
       if (err) return err
     }
 
-    if (schema.if) {
-      const ifSchema = this._stripCustomValidators(schema.if)
-      const branch = this._quickValidate(ifSchema, data) ? schema.then : schema.else
-      if (branch) {
-        const err = await this._runCustomValidators(branch, data, path, options, rootSchema, seenRefs)
-        if (err) return err
+    if (schema.not !== undefined) {
+      const matches = await this._matchesAsyncSchema(schema.not, data, path, options, rootSchema, seenRefs)
+      if (matches) {
+        return this._createAsyncApplicatorError('not', path, 'must not match the schema in not')
+      }
+    }
+
+    if (schema.if !== undefined) {
+      const conditionMatches = await this._matchesAsyncSchema(schema.if, data, path, options, rootSchema, seenRefs)
+      const branch = conditionMatches ? schema.then : schema.else
+      if (branch !== undefined) {
+        const result = await this._evaluateAsyncSchema(branch, data, path, options, rootSchema, seenRefs, false)
+        if (!result.matches) {
+          return this._createAsyncApplicatorError(
+            conditionMatches ? 'then' : 'else',
+            path,
+            `must match the ${conditionMatches ? 'then' : 'else'} branch${result.error ? `: ${result.error.message}` : ''}`,
+          )
+        }
       }
     }
 
@@ -712,17 +833,17 @@ export class Validator {
     rootSchema: unknown,
     seenRefs: Set<string>
   ): Promise<ValidationErrorItem | null> {
-    let firstErr: ValidationErrorItem | null = null
-
+    let firstError: ValidationErrorItem | null = null
     for (const childSchema of schemas) {
-      const stripped = this._stripCustomValidators(childSchema)
-      if (!this._quickValidate(stripped, data)) continue
-      const err = await this._runCustomValidators(childSchema, data, path, options, rootSchema, seenRefs)
-      if (!err) return null
-      firstErr ??= err
+      const result = await this._evaluateAsyncSchema(childSchema, data, path, options, rootSchema, seenRefs)
+      if (result.matches) return null
+      firstError ??= result.error
     }
-
-    return firstErr
+    return this._createAsyncApplicatorError(
+      'anyOf',
+      path,
+      `must match at least one schema in anyOf${firstError ? `: ${firstError.message}` : ''}`,
+    )
   }
 
   private async _runCustomValidatorsForMatchingBranches(
@@ -733,13 +854,178 @@ export class Validator {
     rootSchema: unknown,
     seenRefs: Set<string>
   ): Promise<ValidationErrorItem | null> {
+    let matches = 0
+    let firstError: ValidationErrorItem | null = null
     for (const childSchema of schemas) {
-      const stripped = this._stripCustomValidators(childSchema)
-      if (!this._quickValidate(stripped, data)) continue
-      const err = await this._runCustomValidators(childSchema, data, path, options, rootSchema, seenRefs)
-      if (err) return err
+      const result = await this._evaluateAsyncSchema(childSchema, data, path, options, rootSchema, seenRefs)
+      if (result.matches) matches++
+      else firstError ??= result.error
     }
-    return null
+    return matches === 1
+      ? null
+      : this._createAsyncApplicatorError(
+        'oneOf',
+        path,
+        `must match exactly one schema in oneOf${matches === 0 && firstError ? `: ${firstError.message}` : ''}`,
+      )
+  }
+
+  private async _matchesAsyncSchema(
+    schema: JSONSchemaInput,
+    data: unknown,
+    path: string,
+    options: ValidateOptions,
+    rootSchema: unknown,
+    seenRefs: Set<string>,
+  ): Promise<boolean> {
+    return (await this._evaluateAsyncSchema(schema, data, path, options, rootSchema, seenRefs)).matches
+  }
+
+  private async _evaluateAsyncSchema(
+    schema: JSONSchemaInput,
+    data: unknown,
+    path: string,
+    options: ValidateOptions,
+    rootSchema: unknown,
+    seenRefs: Set<string>,
+    stripDefaults = true,
+  ): Promise<{ matches: boolean; error: ValidationErrorItem | null }> {
+    const structuralSchema = this._createAsyncStructuralSchema(schema, rootSchema, stripDefaults)
+    if (!this._validateInternal(structuralSchema, data, options).valid) {
+      return { matches: false, error: null }
+    }
+    const error = await this._runCustomValidators(
+      schema,
+      data,
+      path,
+      options,
+      rootSchema,
+      new Set(seenRefs),
+    )
+    return { matches: error === null, error }
+  }
+
+  private _createAsyncStructuralSchema(
+    schema: JSONSchemaInput,
+    rootSchema: unknown,
+    stripDefaults: boolean,
+  ): JSONSchemaInput {
+    const strippedCustomValidators = this._stripCustomValidators(schema, true)
+    const structuralSchema = stripDefaults
+      ? this._stripSchemaDefaults(strippedCustomValidators) as JSONSchemaInput
+      : strippedCustomValidators
+    if (schema === rootSchema || !this._hasLocalSchemaRef(structuralSchema)) return structuralSchema
+    if (structuralSchema && typeof structuralSchema === 'object' && typeof structuralSchema.$id === 'string') {
+      return structuralSchema
+    }
+    if (typeof rootSchema !== 'boolean' && (!rootSchema || typeof rootSchema !== 'object')) return structuralSchema
+
+    const strippedStructuralRoot = this._stripCustomValidators(rootSchema as JSONSchemaInput, true)
+    const structuralRoot = stripDefaults
+      ? this._stripSchemaDefaults(strippedStructuralRoot) as JSONSchemaInput
+      : strippedStructuralRoot
+    const rootId = structuralRoot && typeof structuralRoot === 'object' && typeof structuralRoot.$id === 'string'
+      ? structuralRoot.$id.replace(/#$/, '')
+      : null
+    if (rootId) return this._rewriteLocalSchemaRefs(structuralSchema, `${rootId}#`) as JSONSchemaInput
+
+    const rootPointer = '#/$defs/__schemaDslAsyncRoot'
+    const definitions = createSchemaRecord<JSONSchemaInput>()
+    setSchemaRecordValue(
+      definitions,
+      '__schemaDslAsyncRoot',
+      this._rewriteLocalSchemaRefs(structuralRoot, rootPointer) as JSONSchemaInput,
+    )
+    return {
+      $defs: definitions,
+      allOf: [this._rewriteLocalSchemaRefs(structuralSchema, rootPointer) as JSONSchemaInput],
+    }
+  }
+
+  private _hasLocalSchemaRef(value: unknown, seen = new WeakSet<object>()): boolean {
+    if (!value || typeof value !== 'object') return false
+    if (seen.has(value as object)) return false
+    seen.add(value as object)
+    if (!Array.isArray(value)) {
+      const ref = (value as Record<string, unknown>)['$ref']
+      if (ref === '#' || (typeof ref === 'string' && ref.startsWith('#/'))) return true
+    }
+    return Reflect.ownKeys(value).some(key => this._hasLocalSchemaRef(
+      (value as Record<PropertyKey, unknown>)[key],
+      seen,
+    ))
+  }
+
+  private _stripSchemaDefaults(value: unknown, seen = new WeakMap<object, unknown>()): unknown {
+    if (!value || typeof value !== 'object') return value
+    const cached = seen.get(value as object)
+    if (cached) return cached
+
+    const clone: unknown[] | Record<PropertyKey, unknown> = Array.isArray(value)
+      ? []
+      : createSchemaRecord<unknown>()
+    seen.set(value as object, clone)
+    for (const key of Reflect.ownKeys(value)) {
+      if (key === 'default') continue
+      const descriptor = Object.getOwnPropertyDescriptor(value, key)
+      if (!descriptor) continue
+      const nextValue = 'value' in descriptor
+        ? this._stripSchemaDefaults(descriptor.value, seen)
+        : undefined
+      Object.defineProperty(clone, key, {
+        ...descriptor,
+        ...(Object.prototype.hasOwnProperty.call(descriptor, 'value') ? { value: nextValue } : {}),
+      })
+    }
+    return clone
+  }
+
+  private _rewriteLocalSchemaRefs(
+    value: unknown,
+    rootPointer: string,
+    seen = new WeakMap<object, unknown>(),
+  ): unknown {
+    if (!value || typeof value !== 'object') return value
+    const cached = seen.get(value as object)
+    if (cached) return cached
+
+    const clone: unknown[] | Record<PropertyKey, unknown> = Array.isArray(value)
+      ? []
+      : createSchemaRecord<unknown>()
+    seen.set(value as object, clone)
+    for (const key of Reflect.ownKeys(value)) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key)
+      if (!descriptor) continue
+      const rawValue = 'value' in descriptor ? descriptor.value : undefined
+      const nextValue = key === '$ref' && typeof rawValue === 'string'
+        ? rawValue === '#'
+          ? rootPointer
+          : rawValue.startsWith('#/')
+            ? `${rootPointer}${rawValue.slice(1)}`
+            : rawValue
+        : this._rewriteLocalSchemaRefs(rawValue, rootPointer, seen)
+      Object.defineProperty(clone, key, {
+        ...descriptor,
+        ...(Object.prototype.hasOwnProperty.call(descriptor, 'value') ? { value: nextValue } : {}),
+      })
+    }
+    return clone
+  }
+
+  private _createAsyncApplicatorError(
+    keyword: string,
+    path: string,
+    message: string,
+  ): ValidationErrorItem {
+    return {
+      message,
+      path,
+      keyword,
+      kind: 'schema',
+      params: {},
+      field: path,
+      type: keyword,
+    }
   }
 
   /**
@@ -808,6 +1094,7 @@ export class Validator {
     this._conditionalValidator.clearPatternCache()
     this._metadataStore.clear()
     this._validationPlanCache.clear()
+    this._markedSchemaKeys.clear()
   }
   getCacheStats(): CacheStats { return this._cache.getStats() }
 
@@ -830,14 +1117,18 @@ export class Validator {
     seen: WeakSet<object>
   ): boolean {
     const ajv = Validator._getQuickValidateAjv()
-    const cacheKey = Validator._rememberQuickValidateSchema(schema)
+    const ajvSchema = projectContainsRangesForAjv(schema)
+    const projected = ajvSchema !== schema
+    const cacheKey = projected ? null : Validator._rememberQuickValidateSchema(schema)
     try {
-      const valid = ajv.validate(schema, data) as boolean
+      const valid = ajv.validate(ajvSchema, data) as boolean
       if (cacheKey) Validator._touchQuickValidateSchema(cacheKey)
       return valid && Validator._quickValidateAjvSkippedProperties(schema, data, seen)
     } catch {
       if (cacheKey) Validator._releaseQuickValidateSchema(cacheKey)
       return false
+    } finally {
+      if (projected && ajvSchema && typeof ajvSchema === 'object') ajv.removeSchema(ajvSchema)
     }
   }
 
@@ -862,7 +1153,9 @@ export class Validator {
     if (!Validator._quickValidateAjv) {
       Validator._quickValidateAjv = new Ajv()
         ; (addFormats as unknown as (a: InstanceType<typeof Ajv>) => void)(Validator._quickValidateAjv)
-      CustomKeywords.registerAll(Validator._quickValidateAjv)
+      CustomKeywords.registerAll(Validator._quickValidateAjv, {
+        validateSchema: (schema, data) => Validator._quickValidateInternal(schema, data, new WeakSet<object>()),
+      })
     }
     return Validator._quickValidateAjv
   }
@@ -922,10 +1215,30 @@ export class Validator {
     Validator._quickValidateSchemaLru.set(cacheKey, true)
   }
 
+  private static _evaluateContainsRange(
+    schema: Record<string, unknown>,
+    data: unknown[],
+    matchesItem: (item: unknown) => boolean,
+  ): { valid: boolean; matches: number; minContains: number; maxContains: number } {
+    const matches = data.reduce<number>((count, item) => count + (matchesItem(item) ? 1 : 0), 0)
+    const minContains = typeof schema['minContains'] === 'number' ? schema['minContains'] : 1
+    const maxContains = typeof schema['maxContains'] === 'number'
+      ? schema['maxContains']
+      : Number.POSITIVE_INFINITY
+    return {
+      valid: matches >= minContains && matches <= maxContains,
+      matches,
+      minContains,
+      maxContains,
+    }
+  }
+
   private static _quickValidateAjvSkippedProperties(
     schema: JSONSchemaInput,
     data: unknown,
-    seen = new WeakSet<object>()
+    seen = new WeakSet<object>(),
+    rootSchema: unknown = schema,
+    seenRefs = new Set<string>()
   ): boolean {
     if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return true
 
@@ -933,7 +1246,21 @@ export class Validator {
     if (seen.has(schemaObject)) return true
     seen.add(schemaObject)
 
+    try {
+
     const source = schema as Record<string, unknown>
+    const ref = source['$ref']
+    if (typeof ref === 'string' && !seenRefs.has(ref)) {
+      const resolved = resolveLocalSchemaRef(rootSchema, ref)
+      if (resolved !== undefined && resolved !== schema) {
+        seenRefs.add(ref)
+        try {
+          if (!Validator._quickValidateAjvSkippedProperties(resolved as JSONSchemaInput, data, seen, rootSchema, seenRefs)) return false
+        } finally {
+          seenRefs.delete(ref)
+        }
+      }
+    }
     const dataRecord = data && typeof data === 'object' && !Array.isArray(data)
       ? data as Record<string, unknown>
       : null
@@ -956,14 +1283,14 @@ export class Validator {
       for (const [key, childSchema] of Object.entries(properties as Record<string, JSONSchemaInput>)) {
         if ((AJV_SKIPPED_PROPERTY_NAMES as readonly string[]).includes(key)) continue
         if (!Object.prototype.hasOwnProperty.call(dataRecord, key)) continue
-        if (!Validator._quickValidateAjvSkippedProperties(childSchema, dataRecord[key], seen)) return false
+        if (!Validator._quickValidateAjvSkippedProperties(childSchema, dataRecord[key], seen, rootSchema, seenRefs)) return false
       }
     }
 
     const allOf = source['allOf']
     if (Array.isArray(allOf)) {
       for (const child of allOf) {
-        if (!Validator._quickValidateAjvSkippedProperties(child as JSONSchemaInput, data, seen)) return false
+        if (!Validator._quickValidateAjvSkippedProperties(child as JSONSchemaInput, data, seen, rootSchema, seenRefs)) return false
       }
     }
 
@@ -987,7 +1314,7 @@ export class Validator {
         ? source['then']
         : source['else']
       if (branch && typeof branch === 'object' && !Array.isArray(branch)) {
-        if (!Validator._quickValidateAjvSkippedProperties(branch as JSONSchemaInput, data, seen)) return false
+        if (!Validator._quickValidateAjvSkippedProperties(branch as JSONSchemaInput, data, seen, rootSchema, seenRefs)) return false
       }
     }
 
@@ -1001,24 +1328,43 @@ export class Validator {
       const prefixItemCount = Array.isArray(prefixItems) ? prefixItems.length : 0
       if (Array.isArray(prefixItems)) {
         for (let index = 0; index < data.length && index < prefixItems.length; index++) {
-          if (!Validator._quickValidateAjvSkippedProperties(prefixItems[index] as JSONSchemaInput, data[index], seen)) return false
+          if (!Validator._quickValidateAjvSkippedProperties(prefixItems[index] as JSONSchemaInput, data[index], seen, rootSchema, seenRefs)) return false
         }
       }
 
       const items = source['items']
-      if (items && typeof items === 'object' && !Array.isArray(items)) {
+      if (Array.isArray(items)) {
+        for (let index = 0; index < data.length && index < items.length; index++) {
+          if (!Validator._quickValidateAjvSkippedProperties(items[index] as JSONSchemaInput, data[index], seen, rootSchema, seenRefs)) return false
+        }
+
+        const additionalItems = source['additionalItems']
+        if (additionalItems && typeof additionalItems === 'object') {
+          for (let index = items.length; index < data.length; index++) {
+            if (!Validator._quickValidateAjvSkippedProperties(additionalItems as JSONSchemaInput, data[index], seen, rootSchema, seenRefs)) return false
+          }
+        }
+      } else if (items && typeof items === 'object') {
         for (let index = prefixItemCount; index < data.length; index++) {
-          if (!Validator._quickValidateAjvSkippedProperties(items as JSONSchemaInput, data[index], seen)) return false
+          if (!Validator._quickValidateAjvSkippedProperties(items as JSONSchemaInput, data[index], seen, rootSchema, seenRefs)) return false
         }
       }
 
       const contains = source['contains']
       if (contains && typeof contains === 'object' && !Array.isArray(contains)) {
-        if (!data.some(item => Validator._quickValidateInternal(contains as JSONSchemaInput, item, seen))) return false
+        const range = Validator._evaluateContainsRange(
+          source,
+          data,
+          item => Validator._quickValidateInternal(contains as JSONSchemaInput, item, seen),
+        )
+        if (!range.valid) return false
       }
     }
 
-    return true
+      return true
+    } finally {
+      seen.delete(schemaObject)
+    }
   }
 
   // ─── Internal Implementation ───────────────────────────────────────────
@@ -1035,14 +1381,20 @@ export class Validator {
       schema = (obj['toSchema'] as () => JSONSchema)()
     }
 
+    const cacheOwner = schema && typeof schema === 'object'
+      ? schema as JSONSchemaInput & object
+      : null
+    if (cacheOwner) {
+      schema = (getMutableSchemaCacheState(cacheOwner)?.rawSchema ?? cacheOwner) as JSONSchemaInput
+    }
     const objectSchema = schema && typeof schema === 'object'
       ? schema as JSONSchemaInput & object
       : null
     let schemaCacheKey: string | null = null
     let schemaMetadata: SchemaRuntimeMetadata | null = null
 
-    if (objectSchema) {
-      schemaCacheKey = this._getSchemaCacheKey(objectSchema)
+    if (objectSchema && cacheOwner) {
+      schemaCacheKey = this._getSchemaCacheKey(cacheOwner)
       schemaMetadata = this._getSchemaRuntimeMetadata(objectSchema, schemaCacheKey)
     }
 
@@ -1080,6 +1432,8 @@ export class Validator {
         CustomKeywords.registerAll(this._removeAdditionalAjv, {
           getMessageText: (key, params) =>
             this._getMessageText(key, params ?? {}, this._activeValidateOptions ?? {}, 'customKeyword'),
+          validateSchema: (schema, value) =>
+            this._validateInternal(schema, value, this._activeValidateOptions ?? EMPTY_VALIDATE_OPTIONS).valid,
         })
       }
 
@@ -1088,7 +1442,7 @@ export class Validator {
 
       try {
         const cacheKey = this._getRemoveAdditionalCacheKey(cleanSchema)
-        const validate = this._compileRemoveAdditionalSchema(cleanSchema, cacheKey)
+        const validate = this._compileRemoveAdditionalSchema(cleanSchema, cacheKey, cacheOwner)
         const valid = this._runWithActiveOptions(options, () => validate(data) as boolean)
         const skippedContext = schemaMetadata?.hasAjvSkippedProperties
           ? this._createErrorFormatContext(options)
@@ -1122,7 +1476,7 @@ export class Validator {
     } else {
       try {
         const cacheKey = schemaCacheKey ?? this._getSchemaCacheKey(schema)
-        validate = this._compileWithManagedCache(schema, cacheKey)
+        validate = this._compileWithManagedCache(schema, cacheKey, cacheOwner)
       } catch (error) {
         return this._internalError(new SchemaCompileError(error, schema), data)
       }
@@ -1191,6 +1545,21 @@ export class Validator {
         }
         return cached.plan
       }
+    }
+
+    if (metadata.schemaValid === undefined) {
+      metadata.schemaValid = this._ajv.validateSchema(schema) === true
+    }
+    if (!metadata.schemaValid) {
+      if (customValidatorMode === 'sync') {
+        metadata.validationPlan = null
+        metadata.validationPlanReason = 'unsupported-schema'
+        metadata.irProjection = undefined
+      }
+      if (usePlanCache) {
+        this._rememberValidationPlanCacheEntry(planCacheKey, { plan: null, reason: 'unsupported-schema' })
+      }
+      return null
     }
 
     const result = compileValidationPlan(schema, {
@@ -1341,19 +1710,19 @@ export class Validator {
   }
 
   private _hasCustomValidatorTraversalChildren(source: Record<string, unknown>): boolean {
-    for (const key of ['properties', 'patternProperties', 'dependencies', 'dependentSchemas', 'definitions', '$defs']) {
+    for (const key of [...SCHEMA_MAP_POSITION_KEYS, ...SCHEMA_DEPENDENCY_MAP_POSITION_KEYS]) {
       const value = source[key]
       if (value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value as Record<string, unknown>).length > 0) {
         return true
       }
     }
 
-    for (const key of ['items', 'additionalProperties', 'propertyNames', 'contains', 'not', 'if', 'then', 'else', 'unevaluatedItems', 'unevaluatedProperties']) {
+    for (const key of ['items', ...SCHEMA_DIRECT_POSITION_KEYS] as const) {
       const value = source[key]
       if (value && typeof value === 'object') return true
     }
 
-    for (const key of ['allOf', 'anyOf', 'oneOf', 'prefixItems']) {
+    for (const key of SCHEMA_ARRAY_POSITION_KEYS) {
       const value = source[key]
       if (Array.isArray(value) && value.length > 0) return true
     }
@@ -1444,20 +1813,17 @@ export class Validator {
       }
     }
 
-    pushMapValues(source['properties'])
-    pushMapValues(source['patternProperties'])
-    pushMapValues(source['dependencies'])
-    pushMapValues(source['dependentSchemas'])
-    pushMapValues(source['definitions'])
-    pushMapValues(source['$defs'])
+    for (const key of [...SCHEMA_MAP_POSITION_KEYS, ...SCHEMA_DEPENDENCY_MAP_POSITION_KEYS]) {
+      pushMapValues(source[key])
+    }
 
-    for (const key of ['items', 'additionalProperties', 'propertyNames', 'contains', 'not', 'if', 'then', 'else', 'unevaluatedItems', 'unevaluatedProperties']) {
+    for (const key of ['items', ...SCHEMA_DIRECT_POSITION_KEYS] as const) {
       const value = source[key]
       if (Array.isArray(value)) children.push(...value)
       else pushSchema(value)
     }
 
-    for (const key of ['allOf', 'anyOf', 'oneOf', 'prefixItems']) {
+    for (const key of SCHEMA_ARRAY_POSITION_KEYS) {
       const value = source[key]
       if (Array.isArray(value)) children.push(...value)
     }
@@ -1612,11 +1978,28 @@ export class Validator {
 
     if (source['items'] && Array.isArray(data)) {
       const itemSchemas = Array.isArray(source['items']) ? source['items'] as unknown[] : null
-      for (let index = 0; index < data.length; index++) {
+      const prefixItems = source['prefixItems']
+      const startIndex = itemSchemas ? 0 : Array.isArray(prefixItems) ? prefixItems.length : 0
+      for (let index = startIndex; index < data.length; index++) {
         const child = itemSchemas ? itemSchemas[index] : source['items']
         if (!child || Array.isArray(child)) continue
         const found = this._findDeclaredAsyncCustomValidatorPath(child, data[index], this._joinPath(path, String(index)), rootSchema, seen, seenRefs)
         if (found !== null) return found
+      }
+
+      const additionalItems = source['additionalItems']
+      if (itemSchemas && additionalItems && typeof additionalItems === 'object') {
+        for (let index = itemSchemas.length; index < data.length; index++) {
+          const found = this._findDeclaredAsyncCustomValidatorPath(
+            additionalItems,
+            data[index],
+            this._joinPath(path, String(index)),
+            rootSchema,
+            seen,
+            seenRefs,
+          )
+          if (found !== null) return found
+        }
       }
     }
 
@@ -1697,6 +2080,14 @@ export class Validator {
     return base ? `${base}/${child}` : child
   }
 
+  private _matchesSkippedPropertySchema(
+    schema: JSONSchemaInput,
+    data: unknown,
+    options: ValidateOptions,
+  ): boolean {
+    return this._validateInternal(schema, data, options).valid
+  }
+
   private _validateAjvSkippedProperties(
     schema: JSONSchemaInput,
     data: unknown,
@@ -1705,7 +2096,9 @@ export class Validator {
     locale: string,
     shouldFormat: boolean,
     path = '',
-    seen = new WeakSet<object>()
+    seen = new WeakSet<object>(),
+    rootSchema: unknown = schema,
+    seenRefs = new Set<string>()
   ): ValidationErrorItem[] {
     if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return []
 
@@ -1713,8 +2106,33 @@ export class Validator {
     if (seen.has(schemaObject)) return []
     seen.add(schemaObject)
 
+    try {
+
     const source = schema as Record<string, unknown>
     const errors: ValidationErrorItem[] = []
+    const ref = source['$ref']
+    if (typeof ref === 'string' && !seenRefs.has(ref)) {
+      const resolved = resolveLocalSchemaRef(rootSchema, ref)
+      if (resolved !== undefined && resolved !== schema) {
+        seenRefs.add(ref)
+        try {
+          errors.push(...this._validateAjvSkippedProperties(
+            resolved as JSONSchemaInput,
+            data,
+            options,
+            messages,
+            locale,
+            shouldFormat,
+            path,
+            seen,
+            rootSchema,
+            seenRefs,
+          ))
+        } finally {
+          seenRefs.delete(ref)
+        }
+      }
+    }
     const dataRecord = data && typeof data === 'object' && !Array.isArray(data)
       ? data as Record<string, unknown>
       : null
@@ -1757,7 +2175,9 @@ export class Validator {
           locale,
           shouldFormat,
           this._joinPath(path, key),
-          seen
+          seen,
+          rootSchema,
+          seenRefs,
         ))
       }
     }
@@ -1765,12 +2185,12 @@ export class Validator {
     const allOf = source['allOf']
     if (Array.isArray(allOf)) {
       for (const child of allOf) {
-        errors.push(...this._validateAjvSkippedProperties(child as JSONSchemaInput, data, options, messages, locale, shouldFormat, path, seen))
+        errors.push(...this._validateAjvSkippedProperties(child as JSONSchemaInput, data, options, messages, locale, shouldFormat, path, seen, rootSchema, seenRefs))
       }
     }
 
     const anyOf = source['anyOf']
-    if (Array.isArray(anyOf) && !anyOf.some(child => Validator.quickValidate(child as JSONSchemaInput, data))) {
+    if (Array.isArray(anyOf) && !anyOf.some(child => this._matchesSkippedPropertySchema(child as JSONSchemaInput, data, options))) {
       errors.push(...this._formatErrors([{
         keyword: 'anyOf',
         instancePath: path ? `/${path}` : '',
@@ -1782,7 +2202,7 @@ export class Validator {
 
     const oneOf = source['oneOf']
     if (Array.isArray(oneOf)) {
-      const matches = oneOf.filter(child => Validator.quickValidate(child as JSONSchemaInput, data)).length
+      const matches = oneOf.filter(child => this._matchesSkippedPropertySchema(child as JSONSchemaInput, data, options)).length
       if (matches !== 1) {
         errors.push(...this._formatErrors([{
           keyword: 'oneOf',
@@ -1796,16 +2216,17 @@ export class Validator {
 
     const ifSchema = source['if']
     if (ifSchema && typeof ifSchema === 'object' && !Array.isArray(ifSchema)) {
-      const branch = Validator.quickValidate(ifSchema as JSONSchemaInput, data)
+      const branch = this._matchesSkippedPropertySchema(ifSchema as JSONSchemaInput, data, options)
         ? source['then']
         : source['else']
       if (branch && typeof branch === 'object' && !Array.isArray(branch)) {
-        errors.push(...this._validateAjvSkippedProperties(branch as JSONSchemaInput, data, options, messages, locale, shouldFormat, path, seen))
+        errors.push(...this._validateAjvSkippedProperties(branch as JSONSchemaInput, data, options, messages, locale, shouldFormat, path, seen, rootSchema, seenRefs))
       }
     }
 
     const notSchema = source['not']
-    if (notSchema && typeof notSchema === 'object' && !Array.isArray(notSchema) && Validator.quickValidate(notSchema as JSONSchemaInput, data)) {
+    if (notSchema && typeof notSchema === 'object' && !Array.isArray(notSchema)
+      && this._matchesSkippedPropertySchema(notSchema as JSONSchemaInput, data, options)) {
       errors.push(...this._formatErrors([{
         keyword: 'not',
         instancePath: path ? `/${path}` : '',
@@ -1828,13 +2249,48 @@ export class Validator {
             locale,
             shouldFormat,
             this._joinPath(path, String(index)),
-            seen
+            seen,
+            rootSchema,
+            seenRefs,
           ))
         }
       }
 
       const items = source['items']
-      if (items && typeof items === 'object' && !Array.isArray(items)) {
+      if (Array.isArray(items)) {
+        for (let index = 0; index < data.length && index < items.length; index++) {
+          errors.push(...this._validateAjvSkippedProperties(
+            items[index] as JSONSchemaInput,
+            data[index],
+            options,
+            messages,
+            locale,
+            shouldFormat,
+            this._joinPath(path, String(index)),
+            seen,
+            rootSchema,
+            seenRefs,
+          ))
+        }
+
+        const additionalItems = source['additionalItems']
+        if (additionalItems && typeof additionalItems === 'object') {
+          for (let index = items.length; index < data.length; index++) {
+            errors.push(...this._validateAjvSkippedProperties(
+              additionalItems as JSONSchemaInput,
+              data[index],
+              options,
+              messages,
+              locale,
+              shouldFormat,
+              this._joinPath(path, String(index)),
+              seen,
+              rootSchema,
+              seenRefs,
+            ))
+          }
+        }
+      } else if (items && typeof items === 'object') {
         for (let index = prefixItemCount; index < data.length; index++) {
           errors.push(...this._validateAjvSkippedProperties(
             items as JSONSchemaInput,
@@ -1844,24 +2300,40 @@ export class Validator {
             locale,
             shouldFormat,
             this._joinPath(path, String(index)),
-            seen
+            seen,
+            rootSchema,
+            seenRefs,
           ))
         }
       }
 
       const contains = source['contains']
-      if (contains && typeof contains === 'object' && !Array.isArray(contains) && !data.some(item => Validator.quickValidate(contains as JSONSchemaInput, item))) {
-        errors.push(...this._formatErrors([{
-          keyword: 'contains',
-          instancePath: path ? `/${path}` : '',
-          params: {},
-          message: 'must contain at least one valid item',
-          parentSchema: source,
-        }], messages, locale, shouldFormat, options))
+      if (contains && typeof contains === 'object' && !Array.isArray(contains)) {
+        const range = Validator._evaluateContainsRange(
+          source,
+          data,
+          item => this._matchesSkippedPropertySchema(contains as JSONSchemaInput, item, options),
+        )
+        if (!range.valid) {
+          errors.push(...this._formatErrors([{
+            keyword: 'contains',
+            instancePath: path ? `/${path}` : '',
+            params: {
+              minContains: range.minContains,
+              ...(Number.isFinite(range.maxContains) ? { maxContains: range.maxContains } : {}),
+              matches: range.matches,
+            },
+            message: `must contain between ${range.minContains} and ${Number.isFinite(range.maxContains) ? range.maxContains : 'unlimited'} matching items`,
+            parentSchema: source,
+          }], messages, locale, shouldFormat, options))
+        }
       }
     }
 
-    return errors
+      return errors
+    } finally {
+      seen.delete(schemaObject)
+    }
   }
 
   private _prefixSkippedPropertyError(error: ValidationErrorItem, path: string): ValidationErrorItem {
@@ -1882,27 +2354,7 @@ export class Validator {
   }
 
   private _resolveLocalRef(rootSchema: unknown, ref: string): unknown {
-    if (!ref.startsWith('#')) return undefined
-    if (ref === '#') return rootSchema
-    if (!ref.startsWith('#/')) return undefined
-
-    let current = rootSchema
-    for (const rawSegment of ref.slice(2).split('/')) {
-      if (!current || typeof current !== 'object') return undefined
-      const segment = this._decodeJsonPointerSegment(rawSegment)
-      current = (current as Record<string, unknown>)[segment]
-    }
-    return current
-  }
-
-  private _decodeJsonPointerSegment(segment: string): string {
-    let decoded = segment
-    try {
-      decoded = decodeURIComponent(segment)
-    } catch {
-      decoded = segment
-    }
-    return decoded.replace(/~1/g, '/').replace(/~0/g, '~')
+    return resolveLocalSchemaRef(rootSchema, ref)
   }
 
   private _prewarmBatchCompileCache(schema: JSONSchemaInput): void {
@@ -1917,7 +2369,7 @@ export class Validator {
       const cacheKey = this._getSchemaCacheKey(schema)
       const metadata = this._getSchemaRuntimeMetadata(schema, cacheKey)
       if (metadata.hasConditionals) return
-      this._compileWithManagedCache(schema, cacheKey)
+      this._compileWithManagedCache(schema, cacheKey, schema)
     } catch {
       // Preserve validateBatch() behavior: each item reports compile errors through validate().
     }
@@ -1963,10 +2415,10 @@ export class Validator {
   }
 
   private _getSchemaCacheKey(schema: JSONSchemaInput): string {
-    const markedKey = typeof schema === 'object'
-      ? (schema as SchemaCacheKeyCarrier)[SCHEMA_DSL_CACHE_KEY]
-      : undefined
-    if (typeof markedKey === 'string' && markedKey) return markedKey
+    if (schema && typeof schema === 'object') {
+      const markedKey = this._markedSchemaKeys.getMarkedKey(schema)
+      if (markedKey) return markedKey
+    }
 
     const structuralKey = createSchemaCacheKey(schema)
     if (structuralKey) return structuralKey
@@ -1988,17 +2440,30 @@ export class Validator {
     return `removeAdditional:${this._getSchemaCacheKey(schema)}`
   }
 
-  private _compileWithManagedCache(schema: JSONSchemaInput, cacheKey: string): AjvValidateFn {
+  private _compileWithManagedCache(
+    schema: JSONSchemaInput,
+    cacheKey: string,
+    owner: object | null = schema && typeof schema === 'object' ? schema : null,
+  ): AjvValidateFn {
     const cached = this._cache.get(cacheKey) as AjvValidateFn | null
     if (cached !== null) {
       this._touchManagedKey(this._compiledSchemaLru, cacheKey)
       return cached
     }
 
-    return this._compileAndRememberSchema(this._ajv, schema, cacheKey, this._compiledSchemaRefs, this._compiledSchemaLru, this._cache)
+    const ajvSchema = projectContainsRangesForAjv(schema)
+    return this._compileAndRememberSchema(
+      this._ajv,
+      ajvSchema,
+      cacheKey,
+      this._compiledSchemaRefs,
+      this._compiledSchemaLru,
+      owner,
+      this._cache,
+    )
   }
 
-  private _compileRemoveAdditionalSchema(schema: JSONSchema, cacheKey: string): AjvValidateFn {
+  private _compileRemoveAdditionalSchema(schema: JSONSchema, cacheKey: string, owner: object | null): AjvValidateFn {
     const cached = this._removeAdditionalCache.get(cacheKey)
     if (cached) {
       this._touchManagedKey(this._removeAdditionalSchemaLru, cacheKey)
@@ -2007,10 +2472,11 @@ export class Validator {
 
     return this._compileAndRememberSchema(
       this._removeAdditionalAjv!,
-      schema,
+      projectContainsRangesForAjv(schema),
       cacheKey,
       this._removeAdditionalSchemaRefs,
       this._removeAdditionalSchemaLru,
+      owner,
       undefined,
       this._removeAdditionalCache
     )
@@ -2020,8 +2486,9 @@ export class Validator {
     ajv: InstanceType<typeof Ajv>,
     schema: JSONSchemaInput,
     cacheKey: string,
-    schemaRefs: Map<string, JSONSchemaInput>,
+    schemaRefs: Map<string, ManagedSchemaRef>,
     lru: Map<string, true>,
+    owner: object | null,
     cache?: CacheManager,
     values?: Map<string, AjvValidateFn>
   ): AjvValidateFn {
@@ -2031,13 +2498,22 @@ export class Validator {
       return validate
     }
 
+    if (schema && typeof schema === 'object') {
+      for (const [existingKey, existingRef] of schemaRefs) {
+        if (existingKey !== cacheKey && existingRef.owner === owner) {
+          this._releaseManagedSchema(ajv, existingKey, schemaRefs, lru, cache, values)
+          break
+        }
+      }
+    }
+
     if (schemaRefs.has(cacheKey)) {
       this._releaseManagedSchema(ajv, cacheKey, schemaRefs, lru, cache, values)
     }
     this._ensureManagedCapacity(ajv, schemaRefs, lru, cache, values)
 
     const validate = ajv.compile(schema)
-    schemaRefs.set(cacheKey, schema)
+    schemaRefs.set(cacheKey, { executable: schema, owner })
     this._touchManagedKey(lru, cacheKey)
 
     if (cache) {
@@ -2052,7 +2528,7 @@ export class Validator {
 
   private _ensureManagedCapacity(
     ajv: InstanceType<typeof Ajv>,
-    schemaRefs: Map<string, JSONSchemaInput>,
+    schemaRefs: Map<string, ManagedSchemaRef>,
     lru: Map<string, true>,
     cache?: CacheManager,
     values?: Map<string, AjvValidateFn>
@@ -2068,12 +2544,12 @@ export class Validator {
   private _releaseManagedSchema(
     ajv: InstanceType<typeof Ajv>,
     cacheKey: string,
-    schemaRefs: Map<string, JSONSchemaInput>,
+    schemaRefs: Map<string, ManagedSchemaRef>,
     lru: Map<string, true>,
     cache?: CacheManager,
     values?: Map<string, AjvValidateFn>
   ): void {
-    const schemaRef = schemaRefs.get(cacheKey)
+    const schemaRef = schemaRefs.get(cacheKey)?.executable
     if (schemaRef && typeof schemaRef === 'object') {
       try {
         ajv.removeSchema(schemaRef)
@@ -2089,7 +2565,7 @@ export class Validator {
 
   private _releaseAllManagedSchemas(
     ajv: InstanceType<typeof Ajv>,
-    schemaRefs: Map<string, JSONSchemaInput>,
+    schemaRefs: Map<string, ManagedSchemaRef>,
     lru: Map<string, true>,
     values?: Map<string, AjvValidateFn>
   ): void {

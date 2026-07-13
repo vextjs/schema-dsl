@@ -1,6 +1,6 @@
 # JSON Schema Basics
 
-schema-dsl generates JSON Schema Draft 7 style objects with a few additional internal fields reserved for use by validators.
+schema-dsl uses JSON Schema Draft 7 as its baseline and keeps a few internal fields for its validators. It also executes selected newer applicator keywords, including `minContains` / `maxContains`; this extension does not imply full Draft 2019-09 or 2020-12 support.
 
 Common fields:
 
@@ -12,6 +12,8 @@ Common fields:
 - `format`
 - `enum`
 - `items`
+- `additionalItems`
+- `contains` with schema-dsl `minContains` / `maxContains` range support
 
 When outputting pure JSON Schema, please use `toJsonSchema()`.
 
@@ -29,6 +31,14 @@ const objectSchema = s({
 	age: s('number:18-100')
 });
 // s({... }) entry directly returns Draft 7 style object
+
+const containsRangeSchema = {
+	type: 'array',
+	contains: { type: 'number' },
+	minContains: 2,
+	maxContains: 3
+};
+// Executed consistently by validate(), validateAsync(), and compile().
 ```
 
 ---

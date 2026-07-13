@@ -10,8 +10,8 @@ validator.compile(schema, cacheKey?)
 
 ## Parameters
 
-- `schema` - ​​JSON Schema object
-- `cacheKey` - ​​Optional cache key; after passing it in, the compiled results can be reused within the same `Validator` instance
+- `schema` - JSON Schema object
+- `cacheKey` - Optional cache key; after passing it in, the compiled results can be reused within the same `Validator` instance
 
 ## return value
 

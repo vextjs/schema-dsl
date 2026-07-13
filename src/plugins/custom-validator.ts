@@ -21,7 +21,28 @@ function getPluginBucket(): Record<string, unknown> {
   return globalRecord.__schemaDsl_plugins
 }
 
-const CUSTOM_KEYWORD_NAMES = ['unique', 'passwordStrength', 'idCard']
+interface KeywordAcquisitionState {
+  names: Set<string>
+  leases: number
+}
+
+const KEYWORD_ACQUISITIONS_KEY = Symbol.for('schema-dsl.v2.plugins.custom-validator.acquisitions')
+const PLUGIN_BUCKET_ACQUISITION_KEY = Symbol.for('schema-dsl.v2.plugins.custom-validator.bucket-acquisition')
+const keywordAcquisitionHost = globalThis as typeof globalThis & Record<symbol, WeakMap<object, KeywordAcquisitionState> | undefined>
+const ACQUIRED_KEYWORDS = keywordAcquisitionHost[KEYWORD_ACQUISITIONS_KEY]
+  ??= new WeakMap<object, KeywordAcquisitionState>()
+const pluginBucketAcquisitionHost = globalThis as typeof globalThis & Record<symbol, { leases: number } | undefined>
+const PLUGIN_BUCKET_ACQUISITION = pluginBucketAcquisitionHost[PLUGIN_BUCKET_ACQUISITION_KEY]
+  ??= { leases: 0 }
+
+function acquiredKeywords(validator: Validator): Set<string> {
+  let state = ACQUIRED_KEYWORDS.get(validator)
+  if (!state) {
+    state = { names: new Set<string>(), leases: 0 }
+    ACQUIRED_KEYWORDS.set(validator, state)
+  }
+  return state.names
+}
 
 export const customValidatorPlugin: Plugin & {
   addCustomKeywords: (validator: Validator) => void
@@ -33,11 +54,21 @@ export const customValidatorPlugin: Plugin & {
   install(core, _options = {}, _context) {
     const validator = getValidator(core)
     this.addCustomKeywords(validator)
-    getPluginBucket()['custom-validator'] = this
+    const state = ACQUIRED_KEYWORDS.get(validator)
+    if (state) state.leases++
+    const pluginBucket = getPluginBucket()
+    if (pluginBucket['custom-validator'] === undefined) {
+      PLUGIN_BUCKET_ACQUISITION.leases = 0
+    }
+    PLUGIN_BUCKET_ACQUISITION.leases++
+    pluginBucket['custom-validator'] = this
   },
   uninstall(core) {
-    delete getPluginBucket()['custom-validator']
-    if (!core) return
+    if (!core) {
+      PLUGIN_BUCKET_ACQUISITION.leases = 0
+      delete getPluginBucket()['custom-validator']
+      return
+    }
 
     const validator = getValidator(core)
     const ajv = validator.getAjv() as {
@@ -45,17 +76,27 @@ export const customValidatorPlugin: Plugin & {
       removeKeyword?: (name: string) => unknown
     }
 
-    for (const name of CUSTOM_KEYWORD_NAMES) {
-      if (typeof ajv.removeKeyword === 'function' && (!ajv.getKeyword || ajv.getKeyword(name))) {
-        ajv.removeKeyword(name)
-      }
+    const state = ACQUIRED_KEYWORDS.get(validator)
+    if (state && state.leases > 0) state.leases--
+    if (PLUGIN_BUCKET_ACQUISITION.leases > 0) {
+      PLUGIN_BUCKET_ACQUISITION.leases--
     }
+    if (PLUGIN_BUCKET_ACQUISITION.leases === 0) {
+      delete getPluginBucket()['custom-validator']
+    }
+    if (state && state.leases > 0) return
+
+    for (const name of state?.names ?? []) {
+      if (typeof ajv.removeKeyword === 'function') ajv.removeKeyword(name)
+    }
+    ACQUIRED_KEYWORDS.delete(validator)
     validator.clearCache()
   },
   addCustomKeywords(validator) {
     const ajv = validator.getAjv() as {
       getKeyword?: (name: string) => unknown
     }
+    const acquired = acquiredKeywords(validator)
 
     if (!ajv.getKeyword?.('unique')) {
       validator.addKeyword('unique', {
@@ -76,6 +117,7 @@ export const customValidatorPlugin: Plugin & {
           return true
         },
       } as unknown as KeywordDefinition)
+      acquired.add('unique')
     }
 
     if (!ajv.getKeyword?.('passwordStrength')) {
@@ -107,6 +149,7 @@ export const customValidatorPlugin: Plugin & {
           return true
         },
       } as unknown as KeywordDefinition)
+      acquired.add('passwordStrength')
     }
 
     if (!ajv.getKeyword?.('idCard')) {
@@ -125,6 +168,7 @@ export const customValidatorPlugin: Plugin & {
           return customValidatorPlugin._validateIdCardChecksum(value)
         },
       } as unknown as KeywordDefinition)
+      acquired.add('idCard')
     }
   },
   _validateIdCardChecksum(idCard: string) {

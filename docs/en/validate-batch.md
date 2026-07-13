@@ -12,9 +12,9 @@ validator.validateBatch(schema, dataArray)
 
 Returns an array, each item is consistent with the return structure of a single `validator.validate()`:
 
-- `valid` - ​​passed or not
-- `data` - ​​Validated data (when passed)
-- `errors` - ​​error list (on failure)
+- `valid` - passed or not
+- `data` - Validated data (when passed)
+- `errors` - error list (on failure)
 
 ```javascript
 [

@@ -1,6 +1,6 @@
 # Performance Optimization Guide
 
-## suggestion
+## Recommendations
 
 - Reuse the same schema object and let the default validator cache hit.
 - Adjust caching policy via `s.config({ cache })` or `new Validator({ cache })`.
@@ -10,17 +10,34 @@
 
 ## Current benchmark baseline
 
-Current project baseline run:
+Every value in this section comes from the tracked `test/benchmarks/performance-docs-snapshot.json`; values from separate benchmark reports are no longer combined. Environment: Node.js v20.20.2, win32-x64, Zod 4.3.6; run start time 2026-07-13T09:55:17.579Z.
 
-| Scenario | schema-dsl throughput |
-|------|-----------|
-| S1 simple valid object | ~2.132M ops/s |
-| S2 invalid object without i18n formatting | ~193K ops/s |
-| S3 nested valid object | ~1.129M ops/s |
+This full matrix contains 19 comparable scenarios counted in the winner summary plus one async throw-path diagnostic scenario (`AV2_THROW`) that is not counted. Among comparable scenarios, schema-dsl wins 14/19 and Zod wins 5/19. Near-parity scenarios can change winner between runs, so treat the matrix as a regression signal for this repository, not as a permanent public performance claim.
 
-Environment: Node.js v20.20.2, Windows x64, run time 2026-07-09T07:16:27.341Z.
+| ID | Scenario | schema-dsl | Zod | Result |
+|---|---|---:|---:|---|
+| S1 | valid | 1.792M | 1.427M | schema-dsl 1.26x |
+| S2 | invalid | 158.10K | 12.77K | schema-dsl 12.38x |
+| S3 | format | 14.19K | 13.48K | schema-dsl 1.05x |
+| C1 | coerce | 3.852M | 3.221M | schema-dsl 1.20x |
+| C2 | coerce off | 635.40K | 29.86K | schema-dsl 21.28x |
+| U1 | union | 2.723M | 10.295M | Zod 3.78x |
+| U2 | union | 2.690M | 5.977M | Zod 2.22x |
+| E1 | enum | 10.370M | 14.025M | Zod 1.35x |
+| A1 | array | 1.061M | 268.34K | schema-dsl 3.95x |
+| A2 | array | 33.43K | 27.63K | schema-dsl 1.21x |
+| D1 | deep | 777.96K | 2.101M | Zod 2.70x |
+| L1 | large object | 110.41K | 83.25K | schema-dsl 1.33x |
+| COND1 | conditional | 10.30K | 17.48K | Zod 1.70x |
+| COND2 | conditional | 9.48K | 7.80K | schema-dsl 1.22x |
+| CV1 | custom | 6.747M | 6.090M | schema-dsl 1.11x |
+| CV2 | custom | 182.50K | 33.26K | schema-dsl 5.49x |
+| AV1 | async | 1.943M | 1.021M | schema-dsl 1.90x |
+| AV2 | async | 39.00K | 38.94K | schema-dsl 1.00x |
+| AV2_THROW | async throw | 40.55K | 29.75K | schema-dsl 1.36x |
+| COLD1 | cold | 13.60K | 7.34K | schema-dsl 1.85x |
 
-The same full run's extended Zod scenario matrix recorded schema-dsl wins in 14/19 scenarios and Zod wins in 5/19 scenarios. Treat that matrix as a regression signal for this repository, not as a permanent public performance claim.
+The matrix documents semantic differences in its JSON report. It compares the closest supported behavior rather than claiming that every pair has identical implementation semantics.
 
 Use these numbers as a regression baseline for this project. Re-run the benchmark when Node.js, dependencies, schema complexity, or error formatting behavior changes.
 
@@ -98,11 +115,15 @@ npm run bench:smoke
 npm run bench:conditional
 npm run bench:full
 npm run bench:cache
+npm run bench:guard:smoke
+npm run bench:guard:full
 ```
+
+The guard runs each tracked scenario three times and uses the median. On the same Node.js version, platform, and CPU, the schema-dsl/Zod ratio must remain at least 75% of baseline. If absolute throughput falls below the threshold, it is marked `CALIBRATED` only when the same-run Zod workload shows the same host-load slowdown; otherwise the gate still fails. Different environments use only the same-run relative ratio. Zod is a pinned calibration workload, not a product-performance claim.
 
 ---
 
 ## Corresponding sample file
 
 **Example entry**: [performance-guide.ts](https://github.com/vextjs/schema-dsl/blob/main/examples/docs/performance-guide.ts)
-**Description**: Shows the time-consuming output after reusing the same schema/validator, reading cache statistics, and `SchemaUtils.withPerformance()` packaging.
+**Description**: Shows schema and validator reuse, cache statistics, and timing metadata added by `SchemaUtils.withPerformance()`.

@@ -77,7 +77,7 @@ Export JSON Schema to Markdown document.
   - `includeExample` (Boolean) - Whether to include sample data, default: `true`
   - `includeDescription` (Boolean) - Whether to include a description, default: `true`
 
-**Return value**: `String` - ​​Markdown text
+**Return value**: `String` - Markdown text
 
 ---
 
@@ -320,7 +320,7 @@ const schema = s({
 
 ### Q: What is the sample data generated?
 
-A: The sample data contains all **required fields**, and values ​​are automatically generated based on types and constraints:
+A: The sample data contains all **required fields**, and values are automatically generated based on types and constraints:
 - Email: `user@example.com`
 - Number: Use `minimum` or `0`
 - String: `'example'`

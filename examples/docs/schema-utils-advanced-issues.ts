@@ -61,6 +61,43 @@ if (cloned.required) { cloned.required.push('__extra__') }
 console.log('advanced.clone.isNew       =', cloned !== original)                          // true
 console.log('advanced.clone.noLeak      =', !original.required?.includes('__extra__'))    // true
 
+const runtimeValidator = (value: unknown) => value === 'ok'
+const circularMetadata: Record<string, unknown> = {
+  validate: runtimeValidator,
+  pattern: /^item-[0-9]+$/i,
+}
+circularMetadata.self = circularMetadata
+
+const clonedMetadata = SchemaUtils.clone(circularMetadata)
+const clonedPattern = clonedMetadata.pattern as unknown as RegExp
+
+console.log('advanced.clone.functionRef =', clonedMetadata.validate === runtimeValidator)  // true
+console.log('advanced.clone.regexCopy   =', clonedPattern !== circularMetadata.pattern
+  && clonedPattern.source === '^item-[0-9]+$'
+  && clonedPattern.flags === 'i')                                                          // true
+console.log('advanced.clone.circular    =', clonedMetadata.self === clonedMetadata)         // true
+
+const tupleSchema = {
+  type: 'array' as const,
+  items: [{ type: 'string' as const }],
+  additionalItems: {
+    type: 'object' as const,
+    properties: { value: { type: 'number' as const } },
+    required: ['value'],
+  },
+}
+const partialTupleSchema = SchemaUtils.partial(tupleSchema)
+const partialAdditionalItems = partialTupleSchema.additionalItems as { required?: string[] }
+
+console.log('advanced.partial.nestedReq =', partialAdditionalItems.required)               // undefined / []
+
+if (clonedMetadata.validate !== runtimeValidator
+  || clonedMetadata.self !== clonedMetadata
+  || clonedPattern === circularMetadata.pattern
+  || partialAdditionalItems.required?.includes('value')) {
+  throw new Error('SchemaUtils advanced clone/partial contract drifted')
+}
+
 // ============================================================
 // 5. validateNestingDepth() — counts object property depth
 // ============================================================

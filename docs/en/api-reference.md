@@ -640,7 +640,7 @@ const schema = s({ email: field });
 
 Rewrites static String-chain DSL calls at compile time and injects imports from `schema-dsl/pure`. By default, it transforms the complete built-in String-chain API on schema-dsl literals, including methods such as `.label()`, `.pattern()`, `.require()`, `.required()`, `.toJsonSchema()`, and naked pipe enums such as `"admin|user|guest".label("Role")`. Use `additionalMethods` for user-defined chain methods, and `additionalTypes` / `additionalTypePatterns` for registered custom DSL type literals such as `"tenant-id!".label("Tenant")`; `methods` remains a legacy replacement set when you intentionally need to override the built-in default list.
 
-This entry loads Babel AST packages lazily. Install `@babel/parser`, `@babel/traverse`, `@babel/generator`, and `@babel/types` in projects that call `transformSchemaDsl()`.
+This entry loads Babel AST packages lazily. Install `@babel/parser`, `@babel/traverse`, `@babel/generator`, and `@babel/types` in projects that call `transformSchemaDsl()`. If any peer is missing, the first transform call throws the exported `BabelPeerDependencyError` with code `SCHEMA_DSL_BABEL_PEER_MISSING`; source parse failures still use the normal warning or strict-mode error contract.
 
 ```javascript
 import { transformSchemaDsl } from 'schema-dsl/transform';
@@ -783,6 +783,8 @@ Create runtimes at app, plugin or worker lifecycle boundaries. Request-level dif
 **Parameters**:
 
 - `options` (**Object**, optional) - validator configuration.
+
+The validator uses Draft 7 as its JSON Schema baseline and additionally executes selected newer applicator keywords, including `minContains` / `maxContains`. This is a targeted runtime extension, not a claim of complete Draft 2019-09 or 2020-12 support.
 
 ### Methods
 
@@ -1077,6 +1079,8 @@ const command = exporter.generateCommand('users', jsonSchema);
 - `generateCommand(collection, schema)` - generates a `createCollection` command.
 
 `exportWithReport()` returns `{ output, losses }`; each loss includes `path`, `keyword`, `severity`, and `message`. Pass `{ strict: true }` to throw instead of returning lossy output.
+
+Boolean JSON Schemas are target-aware in the report: Markdown represents both values, MongoDB represents `true` but reports `false`, and SQL exporters report both `true` and `false` as `$booleanSchema` losses.
 
 ---
 

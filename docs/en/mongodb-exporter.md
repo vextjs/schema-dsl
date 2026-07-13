@@ -160,8 +160,8 @@ const mongoSchema = exporters.MongoDBExporter.export(userSchema);
 
 | model | Description |
 |------|------|
-| `strict: false` (default) | `validationLevel: 'moderate'` - ​​Validates only fields involved in insert and update operations |
-| `strict: true` | `validationLevel: 'strict'` - ​​Validates all insert and update operations |
+| `strict: false` (default) | `validationLevel: 'moderate'` - Validates only fields involved in insert and update operations |
+| `strict: true` | `validationLevel: 'strict'` - Validates all insert and update operations |
 
 ```javascript
 // strict mode

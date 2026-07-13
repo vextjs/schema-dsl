@@ -54,9 +54,9 @@ validate(schema, { value: 101 }); // ❌ out of range
 types:type1|type2|type3[!]
 ```
 
-- `types:` - ​​fixed prefix
-- `type1|type2` - ​​list of types, separated by `|`
-- `!` - ​​optional required tag
+- `types:` - fixed prefix
+- `type1|type2` - list of types, separated by `|`
+- `!` - optional required tag
 
 ### constrained format
 

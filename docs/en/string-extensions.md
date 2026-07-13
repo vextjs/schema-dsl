@@ -151,12 +151,12 @@ const schema = s({
 ```
 
 **Correct error code**:
-- `'required'` - ​​required field
-- `'min'` - ​​minimum length/value
-- `'max'` - ​​maximum length/value
-- `'pattern'` - ​​Regular validation
-- `'format'` - ​​Format validation (email/url, etc.)
-- `'enum'` - ​​enumeration value
+- `'required'` - required field
+- `'min'` - minimum length/value
+- `'max'` - maximum length/value
+- `'pattern'` - Regular validation
+- `'format'` - Format validation (email/url, etc.)
+- `'enum'` - enumeration value
 
 ---
 
@@ -186,10 +186,10 @@ const schema = s({
 ```
 
 **Message template variables**:
-- `{{#label}}` - ​​field label
-- `{{#limit}}` - ​​constraint value (min/max)
-- `{{#value}}` - ​​current value
-- `{{#pattern}}` - ​​regular expression
+- `{{#label}}` - field label
+- `{{#limit}}` - constraint value (min/max)
+- `{{#value}}` - current value
+- `{{#pattern}}` - regular expression
 
 ---
 
@@ -256,19 +256,19 @@ const schema = s({
 
 **username default**:
 - `'short'` - 2-16
-- `'medium'` - ​​3-32 (default)
+- `'medium'` - 3-32 (default)
 - `'long'` - 5-64
-- `'3-32'` - ​​Custom scope
+- `'3-32'` - Custom scope
 
 **phone supported countries**:
-- `'cn'` - ​​China (11th place)
-- `'us'` - ​​United States
-- `'uk'` - ​​United Kingdom
+- `'cn'` - China (11th place)
+- `'us'` - United States
+- `'uk'` - United Kingdom
 
 **password strength**:
 - `'weak'` - 6-64
-- `'medium'` - ​​8-64 (default)
-- `'strong'` - ​​8-64 (uppercase and lowercase + numbers)
+- `'medium'` - 8-64 (default)
+- `'strong'` - 8-64 (uppercase and lowercase + numbers)
 
 ---
 
@@ -490,11 +490,11 @@ const schema = s({
 ### Q4: What is the correct error code?
 
 **A**:
-- `'required'` - ​​required
+- `'required'` - required
 - `'min'` / `'max'` - length/value range
-- `'pattern'` - ​​Regular
-- `'format'` - ​​format (email/url)
-- `'enum'` - ​​enumeration
+- `'pattern'` - Regular
+- `'format'` - format (email/url)
+- `'enum'` - enumeration
 
 ### Q5: How to support multiple languages?
 

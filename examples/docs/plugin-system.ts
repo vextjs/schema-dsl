@@ -185,4 +185,35 @@ const shallowObjSchema = objectDsl({ a: s({ b: 'string' }) }).toSchema()
 const shallowResult = DslBuilder.validateNestingDepth(shallowObjSchema as any, 4)
 console.log('plugin-system.nestingDepth.allowed =', shallowResult.valid)  // true
 
+// ============================================================
+// 6. clear() keeps failed uninstall operations observable and retryable
+// ============================================================
+
+const cleanupManager = new PluginManager()
+let clearErrorObserved = false
+let clearedObserved = false
+cleanupManager.on('plugins:clear-error', () => { clearErrorObserved = true })
+cleanupManager.on('plugins:cleared', () => { clearedObserved = true })
+cleanupManager.register({
+  name: 'cleanup-failure',
+  install() {},
+  uninstall() { throw new Error('cleanup failed') },
+})
+cleanupManager.install({})
+
+let clearFailure: unknown
+try {
+  cleanupManager.clear()
+} catch (error) {
+  clearFailure = error
+}
+console.log('plugin-system.clear.aggregate =', clearFailure instanceof AggregateError) // true
+console.log('plugin-system.clear.observed  =', clearErrorObserved)                  // true
+console.log('plugin-system.clear.retryable =', cleanupManager.has('cleanup-failure')) // true
+
+if (!(clearFailure instanceof AggregateError) || !clearErrorObserved || clearedObserved
+  || !cleanupManager.has('cleanup-failure')) {
+  throw new Error('PluginManager.clear failure contract drifted')
+}
+
 DslBuilder.clearCustomTypes()

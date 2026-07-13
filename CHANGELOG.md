@@ -8,7 +8,49 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-_No unreleased changes._
+No unreleased changes.
+
+---
+
+## [2.1.6] - 2026-07-13
+
+### Added
+
+- Exported `BabelPeerDependencyError` from `schema-dsl/transform` so optional Babel peer failures can be handled by type as well as by the stable `SCHEMA_DSL_BABEL_PEER_MISSING` code.
+
+### Changed
+
+- Prepared the `2.1.6` patch behind local, exact-SHA, tag, and registry release-verification gates.
+- Bound the bilingual performance guide to one tracked 20-row snapshot: 19 comparable scenarios plus one async throw-path diagnostic scenario.
+- Calibrated same-environment absolute performance failures against the pinned same-run Zod workload while retaining relative regression protection.
+- Required every supported benchmark command to rebuild current sources before measuring and preserved child-process diagnostics on benchmark failures.
+- Required npm publish tag commits to be contained in `origin/main`.
+- Made every benchmark entry build current sources before measurement and aligned the active Profile with the executable scripts.
+- Strengthened the tag-triggered publish workflow with coverage, documentation examples, website build, and performance regression gates.
+
+### Fixed
+
+- Invalidated root, direct `Validator`, cloned, and isolated-runtime caches when public generated schemas are mutated after warm-up.
+- Evicted stale AJV identity compilations when caller-owned schemas change structure, and guarded injected child aliases that mutate outside generated Schema proxies.
+- Preserved composition-only and dependency-only fields in `SchemaUtils.omit()` projections.
+- Made `minContains` / `maxContains` executable through sync, async, and compiled validation paths without changing the Draft 7 base engine.
+- Applied `minContains` / `maxContains` when compensating AJV-skipped property schemas, including valid zero-match ranges across sync, async, and quick validation.
+- Preserved the active `Validator` instance formats and options while matching AJV-skipped property schemas inside `anyOf`, `oneOf`, `if`, `not`, and `contains`.
+- Evicted projected `contains` schemas and async preflight clones by their original public schema owner, preserving mutation invalidation without weakening duplicate-`$id` errors between different schemas.
+- Restored explicit deprecated `ValidateOptions.removeAdditional`, `cache`, and `strict` field types for source compatibility.
+- Preserved `SchemaUtils.withPerformance()` assignability to the wrapped validator type while exposing performance metadata on validation results.
+- Unified Schema-position traversal for `additionalItems` and related applicators across Conditional execution, async custom validators, SchemaUtils projections, exporter loss analysis, and skipped-property compensation.
+- Preserved prefix-item versus repeated-item binding for async custom validators and resolved multi-item/local-`$ref` skipped-property validation gaps.
+- Limited plugin uninstall hooks to the `PluginManager` instance that installed the plugin while keeping observer unregistration resource-neutral.
+- Counted official `custom-format` AJV formats and shared `DslBuilder` types by their actual resource identities so one Validator cannot release another live instance's DSL types.
+- Made `PluginManager.clear()` expose failed cleanup through `plugins:clear-error` and `AggregateError`, retain failed plug-ins for retry, and continue cleaning independent plug-ins.
+- Recognized Conditional schemas nested under schema-valued keywords in the shared raw JSON Schema classifier, keeping root sync, root async, direct Validator, and isolated runtime behavior aligned.
+- Synchronized the documented `SchemaUtils.clone()` / recursive `partial()` behavior and the Draft 7 plus `minContains` / `maxContains` dialect boundary with executable examples.
+- Corrected the performance matrix diagnostic classification and refreshed the tracked local matrix to schema-dsl `14/19`, Zod `5/19`.
+
+### Validation
+
+- Full release verification is recorded in [`changelogs/v2.1.6.md`](./changelogs/v2.1.6.md).
 
 ---
 
@@ -419,7 +461,8 @@ _No unreleased changes._
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.5...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.6...HEAD
+[2.1.6]: https://github.com/vextjs/schema-dsl/compare/v2.1.5...v2.1.6
 [2.1.5]: https://github.com/vextjs/schema-dsl/compare/v2.1.4...v2.1.5
 [2.1.4]: https://github.com/vextjs/schema-dsl/compare/v2.1.3...v2.1.4
 [2.1.3]: https://github.com/vextjs/schema-dsl/compare/v2.1.2...v2.1.3

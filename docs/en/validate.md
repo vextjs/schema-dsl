@@ -35,12 +35,14 @@ In the current implementation, `data` and `errors` will be returned together wit
 
 ### schema parameters
 
-JSON Schema object, supporting JSON Schema Draft 7 standard.
+JSON Schema object. Draft 7 is the baseline; schema-dsl also executes selected newer applicator keywords such as `minContains` / `maxContains`, without claiming full Draft 2019-09 or 2020-12 support.
 
 | Parameter type | Description | source |
 |---------|------|------|
 | Object | JSON Schema object | JSON Schema Standard ✅ |
 | Function | Compiled validation function (generated via `compile()`) | ajv ✅ |
+
+For array match ranges, provide `contains` and optionally set non-negative `minContains` / `maxContains`. With neither range keyword, `contains` requires at least one match. The same range semantics apply to `validate()`, `validateAsync()`, and `compile()`; failures use the `contains` error keyword.
 
 ### options object properties
 

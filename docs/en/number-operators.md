@@ -417,7 +417,7 @@ s({ level: 'number:=5' }) // equal to
 
 ---
 
-### Q4: What values ​​are supported?
+### Q4: What values are supported?
 
 **A**:
 - ✅ Positive integers: `number:>0`, `number:>=1`

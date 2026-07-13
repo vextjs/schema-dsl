@@ -178,6 +178,8 @@ describe('verified issue regressions', () => {
     })
 
     it('P0-33b: raw JSON Schema input detector covers schema-valued and primitive keyword shapes', () => {
+      const conditional = ConditionalBuilder.start(() => true).then('number!').toSchema()
+
       expect(isJsonSchemaTypeValue('string')).toBe(true)
       expect(isJsonSchemaTypeValue(['string', 'null'])).toBe(true)
       expect(isJsonSchemaTypeValue(['string', 'unknown'])).toBe(false)
@@ -197,6 +199,11 @@ describe('verified issue regressions', () => {
       expect(isJsonSchemaFactoryInputLike({ uniqueItems: true })).toBe(true)
       expect(isJsonSchemaFactoryInputLike({ minLength: 3 })).toBe(true)
       expect(isJsonSchemaFactoryInputLike({ contains: 1 })).toBe(false)
+      expect(isJsonSchemaFactoryInputLike({ not: conditional })).toBe(true)
+      expect(isRawJsonSchemaLike({ additionalProperties: conditional })).toBe(true)
+      expect(isRawJsonSchemaLike({ properties: { value: conditional } })).toBe(true)
+      expect(isJsonSchemaFactoryInputLike({ not: { _isConditional: false } })).toBe(false)
+      expect(isJsonSchemaFactoryInputLike({ not: { _isConditional: 'true' } })).toBe(false)
       expect(isRawJsonSchemaLike(['not', 'a', 'schema'])).toBe(false)
     })
 
@@ -954,7 +961,7 @@ describe('verified issue regressions', () => {
       }, ['card', 'billingAddress'])
 
       expect(kept.dependentRequired).toEqual({ card: ['billingAddress'] })
-      expect(kept.dependentSchemas).toBeUndefined()
+      expect(kept.dependentSchemas).toEqual({ card: { required: ['billingAddress'] } })
       expect(kept.dependencies).toEqual({ card: ['billingAddress'] })
     })
 

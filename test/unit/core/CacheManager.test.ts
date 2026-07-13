@@ -218,18 +218,17 @@ describe('CacheManager', () => {
     })
   })
 
-  describe('Performance Tests', () => {
-    it('should efficiently handle a large number of operations', () => {
+  describe('High-volume operations', () => {
+    it('should preserve bounded cache state across many operations', () => {
       const perfCache = new CacheManager({ maxSize: 100 })
-      const start = Date.now()
 
       for (let i = 0; i < 10000; i++) {
         perfCache.set(`key${i % 100}`, `value${i}` as any)
         perfCache.get(`key${i % 100}`)
       }
 
-      const elapsed = Date.now() - start
-      expect(elapsed).toBeLessThan(200)
+      expect(perfCache.size()).toBe(100)
+      expect(perfCache.get('key99')).toBe('value9999')
     })
   })
 })

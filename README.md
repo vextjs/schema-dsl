@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 🎯 schema-dsl
 
@@ -17,8 +17,6 @@
 ```bash
 npm install schema-dsl
 ```
-
-> Release note: this `main` branch README describes the current source tree. Entries such as `schema-dsl/pure`, `schema-dsl/runtime`, `schema-dsl/transform`, and `schema-dsl/esbuild` are guaranteed for packages built from this commit; if npm latest is older than this commit, install from the matching tag/commit or wait for the next npm release.
 
 </div>
 
@@ -180,7 +178,7 @@ npm install schema-dsl
 
 **Runtime requirement**: Node.js >= 18.0.0
 
-> This README follows the current `main` branch source. When consuming from npm, verify that the published version you install includes the entry points shown below.
+The entry points below are part of the package contract and are covered by packed-consumer tests for both ESM and CommonJS.
 
 ---
 

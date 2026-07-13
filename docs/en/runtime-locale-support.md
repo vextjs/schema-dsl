@@ -109,7 +109,7 @@ console.log(error2.message); // "No administrator rights"
 
 **Applicable scenarios**:
 - Single language application
-- No need to switch languages ​​dynamically
+- No need to switch languages dynamically
 - Simple error handling
 
 ---
@@ -136,7 +136,7 @@ console.log(error3.message); // "account.notFound" (Japanese not translated)
 **Applicable scenarios**:
 - Multilingual API
 - Dynamically return multi-language errors based on request headers
-- Multiple languages ​​required in the same request
+- Multiple languages required in the same request
 - Error propagation in microservice architecture
 
 ---
@@ -253,12 +253,12 @@ app.get('/api/users/:id', async (req, res) => {
 
 ---
 
-### Scenario 3: Multiple languages ​​used in the same request
+### Scenario 3: Multiple languages used in the same request
 
 ```javascript
 import { s } from 'schema-dsl/pure';
 
-// Batch validation, returning errors in different languages ​​for different users
+// Batch validation, returning errors in different languages for different users
 async function batchValidateAccounts(requests) {
   const results = [];
 
@@ -347,7 +347,7 @@ app.get('/api/account/:id', async (req, res) => {
   //Modify global state
   Locale.setLocale(req.headers['accept-language']?.split(',')[0]?.trim() || 'zh-CN');
 
-  // If there are multiple requests at the same time, the languages ​​will interfere with each other
+  // If there are multiple requests at the same time, the languages will interfere with each other
   const error = s.error.create('account.notFound');
   // The error message may be in the wrong language!
 });
@@ -378,7 +378,7 @@ import { s, Locale } from 'schema-dsl/pure';
 //Set global to Chinese
 Locale.setLocale('zh-CN');
 
-//Test 1: Specify different languages ​​at run time
+//Test 1: Specify different languages at run time
 const error1 = s.error.create('account.notFound', {}, 404, 'zh-CN');
 const error2 = s.error.create('account.notFound', {}, 404, 'en-US');
 const error3 = s.error.create('account.notFound', {}, 404, 'ja-JP');

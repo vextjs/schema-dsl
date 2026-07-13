@@ -110,4 +110,7 @@ export function createDefaultPatterns(): typeof DEFAULT_PATTERNS {
   return clonePatternRegistry(DEFAULT_PATTERNS)
 }
 
-export const PATTERNS = createDefaultPatterns()
+const PATTERN_STATE_KEY = Symbol.for('schema-dsl.v2.PATTERNS.state')
+const patternHost = globalThis as typeof globalThis & Record<symbol, typeof DEFAULT_PATTERNS | undefined>
+
+export const PATTERNS = patternHost[PATTERN_STATE_KEY] ??= createDefaultPatterns()

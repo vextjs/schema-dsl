@@ -17,6 +17,7 @@ import {
   buildDslExtensionSchema,
   normalizeDslExtensionDefinition,
   normalizeDslExtensionParams,
+  type NormalizedDslExtension,
 } from '../parser/DslExtensionRegistry.js'
 
 export interface DslNamespaceOptions {
@@ -24,6 +25,7 @@ export interface DslNamespaceOptions {
   createBuilderFromSchema?: (schema: JSONSchema) => IDslBuilder
   parseObject: (definition: DslDefinition, options?: SchemaIOOptions) => JSONSchema
   registerType?: (name: string, schema: JSONSchema | (() => JSONSchema)) => void
+  unregisterType?: (name: string) => void
   typeExists?: (name: string) => boolean
   extensionRegistry?: DslExtensionRegistry
 }
@@ -245,6 +247,10 @@ export function attachDslNamespaceFactories(
   const createBuilderFromSchema = options.createBuilderFromSchema
     ?? ((schema: JSONSchema) => DslBuilder.fromSchema(schema) as unknown as IDslBuilder)
   const extensionRegistry = options.extensionRegistry
+  const attachedExtensions = new Map<NormalizedDslExtension, {
+    factoryName?: string
+    typeName?: string
+  }>()
 
   const typeFactory = (literal: string): FactoryFn => () => options.createBuilder(literal)
 
@@ -303,8 +309,7 @@ export function attachDslNamespaceFactories(
     return extensionRegistry?.define(definition) ?? normalizeDslExtensionDefinition(definition)
   }
 
-  mutable.registerExtension = (definition: DslExtensionDefinition): void => {
-    const normalized = extensionRegistry?.define(definition) ?? normalizeDslExtensionDefinition(definition)
+  const validateExtension = (normalized: NormalizedDslExtension): void => {
     if (normalized.factoryName && normalized.exposeFactory !== false) {
       assertFactoryNameAvailable(mutable, normalized.factoryName)
     }
@@ -312,14 +317,19 @@ export function attachDslNamespaceFactories(
     if (normalized.literal && options.typeExists?.(normalized.literal)) {
       throw new Error(`[schema-dsl] Cannot register extension literal "${normalized.literal}": type already exists`)
     }
+  }
 
-    const registered = extensionRegistry?.register(normalized) ?? normalized
-
+  const attachExtension = (registered: NormalizedDslExtension): void => {
+    const resources: { factoryName?: string; typeName?: string } = {}
+    attachedExtensions.set(registered, resources)
     if (registered.schema && registered.literal) {
-      options.registerType?.(registered.literal, () => buildDslExtensionSchema(
-        registered,
-        normalizeDslExtensionParams(registered, { source: 'factory' })
-      ))
+      if (!options.typeExists?.(registered.literal)) {
+        options.registerType?.(registered.literal, () => buildDslExtensionSchema(
+          registered,
+          normalizeDslExtensionParams(registered, { source: 'factory' })
+        ))
+        if (options.registerType) resources.typeName = registered.literal
+      }
     }
 
     if (registered.factoryName && registered.exposeFactory !== false) {
@@ -342,6 +352,50 @@ export function attachDslNamespaceFactories(
         }
         return options.createBuilder(literal)
       }) as FactoryFn, true)
+      resources.factoryName = registered.factoryName
+    }
+  }
+
+  const detachExtension = (registered: NormalizedDslExtension): void => {
+    const resources = attachedExtensions.get(registered)
+    if (!resources) return
+    if (resources.factoryName) {
+      delete mutable[resources.factoryName]
+      getCustomFactoryNames(mutable).delete(resources.factoryName)
+    }
+    if (resources.typeName) options.unregisterType?.(resources.typeName)
+    attachedExtensions.delete(registered)
+  }
+
+  const detachAllExtensions = (): void => {
+    for (const registered of [...attachedExtensions.keys()].reverse()) {
+      detachExtension(registered)
+    }
+  }
+
+  if (extensionRegistry) {
+    extensionRegistry.subscribe((event, definition) => {
+      if (event === 'clear') {
+        detachAllExtensions()
+        resetDslNamespaceExtensions(namespace)
+      } else if (event === 'validate' && definition) {
+        validateExtension(definition)
+      } else if (event === 'register' && definition) {
+        attachExtension(definition)
+      } else if (event === 'rollback' && definition) {
+        detachExtension(definition)
+      }
+    })
+    for (const registered of extensionRegistry.list()) attachExtension(registered)
+  }
+
+  mutable.registerExtension = (definition: DslExtensionDefinition): void => {
+    const normalized = extensionRegistry?.define(definition) ?? normalizeDslExtensionDefinition(definition)
+    if (extensionRegistry) {
+      extensionRegistry.register(normalized)
+    } else {
+      validateExtension(normalized)
+      attachExtension(normalized)
     }
   }
 

@@ -191,9 +191,11 @@ describe('Complete Type System Tests', () => {
       expect(validate(schema, { color: '#ff0000' }).valid).toBe(true)
     })
 
-    it('should support mac type', () => {
-      const schema = dsl({ mac: 'mac' })
-      expect((schema as any).properties.mac).toBeDefined()
+    it('should support macAddress type', () => {
+      const schema = dsl({ mac: 'macAddress' })
+      expect((schema as any).properties.mac.pattern).toBeDefined()
+      expect(validate(schema, { mac: '00:1A:2B:3C:4D:5E' }).valid).toBe(true)
+      expect(validate(schema, { mac: 'not-a-mac' }).valid).toBe(false)
     })
 
     it('should support cron type', () => {

@@ -87,8 +87,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
+function isConditionalSchema(value: unknown): boolean {
+  return isRecord(value) && value['_isConditional'] === true
+}
+
 function isSchemaOrBoolean(value: unknown): boolean {
-  return typeof value === 'boolean' || isRawJsonSchemaLike(value)
+  return typeof value === 'boolean' || isConditionalSchema(value) || isRawJsonSchemaLike(value)
 }
 
 function isExplicitDslString(value: unknown): boolean {

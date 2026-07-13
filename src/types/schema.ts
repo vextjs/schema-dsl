@@ -23,9 +23,13 @@ export interface JSONSchema {
   enum?: unknown[]
   const?: unknown
   items?: JSONSchemaInput | JSONSchemaInput[]
+  additionalItems?: JSONSchemaInput
   minItems?: number
   maxItems?: number
   uniqueItems?: boolean
+  contains?: JSONSchemaInput
+  minContains?: number
+  maxContains?: number
   additionalProperties?: JSONSchemaInput
   allOf?: JSONSchemaInput[]
   anyOf?: JSONSchemaInput[]

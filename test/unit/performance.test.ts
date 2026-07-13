@@ -1,10 +1,11 @@
 /**
  * Performance Tests
- * Fast smoke checks that catch order-of-magnitude regressions.
+ * Fast smoke checks that catch material hot-path regressions.
  *
  * Formal rankings live in test/benchmarks/*.js. These tests intentionally keep
- * broad thresholds so CI noise does not fail normal development, while still
- * blocking a return to second-scale validation loops.
+ * median thresholds so one scheduler pause does not fail normal development.
+ * Coverage instrumentation changes timing semantics, so the coverage script
+ * excludes this file and leaves performance enforcement to the benchmark gate.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -23,10 +24,9 @@ describe('Performance Tests', () => {
     };
   }
 
-  function measureBestOf(iterations: number, fn: () => void, attempts = 3): Measurement {
-    // Use a small best-of window so one scheduler pause does not fail this smoke gate.
+  function measureMedian(iterations: number, fn: () => void, attempts = 3): Measurement {
     const samples = Array.from({ length: attempts }, () => measure(iterations, fn));
-    return samples.reduce((best, sample) => sample.opsPerSecond > best.opsPerSecond ? sample : best);
+    return samples.sort((left, right) => left.opsPerSecond - right.opsPerSecond)[Math.floor(samples.length / 2)];
   }
 
   it('should quickly validate large amounts of data', () => {
@@ -42,8 +42,8 @@ describe('Performance Tests', () => {
       email: 'john@example.com'
     };
 
-    const iterations = 1000;
-    const { elapsedMs, opsPerSecond } = measureBestOf(iterations, () => {
+    const iterations = 20_000;
+    const { elapsedMs, opsPerSecond } = measureMedian(iterations, () => {
       validate(schema, validData);
     });
     const avgTime = elapsedMs / iterations;
@@ -53,7 +53,8 @@ describe('Performance Tests', () => {
     console.log(`      throughput: ${opsPerSecond.toFixed(0)} ops/s`);
 
     expect(elapsedMs).toBeLessThan(1000);
-    expect(opsPerSecond).toBeGreaterThan(5_000);
+    // This file runs beside the full Vitest suite; the isolated benchmark gate owns tighter thresholds.
+    expect(opsPerSecond).toBeGreaterThan(100_000);
     expect(avgTime).toBeLessThan(1);
   });
 
@@ -85,8 +86,8 @@ describe('Performance Tests', () => {
       tags: ['javascript', 'nodejs']
     };
 
-    const iterations = 500;
-    const { elapsedMs, opsPerSecond } = measureBestOf(iterations, () => {
+    const iterations = 10_000;
+    const { elapsedMs, opsPerSecond } = measureMedian(iterations, () => {
       validate(schema, validData);
     });
     const avgTime = elapsedMs / iterations;
@@ -96,7 +97,7 @@ describe('Performance Tests', () => {
     console.log(`      throughput: ${opsPerSecond.toFixed(0)} ops/s`);
 
     expect(elapsedMs).toBeLessThan(1000);
-    expect(opsPerSecond).toBeGreaterThan(5_000);
+    expect(opsPerSecond).toBeGreaterThan(100_000);
     expect(avgTime).toBeLessThan(2);
   });
 
@@ -111,8 +112,8 @@ describe('Performance Tests', () => {
       country: 'CN'
     };
 
-    const iterations = 1000;
-    const { elapsedMs, opsPerSecond } = measureBestOf(iterations, () => {
+    const iterations = 20_000;
+    const { elapsedMs, opsPerSecond } = measureMedian(iterations, () => {
       validate(schema, validData);
     });
 
@@ -120,6 +121,6 @@ describe('Performance Tests', () => {
     console.log(`      throughput: ${opsPerSecond.toFixed(0)} ops/s`);
 
     expect(elapsedMs).toBeLessThan(1000);
-    expect(opsPerSecond).toBeGreaterThan(5_000);
+    expect(opsPerSecond).toBeGreaterThan(150_000);
   });
 });

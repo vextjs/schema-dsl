@@ -972,7 +972,7 @@ I18nError.throw('custom.error');
 
 ---
 
-#### Q9: What built-in languages ​​are supported?
+#### Q9: What built-in languages are supported?
 
 **A**:
 
@@ -1742,7 +1742,7 @@ try {
 
 #### 2. Sharing code in multiple languages
 
-Different languages ​​use the same number `code` to facilitate unified processing by the front end:
+Different languages use the same number `code` to facilitate unified processing by the front end:
 
 ```javascript
 // zh-CN.cjs
@@ -1866,9 +1866,9 @@ It is recommended to use **numeric error codes**, segmented by module:
 ```
 
 **Error code segmentation suggestions**:
-- `40001-49999` - ​​Client error (account, permission, parameter validation, etc.)
-- `50001-59999` - ​​Business logic error (order, payment, inventory, etc.)
-- `60001-69999` - ​​System error (database, service unavailable, etc.)
+- `40001-49999` - Client error (account, permission, parameter validation, etc.)
+- `50001-59999` - Business logic error (order, payment, inventory, etc.)
+- `60001-69999` - System error (database, service unavailable, etc.)
 
 #### 3. Unified error handling on the front end
 

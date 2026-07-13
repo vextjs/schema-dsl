@@ -177,7 +177,7 @@ const schema = s({
 
 ```javascript
 const schema = s({
-  // Enumeration values ​​are separated by |
+  // Enumeration values are separated by |
   status: 'active|inactive|pending',
   role: 'user|admin|moderator',
 

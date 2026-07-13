@@ -111,7 +111,7 @@ When multiple people develop, it is recommended to maintain a `locales/CODE-SEGM
 
 ## 🚀 Quick start
 
-### Recommended method: Configure language pack directory (load all languages ​​at once) ⭐
+### Recommended method: Configure language pack directory (load all languages at once) ⭐
 
 **Correct usage**: Load all language packages at once when the application starts, and switch directly during runtime.
 
@@ -189,7 +189,7 @@ my-project/
 }
 ```
 
-#### Step 3: Load all languages ​​at once when the app starts
+#### Step 3: Load all languages at once when the app starts
 
 ```javascript
 import { s, validate } from 'schema-dsl/pure';
@@ -432,7 +432,7 @@ All error messages support the following template variables:
 | `{{#limit}}` | Limit value (length/size) | `deve ter pelo menos {{#limit}} caracteres` |
 | `{{#allowed}}` | list of allowed values | `deve ser um dos seguintes: {{#allowed}}` |
 | `{{#expected}}` | expected type | `deve ser do tipo {{#expected}}` |
-| `{{#valids}}` | list of valid values ​​(array) | `deve ser: {{#valids}}` |
+| `{{#valids}}` | list of valid values (array) | `deve ser: {{#valids}}` |
 | `{{#path}}` | field path | `Erro no campo {{#path}}` |
 
 ---

@@ -17,6 +17,7 @@ import {
   isRawJsonSchemaLike as isRawJsonSchemaInputLike,
 } from '../utils/schemaInput.js'
 import { createSchemaRecord, setSchemaRecordValue } from '../utils/schemaRecord.js'
+import { SchemaCompileError } from '../errors/SchemaCompileError.js'
 
 /**
  * DslParser — unified entry point for parsing DSL strings and object definitions
@@ -36,6 +37,36 @@ export interface DslParseOptions {
   registryScope?: TypeRegistryScope
   typeResolver?: SchemaDslTypeResolver
   extensionRegistry?: DslExtensionRegistry
+}
+
+interface DslParseBudget {
+  depth: number
+  objectStack: WeakSet<object>
+}
+
+type InternalDslParseOptions = DslParseOptions & { _budget?: DslParseBudget }
+
+const MAX_DSL_PARSE_DEPTH = 256
+const MAX_DSL_STRING_LENGTH = 100_000
+
+function _parseBoundaryError(message: string, input: unknown, path: string): SchemaCompileError {
+  return new SchemaCompileError(new Error(`${message} at "${path || '$'}"`), { path: path || '$', input })
+}
+
+function _enterParseBudget(options: DslParseOptions | undefined, input: unknown): InternalDslParseOptions {
+  const inherited = (options as InternalDslParseOptions | undefined)?._budget
+    ?? { depth: 0, objectStack: new WeakSet<object>() }
+  const depth = inherited.depth + 1
+  if (depth > MAX_DSL_PARSE_DEPTH) {
+    throw _parseBoundaryError(`DSL nesting exceeds the maximum depth of ${MAX_DSL_PARSE_DEPTH}`, input, options?.path ?? '$')
+  }
+  return {
+    ...options,
+    _budget: {
+      depth,
+      objectStack: inherited.objectStack,
+    },
+  }
 }
 
 function _childPath(parent: string | undefined, key: string): string {
@@ -376,6 +407,14 @@ export const DslParser = {
     if (!dslStr || typeof dslStr !== 'string') {
       return { type: 'string' }
     }
+    if (dslStr.length > MAX_DSL_STRING_LENGTH) {
+      throw _parseBoundaryError(
+        `DSL string exceeds the maximum length of ${MAX_DSL_STRING_LENGTH}`,
+        dslStr.slice(0, 128),
+        options?.path ?? '$',
+      )
+    }
+    options = _enterParseBudget(options, dslStr)
 
     let s = dslStr.trim()
     let required = false
@@ -539,6 +578,14 @@ export const DslParser = {
    * Parse an object DSL definition → JSONSchema (type:object + properties + required[])
    */
   parseObject(dslObj: DslDefinition, options?: DslParseOptions): JSONSchema {
+    const internalOptions = _enterParseBudget(options, dslObj)
+    options = internalOptions
+    const objectStack = internalOptions._budget!.objectStack
+    if (objectStack.has(dslObj)) {
+      throw _parseBoundaryError('Cyclic DSL object detected', dslObj, options.path ?? '$')
+    }
+    objectStack.add(dslObj)
+    try {
     const schema: JSONSchema = {
       type: 'object',
       properties: createSchemaRecord<JSONSchema>(),
@@ -615,6 +662,9 @@ export const DslParser = {
     }
 
     return schema
+    } finally {
+      objectStack.delete(dslObj)
+    }
   },
 
   // --------------- Private helpers ---------------

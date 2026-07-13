@@ -35,12 +35,14 @@ validator.validate(schema, data, options = {})
 
 ### schema 参数
 
-JSON Schema 对象，支持 JSON Schema Draft 7 标准。
+JSON Schema 对象。Draft 7 是基础方言；schema-dsl 还会执行 `minContains` / `maxContains` 等部分较新 applicator 关键字，但不表示完整支持 Draft 2019-09 或 2020-12。
 
 | 参数类型 | 说明 | 来源 |
 |---------|------|------|
 | Object | JSON Schema 对象 | JSON Schema 标准 ✅ |
 | Function | 已编译的验证函数（通过 `compile()` 生成） | ajv ✅ |
+
+数组匹配范围应提供 `contains`，并可设置非负的 `minContains` / `maxContains`。未提供范围关键字时，`contains` 默认要求至少匹配一项。`validate()`、`validateAsync()` 与 `compile()` 使用相同范围语义；失败时错误关键字为 `contains`。
 
 ### options 对象属性
 

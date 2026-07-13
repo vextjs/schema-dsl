@@ -133,8 +133,8 @@ const schema = s({
 });
 ```
 **Description**:
-- `!` - ​​required tag, field must exist
-- `?` - ​​optional tag, field can be omitted (explicit expression)
+- `!` - required tag, field must exist
+- `?` - optional tag, field can be omitted (explicit expression)
 - Unmarked - optional by default (field can be omitted)
 
 **recommend**:
@@ -230,7 +230,7 @@ This syntax will be compiled into the `oneOf` structure, which is suitable for s
 
 **Applicable scenarios**:
 - Contact information allows email or mobile phone number
-- Price fields allow numeric values ​​or description strings
+- Price fields allow numeric values or description strings
 - Compatible with multiple input formats for the same field in the history interface
 
 ### 5. Special constraints

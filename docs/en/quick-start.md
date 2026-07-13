@@ -11,8 +11,6 @@ npm install schema-dsl
 > **Node.js requirement**: `>=18.0.0`
 >
 > The current TypeScript rewrite uses `Node.js >=18.0.0` as the only runtime baseline and no longer promises compatibility with older Node versions.
->
-> This documentation follows the current `main` branch source. If npm latest is older than this commit, install from the matching tag/commit or use the next published npm release before relying on the `schema-dsl/pure`, `schema-dsl/runtime`, `schema-dsl/transform`, or `schema-dsl/esbuild` entry points.
 
 ---
 

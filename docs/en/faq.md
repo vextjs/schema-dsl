@@ -69,9 +69,9 @@ const result = validate(schema, { email: 'test@example.com' });
 ### Q: `'string:3-32!'` What does it mean?
 
 **A**: This is the DSL syntax:
-- `string` - ​​Type
-- `3-32` - ​​length range (minimum 3, maximum 32)
-- `!` - ​​required
+- `string` - Type
+- `3-32` - length range (minimum 3, maximum 32)
+- `!` - required
 
 More examples:
 ```javascript
@@ -221,20 +221,12 @@ console.log(result.data);
 
 ### Q: What is the performance of schema-dsl?
 
-**A**: The current benchmark should be read as project-local throughput evidence, not as a permanent marketing claim. The current project baseline run recorded:
-
-| Scenario | schema-dsl throughput |
-|------|-----------|
-| S1 simple valid object | ~2.132M ops/s |
-| S2 invalid object without i18n formatting | ~193K ops/s |
-| S3 nested valid object | ~1.129M ops/s |
-
-**Environment**: Node.js v20.20.2, Windows x64, run time 2026-07-09T07:16:27.341Z.
+**A**: The current benchmark is project-local throughput evidence, not a permanent marketing claim. Concrete throughput, environment, and winner counts are maintained only in the tracked snapshot table in the [Performance Optimization Guide](performance-guide.md); the FAQ does not duplicate values that become stale.
 
 **Conclusion**:
 - ✅ Hot-path validation is already in the million-ops/sec range on this local machine.
 - ✅ Built-in caching avoids repeated schema parsing on reused schema objects.
-- ✅ In the same full run, the extended Zod scenario matrix recorded schema-dsl 14/19 wins and Zod 5/19 wins.
+- ✅ The performance guide distinguishes 19 comparable scenarios from the `AV2_THROW` diagnostic scenario that is not counted in the winner summary.
 - ✅ Treat these numbers as a regression baseline; rerun the benchmark when runtime, dependency, or schema complexity changes.
 
 ---

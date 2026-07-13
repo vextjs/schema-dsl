@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as schemaDsl from '../../src/index.js'
-import { DslBuilder, PluginManager, dsl, getDefaultValidator, resetRuntimeState, validate } from '../../src/index.js'
+import { DslBuilder, PluginManager, Validator, dsl, getDefaultValidator, resetRuntimeState, validate } from '../../src/index.js'
 import customFormatPlugin from '../../src/plugins/custom-format.js'
 import customValidatorPlugin from '../../src/plugins/custom-validator.js'
 import customTypeExamplePlugin from '../../src/plugins/custom-type-example.js'
@@ -44,6 +44,65 @@ describe('Official Plugin Entry Compatibility', () => {
 
     expect(DslBuilder.hasType('phone-cn')).toBe(false)
     expect(ajv.formats?.['phone-cn']).toBeUndefined()
+  })
+
+  it('should track custom-format type leases per builder when cores share one Validator', () => {
+    const sharedValidator = getDefaultValidator()
+    const createBuilder = () => {
+      const types = new Map<string, unknown>()
+      return {
+        types,
+        builder: {
+          hasType: (name: string) => types.has(name),
+          registerType: (name: string, schema: unknown) => types.set(name, schema),
+          unregisterType: (name: string) => types.delete(name),
+        } as unknown as typeof DslBuilder,
+      }
+    }
+    const first = createBuilder()
+    const second = createBuilder()
+    const firstCore = { getDefaultValidator: () => sharedValidator, DslBuilder: first.builder }
+    const secondCore = { getDefaultValidator: () => sharedValidator, DslBuilder: second.builder }
+
+    customFormatPlugin.install(firstCore)
+    customFormatPlugin.install(secondCore)
+    expect(first.types.has('phone-cn')).toBe(true)
+    expect(second.types.has('phone-cn')).toBe(true)
+
+    customFormatPlugin.uninstall(firstCore)
+    expect(first.types.has('phone-cn')).toBe(false)
+    expect(second.types.has('phone-cn')).toBe(true)
+    expect((sharedValidator.getAjv() as { formats?: Record<string, unknown> }).formats?.['phone-cn']).toBeDefined()
+
+    customFormatPlugin.uninstall(secondCore)
+    expect(second.types.has('phone-cn')).toBe(false)
+    expect((sharedValidator.getAjv() as { formats?: Record<string, unknown> }).formats?.['phone-cn']).toBeUndefined()
+  })
+
+  it('should retain shared-builder custom-format types while another Validator owns a lease', () => {
+    const firstValidator = new Validator()
+    const secondValidator = new Validator()
+    const types = new Map<string, unknown>()
+    const sharedBuilder = {
+      hasType: (name: string) => types.has(name),
+      registerType: (name: string, schema: unknown) => types.set(name, schema),
+      unregisterType: (name: string) => types.delete(name),
+    } as unknown as typeof DslBuilder
+    const firstCore = { getDefaultValidator: () => firstValidator, DslBuilder: sharedBuilder }
+    const secondCore = { getDefaultValidator: () => secondValidator, DslBuilder: sharedBuilder }
+
+    customFormatPlugin.install(firstCore)
+    customFormatPlugin.install(secondCore)
+    expect(types.has('phone-cn')).toBe(true)
+
+    customFormatPlugin.uninstall(firstCore)
+    expect(types.has('phone-cn')).toBe(true)
+    expect((firstValidator.getAjv() as { formats?: Record<string, unknown> }).formats?.['phone-cn']).toBeUndefined()
+    expect((secondValidator.getAjv() as { formats?: Record<string, unknown> }).formats?.['phone-cn']).toBeDefined()
+
+    customFormatPlugin.uninstall(secondCore)
+    expect(types.has('phone-cn')).toBe(false)
+    expect((secondValidator.getAjv() as { formats?: Record<string, unknown> }).formats?.['phone-cn']).toBeUndefined()
   })
 
   it('should expose custom-format addFormat behavior including bank-card checksum branches', () => {
@@ -174,6 +233,27 @@ describe('Official Plugin Entry Compatibility', () => {
     expect(ajv.getKeyword?.('idCard')).toBeFalsy()
   })
 
+  it('should retain the custom-validator global bucket while another Validator owns a lease', () => {
+    const firstValidator = new Validator()
+    const secondValidator = new Validator()
+    const firstCore = { getDefaultValidator: () => firstValidator }
+    const secondCore = { getDefaultValidator: () => secondValidator }
+
+    customValidatorPlugin.install(firstCore)
+    customValidatorPlugin.install(secondCore)
+    customValidatorPlugin.uninstall(firstCore)
+
+    const globalBucket = (globalThis as typeof globalThis & {
+      __schemaDsl_plugins?: Record<string, unknown>
+    }).__schemaDsl_plugins
+    expect(globalBucket?.['custom-validator']).toBe(customValidatorPlugin)
+    expect(secondValidator.getAjv().getKeyword('unique')).toBeTruthy()
+
+    customValidatorPlugin.uninstall(secondCore)
+    expect(globalBucket?.['custom-validator']).toBeUndefined()
+    expect(secondValidator.getAjv().getKeyword('unique')).toBeFalsy()
+  })
+
   it('should install custom-validator without emitting AJV deprecated addKeyword warning', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -230,7 +310,7 @@ describe('Official Plugin Entry Compatibility', () => {
 
     customValidatorPlugin.uninstall(fakeCore as unknown as typeof schemaDsl)
 
-    expect(removed).toEqual(['unique'])
+    expect(removed).toEqual(['passwordStrength', 'idCard'])
     expect(fakeValidator.clearCache).toHaveBeenCalledTimes(1)
   })
 

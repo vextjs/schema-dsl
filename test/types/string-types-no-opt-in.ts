@@ -1,4 +1,4 @@
-import { dsl, registerExtensions, s, type I18nError } from '../../src/pure.js'
+import { dsl, registerExtensions, s, SchemaUtils, Validator, type I18nError, type JSONSchemaInput } from '../../src/pure.js'
 
 dsl('email!').label('Email')
 dsl('email!').validate('user@example.com')
@@ -7,6 +7,17 @@ s.email().validate('user@example.com')
 
 const facadeError: I18nError = dsl.error.create('missing')
 const facadeErrorMessage: string = facadeError.message
+
+const monitoredValidator = SchemaUtils.withPerformance(new Validator())
+const monitoredResult = monitoredValidator.validate({ type: 'string' }, 'value')
+const monitoredValid: boolean = monitoredResult.valid
+const monitoredDuration: number = monitoredResult.performance.duration
+
+const tupleWithAdditionalItems: JSONSchemaInput = {
+  type: 'array',
+  items: [{ type: 'string' }],
+  additionalItems: { type: 'number' },
+}
 
 const extendedS = registerExtensions([
   {
@@ -59,3 +70,6 @@ requiredParamS.requiredCode()
 'array'.items('string!')
 
 void facadeErrorMessage
+void monitoredValid
+void monitoredDuration
+void tupleWithAdditionalItems

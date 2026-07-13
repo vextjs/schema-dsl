@@ -157,6 +157,10 @@ tags: 'array!1-10<string>'
 
 ## Performance issues
 
+### DSL input exceeds parser boundaries
+
+Object-form DSL parsing rejects cyclic input, nesting deeper than 256 levels, and individual DSL strings longer than 100,000 characters. These cases throw `SchemaCompileError` with the failing object path so configuration and untrusted-input failures remain diagnosable instead of overflowing the stack or consuming unbounded parser work.
+
 ### Problem 5: Validation speed is slow
 
 **Symptoms**: Poor performance when validating large amounts of data
@@ -288,12 +292,12 @@ username: s('string:3-32!').messages({
 ```
 
 **Commonly used error keywords**:
-- `required` - ​​required fields are empty
+- `required` - required fields are empty
 - `min` / `max` - length constraint (recommended)
 - `minLength` / `maxLength` - length constraints (compatible)
-- `pattern` - ​​Regular validation failed
-- `format` - ​​Format validation failed (email, url, etc.)
-- `enum` - ​​enum value mismatch
+- `pattern` - Regular validation failed
+- `format` - Format validation failed (email, url, etc.)
+- `enum` - enum value mismatch
 
 ---
 

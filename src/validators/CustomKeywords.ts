@@ -1,6 +1,11 @@
 import type { Ajv, ErrorObject } from 'ajv'
 import safeRegex from 'safe-regex'
 import { Locale } from '../core/Locale.js'
+import type { JSONSchemaInput } from '../types/schema.js'
+import {
+  SCHEMA_DSL_CONTAINS_RANGE_KEYWORD,
+  type ContainsRangeKeywordSchema,
+} from '../core/ContainsRangeKeyword.js'
 
 
 // AJV DataValidateFunction compatible type
@@ -15,6 +20,7 @@ export type CustomKeywordMessageResolver = (
 
 export interface CustomKeywordOptions {
   getMessageText?: CustomKeywordMessageResolver
+  validateSchema?: (schema: JSONSchemaInput, data: unknown) => boolean
 }
 
 /**
@@ -60,12 +66,52 @@ export class CustomKeywords {
     CustomKeywords.registerRegexKeyword(ajv, options)
     CustomKeywords.registerFunctionKeyword(ajv, options)
     CustomKeywords.registerCustomValidatorsKeyword(ajv, options)
+    CustomKeywords.registerContainsRangeKeyword(ajv, options)
     CustomKeywords.registerMetadataKeywords(ajv)
     CustomKeywords.registerStringValidators(ajv, options)
     CustomKeywords.registerNumberValidators(ajv, options)
     CustomKeywords.registerObjectValidators(ajv, options)
     CustomKeywords.registerArrayValidators(ajv, options)
     CustomKeywords.registerDateValidators(ajv, options)
+  }
+
+  static registerContainsRangeKeyword(ajv: Ajv, options: CustomKeywordOptions = {}): void {
+    const validate: ValidateFnWithErrors = (range: unknown, data: unknown): boolean => {
+      if (!Array.isArray(data) || !range || typeof range !== 'object') return true
+
+      const config = range as ContainsRangeKeywordSchema
+      const validateSchema = options.validateSchema
+        ?? ((schema: JSONSchemaInput, value: unknown) => ajv.validate(schema, value) as boolean)
+      let matches = 0
+      for (const item of data) {
+        if (validateSchema(config.schema, item)) matches++
+      }
+
+      const maxContains = config.maxContains ?? Number.POSITIVE_INFINITY
+      if (matches >= config.minContains && matches <= maxContains) {
+        delete validate.errors
+        return true
+      }
+
+      validate.errors = [{
+        keyword: 'contains',
+        message: `must contain between ${config.minContains} and ${Number.isFinite(maxContains) ? maxContains : 'unlimited'} matching items`,
+        params: {
+          minContains: config.minContains,
+          ...(config.maxContains !== undefined ? { maxContains: config.maxContains } : {}),
+          matches,
+        },
+      }]
+      return false
+    }
+
+    ajv.addKeyword({
+      keyword: SCHEMA_DSL_CONTAINS_RANGE_KEYWORD,
+      type: 'array',
+      schemaType: 'object',
+      validate,
+      errors: true,
+    })
   }
 
   // ─── Metadata keywords ──────────────────────────────────────────────────

@@ -78,9 +78,9 @@ validate(schema, { contact: 'invalid' }, { locale: 'en-US' }); // English: Must 
 ```
 
 **Built-in multi-language key**:
-- `pattern.emailOrPhone` - ​​Email or mobile phone number
-- `pattern.usernameOrEmail` - ​​username or email
-- `pattern.httpOrHttps` - ​​http or https URL
+- `pattern.emailOrPhone` - Email or mobile phone number
+- `pattern.usernameOrEmail` - username or email
+- `pattern.httpOrHttps` - http or https URL
 
 ---
 

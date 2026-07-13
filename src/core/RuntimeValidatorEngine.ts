@@ -7,6 +7,7 @@ import { CustomKeywords } from '../validators/CustomKeywords.js'
 import type { DslParseOptions } from '../parser/DslParser.js'
 import type { RuntimeIssueFormatter } from './RuntimeIssueFormatter.js'
 import type { CacheStats } from './CacheManager.js'
+import { projectContainsRangesForAjv } from './ContainsRangeKeyword.js'
 
 export interface RuntimeValidatorEngineStats {
   defaultCache: CacheStats
@@ -33,6 +34,7 @@ export class RuntimeValidatorEngine {
     CustomKeywords.registerAll(this.quickAjv, {
       getMessageText: (key, params) =>
         this.formatter.resolveText(key, params ?? {}, {}, 'customKeyword'),
+      validateSchema: (schema, data) => this.quickValidate(schema, data),
     })
 
     this.validatorOptions = {
@@ -63,10 +65,15 @@ export class RuntimeValidatorEngine {
   }
 
   quickValidate(schema: JSONSchemaInput, data: unknown): boolean {
+    const ajvSchema = projectContainsRangesForAjv(schema)
     try {
-      return this.quickAjv.validate(schema, data) as boolean
+      return this.quickAjv.validate(ajvSchema, data) as boolean
     } catch {
       return false
+    } finally {
+      if (ajvSchema !== schema && ajvSchema && typeof ajvSchema === 'object') {
+        this.quickAjv.removeSchema(ajvSchema)
+      }
     }
   }
 

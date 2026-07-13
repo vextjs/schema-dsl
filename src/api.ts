@@ -135,10 +135,23 @@ import { DEFAULT_DSL_EXTENSION_REGISTRY as _DEFAULT_DSL_EXTENSION_REGISTRY } fro
 import { ConditionalBuilder as _ConditionalBuilder } from './core/ConditionalBuilder.js'
 import { Locale as _Locale } from './core/Locale.js'
 import { installStringExtensions as _install } from './core/StringExtensions.js'
-import { PATTERNS as _PATTERNS } from './config/patterns.js'
+import { createDefaultPatterns as _createDefaultPatterns, PATTERNS as _PATTERNS } from './config/patterns.js'
 import * as _CONSTANTS from './config/constants.js'
 import * as _exporters from './exporters/index.js'
-import { Validator as _Validator, SCHEMA_DSL_CACHE_KEY as _SCHEMA_DSL_CACHE_KEY, createSchemaCacheKey as _createSchemaCacheKey } from './core/Validator.js'
+import { Validator as _Validator } from './core/Validator.js'
+import {
+  SCHEMA_DSL_CACHE_KEY as _SCHEMA_DSL_CACHE_KEY,
+  createSchemaCacheKey as _createSchemaCacheKey,
+  createSchemaShapeGuard as _createSchemaShapeGuard,
+  createMutableSchemaCacheProxy as _createMutableSchemaCacheProxy,
+  getMutableSchemaCacheState as _getMutableSchemaCacheState,
+  isSchemaShapeGuardCurrent as _isSchemaShapeGuardCurrent,
+  markSchemaCacheKey as _markSchemaCacheKeyValue,
+  refreshMutableSchemaCacheState as _refreshMutableSchemaCacheState,
+  unwrapMutableSchema as _unwrapMutableSchema,
+  type MutableSchemaCacheState as _MutableSchemaCacheState,
+  type SchemaShapeGuard as _SchemaShapeGuard,
+} from './core/SchemaCacheKey.js'
 import { I18nError as _I18nError } from './errors/I18nError.js'
 import { ValidationError as _ValidationError } from './errors/ValidationError.js'
 import {
@@ -185,35 +198,11 @@ type _RootFastValidationEntry = {
   coerceCandidates?: _SchemaCoerceCandidates | null
   preCoerceCandidates?: _SchemaCoerceCandidates | null
   signature?: string
-  shapeGuard?: _RootSchemaShapeGuard
+  shapeGuard?: _SchemaShapeGuard
+  mutationState?: _MutableSchemaCacheState
+  mutationVersion?: number
+  hasTopLevelCustomValidators?: boolean
 }
-type _RootSchemaShapeGuard = {
-  objects: _RootSchemaObjectShapeGuard[]
-  valueObjects: _RootSchemaObjectValueGuard[]
-  arrays: _RootSchemaArrayGuard[]
-}
-type _RootSchemaObjectShapeGuard = {
-  ref: Record<string, unknown>
-  keys: string[]
-  exact: boolean
-}
-type _RootSchemaObjectValueGuard = {
-  ref: Record<string, unknown>
-  keys: string[]
-  values: unknown[]
-  exact: boolean
-}
-type _RootSchemaArrayGuard = {
-  ref: unknown[]
-  length: number
-  keys?: string[]
-  values?: unknown[]
-  exact: boolean
-}
-type _RootSchemaWatcherOptions = {
-  wrapEntries?: boolean
-}
-
 export const CONSTANTS = _CONSTANTS
 export const exporters = _exporters
 
@@ -244,8 +233,8 @@ function _isDslObject(schema: unknown): schema is _DslDefinition {
 // Perf O6: cache _normalizeSchemaInput results for raw JSON Schema object identity.
 // Plain DSL definition objects ({ email: 'email!' }) are mutable — skip cache to prevent
 // stale results when the caller mutates the object between validate() calls (N-04 fix).
-// User-owned raw JSON Schema objects are not marked with a fixed schema key; root fast-cache
-// entries install write-time invalidation for existing schema fields so hot reads stay fast.
+// User-owned raw JSON Schema objects are not marked with a fixed schema key. Their fast-cache
+// entries use an external exhaustive guard so validation never changes caller-owned objects.
 const _normalizeSchemaCache = new WeakMap<object, _JSONSchema>()
 type _CachedCoerceCandidates = {
   cacheKey: string
@@ -256,123 +245,17 @@ let _validationPlanCache = new Map<string, _CachedValidationPlan>()
 let _rootFastValidationCache = new WeakMap<object, _RootFastValidationEntry>()
 let _runtimeSchemaKeyCache = new WeakMap<object, string>()
 let _runtimeSchemaKeyCounter = 0
-const _rootSchemaDynamicContainerProxyCache = new WeakMap<object, Record<string | symbol, unknown>>()
-const _rootSchemaDynamicContainerProxies = new WeakSet<object>()
 const _VALIDATION_PLAN_CACHE_MAX_SIZE = 5000
 const _EMPTY_VALIDATION_ERRORS = Object.freeze([]) as []
-const _ROOT_SCHEMA_WATCH_KEYS = [
-  '$comment',
-  '$defs',
-  '$id',
-  '$ref',
-  '$schema',
-  '_customMessages',
-  '_customValidators',
-  '_description',
-  '_evaluateCondition',
-  '_isConditional',
-  '_label',
-  '_required',
-  '_runtimeOnlyConditional',
-  '_whenConditions',
-  'additionalProperties',
-  'allOf',
-  'alphanum',
-  'anyOf',
-  'const',
-  'contains',
-  'dateFormat',
-  'dateGreater',
-  'dateLess',
-  'default',
-  'definitions',
-  'dependencies',
-  'dependentSchemas',
-  'description',
-  'else',
-  'enum',
-  'examples',
-  'exactLength',
-  'exclusiveMaximum',
-  'exclusiveMinimum',
-  'format',
-  'idCard',
-  'if',
-  'includesRequired',
-  'items',
-  'jsonString',
-  'lowercase',
-  'maxItems',
-  'maxLength',
-  'maximum',
-  'minItems',
-  'minLength',
-  'minimum',
-  'multipleOf',
-  'not',
-  'oneOf',
-  'passwordStrength',
-  'pattern',
-  'patternProperties',
-  'port',
-  'precision',
-  'prefixItems',
-  'properties',
-  'propertyNames',
-  'regex',
-  'required',
-  'requiredAll',
-  'strictSchema',
-  'then',
-  'title',
-  'trim',
-  'type',
-  'unevaluatedItems',
-  'unevaluatedProperties',
-  'unique',
-  'uniqueItems',
-  'uppercase',
-  'validate',
-] as const
-const _ROOT_SCHEMA_ARRAY_MUTATORS = [
-  'copyWithin',
-  'fill',
-  'pop',
-  'push',
-  'reverse',
-  'shift',
-  'sort',
-  'splice',
-  'unshift',
-] as const
-const _ROOT_SCHEMA_DYNAMIC_KEY_CONTAINER_KEYS = new Set([
-  '$defs',
-  'definitions',
-  'dependencies',
-  'dependentSchemas',
-  'patternProperties',
-  'properties',
-])
-
 function _markSchemaCacheKey(schema: _JSONSchema): _JSONSchema {
-  const cacheKey = _createSchemaCacheKey(schema)
-  if (!cacheKey || !schema || typeof schema !== 'object') return schema
-
-  try {
-    Object.defineProperty(schema, _SCHEMA_DSL_CACHE_KEY, {
-      value: cacheKey,
-      enumerable: false,
-      configurable: true,
-    })
-  } catch {
-    // Non-extensible schemas still validate; Validator falls back to runtime key generation.
-  }
-
-  return schema
+  return _markSchemaCacheKeyValue(_createMutableSchemaCacheProxy(schema))
 }
 
 function _normalizeSchemaInput(schema: _JSONSchemaInput | _DslDefinition | _IDslBuilder | _IConditionalBuilder): _JSONSchemaInput {
   if (!schema || typeof schema !== 'object') return schema as _JSONSchemaInput
+
+  const mutableState = _getMutableSchemaCacheState(schema)
+  if (mutableState) return mutableState.rawSchema as _JSONSchema
 
   const obj = schema as Record<string, unknown>
   if (typeof obj['toSchema'] === 'function') {
@@ -425,311 +308,6 @@ function _getSchemaCacheKey(schema: _JSONSchemaInput): string | null {
   return runtimeKey
 }
 
-function _createRootSchemaShapeGuard(schema: _JSONSchema, exhaustiveValues = false): _RootSchemaShapeGuard {
-  const guard: _RootSchemaShapeGuard = { objects: [], valueObjects: [], arrays: [] }
-  _collectRootSchemaShapeGuard(schema, guard, new WeakSet<object>(), {
-    trackValues: true,
-    exhaustiveValues,
-    exactObjects: true,
-    exactArrays: true,
-  }, null)
-  return guard
-}
-
-function _createRootSchemaMutationGuard(schema: _JSONSchema): _RootSchemaShapeGuard {
-  const guard: _RootSchemaShapeGuard = { objects: [], valueObjects: [], arrays: [] }
-  _collectRootSchemaShapeGuard(schema, guard, new WeakSet<object>(), {
-    trackValues: false,
-    exhaustiveValues: false,
-    exactObjects: false,
-    exactArrays: false,
-  }, null)
-  return guard
-}
-
-function _isRootSchemaShapeGuardCurrent(schema: _JSONSchema, guard: _RootSchemaShapeGuard | undefined): boolean {
-  if (!guard) return true
-  if (guard.objects[0] && schema !== guard.objects[0].ref) return false
-
-  for (const objectGuard of guard.objects) {
-    if (objectGuard.exact && Object.keys(objectGuard.ref).length !== objectGuard.keys.length) return false
-    for (const key of objectGuard.keys) {
-      if (!Object.prototype.hasOwnProperty.call(objectGuard.ref, key)) return false
-    }
-  }
-
-  for (const objectGuard of guard.valueObjects) {
-    const keys = objectGuard.exact ? Object.keys(objectGuard.ref) : objectGuard.keys
-    if (objectGuard.exact && keys.length !== objectGuard.keys.length) return false
-
-    for (let index = 0; index < objectGuard.keys.length; index++) {
-      const key = objectGuard.keys[index]
-      if (objectGuard.exact && keys[index] !== key) return false
-      if (objectGuard.ref[key] !== objectGuard.values[index]) return false
-    }
-  }
-
-  for (const arrayGuard of guard.arrays) {
-    if (arrayGuard.ref.length !== arrayGuard.length) return false
-    if (arrayGuard.exact && Object.keys(arrayGuard.ref).length !== (arrayGuard.keys?.length ?? 0)) return false
-    if (arrayGuard.keys) {
-      for (const key of arrayGuard.keys) {
-        if (!Object.prototype.hasOwnProperty.call(arrayGuard.ref, key)) return false
-      }
-    }
-    if (!arrayGuard.values) continue
-
-    for (let index = 0; index < arrayGuard.length; index++) {
-      if (arrayGuard.ref[index] !== arrayGuard.values[index]) return false
-    }
-  }
-
-  return true
-}
-
-function _collectRootSchemaShapeGuard(
-  value: unknown,
-  guard: _RootSchemaShapeGuard,
-  seen: WeakSet<object>,
-  options: { trackValues: boolean; exhaustiveValues: boolean; exactObjects: boolean; exactArrays: boolean },
-  parentKey: string | null,
-): void {
-  if (!value || typeof value !== 'object') return
-
-  const objectValue = value as object
-  if (seen.has(objectValue)) return
-  seen.add(objectValue)
-
-  if (Array.isArray(value)) {
-    const keys = Object.keys(value)
-    guard.arrays.push(options.exhaustiveValues
-      ? { ref: value, length: value.length, keys, values: value.slice(), exact: options.exactArrays }
-      : { ref: value, length: value.length, keys, exact: options.exactArrays })
-    for (const item of value) {
-      _collectRootSchemaShapeGuard(item, guard, seen, {
-        trackValues: false,
-        exhaustiveValues: options.exhaustiveValues,
-        exactObjects: options.exactObjects,
-        exactArrays: options.exactArrays,
-      }, null)
-    }
-    return
-  }
-
-  const source = value as Record<string, unknown>
-  const keys = Object.keys(source)
-  const isDynamicContainer = parentKey !== null && _ROOT_SCHEMA_DYNAMIC_KEY_CONTAINER_KEYS.has(parentKey)
-  const isWatchedDynamicContainer = isDynamicContainer
-    && _rootSchemaDynamicContainerProxies.has(objectValue)
-  const exactObject = options.exactObjects || (isDynamicContainer && !isWatchedDynamicContainer)
-  if (!isWatchedDynamicContainer || options.exactObjects) {
-    guard.objects.push({ ref: source, keys, exact: exactObject })
-  }
-  if ((options.trackValues || options.exhaustiveValues) && (!isWatchedDynamicContainer || options.exactObjects)) {
-    guard.valueObjects.push({
-      ref: source,
-      keys,
-      values: keys.map(key => source[key]),
-      exact: exactObject,
-    })
-  }
-
-  for (const key of keys) {
-    _collectRootSchemaShapeGuard(source[key], guard, seen, {
-      trackValues: false,
-      exhaustiveValues: options.exhaustiveValues,
-      exactObjects: options.exactObjects,
-      exactArrays: options.exactArrays,
-    }, key)
-  }
-}
-
-function _invalidateRootSchemaCaches(): void {
-  _coerceCandidatesCache = new WeakMap<object, _CachedCoerceCandidates>()
-  _validationPlanCache = new Map<string, _CachedValidationPlan>()
-  _rootFastValidationCache = new WeakMap<object, _RootFastValidationEntry>()
-  _runtimeSchemaKeyCache = new WeakMap<object, string>()
-  _runtimeSchemaKeyCounter = 0
-  _defaultValidator?.clearCache()
-  _noCoerceValidator?.clearCache()
-}
-
-function _installRootSchemaMutationWatchers(
-  value: unknown,
-  seen = new WeakSet<object>(),
-  options: _RootSchemaWatcherOptions = {},
-  parentKey: string | null = null,
-): boolean {
-  if (!value || typeof value !== 'object') return true
-
-  const objectValue = value as object
-  if (seen.has(objectValue)) return true
-  seen.add(objectValue)
-
-  const source = value as Record<string, unknown>
-  const shouldWrapEntries = options.wrapEntries !== false
-  const isDynamicKeyContainer = parentKey !== null && _ROOT_SCHEMA_DYNAMIC_KEY_CONTAINER_KEYS.has(parentKey)
-  const keys = Array.isArray(value) || isDynamicKeyContainer
-    ? Object.keys(source)
-    : _rootSchemaWatcherKeys(source)
-  let fullyWatched = true
-  if (Array.isArray(value) && !_installRootSchemaArrayMutationWatchers(value)) {
-    fullyWatched = false
-  }
-
-  for (const key of keys) {
-    if (key === '__proto__') continue
-    const descriptor = Object.getOwnPropertyDescriptor(source, key)
-    if (!descriptor) {
-      if (shouldWrapEntries && !Array.isArray(value) && !_installRootSchemaMissingKeywordWatcher(source, key)) {
-        fullyWatched = false
-      }
-      continue
-    }
-
-    let child = source[key]
-    child = _rootSchemaWatchedDynamicContainerValue(key, child)
-    // Dynamic containers still wrap existing keys so raw caller-held refs invalidate caches on assignment.
-    if (shouldWrapEntries && descriptor?.configurable && 'value' in descriptor && descriptor.writable !== false) {
-      if (!_installRootSchemaExistingKeywordWatcher(source, key, descriptor, child)) {
-        fullyWatched = false
-      }
-    } else if (shouldWrapEntries && (!descriptor?.configurable || !('value' in descriptor) || descriptor.writable === false)) {
-      fullyWatched = false
-    }
-    if (!_installRootSchemaMutationWatchers(child, seen, { wrapEntries: true }, key)) {
-      fullyWatched = false
-    }
-  }
-  return fullyWatched
-}
-
-function _rootSchemaWatcherKeys(source: Record<string, unknown>): string[] {
-  const keys = Object.keys(source)
-  for (const key of _ROOT_SCHEMA_WATCH_KEYS) {
-    if (!Object.prototype.hasOwnProperty.call(source, key)) keys.push(key)
-  }
-  return keys
-}
-
-function _installRootSchemaExistingKeywordWatcher(
-  source: Record<string, unknown>,
-  key: string,
-  descriptor: PropertyDescriptor,
-  initialValue: unknown = descriptor.value,
-): boolean {
-  let current = initialValue
-  try {
-    Object.defineProperty(source, key, {
-      enumerable: descriptor.enumerable === true,
-      configurable: true,
-      get: () => current,
-      set: (next: unknown) => {
-        const watchedNext = _rootSchemaWatchedDynamicContainerValue(key, next)
-        if (watchedNext !== current) {
-          current = watchedNext
-          _invalidateRootSchemaCaches()
-          return
-        }
-        current = watchedNext
-      },
-    })
-    return true
-  } catch {
-    // Non-configurable or exotic schema objects still validate; they just use the exact guard.
-    return false
-  }
-}
-
-function _rootSchemaWatchedDynamicContainerValue(key: string, value: unknown): unknown {
-  if (!_ROOT_SCHEMA_DYNAMIC_KEY_CONTAINER_KEYS.has(key)) return value
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return value
-
-  const objectValue = value as object
-  if (_rootSchemaDynamicContainerProxies.has(objectValue)) return value
-
-  const cached = _rootSchemaDynamicContainerProxyCache.get(objectValue)
-  if (cached) return cached
-
-  const target = value as Record<string | symbol, unknown>
-  const proxy = new Proxy(target, {
-    set(currentTarget, property, next, receiver) {
-      const previous = Reflect.get(currentTarget, property, receiver)
-      const result = Reflect.set(currentTarget, property, next, receiver)
-      if (result && previous !== next) _invalidateRootSchemaCaches()
-      return result
-    },
-    deleteProperty(currentTarget, property) {
-      const existed = Object.prototype.hasOwnProperty.call(currentTarget, property)
-      const result = Reflect.deleteProperty(currentTarget, property)
-      if (result && existed) _invalidateRootSchemaCaches()
-      return result
-    },
-    defineProperty(currentTarget, property, descriptor) {
-      const previous = Reflect.getOwnPropertyDescriptor(currentTarget, property)
-      const result = Reflect.defineProperty(currentTarget, property, descriptor)
-      if (result && previous !== descriptor) _invalidateRootSchemaCaches()
-      return result
-    },
-  })
-  _rootSchemaDynamicContainerProxyCache.set(objectValue, proxy)
-  _rootSchemaDynamicContainerProxies.add(proxy)
-  return proxy
-}
-
-function _installRootSchemaMissingKeywordWatcher(source: Record<string, unknown>, key: string): boolean {
-  if (!Object.isExtensible(source)) return false
-  try {
-    Object.defineProperty(source, key, {
-      enumerable: false,
-      configurable: true,
-      get: () => undefined,
-      set: (next: unknown) => {
-        try {
-          Object.defineProperty(source, key, {
-            value: next,
-            enumerable: true,
-            configurable: true,
-            writable: true,
-          })
-        } finally {
-          _invalidateRootSchemaCaches()
-        }
-      },
-    })
-    return true
-  } catch {
-    return false
-  }
-}
-
-function _installRootSchemaArrayMutationWatchers(array: unknown[]): boolean {
-  let fullyWatched = true
-  for (const method of _ROOT_SCHEMA_ARRAY_MUTATORS) {
-    const descriptor = Object.getOwnPropertyDescriptor(array, method)
-    if (descriptor && (!descriptor.configurable || typeof descriptor.value !== 'function')) {
-      fullyWatched = false
-      continue
-    }
-
-    try {
-      Object.defineProperty(array, method, {
-        value: (...args: unknown[]) => {
-          const result = (Array.prototype[method] as (...items: unknown[]) => unknown).apply(array, args)
-          _invalidateRootSchemaCaches()
-          return result
-        },
-        enumerable: false,
-        configurable: true,
-        writable: true,
-      })
-    } catch {
-      fullyWatched = false
-    }
-  }
-  return fullyWatched
-}
-
 function _rememberValidationPlan(cacheKey: string, entry: _CachedValidationPlan): void {
   if (_validationPlanCache.has(cacheKey)) _validationPlanCache.delete(cacheKey)
   _validationPlanCache.set(cacheKey, entry)
@@ -752,6 +330,8 @@ function _getCachedValidationPlan(schema: _JSONSchemaInput, cacheKeyOverride?: s
     _rememberValidationPlan(cacheKey, cached)
     return cached.plan
   }
+
+  if (!_getDefaultValidator().getAjv().validateSchema(schema)) return null
 
   const result = _compileValidationPlan(schema, {
     cacheKey,
@@ -1056,12 +636,27 @@ function _matchesRootPrimitiveTypeMask(data: unknown, mask: number): boolean {
 function _tryRootFastValidate<T>(
   schema: _JSONSchemaInput | _DslDefinition | _IDslBuilder | _IConditionalBuilder,
   data: unknown,
-  shouldCoerce: boolean
+  shouldCoerce: boolean,
+  hasTopLevelCustomValidators = false,
 ): _ValidationResult<T> | null {
   if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return null
   if (_defaultValidator && !_defaultValidator.cache.options.enabled) return null
 
   const schemaObject = schema as object
+  const earlyCached = _rootFastValidationCache.get(schemaObject)
+  if (earlyCached?.mutationState) {
+    if (
+      earlyCached.mutationVersion === earlyCached.mutationState.version
+      && _refreshMutableSchemaCacheState(earlyCached.mutationState)
+    ) {
+      return _executeRootFastEntry<T>(earlyCached, data, shouldCoerce)
+    }
+    _rootFastValidationCache.delete(schemaObject)
+    _coerceCandidatesCache.delete(schemaObject)
+    _runtimeSchemaKeyCache.delete(schemaObject)
+    _markSchemaCacheKey(schema as _JSONSchema)
+  }
+
   const source = schema as Record<string, unknown>
   if (source['_isConditional']) return null
 
@@ -1106,24 +701,31 @@ function _tryRootFastValidate<T>(
   const cached = _rootFastValidationCache.get(schemaObject)
   let cacheKey: string | null | undefined
   if (cached) {
-    const markedKey = (schema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY]
-    if (typeof markedKey === 'string' && markedKey) {
+    if (_isSchemaShapeGuardCurrent(schemaObject, cached.shapeGuard)) {
       return _executeRootFastEntry<T>(cached, data, shouldCoerce)
     }
 
-    if (_isRootSchemaShapeGuardCurrent(schema as _JSONSchema, cached.shapeGuard)) {
-      return _executeRootFastEntry<T>(cached, data, shouldCoerce)
+    _rootFastValidationCache.delete(schemaObject)
+    _coerceCandidatesCache.delete(schemaObject)
+    _runtimeSchemaKeyCache.delete(schemaObject)
+    if (typeof (schema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY] === 'string') {
+      _markSchemaCacheKey(schema as _JSONSchema)
     }
-
-    _invalidateRootSchemaCaches()
   }
 
   if (_isDslObject(schema)) return null
 
-  const normalizedSchema = schema as _JSONSchema
-  const markedKey = (normalizedSchema as Record<symbol, unknown>)[_SCHEMA_DSL_CACHE_KEY]
-  cacheKey = cacheKey ?? _getSchemaCacheKey(normalizedSchema)
+  const mutableState = _getMutableSchemaCacheState(schemaObject)
+  const normalizedSchema = mutableState
+    ? _unwrapMutableSchema(schema as _JSONSchema)
+    : schema as _JSONSchema
+  if (mutableState && !mutableState.cacheKey) {
+    _markSchemaCacheKeyValue(schemaObject, _createSchemaCacheKey(normalizedSchema))
+  }
+  cacheKey = cacheKey ?? mutableState?.cacheKey ?? _getSchemaCacheKey(normalizedSchema)
   if (!cacheKey) return null
+
+  if (!_getDefaultValidator().getAjv().validateSchema(normalizedSchema)) return null
 
   const directMask = _tryCreateRootPrimitiveUnionDirectMask(normalizedSchema)
   const plan = directMask ? null : _getCachedValidationPlan(normalizedSchema, cacheKey)
@@ -1133,22 +735,17 @@ function _tryRootFastValidate<T>(
   const preCoerceCandidates = coerceCandidates
     ? _getSafePreCoerceCandidates(normalizedSchema)
     : null
-  const hasMarkedKey = typeof markedKey === 'string' && markedKey
-  const mutationWatchersInstalled = hasMarkedKey
-    ? true
-    : _installRootSchemaMutationWatchers(normalizedSchema, new WeakSet<object>(), { wrapEntries: true })
-  const entry: _RootFastValidationEntry = typeof markedKey === 'string' && markedKey
-    ? { cacheKey, plan, directMask, coerceCandidates, preCoerceCandidates }
-    : {
-      cacheKey,
-      plan,
-      directMask,
-      coerceCandidates,
-      preCoerceCandidates,
-      shapeGuard: mutationWatchersInstalled
-        ? _createRootSchemaMutationGuard(normalizedSchema)
-        : _createRootSchemaShapeGuard(normalizedSchema, true),
-    }
+  const entry: _RootFastValidationEntry = {
+    cacheKey,
+    plan,
+    directMask,
+    coerceCandidates,
+    preCoerceCandidates,
+    hasTopLevelCustomValidators,
+    ...(mutableState
+      ? { mutationState: mutableState, mutationVersion: mutableState.version }
+      : { shapeGuard: _createSchemaShapeGuard(normalizedSchema) }),
+  }
   _rootFastValidationCache.set(schemaObject, entry)
 
   return _executeRootFastEntry<T>(entry, data, shouldCoerce)
@@ -1279,10 +876,34 @@ function _loadLocalesFromDir(dirPath: string, strict = false, codeLocaleFiles: '
 
 // ==================== dsl.config ====================
 
+type _SharedCacheConfig = Partial<{ maxSize: number; ttl: number; enabled: boolean; statsEnabled: boolean }>
+type _SharedConfigListener = (cache: _SharedCacheConfig, reset: boolean) => void
+type _SharedDslConfigState = {
+  cache: _SharedCacheConfig
+  listeners: Set<_SharedConfigListener>
+}
+
+const _SHARED_DSL_CONFIG_KEY = Symbol.for('schema-dsl.v2.dslConfig.state')
+const _sharedConfigHost = globalThis as typeof globalThis & Record<symbol, _SharedDslConfigState | undefined>
+const _sharedDslConfig = _sharedConfigHost[_SHARED_DSL_CONFIG_KEY] ??= {
+  cache: {},
+  listeners: new Set<_SharedConfigListener>(),
+}
+
+function _publishSharedCacheConfig(cache: _SharedCacheConfig): void {
+  _sharedDslConfig.cache = { ..._sharedDslConfig.cache, ...cache }
+  for (const listener of _sharedDslConfig.listeners) listener(_sharedDslConfig.cache, false)
+}
+
+function _resetSharedDslConfig(): void {
+  _sharedDslConfig.cache = {}
+  for (const listener of _sharedDslConfig.listeners) listener({}, true)
+}
+
 function _dslConfig(options: Partial<_DslConfigOptions> = {}): void {
   const strict = (options as Record<string, unknown>)['strict'] === true
   const codeLocaleFiles = options.codeLocaleFiles === 'deny' ? 'deny' : 'allow'
-  _TypeRegistry.setStrict(strict)
+  if (options.strict !== undefined) _TypeRegistry.setStrict(strict)
 
   if (options.patterns) {
     const p = options.patterns as Record<string, unknown>
@@ -1300,12 +921,11 @@ function _dslConfig(options: Partial<_DslConfigOptions> = {}): void {
   // Cache configuration — update default validator's cache options
   const cacheConfig = (options as Record<string, unknown>)['cache'] as Record<string, unknown> | undefined
   if (cacheConfig && typeof cacheConfig === 'object') {
-    const validator = _getDefaultValidator()
-    // Merge with existing options to preserve unspecified defaults
-    validator.cache.options = {
-      ...validator.cache.options,
-      ...cacheConfig,
-    } as Partial<{ maxSize: number; ttl: number; enabled: boolean; statsEnabled: boolean }>
+    _publishSharedCacheConfig(cacheConfig as _SharedCacheConfig)
+  }
+
+  if (typeof options.defaultLocale === 'string' && options.defaultLocale.trim()) {
+    _Locale.setLocale(options.defaultLocale.trim())
   }
 
   if (options.i18n) {
@@ -1337,14 +957,30 @@ let _defaultValidator: InstanceType<typeof _Validator> | null = null
 let _noCoerceValidator: InstanceType<typeof _Validator> | null = null
 
 function _getDefaultValidator(): InstanceType<typeof _Validator> {
-  if (!_defaultValidator) _defaultValidator = new _Validator()
+  if (!_defaultValidator) {
+    _defaultValidator = new _Validator()
+    _defaultValidator.cache.options = _sharedDslConfig.cache
+  }
   return _defaultValidator
 }
 
 function _getNoCoerceValidator(): InstanceType<typeof _Validator> {
-  if (!_noCoerceValidator) _noCoerceValidator = new _Validator({ coerceTypes: false })
+  if (!_noCoerceValidator) {
+    _noCoerceValidator = new _Validator({ coerceTypes: false })
+    _noCoerceValidator.cache.options = _sharedDslConfig.cache
+  }
   return _noCoerceValidator
 }
+
+const _sharedConfigListener: _SharedConfigListener = (cache, reset) => {
+  if (reset) {
+    resetDefaultValidator()
+    return
+  }
+  if (_defaultValidator) _defaultValidator.cache.options = cache
+  if (_noCoerceValidator) _noCoerceValidator.cache.options = cache
+}
+_sharedDslConfig.listeners.add(_sharedConfigListener)
 
 export { _getDefaultValidator as getDefaultValidator }
 
@@ -1361,11 +997,7 @@ export function resetDefaultValidator(): void {
 }
 
 // Initial PATTERNS snapshot — used by resetRuntimeState() to restore user-overridden values
-const _INITIAL_PATTERNS = {
-  phone: { ..._PATTERNS.phone },
-  idCard: { ..._PATTERNS.idCard },
-  creditCard: { ..._PATTERNS.creditCard },
-}
+const _INITIAL_PATTERNS = _createDefaultPatterns()
 
 function _defaultParseOptions(options: _DslParseOptions = {}): _DslParseOptions {
   return {
@@ -1378,6 +1010,7 @@ function _defaultParseOptions(options: _DslParseOptions = {}): _DslParseOptions 
  * Reset global runtime state that may leak across tests, workers, or tenants.
  */
 export function resetRuntimeState(): void {
+  _resetSharedDslConfig()
   resetDefaultValidator()
   _coerceCandidatesCache = new WeakMap<object, _CachedCoerceCandidates>()
   _validationPlanCache = new Map<string, _CachedValidationPlan>()
@@ -1574,17 +1207,39 @@ export function validate<T = unknown>(
     if (builderFastResult) return builderFastResult as _ValidationResult<T>
   }
 
-  const hasTopLevelCustomValidators = _hasTopLevelCustomValidators(schema)
-  const directFastResult = isFastBuilder || hasTopLevelCustomValidators
+  let rootFastAlreadyTried = false
+  if (
+    (!_defaultValidator || _defaultValidator.cache.options.enabled)
+    && schema
+    && typeof schema === 'object'
+    && !Array.isArray(schema)
+  ) {
+    const cached = _rootFastValidationCache.get(schema as object)
+    if (
+      cached?.mutationState
+      && cached.hasTopLevelCustomValidators === false
+      && cached.mutationVersion === cached.mutationState.version
+      && _refreshMutableSchemaCacheState(cached.mutationState)
+    ) {
+      const cachedResult = _executeRootFastEntry<T>(cached, data, shouldCoerce)
+      if (cachedResult) return cachedResult
+      rootFastAlreadyTried = true
+    }
+  }
+
+  const hasTopLevelCustomValidators = rootFastAlreadyTried
+    ? false
+    : _hasTopLevelCustomValidators(schema)
+  const directFastResult = isFastBuilder || hasTopLevelCustomValidators || rootFastAlreadyTried
     ? null
-    : _tryRootFastValidate<T>(schema, data, shouldCoerce)
+    : _tryRootFastValidate<T>(schema, data, shouldCoerce, false)
   if (directFastResult) return directFastResult
 
   const simpleCustomResult = _trySimpleSyncCustomValidate<T>(schema, data, options)
   if (simpleCustomResult) return simpleCustomResult
 
   const customSchemaFastResult = hasTopLevelCustomValidators && !isFastBuilder
-    ? _tryRootFastValidate<T>(schema, data, shouldCoerce)
+    ? _tryRootFastValidate<T>(schema, data, shouldCoerce, true)
     : null
   if (customSchemaFastResult) return customSchemaFastResult
 
@@ -1689,6 +1344,7 @@ _attachDslNamespaceFactories(_dslWithNS, {
   createBuilderFromSchema: schema => _DslBuilder.fromSchema(schema, { parseOptions: _defaultParseOptions() }) as _DslBuilderPublic,
   parseObject: definition => _markSchemaCacheKey(_DslAdapter.parseObject(definition, _defaultParseOptions()).toSchema() as _JSONSchema),
   registerType: (name, schema) => _DslBuilder.registerType(name, schema),
+  unregisterType: name => _DslBuilder.unregisterType(name),
   typeExists: name => _TypeRegistry.has(name),
   extensionRegistry: _DEFAULT_DSL_EXTENSION_REGISTRY,
 })

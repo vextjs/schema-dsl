@@ -325,10 +325,10 @@ const schema = s({
 ### Automatic recognition logic
 
 ```javascript
-// 1. All values ​​are 'true' or 'false' → boolean enumeration
+// 1. All values are 'true' or 'false' → boolean enumeration
 'true|false'  → { type: 'boolean', enum: [true, false] }
 
-// 2. All values ​​are numbers → numeric enumeration
+// 2. All values are numbers → numeric enumeration
 '1|2|3'  → { type: 'number', enum: [1, 2, 3] }
 
 // 3. Contains decimals → numeric enumeration

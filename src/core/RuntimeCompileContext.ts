@@ -54,6 +54,9 @@ function assertTypeName(name: string): void {
   if (typeof name !== 'string' || name.trim() === '') {
     throw new Error('[schema-dsl/runtime] type name must be a non-empty string')
   }
+  if (TypeRegistry.hasBuiltin(name.trim())) {
+    throw new Error(`[schema-dsl/runtime] cannot override protected built-in type "${name.trim()}"`)
+  }
 }
 
 function toTypeDefinition(schema: SchemaDslTypeSchema): TypeDefinition | (() => JSONSchema) {

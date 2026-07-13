@@ -111,7 +111,7 @@ Logic to determine whether it is a DSL object (`_isDslObject()`):
 3. **Exclude ConditionalBuilder**: Return false if `_isConditional` tag is present
 4. **Exclusion Criteria JSON Schema**:
    - There is `type` field and the value is a standard type (string/number/object, etc.)
-   - All values ​​of `properties` contain the `type` field
+   - All values of `properties` contain the `type` field
 5. **Identify DSL objects**:
    - The attribute value contains a DSL string (e.g. `'email!'`, `'string:3-32'`)
    - Property value contains nested DSL object

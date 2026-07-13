@@ -17,11 +17,13 @@ export interface ValidateOptions {
   smartCoerce?: boolean
   /** Top-level convenience alias for disabling smart coercion. */
   coerce?: boolean
-  /** Whether to remove additional properties. */
+  /** Per-call alias for disabling smart coercion; native AJV coercion is constructor-owned. */
+  coerceTypes?: boolean
+  /** @deprecated Configure additional-property removal on Validator construction. */
   removeAdditional?: boolean | 'all' | 'failing'
-  /** Whether to enable caching. */
+  /** @deprecated Configure caching on Validator construction. */
   cache?: boolean | CacheOptions
-  /** Whether to enable strict mode. */
+  /** @deprecated Configure strict behavior on Validator construction or runtime configuration. */
   strict?: boolean
   [key: string]: unknown
 }

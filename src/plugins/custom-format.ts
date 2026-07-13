@@ -78,11 +78,44 @@ const FORMATS: Record<string, FormatConfig> = {
   },
 }
 
-const CUSTOM_FORMAT_NAMES = Object.keys(FORMATS)
-
 type AjvFormatRegistry = {
   addFormat: (name: string, definition: RegExp | { validate: RegExp | ((value: string) => boolean) }) => void
   formats?: Record<string, unknown>
+}
+
+interface ResourceAcquisitionState {
+  names: Set<string>
+  leases: number
+}
+
+const FORMAT_ACQUISITIONS_KEY = Symbol.for('schema-dsl.v2.plugins.custom-format.acquisitions')
+const TYPE_ACQUISITIONS_KEY = Symbol.for('schema-dsl.v2.plugins.custom-format.type-acquisitions')
+const formatAcquisitionHost = globalThis as typeof globalThis & Record<symbol, WeakMap<object, ResourceAcquisitionState> | undefined>
+const ACQUIRED_FORMAT_RESOURCES = formatAcquisitionHost[FORMAT_ACQUISITIONS_KEY]
+  ??= new WeakMap<object, ResourceAcquisitionState>()
+const ACQUIRED_TYPE_RESOURCES = formatAcquisitionHost[TYPE_ACQUISITIONS_KEY]
+  ??= new WeakMap<object, ResourceAcquisitionState>()
+
+function acquisitionState(
+  resources: WeakMap<object, ResourceAcquisitionState>,
+  owner: object,
+): ResourceAcquisitionState {
+  let state = resources.get(owner)
+  if (!state) {
+    state = { names: new Set<string>(), leases: 0 }
+    resources.set(owner, state)
+  }
+  return state
+}
+
+function typeAcquisitionState(dslBuilder: typeof DslBuilder): ResourceAcquisitionState {
+  const owner = dslBuilder as unknown as object
+  const state = acquisitionState(ACQUIRED_TYPE_RESOURCES, owner)
+  if (state.names.size > 0 && [...state.names].every(name => !dslBuilder.hasType(name))) {
+    state.names.clear()
+    state.leases = 0
+  }
+  return state
 }
 
 function getValidator(core: unknown): Validator {
@@ -113,25 +146,51 @@ export const customFormatPlugin: Plugin & {
     const ajv = getAjvLike(core)
     const dslBuilder = getDslBuilderLike(core)
     this.addCustomFormats(ajv, dslBuilder)
+    acquisitionState(ACQUIRED_FORMAT_RESOURCES, ajv as object).leases++
+    typeAcquisitionState(dslBuilder).leases++
   },
   uninstall(core) {
     if (!core) return
     const validator = getValidator(core)
     const ajv = validator.getAjv() as AjvFormatRegistry
     const dslBuilder = getDslBuilderLike(core)
+    const formatState = ACQUIRED_FORMAT_RESOURCES.get(ajv as object)
+    const typeOwner = dslBuilder as unknown as object
+    const typeState = ACQUIRED_TYPE_RESOURCES.get(typeOwner)
 
-    for (const name of CUSTOM_FORMAT_NAMES) {
-      dslBuilder.unregisterType(name)
-      delete ajv.formats?.[name]
+    if (formatState) {
+      if (formatState.leases > 0) formatState.leases--
+      if (formatState.leases === 0) {
+        for (const name of formatState.names) delete ajv.formats?.[name]
+        ACQUIRED_FORMAT_RESOURCES.delete(ajv as object)
+      }
     }
-    validator.clearCache()
+
+    if (typeState) {
+      if (typeState.leases > 0) typeState.leases--
+      if (typeState.leases === 0) {
+        for (const name of typeState.names) dslBuilder.unregisterType(name)
+        ACQUIRED_TYPE_RESOURCES.delete(typeOwner)
+      }
+    }
+
+    if (formatState || typeState) validator.clearCache()
   },
   addCustomFormats(ajv, dslBuilder) {
+    const registry = ajv as AjvFormatRegistry
+    const formatState = acquisitionState(ACQUIRED_FORMAT_RESOURCES, ajv as object)
+    const typeState = typeAcquisitionState(dslBuilder)
     for (const [name, config] of Object.entries(FORMATS)) {
-      ajv.addFormat(name, {
-        validate: config.validate ?? config.pattern!,
-      })
-      dslBuilder.registerType(name, config.schema)
+      if (!registry.formats || !Object.prototype.hasOwnProperty.call(registry.formats, name)) {
+        ajv.addFormat(name, {
+          validate: config.validate ?? config.pattern!,
+        })
+        formatState.names.add(name)
+      }
+      if (typeof dslBuilder.hasType !== 'function' || !dslBuilder.hasType(name)) {
+        dslBuilder.registerType(name, config.schema)
+        typeState.names.add(name)
+      }
     }
   },
 }

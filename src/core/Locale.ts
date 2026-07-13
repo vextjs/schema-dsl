@@ -16,18 +16,28 @@ export interface LocaleResolvedMessage {
  */
 export const DEFAULT_LOCALE = 'en-US'
 
-export class Locale {
-  private static _currentLocale: string = DEFAULT_LOCALE
-  private static _customMessages: Record<string, LocaleMessage> = {}
-  private static _revision = 0
+interface LocaleState {
+  currentLocale: string
+  customMessages: Record<string, LocaleMessage>
+  revision: number
+}
 
+const LOCALE_STATE_KEY = Symbol.for('schema-dsl.v2.Locale.state')
+const localeHost = globalThis as typeof globalThis & Record<symbol, LocaleState | undefined>
+const localeState = localeHost[LOCALE_STATE_KEY] ??= {
+  currentLocale: DEFAULT_LOCALE,
+  customMessages: {},
+  revision: 0,
+}
+
+export class Locale {
   static get revision(): number {
-    return this._revision
+    return localeState.revision
   }
 
   /** v1 compat: expose custom messages */
   static get customMessages(): Record<string, LocaleMessage> {
-    return this._customMessages
+    return localeState.customMessages
   }
 
   /** v1 compat: expose all locales as { locale: messages } map */
@@ -38,13 +48,13 @@ export class Locale {
       result[locale] = getMessages(locale) as Record<string, LocaleMessage>
     }
     // Custom locales added via addLocale
-    for (const key of Object.keys(this._customMessages)) {
+    for (const key of Object.keys(localeState.customMessages)) {
       if (key.includes(':')) {
         const colonIdx = key.indexOf(':')
         const locale = key.substring(0, colonIdx)
         const msgKey = key.substring(colonIdx + 1)
         if (!result[locale]) result[locale] = {}
-        result[locale][msgKey] = this._customMessages[key]
+        result[locale][msgKey] = localeState.customMessages[key]
       }
     }
     return result
@@ -53,27 +63,27 @@ export class Locale {
   // ─── Locale Switching ─────────────────────────────────────────────────────
 
   static setLocale(locale: string): void {
-    this._currentLocale = locale
+    localeState.currentLocale = locale
   }
 
   static getLocale(): string {
-    return this._currentLocale
+    return localeState.currentLocale
   }
 
   // ─── Custom Messages (global override) ───────────────────────────────────
 
   static setMessages(messages: Record<string, LocaleMessage>): void {
-    this._customMessages = { ...this._customMessages, ...messages }
-    this._revision++
+    localeState.customMessages = { ...localeState.customMessages, ...messages }
+    localeState.revision++
   }
 
   static addLocale(locale: string, messages: Record<string, LocaleMessage>): void {
     // Dynamically add a locale pack at runtime (merged into existing entries).
     // Records into customMessages and takes priority during lookup.
     for (const [k, v] of Object.entries(messages)) {
-      this._customMessages[`${locale}:${k}`] = v
+      localeState.customMessages[`${locale}:${k}`] = v
     }
-    this._revision++
+    localeState.revision++
   }
 
   static getAvailableLocales(): string[] {
@@ -128,11 +138,11 @@ export class Locale {
    * Get the full message table for the given locale (built-in + custom).
    */
   static getMessages(locale?: string): Record<string, LocaleMessage> {
-    const targetLocale = locale ?? this._currentLocale
+    const targetLocale = locale ?? localeState.currentLocale
     const builtinMessages = getMessages(targetLocale) as Record<string, LocaleMessage>
     // Merge custom messages added via addLocale/setMessages for this locale
     const customForLocale: Record<string, LocaleMessage> = {}
-    for (const [k, v] of Object.entries(this._customMessages)) {
+    for (const [k, v] of Object.entries(localeState.customMessages)) {
       if (k.startsWith(`${targetLocale}:`)) {
         customForLocale[k.slice(targetLocale.length + 1)] = v
       } else if (!k.includes(':')) {
@@ -147,9 +157,9 @@ export class Locale {
    * Reset to defaults (for testing).
    */
   static reset(): void {
-    this._currentLocale = DEFAULT_LOCALE
-    this._customMessages = {}
-    this._revision++
+    localeState.currentLocale = DEFAULT_LOCALE
+    localeState.customMessages = {}
+    localeState.revision++
   }
 
   // ─── Private Helpers ──────────────────────────────────────────────────────
@@ -169,15 +179,15 @@ export class Locale {
     customMessages: Record<string, LocaleMessage>,
     locale: string | null
   ): LocaleMessage | null {
-    const targetLocale = locale ?? this._currentLocale
+    const targetLocale = locale ?? localeState.currentLocale
 
     const callerMsg = customMessages[type]
     if (callerMsg !== undefined) return callerMsg
 
-    const globalMsg = this._customMessages[type]
+    const globalMsg = localeState.customMessages[type]
     if (globalMsg !== undefined) return globalMsg
 
-    const globalLocaleMsg = this._customMessages[`${targetLocale}:${type}`]
+    const globalLocaleMsg = localeState.customMessages[`${targetLocale}:${type}`]
     if (globalLocaleMsg !== undefined) return globalLocaleMsg
 
     if (this._isLocaleKey(type)) {

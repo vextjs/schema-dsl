@@ -292,9 +292,9 @@ Create a chained conditional builder.
 **Parameters**:
 - `condition` {Function} - conditional function, receiving complete data object
   - Parameter: `(data: any) => boolean`
-  - Return: `boolean` - ​​true means the condition is met
+  - Return: `boolean` - true means the condition is met
 
-**Returns**: `ConditionalBuilder` - ​​builder instance
+**Returns**: `ConditionalBuilder` - builder instance
 
 **Example**:
 ```javascript
@@ -313,7 +313,7 @@ Add an AND condition (combine with the previous condition).
 **Parameters**:
 - `condition` {Function} - conditional function
 
-**Return**: `this` - ​​supports chain calls
+**Return**: `this` - supports chain calls
 
 **Basic example**:
 ```javascript
@@ -353,7 +353,7 @@ s.if(d => !d)
 ```
 
 **logic**:
-- Traditional mode: `(condition1 AND condition2)` - ​​all conditions must be true to fail
+- Traditional mode: `(condition1 AND condition2)` - all conditions must be true to fail
 - Chain check mode (v1.1.1+): Check in sequence, the first one that is true fails
 
 **Chain check mode trigger conditions**:
@@ -372,7 +372,7 @@ Add an OR condition (combine with the previous condition).
 **Parameters**:
 - `condition` {Function} - conditional function
 
-**Return**: `this` - ​​supports chain calls
+**Return**: `this` - supports chain calls
 
 **Basic example**:
 ```javascript
@@ -397,7 +397,7 @@ s.if(d => d.age < 18)
 // - all conditions are false → validation successful
 ```
 
-**Logic**: `(condition1 OR condition2)` - ​​Fails if any condition is true
+**Logic**: `(condition1 OR condition2)` - Fails if any condition is true
 
 **Notice**:
 - Chained check mode will not be enabled if `.or()` condition is present
@@ -431,7 +431,7 @@ Add else-if branch.
 **Parameters**:
 - `condition` {Function} - conditional function
 
-**Return**: `this` - ​​supports chain calls
+**Return**: `this` - supports chain calls
 
 **Example**:
 ```javascript
@@ -454,7 +454,7 @@ Set error message (supports multi-language keys).
 **Parameters**:
 - `msg` {string} - error message or multilingual key
 
-**Return**: `this` - ​​supports chain calls
+**Return**: `this` - supports chain calls
 
 **Behavior**: This error is automatically thrown when the condition is true (no need for `.throwError()`)
 
@@ -515,7 +515,7 @@ Set the Schema when the conditions are met.
 **Parameters**:
 - `schema` {string|DslBuilder|JSONSchema} - DSL string or Schema object
 
-**Return**: `this` - ​​supports chain calls
+**Return**: `this` - supports chain calls
 
 **Example**:
 ```javascript
@@ -540,7 +540,7 @@ Set the default Schema (when all conditions are not met).
 **Parameters**:
 - `schema` {string|DslBuilder|JSONSchema|null} - DSL string, Schema object, or null
 
-**Return**: `this` - ​​supports chain calls
+**Return**: `this` - supports chain calls
 
 **Feature**: Optional, if you don’t write else, it won’t be validated.
 
@@ -572,7 +572,7 @@ Quick validation method - returns complete validation results.
   - `locale` {string} - locale (e.g. 'zh-CN', 'en-US')
   - `messages` {Object} - Custom error message
 
-**Return**: `Object` - ​​Validation result `{ valid, errors, data }`
+**Return**: `Object` - Validation result `{ valid, errors, data }`
 
 **Feature**: One line of code to complete validation, no external `validate()` function required
 
@@ -609,9 +609,9 @@ Asynchronous validation method - automatically throws an exception on failure.
 - `data` {*} - Data to be validated
 - `options` {Object} - Authentication options (optional)
 
-**Return**: `Promise<*>` - ​​If the validation passes, the data will be returned, if it fails, an exception will be thrown.
+**Return**: `Promise<*>` - If the validation passes, the data will be returned, if it fails, an exception will be thrown.
 
-**Throws**: `ValidationError` - ​​Validation failure throws exception
+**Throws**: `ValidationError` - Validation failure throws exception
 
 **Features**: Suitable for async/await scenarios, automatically throwing errors on failure
 
@@ -661,9 +661,9 @@ Assertion method - synchronous validation, if it fails, an error will be thrown 
 - `data` {*} - Data to be validated
 - `options` {Object} - Authentication options (optional)
 
-**Return**: `*` - ​​Return data after validation
+**Return**: `*` - Return data after validation
 
-**Throws**: `ValidationError` - ​​Throws `ValidationError` directly when validation fails
+**Throws**: `ValidationError` - Throws `ValidationError` directly when validation fails
 
 **Feature**: Synchronous version of assertion validation, suitable for fast failure scenarios
 
@@ -711,7 +711,7 @@ Quick check method - returns only boolean.
 **Parameters**:
 - `data` {*} - Data to be validated
 
-**Return**: `boolean` - ​​Validation passed
+**Return**: `boolean` - Validation passed
 
 **Features**: More concise than `.validate()`, suitable for scenarios where only true and false needs to be determined
 

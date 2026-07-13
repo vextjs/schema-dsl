@@ -1,4 +1,10 @@
 import type { ConditionalInternalSchema } from '../ConditionalValidator.js'
+import {
+  SCHEMA_ARRAY_POSITION_KEYS,
+  SCHEMA_DEPENDENCY_MAP_POSITION_KEYS,
+  SCHEMA_DIRECT_POSITION_KEYS,
+  SCHEMA_MAP_POSITION_KEYS,
+} from '../../utils/schemaApplicators.js'
 
 export interface ConditionalSchemaChild {
   path: string
@@ -11,12 +17,12 @@ export function iterConditionalSchemaChildren(
 ): ConditionalSchemaChild[] {
   const children: ConditionalSchemaChild[] = []
 
-  collectMap(schema.properties, `${path}/properties`, children)
-  collectMap(schema.patternProperties, `${path}/patternProperties`, children)
-  collectMap(schema.dependentSchemas, `${path}/dependentSchemas`, children)
-  collectMap(schema.definitions, `${path}/definitions`, children)
-  collectMap(schema.$defs, `${path}/$defs`, children)
-  collectMap((schema as Record<string, unknown>)['dependencies'], `${path}/dependencies`, children, true)
+  for (const key of SCHEMA_MAP_POSITION_KEYS) {
+    collectMap(schema[key], `${path}/${key}`, children)
+  }
+  for (const key of SCHEMA_DEPENDENCY_MAP_POSITION_KEYS) {
+    collectMap(schema[key], `${path}/${key}`, children, true)
+  }
 
   if (schema.items) {
     if (Array.isArray(schema.items)) {
@@ -26,27 +32,12 @@ export function iterConditionalSchemaChildren(
     }
   }
 
-  const prefixItems = (schema as Record<string, unknown>)['prefixItems']
-  if (Array.isArray(prefixItems)) {
-    prefixItems.forEach((item, index) => children.push({ path: `${path}/prefixItems/${index}`, child: item }))
-  }
-
-  for (const key of [
-    'additionalProperties',
-    'propertyNames',
-    'contains',
-    'not',
-    'if',
-    'then',
-    'else',
-    'unevaluatedItems',
-    'unevaluatedProperties',
-  ] as const) {
+  for (const key of SCHEMA_DIRECT_POSITION_KEYS) {
     const child = schema[key]
     if (child !== undefined && typeof child === 'object') children.push({ path: `${path}/${key}`, child })
   }
 
-  for (const key of ['allOf', 'anyOf', 'oneOf'] as const) {
+  for (const key of SCHEMA_ARRAY_POSITION_KEYS) {
     const list = schema[key]
     if (Array.isArray(list)) {
       list.forEach((item, index) => children.push({ path: `${path}/${key}/${index}`, child: item }))

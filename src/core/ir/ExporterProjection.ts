@@ -1,5 +1,11 @@
 import type { JSONSchemaInput } from '../../types/schema.js'
 import type { IRLossMetadata, SchemaIR, SchemaIRProjection } from '../../types/ir.js'
+import {
+  SCHEMA_ARRAY_POSITION_KEYS,
+  SCHEMA_DEPENDENCY_MAP_POSITION_KEYS,
+  SCHEMA_DIRECT_POSITION_KEYS,
+  SCHEMA_MAP_POSITION_KEYS,
+} from '../../utils/schemaApplicators.js'
 import { createJsonSchemaIR } from './JsonSchemaToIR.js'
 
 export type ExporterIRTarget = IRLossMetadata['target']
@@ -48,6 +54,17 @@ function collectUnsupportedKeywordLosses(
   seen = new WeakSet<object>(),
   seenRefs = new Set<string>(),
 ): IRLossMetadata[] {
+  if (typeof schema === 'boolean') {
+    const represented = target === 'markdown' || (target === 'mongodb' && schema)
+    return represented
+      ? []
+      : [{
+        path,
+        keyword: '$booleanSchema',
+        target,
+        status: 'unsupported',
+      }]
+  }
   if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return []
 
   const schemaObject = schema as object
@@ -88,7 +105,7 @@ function collectUnsupportedKeywordLosses(
       }
     }
 
-    for (const key of ['properties', 'patternProperties', 'dependentSchemas', 'dependencies', 'definitions', '$defs']) {
+    for (const key of [...SCHEMA_MAP_POSITION_KEYS, ...SCHEMA_DEPENDENCY_MAP_POSITION_KEYS]) {
       const children = record[key]
       if (!children || typeof children !== 'object' || Array.isArray(children)) continue
       for (const [childKey, child] of Object.entries(children as Record<string, unknown>)) {
@@ -105,34 +122,32 @@ function collectUnsupportedKeywordLosses(
       }
     }
 
-    for (const key of ['items', 'prefixItems']) {
-      const children = record[key]
-      if (Array.isArray(children)) {
-        children.forEach((child, index) => {
-          losses.push(...collectUnsupportedKeywordLosses(
-            child as JSONSchemaInput,
-            target,
-            unsupportedKeywords,
-            `${path}.${key}[${index}]`,
-            rootSchema,
-            seen,
-            seenRefs,
-          ))
-        })
-      } else if (children !== undefined) {
+    const items = record['items']
+    if (Array.isArray(items)) {
+      items.forEach((child, index) => {
         losses.push(...collectUnsupportedKeywordLosses(
-          children as JSONSchemaInput,
+          child as JSONSchemaInput,
           target,
           unsupportedKeywords,
-          `${path}.${key}`,
+          `${path}.items[${index}]`,
           rootSchema,
           seen,
           seenRefs,
         ))
-      }
+      })
+    } else if (items !== undefined) {
+      losses.push(...collectUnsupportedKeywordLosses(
+        items as JSONSchemaInput,
+        target,
+        unsupportedKeywords,
+        `${path}.items`,
+        rootSchema,
+        seen,
+        seenRefs,
+      ))
     }
 
-    for (const key of ['allOf', 'anyOf', 'oneOf']) {
+    for (const key of SCHEMA_ARRAY_POSITION_KEYS) {
       const children = record[key]
       if (Array.isArray(children)) {
         children.forEach((child, index) => {
@@ -149,7 +164,7 @@ function collectUnsupportedKeywordLosses(
       }
     }
 
-    for (const key of ['additionalProperties', 'propertyNames', 'contains', 'not', 'if', 'then', 'else', 'unevaluatedItems', 'unevaluatedProperties']) {
+    for (const key of SCHEMA_DIRECT_POSITION_KEYS) {
       const child = record[key]
       if (child !== undefined) {
         losses.push(...collectUnsupportedKeywordLosses(

@@ -373,6 +373,25 @@ describe('dsl namespace API', () => {
 
   it('keeps extension registration atomic and reports schema contract errors', () => {
     const registry = new DslExtensionRegistry()
+    let installedResource = false
+    registry.subscribe((event) => {
+      if (event === 'register') installedResource = true
+      if (event === 'rollback') installedResource = false
+    })
+    const unsubscribeFailure = registry.subscribe((event) => {
+      if (event === 'register') throw new Error('listener failed')
+    })
+
+    expect(() => registry.register({
+      literal: 'failed-extension',
+      factoryName: 'failedExtension',
+      schema: { type: 'string' },
+    })).toThrow('listener failed')
+    expect(installedResource).toBe(false)
+    expect(registry.getByLiteral('failed-extension')).toBeUndefined()
+    expect(registry.getByFactoryName('failedExtension')).toBeUndefined()
+    unsubscribeFailure()
+
     const registered = registry.register({
       literal: 'tenant-id',
       factoryName: 'tenantId',

@@ -10,6 +10,13 @@ import { DslAdapter } from '../adapters/DslAdapter.js'
 import { cloneSchemaValue } from './schemaClone.js'
 import { isRawJsonSchemaLike } from './schemaInput.js'
 import { createSchemaRecord, setSchemaRecordValue } from './schemaRecord.js'
+import { SCHEMA_DSL_CACHE_KEY } from '../core/SchemaCacheKey.js'
+import {
+  SCHEMA_ARRAY_POSITION_KEYS,
+  SCHEMA_DEPENDENCY_MAP_POSITION_KEYS,
+  SCHEMA_DIRECT_POSITION_KEYS,
+  SCHEMA_MAP_POSITION_KEYS,
+} from './schemaApplicators.js'
 
 // Internal: chainable schema wrapper type
 interface ChainableSchema extends JSONSchema {
@@ -19,6 +26,13 @@ interface ChainableSchema extends JSONSchema {
   omit(fields: string[]): ChainableSchema
   extend(extensions: Record<string, unknown>): ChainableSchema
 }
+
+type ValidateMethod = (...args: never[]) => unknown
+type PerformanceMetadata = { duration: number; timestamp: string }
+type WithPerformanceResult<T> = T extends object ? T & { performance: PerformanceMetadata } : T
+type WithPerformanceValidator<T extends { validate: ValidateMethod }> = Omit<T, 'validate'> & {
+  validate: (...args: Parameters<T['validate']>) => WithPerformanceResult<ReturnType<T['validate']>>
+} & T
 
 function isObjectSchema(value: JSONSchemaInput): value is JSONSchema {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -145,7 +159,9 @@ export class SchemaUtils {
     if (Array.isArray(result['required']) && (result['required'] as string[]).length === 0) {
       delete result['required']
     }
-    const keptFields = Object.keys((result['properties'] as Record<string, unknown> | undefined) ?? {})
+    const omittedFields = new Set(fields)
+    const keptFields = [...this._collectObjectLevelFieldReferences(result, new WeakSet<object>())]
+      .filter(field => !omittedFields.has(field))
     this._prunePickedFieldConstraints(result, keptFields)
 
     return this._makeChainable(result as JSONSchema)
@@ -172,15 +188,21 @@ export class SchemaUtils {
   /**
    * Wrap a Validator instance with performance monitoring.
    */
-  static withPerformance<V extends { validate: (...args: unknown[]) => unknown }>(validator: V): V {
-    const originalValidate = validator.validate.bind(validator)
-    validator.validate = (...args: unknown[]) => {
+  static withPerformance<V extends { validate: ValidateMethod }>(validator: V): WithPerformanceValidator<V> {
+    const originalValidate = validator.validate.bind(validator) as (...args: Parameters<V['validate']>) => ReturnType<V['validate']>
+    const monitoredValidate = (...args: Parameters<V['validate']>): WithPerformanceResult<ReturnType<V['validate']>> => {
       const startTime = Date.now()
-      const result = originalValidate(...args) as Record<string, unknown>
-      result['performance'] = { duration: Date.now() - startTime, timestamp: new Date().toISOString() }
-      return result
+      const result = originalValidate(...args)
+      if (result && typeof result === 'object') {
+        ;(result as Record<string, unknown>)['performance'] = {
+          duration: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+        }
+      }
+      return result as WithPerformanceResult<ReturnType<V['validate']>>
     }
-    return validator
+    validator.validate = monitoredValidate as V['validate']
+    return validator as WithPerformanceValidator<V>
   }
 
   /**
@@ -244,7 +266,9 @@ export class SchemaUtils {
   }
 
   static clone(schema: JSONSchema): JSONSchema {
-    return cloneSchemaValue(schema)
+    const cloned = cloneSchemaValue(schema)
+    delete (cloned as Record<symbol, unknown>)[SCHEMA_DSL_CACHE_KEY]
+    return cloned
   }
 
   /**
@@ -429,35 +453,119 @@ export class SchemaUtils {
   }
 
   private static _deleteRequired(obj: Record<string, unknown>): void {
+    this._deleteRequiredRecursive(obj, new WeakSet<object>())
+  }
+
+  private static _deleteRequiredRecursive(obj: Record<string, unknown>, seen: WeakSet<object>): void {
+    if (seen.has(obj)) return
+    seen.add(obj)
     delete obj['required']
-    const props = obj['properties']
-    if (props && typeof props === 'object') {
-      for (const prop of Object.values(props as Record<string, unknown>)) {
-        if (prop && typeof prop === 'object') {
-          this._deleteRequired(prop as Record<string, unknown>)
+
+    for (const key of [...SCHEMA_MAP_POSITION_KEYS, ...SCHEMA_DEPENDENCY_MAP_POSITION_KEYS]) {
+      const children = obj[key]
+      if (!this._isPlainRecord(children)) continue
+      for (const child of Object.values(children)) {
+        if (this._isPlainRecord(child)) this._deleteRequiredRecursive(child, seen)
+      }
+    }
+
+    for (const key of ['items', ...SCHEMA_DIRECT_POSITION_KEYS] as const) {
+      const child = obj[key]
+      if (Array.isArray(child)) {
+        for (const entry of child) {
+          if (this._isPlainRecord(entry)) this._deleteRequiredRecursive(entry, seen)
         }
+      } else if (this._isPlainRecord(child)) {
+        this._deleteRequiredRecursive(child, seen)
+      }
+    }
+
+    for (const key of SCHEMA_ARRAY_POSITION_KEYS) {
+      const children = obj[key]
+      if (!Array.isArray(children)) continue
+      for (const child of children) {
+        if (this._isPlainRecord(child)) this._deleteRequiredRecursive(child, seen)
       }
     }
   }
 
   private static _deleteRequiredFields(obj: Record<string, unknown>, fields: string[]): void {
-    if (!Array.isArray(obj['required'])) return
     const optional = new Set(fields)
-    obj['required'] = (obj['required'] as string[]).filter(field => !optional.has(field))
-    if ((obj['required'] as string[]).length === 0) {
-      delete obj['required']
-    }
+    this._deleteRequiredFieldsAtObjectLevel(obj, optional, new WeakSet<object>())
   }
 
   private static _prunePickedFieldConstraints(schema: Record<string, unknown>, fields: string[]): void {
     const fieldSet = new Set(fields)
+    this._projectObjectLevelFields(schema, fieldSet, new WeakSet<object>(), true)
+  }
+
+  private static _deleteRequiredFieldsAtObjectLevel(
+    schema: Record<string, unknown>,
+    optional: Set<string>,
+    seen: WeakSet<object>,
+  ): void {
+    if (seen.has(schema)) return
+    seen.add(schema)
+
+    if (Array.isArray(schema['required'])) {
+      schema['required'] = (schema['required'] as string[]).filter(field => !optional.has(field))
+      if ((schema['required'] as string[]).length === 0) delete schema['required']
+    }
+
+    for (const key of ['allOf', 'anyOf', 'oneOf']) {
+      const branches = schema[key]
+      if (!Array.isArray(branches)) continue
+      for (const branch of branches) {
+        if (this._isPlainRecord(branch)) this._deleteRequiredFieldsAtObjectLevel(branch, optional, seen)
+      }
+    }
+
+    for (const key of ['if', 'then', 'else', 'not']) {
+      const branch = schema[key]
+      if (this._isPlainRecord(branch)) this._deleteRequiredFieldsAtObjectLevel(branch, optional, seen)
+    }
+
+    for (const key of ['dependentSchemas', 'dependencies']) {
+      const dependencies = schema[key]
+      if (!this._isPlainRecord(dependencies)) continue
+      for (const dependency of Object.values(dependencies)) {
+        if (this._isPlainRecord(dependency)) this._deleteRequiredFieldsAtObjectLevel(dependency, optional, seen)
+      }
+    }
+  }
+
+  private static _projectObjectLevelFields(
+    schema: Record<string, unknown>,
+    fields: Set<string>,
+    seen: WeakSet<object>,
+    preserveEmptyProperties = false,
+  ): void {
+    if (seen.has(schema)) return
+    seen.add(schema)
+
+    if (typeof schema['$ref'] === 'string') {
+      throw new Error('[schema-dsl] SchemaUtils cannot safely project schemas that use $ref at the projected object level')
+    }
+
+    const properties = schema['properties']
+    if (this._isPlainRecord(properties)) {
+      for (const key of Object.keys(properties)) {
+        if (!fields.has(key)) delete properties[key]
+      }
+      if (!preserveEmptyProperties && Object.keys(properties).length === 0) delete schema['properties']
+    }
+
+    if (Array.isArray(schema['required'])) {
+      schema['required'] = (schema['required'] as string[]).filter(field => fields.has(field))
+      if ((schema['required'] as string[]).length === 0) delete schema['required']
+    }
 
     const dependentRequired = schema['dependentRequired']
     if (this._isPlainRecord(dependentRequired)) {
       const next = createSchemaRecord<string[]>()
       for (const [field, dependencies] of Object.entries(dependentRequired)) {
-        if (!fieldSet.has(field) || !Array.isArray(dependencies)) continue
-        const kept = dependencies.map(String).filter(dependency => fieldSet.has(dependency))
+        if (!fields.has(field) || !Array.isArray(dependencies)) continue
+        const kept = dependencies.map(String).filter(dependency => fields.has(dependency))
         if (kept.length > 0) setSchemaRecordValue(next, field, kept)
       }
       if (Object.keys(next).length > 0) {
@@ -467,15 +575,36 @@ export class SchemaUtils {
       }
     }
 
-    delete schema['dependentSchemas']
+    const dependentSchemas = schema['dependentSchemas']
+    if (this._isPlainRecord(dependentSchemas)) {
+      const next = createSchemaRecord<unknown>()
+      for (const [field, dependency] of Object.entries(dependentSchemas)) {
+        if (!fields.has(field) || !this._isPlainRecord(dependency)) continue
+        this._projectObjectLevelFields(dependency, fields, seen)
+        if (this._hasEffectiveProjectionConstraint(dependency)) {
+          setSchemaRecordValue(next, field, dependency)
+        }
+      }
+      if (Object.keys(next).length > 0) schema['dependentSchemas'] = next
+      else delete schema['dependentSchemas']
+    }
 
     const dependencies = schema['dependencies']
     if (this._isPlainRecord(dependencies)) {
       const next = createSchemaRecord<unknown>()
       for (const [field, dependency] of Object.entries(dependencies)) {
-        if (!fieldSet.has(field) || !Array.isArray(dependency)) continue
-        const kept = dependency.map(String).filter(dependentField => fieldSet.has(dependentField))
-        if (kept.length > 0) setSchemaRecordValue(next, field, kept)
+        if (!fields.has(field)) continue
+        if (Array.isArray(dependency)) {
+          const kept = dependency.map(String).filter(dependentField => fields.has(dependentField))
+          if (kept.length > 0) setSchemaRecordValue(next, field, kept)
+          continue
+        }
+        if (this._isPlainRecord(dependency)) {
+          this._projectObjectLevelFields(dependency, fields, seen)
+          if (this._hasEffectiveProjectionConstraint(dependency)) {
+            setSchemaRecordValue(next, field, dependency)
+          }
+        }
       }
       if (Object.keys(next).length > 0) {
         schema['dependencies'] = next
@@ -483,6 +612,94 @@ export class SchemaUtils {
         delete schema['dependencies']
       }
     }
+
+    const allOf = schema['allOf']
+    if (Array.isArray(allOf)) {
+      for (const branch of allOf) {
+        if (this._isPlainRecord(branch)) this._projectObjectLevelFields(branch, fields, seen)
+      }
+    }
+
+    for (const key of ['anyOf', 'oneOf'] as const) {
+      const branches = schema[key]
+      if (!Array.isArray(branches)) continue
+      for (const branch of branches) {
+        if (!this._isPlainRecord(branch)) continue
+        this._assertNonMonotonicProjectionIsClosed(branch, fields, key)
+        this._projectObjectLevelFields(branch, fields, seen)
+      }
+    }
+
+    for (const key of ['if', 'then', 'else', 'not'] as const) {
+      const branch = schema[key]
+      if (!this._isPlainRecord(branch)) continue
+      this._assertNonMonotonicProjectionIsClosed(branch, fields, key)
+      this._projectObjectLevelFields(branch, fields, seen)
+    }
+  }
+
+  private static _assertNonMonotonicProjectionIsClosed(
+    schema: Record<string, unknown>,
+    fields: Set<string>,
+    keyword: string,
+  ): void {
+    for (const field of this._collectObjectLevelFieldReferences(schema, new WeakSet<object>())) {
+      if (!fields.has(field)) {
+        throw new Error(`[schema-dsl] SchemaUtils cannot safely project ${keyword} because it references omitted field "${field}"`)
+      }
+    }
+  }
+
+  private static _collectObjectLevelFieldReferences(
+    schema: Record<string, unknown>,
+    seen: WeakSet<object>,
+  ): Set<string> {
+    const fields = new Set<string>()
+    if (seen.has(schema)) return fields
+    seen.add(schema)
+
+    if (this._isPlainRecord(schema['properties'])) {
+      for (const key of Object.keys(schema['properties'] as Record<string, unknown>)) fields.add(key)
+    }
+    if (Array.isArray(schema['required'])) {
+      for (const field of schema['required'] as unknown[]) fields.add(String(field))
+    }
+    for (const key of ['dependentRequired', 'dependentSchemas', 'dependencies']) {
+      const dependencies = schema[key]
+      if (!this._isPlainRecord(dependencies)) continue
+      for (const [field, dependency] of Object.entries(dependencies)) {
+        fields.add(field)
+        if (Array.isArray(dependency)) {
+          for (const dependentField of dependency) fields.add(String(dependentField))
+        } else if (this._isPlainRecord(dependency)) {
+          for (const dependentField of this._collectObjectLevelFieldReferences(dependency, seen)) {
+            fields.add(dependentField)
+          }
+        }
+      }
+    }
+    for (const key of ['allOf', 'anyOf', 'oneOf']) {
+      const branches = schema[key]
+      if (!Array.isArray(branches)) continue
+      for (const branch of branches) {
+        if (!this._isPlainRecord(branch)) continue
+        for (const field of this._collectObjectLevelFieldReferences(branch, seen)) fields.add(field)
+      }
+    }
+    for (const key of ['if', 'then', 'else', 'not']) {
+      const branch = schema[key]
+      if (!this._isPlainRecord(branch)) continue
+      for (const field of this._collectObjectLevelFieldReferences(branch, seen)) fields.add(field)
+    }
+    return fields
+  }
+
+  private static _hasEffectiveProjectionConstraint(schema: Record<string, unknown>): boolean {
+    return Object.entries(schema).some(([key, value]) => {
+      if (key === 'properties' && this._isPlainRecord(value) && Object.keys(value).length === 0) return false
+      if (key === 'required' && Array.isArray(value) && value.length === 0) return false
+      return key !== 'title' && key !== 'description' && key !== '$comment'
+    })
   }
 
   private static _clone(schema: JSONSchema | ChainableSchema): Record<string, unknown> {

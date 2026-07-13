@@ -174,6 +174,7 @@ await pluginManager.runHook('onBeforeValidate', schema, data);
 | `plugin:uninstalled` | Plug-in uninstalled successfully | `(plugin)` |
 | `plugin:error` | Plug-in installation/uninstallation failed | `({ plugin, error })` |
 | `hook:error` | Hook execution failed | `({ hookName, handler, error })` |
+| `plugins:clear-error` | One or more plug-ins failed to uninstall during `clear()` | `({ cleared, failures })` |
 | `plugins:cleared` | `clear()` After completion | `()` |
 
 ### Example
@@ -229,7 +230,7 @@ Uninstall the plugin and remove the hooks registered by the plugin.
 
 ### `uninstall(name, [core])`
 
-Alias ​​for `unregister()`, compatible with v1.
+Alias for `unregister()`, compatible with v1.
 
 ### `hook(name, handler)`
 
@@ -266,7 +267,7 @@ Returns the plugin metadata array:
 
 ### `clear([core])`
 
-Uninstall all plug-ins one by one, clear the registry and hooks, and finally trigger `plugins:cleared`.
+Uninstall all plug-ins one by one. A failed uninstall does not stop attempts for the remaining plug-ins; successfully removed names and failures are emitted through `plugins:clear-error`, and `clear()` throws an `AggregateError` after the pass. Failed plug-ins remain registered so callers can retry or inspect them. Caller-added hooks are cleared and `plugins:cleared` is emitted only when every uninstall succeeds.
 
 ### property
 

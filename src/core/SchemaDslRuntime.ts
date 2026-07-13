@@ -22,7 +22,12 @@ import { RuntimeIssueFormatter } from './RuntimeIssueFormatter.js'
 import { RuntimeValidatorEngine } from './RuntimeValidatorEngine.js'
 import { I18nError } from '../errors/I18nError.js'
 import { isRawJsonSchemaLike } from '../utils/schemaInput.js'
-import { SCHEMA_DSL_CACHE_KEY, createSchemaCacheKey } from './Validator.js'
+import {
+  MutableSchemaCacheKeyTracker,
+  createMutableSchemaCacheProxy,
+  createSchemaCacheKey,
+  markSchemaCacheKey,
+} from './SchemaCacheKey.js'
 
 type NormalizedSchemaCacheEntry = {
   cacheKey: string
@@ -39,6 +44,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   private runtimeOptions: SchemaDslRuntimeOptions
   private validatorEngine: RuntimeValidatorEngine
   private normalizedSchemaCache = new WeakMap<object, NormalizedSchemaCacheEntry>()
+  private readonly markedSchemaKeys = new MutableSchemaCacheKeyTracker()
   private disposed = false
 
   constructor(options: SchemaDslRuntimeOptions = {}) {
@@ -71,6 +77,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
       }) as IDslBuilder,
       parseObject: definition => this.compile(definition),
       registerType: (name, schema) => this.registerType(name, schema),
+      unregisterType: name => this.unregisterType(name),
       typeExists: name => this.compileContext.hasType(name),
       extensionRegistry: this.extensionRegistry,
     })
@@ -187,6 +194,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   clearCache(): void {
     this.assertActive()
     this.normalizedSchemaCache = new WeakMap<object, NormalizedSchemaCacheEntry>()
+    this.markedSchemaKeys.clear()
     this.validatorEngine.clearCache()
   }
 
@@ -238,7 +246,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
     }
 
     const normalized = isRawJsonSchemaLike(record)
-      ? this.markSchemaCacheKey(schema as JSONSchema)
+      ? schema as JSONSchema
       : this.compile(schema as DslDefinition)
 
     if (cacheKey) {
@@ -248,26 +256,13 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   }
 
   private getNormalizeCacheKey(schema: object): string | null {
-    const markedKey = (schema as Record<symbol, unknown>)[SCHEMA_DSL_CACHE_KEY]
-    if (typeof markedKey === 'string' && markedKey) return markedKey
+    const markedKey = this.markedSchemaKeys.getMarkedKey(schema)
+    if (markedKey) return markedKey
     return createSchemaCacheKey(schema)
   }
 
   private markSchemaCacheKey(schema: JSONSchema): JSONSchema {
-    const cacheKey = createSchemaCacheKey(schema)
-    if (!cacheKey || !schema || typeof schema !== 'object') return schema
-
-    try {
-      Object.defineProperty(schema, SCHEMA_DSL_CACHE_KEY, {
-        value: cacheKey,
-        enumerable: false,
-        configurable: true,
-      })
-    } catch {
-      // Non-extensible schemas still validate; Validator will fall back to runtime keys.
-    }
-
-    return schema
+    return markSchemaCacheKey(createMutableSchemaCacheProxy(schema))
   }
 
   private assertActive(): void {
@@ -279,6 +274,7 @@ export class SchemaDslRuntimeInstance implements SchemaDslRuntime {
   private rebuildValidatorEngine(): void {
     this.validatorEngine.dispose()
     this.normalizedSchemaCache = new WeakMap<object, NormalizedSchemaCacheEntry>()
+    this.markedSchemaKeys.clear()
     this.validatorEngine = new RuntimeValidatorEngine(this.runtimeOptions, this.formatter, this.parseOptions)
   }
 

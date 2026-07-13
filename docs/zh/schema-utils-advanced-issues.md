@@ -8,11 +8,11 @@
 
 ### required 同步
 
-使用 `pick()`、`omit()`、`partial()` 后应检查 `required` 是否符合预期，当前实现会同步处理顶层 required。
+`pick()`、`omit()`、`partial()` 会在受支持的嵌套 Schema 位置同步 `required`，包括对象属性、元组与追加数组项、组合、依赖和本地定义。`partial(schema, fields)` 只让选中的对象顶层字段变为可选，并保留无关约束。
 
 ### 深拷贝限制
 
-`SchemaUtils.clone()` 基于 JSON 序列化，不保留函数、`RegExp` 实例等非 JSON 值。
+`SchemaUtils.clone()` 会保留函数引用，克隆 `RegExp` 与 `Date`，支持循环引用，并保留属性描述符。函数仍属于仅运行时值：克隆不会让包含函数的 Schema 变得可序列化或跨进程稳定。
 
 ---
 

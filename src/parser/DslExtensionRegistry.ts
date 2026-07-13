@@ -22,6 +22,12 @@ export interface DslExtensionParamInput {
   args?: readonly unknown[]
 }
 
+export type DslExtensionRegistryEvent = 'validate' | 'register' | 'rollback' | 'clear'
+export type DslExtensionRegistryListener = (
+  event: DslExtensionRegistryEvent,
+  definition?: NormalizedDslExtension,
+) => void
+
 export type DslExtensionDiagnosticCode =
   | 'EXTENSION_SEGMENT_UNSUPPORTED'
   | 'EXTENSION_PARAM_MISSING'
@@ -373,6 +379,7 @@ export function buildDslExtensionSchema(
 export class DslExtensionRegistry {
   private readonly byLiteral = new Map<string, NormalizedDslExtension>()
   private readonly byFactoryName = new Map<string, NormalizedDslExtension>()
+  private readonly listeners = new Set<DslExtensionRegistryListener>()
 
   define(definition: DslExtensionDefinition): NormalizedDslExtension {
     return normalizeDslExtensionDefinition(definition)
@@ -390,8 +397,28 @@ export class DslExtensionRegistry {
       throw new Error(`[schema-dsl] Extension factory "${normalized.factoryName}" already exists`)
     }
 
+    for (const listener of this.listeners) listener('validate', normalized)
+
     if (normalized.literal) this.byLiteral.set(normalized.literal, normalized)
     if (normalized.factoryName) this.byFactoryName.set(normalized.factoryName, normalized)
+    const attemptedListeners: DslExtensionRegistryListener[] = []
+    try {
+      for (const listener of this.listeners) {
+        attemptedListeners.push(listener)
+        listener('register', normalized)
+      }
+    } catch (error) {
+      if (normalized.literal) this.byLiteral.delete(normalized.literal)
+      if (normalized.factoryName) this.byFactoryName.delete(normalized.factoryName)
+      for (const listener of attemptedListeners.reverse()) {
+        try {
+          listener('rollback', normalized)
+        } catch {
+          // Preserve the original registration failure after best-effort rollback.
+        }
+      }
+      throw error
+    }
     return normalized
   }
 
@@ -403,9 +430,19 @@ export class DslExtensionRegistry {
     return this.byFactoryName.get(factoryName)
   }
 
+  list(): NormalizedDslExtension[] {
+    return [...new Set([...this.byLiteral.values(), ...this.byFactoryName.values()])]
+  }
+
+  subscribe(listener: DslExtensionRegistryListener): () => void {
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
+  }
+
   clear(): void {
     this.byLiteral.clear()
     this.byFactoryName.clear()
+    for (const listener of this.listeners) listener('clear')
   }
 }
 

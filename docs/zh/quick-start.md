@@ -13,8 +13,6 @@ npm install schema-dsl
 > **Node.js 要求**：`>=18.0.0`
 > 
 > 当前版本以 `Node.js >=18.0.0` 为唯一运行时基线，不再承诺旧 Node 版本兼容。
->
-> 本文档跟随当前 `main` 分支源码。若 npm latest 仍旧于本提交，请安装匹配的 tag/commit，或等待下一次 npm 发布后再依赖 `schema-dsl/pure`、`schema-dsl/runtime`、`schema-dsl/transform`、`schema-dsl/esbuild` 等入口。
 
 ---
 
