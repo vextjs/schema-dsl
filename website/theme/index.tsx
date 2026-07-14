@@ -15,6 +15,7 @@ import {
   withBase
 } from '@rspress/core/runtime';
 import { useEffect } from 'react';
+import '@rspress/core/dist/theme/components/HomeHero/index.css';
 import {
   enhanceThemeSwitchControls,
   isKeyboardActivationKey
