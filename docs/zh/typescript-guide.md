@@ -221,8 +221,8 @@ const schema = s({
   email: 'email!'.label('邮箱')  // 可能无类型提示
 });
 
-// ❌ 同一份指南里混用 root 入口副作用和 pure 入口示例
-// 建议一个指南、包或代码区域只保留一种入口风格。
+// ❌ 未显式选择 compat/register-string 运行时入口就使用直接 String 链式
+// v3 的 root 与 pure 导入都无副作用。
 ```
 
 ---
@@ -409,7 +409,7 @@ s('email!').label('邮箱')
 
 ### 5.2 JavaScript 用户需要改变写法吗？
 
-已有 JavaScript 用户可以继续使用 root 入口兼容写法；新文档推荐无副作用的 pure 入口：
+已有 JavaScript 用户若需要直接 String 链式，必须添加 `schema-dsl/compat` 或 `schema-dsl/register-string`；root 与 pure 导入都无副作用：
 
 ```javascript
 import { s } from 'schema-dsl/pure';

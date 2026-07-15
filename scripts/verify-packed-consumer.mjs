@@ -54,20 +54,52 @@ try {
 
   const sideEffectCases = [
     ['pure', 'schema-dsl/pure', false],
-    ['root', 'schema-dsl', true],
+    ['root', 'schema-dsl', false],
     ['compat', 'schema-dsl/compat', true],
     ['register-string', 'schema-dsl/register-string', true],
   ]
   for (const [name, specifier, expected] of sideEffectCases) {
     writeFileSync(join(positiveDir, `side-effect-${name}.mjs`), `
-import '${specifier}'
+const before = Object.getOwnPropertyDescriptors(String.prototype)
+await import('${specifier}')
 const installed = typeof ''.label === 'function'
 if (installed !== ${expected}) throw new Error('${specifier} String side-effect contract changed')
+if (!${expected}) {
+  const after = Object.getOwnPropertyDescriptors(String.prototype)
+  const changed = Reflect.ownKeys({ ...before, ...after }).filter(key => {
+    const left = before[key]
+    const right = after[key]
+    return !left || !right
+      || left.configurable !== right.configurable
+      || left.enumerable !== right.enumerable
+      || left.writable !== right.writable
+      || !Object.is(left.value, right.value)
+      || !Object.is(left.get, right.get)
+      || !Object.is(left.set, right.set)
+  })
+  if (changed.length > 0) throw new Error('${specifier} mutated String.prototype descriptors: ' + changed.join(','))
+}
 `)
     writeFileSync(join(positiveDir, `side-effect-${name}.cjs`), `
+const before = Object.getOwnPropertyDescriptors(String.prototype)
 require('${specifier}')
 const installed = typeof ''.label === 'function'
 if (installed !== ${expected}) throw new Error('${specifier} CommonJS String side-effect contract changed')
+if (!${expected}) {
+  const after = Object.getOwnPropertyDescriptors(String.prototype)
+  const changed = Reflect.ownKeys({ ...before, ...after }).filter(key => {
+    const left = before[key]
+    const right = after[key]
+    return !left || !right
+      || left.configurable !== right.configurable
+      || left.enumerable !== right.enumerable
+      || left.writable !== right.writable
+      || !Object.is(left.value, right.value)
+      || !Object.is(left.get, right.get)
+      || !Object.is(left.set, right.set)
+  })
+  if (changed.length > 0) throw new Error('${specifier} CommonJS mutated String.prototype descriptors: ' + changed.join(','))
+}
 `)
     run('node', [`side-effect-${name}.mjs`], positiveDir)
     run('node', [`side-effect-${name}.cjs`], positiveDir)

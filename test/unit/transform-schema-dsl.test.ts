@@ -255,7 +255,7 @@ describe('transformSchemaDsl', () => {
     expect(result.code).toBe(source)
   })
 
-  it('warns about root entry imports but does not rewrite them automatically', () => {
+  it('accepts side-effect-free root entry imports without rewriting them', () => {
     const source = [
       'import { dsl } from "schema-dsl";',
       'const field = "email!".label("Email")',
@@ -264,12 +264,7 @@ describe('transformSchemaDsl', () => {
 
     expect(result.changed).toBe(true)
     expect(result.code).toContain('import { dsl } from "schema-dsl";')
-    expect(result.warnings).toEqual([
-      expect.objectContaining({
-        code: 'root-import',
-        filename: 'user.ts',
-      }),
-    ])
+    expect(result.warnings).toHaveLength(0)
   })
 
   it('does not warn for type-only root entry imports', () => {
@@ -311,7 +306,7 @@ describe('transformSchemaDsl', () => {
     expect(result.warnings).toHaveLength(0)
   })
 
-  it('still warns for mixed type and runtime root entry re-exports', () => {
+  it('does not warn for mixed type and runtime root entry re-exports', () => {
     const result = transformSchemaDsl(
       [
         'export { type IDslBuilder, dsl } from "schema-dsl";',
@@ -321,19 +316,14 @@ describe('transformSchemaDsl', () => {
     )
 
     expect(result.changed).toBe(true)
-    expect(result.warnings).toEqual([
-      expect.objectContaining({
-        code: 'root-import',
-        filename: 'mixed.ts',
-      }),
-    ])
+    expect(result.warnings).toHaveLength(0)
   })
 
-  it('throws in strict mode for root entry imports', () => {
+  it('accepts root entry imports in strict mode', () => {
     expect(() => transformSchemaDsl('import "schema-dsl";\nconst field = "email!".label("Email")', {
       filename: 'user.ts',
       strict: true,
-    })).toThrow(TransformSchemaDslError)
+    })).not.toThrow()
   })
 
   it('throws in strict mode for parse errors', () => {
@@ -352,7 +342,7 @@ describe('transformSchemaDsl', () => {
     expect(() => transformSchemaDsl('import { dsl } from "schema-dsl";\nconst field = "email!".label("Email")', {
       filename: 'root.ts',
       strict: { parseError: false, rootImport: true },
-    })).toThrow(TransformSchemaDslError)
+    })).not.toThrow()
 
     expect(() => transformSchemaDsl('const tenant = "string!".tenantId()', {
       filename: 'tenant.ts',
@@ -423,7 +413,7 @@ describe('transformSchemaDsl', () => {
     expect(second.code).toBe(first.code)
   })
 
-  it('warns for CommonJS and dynamic root entry imports', () => {
+  it('accepts CommonJS and dynamic root entry imports', () => {
     const result = transformSchemaDsl(
       [
         'const schemaDsl = require("schema-dsl");',
@@ -434,7 +424,7 @@ describe('transformSchemaDsl', () => {
     )
 
     expect(result.changed).toBe(true)
-    expect(result.warnings.filter(warning => warning.code === 'root-import')).toHaveLength(2)
+    expect(result.warnings.filter(warning => warning.code === 'root-import')).toHaveLength(0)
   })
 
   it('reuses a default dsl import from the configured pure entry', () => {

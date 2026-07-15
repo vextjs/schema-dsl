@@ -370,7 +370,7 @@ s('string!').pattern(/test/);
 // TypeError: "string!".pattern is not a function
 ```
 
-**原因**: root entry 默认会安装 String 扩展；如果仍然报错，通常是之前调用过 `uninstallStringExtensions()`，或导入了不包含 root side effect 的旧构建/异常入口。
+**原因**: v3 的 root 与 pure 入口都不会安装 String 扩展；直接字符串链式必须显式导入安装入口或调用 `installStringExtensions()`。
 
 **解决方案**:
 ```javascript
@@ -393,14 +393,14 @@ const schema = s({
 [schema-dsl] Cannot install String extension "label": String.prototype.label already exists and is not owned by schema-dsl
 ```
 
-**原因**: schema-dsl 为兼容 v1.1.x 会在 root entry 默认安装 String 扩展。为了避免覆盖宿主环境已有的同名方法，安装器会在导入阶段检测 `String.prototype.label` / `pattern` 等方法；如果这些方法不是 schema-dsl 自己安装的扩展，就会抛出冲突错误。
+**原因**: 通过 `schema-dsl/compat`、`schema-dsl/register-string` 或 `installStringExtensions()` 显式安装时，检测到了不属于 schema-dsl 的同名方法。无副作用 root 入口不会安装或覆盖它。
 
 **解决方案**:
 ```javascript
 // 在导入 schema-dsl 前，先移除或重命名外部同名扩展。
 delete String.prototype.label;
 
-import { s } from 'schema-dsl/pure';
+import 'schema-dsl/register-string';
 ```
 
 如果冲突方法来自其他库，优先在应用初始化顺序或依赖配置中避免两个库同时扩展同名 `String.prototype` 方法。

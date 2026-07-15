@@ -44,13 +44,13 @@ const schema = s({
 
 ## 副作用可控入口
 
-root `schema-dsl` 入口仍然为了兼容 v1 安装 String 扩展。新代码通常应从 `schema-dsl/pure` 开始；只有明确想要直接字符串链式写法时，才使用下面的显式入口。
+v3 的 root `schema-dsl` 入口不再安装 String 扩展。只有明确想要直接字符串链式写法时，才使用下面的显式入口。
 
 | 入口 | 行为 | 推荐场景 |
 |------|------|------|
-| `schema-dsl` | v1 兼容 root 入口；导入时安装 String 扩展 | 已经依赖 `'email!'.description(...)` 直接链式写法的应用 |
-| `schema-dsl/pure` | 只导入核心 API；不安装 String 扩展 | 库、worker、测试、SSR 或隔离运行时 |
-| `schema-dsl/compat` | 与 root 入口相同的兼容副作用，但语义更显式 | 希望明确表达兼容模式的代码 |
+| `schema-dsl` | 无副作用核心入口；不安装 String 扩展 | 默认应用与库入口 |
+| `schema-dsl/pure` | 同一无副作用核心 API 的稳定兼容别名 | 现有库、worker、测试、SSR 或隔离运行时 |
+| `schema-dsl/compat` | 显式 v1/v2 兼容入口；导入时安装 String 扩展 | 已有直接字符串链式代码 |
 | `schema-dsl/register-string` | 显式副作用入口，导入后安装 String 扩展 | 应用启动阶段主动注册 String 链式 API |
 | `schema-dsl/string-types` | 仅提供 String 链式写法的 TypeScript 声明；不安装运行时扩展 | 使用编译期转换且需要 IDE 提示的 TS 项目 |
 | `schema-dsl/transform` | 静态 String 链式 DSL 的编译期转换核心 | 构建工具或自定义适配器 |
@@ -71,7 +71,7 @@ const schema = s({
 
 ## 直接 String 可用方法
 
-下列方法会由 root 入口或 `schema-dsl/register-string` 安装到 `String.prototype`。该列表与运行时 `STRING_EXTENSION_METHODS` 保持一致。`DslBuilder.length(n)` 与 `DslBuilder.trim()` 不会安装到 String 上，因为 JavaScript 字符串已经有原生 `.length` 属性和 `.trim()` 方法。
+下列方法会由 `schema-dsl/compat`、`schema-dsl/register-string` 或显式 `installStringExtensions()` 调用安装到 `String.prototype`。该列表与运行时 `STRING_EXTENSION_METHODS` 保持一致。`DslBuilder.length(n)` 与 `DslBuilder.trim()` 不会安装到 String 上，因为 JavaScript 字符串已经有原生 `.length` 属性和 `.trim()` 方法。
 
 | 分类 | 方法 |
 |------|------|
@@ -396,7 +396,7 @@ const enSchema = getSchema('en-US');
 
 ### 兼容安装
 
-root 兼容入口和 `schema-dsl/compat` 会在导入时安装 String 扩展。新代码默认应优先使用 `schema-dsl/pure`，只有明确需要 direct String chain 时才启用该能力。
+`schema-dsl/compat` 与 `schema-dsl/register-string` 会在导入时安装 String 扩展；root 与 pure 入口保持无副作用。
 
 ```javascript
 import 'schema-dsl/compat';
@@ -409,7 +409,7 @@ const schema = s({
 
 扩展以不可枚举属性挂载到 `String.prototype`，并在安装时检测同名外部方法；如果发现不是 schema-dsl 自己安装的方法，会拒绝覆盖。
 
-如果你的运行环境在导入 `schema-dsl` 之前已经扩展了同名方法（例如 `String.prototype.label`），root entry 会在导入阶段抛出冲突错误，避免静默覆盖外部实现。处理方式是先移除或重命名冲突的外部扩展，再导入 `schema-dsl`；普通项目通常不会遇到这个场景。
+如果运行环境在导入显式 String 安装入口前已经扩展了同名方法（例如 `String.prototype.label`），安装入口会抛出冲突错误，避免静默覆盖外部实现；无副作用 root 入口不会触发该冲突检查。
 
 ### 显式安装后的禁用
 
@@ -477,7 +477,7 @@ const schema = s({
 
 ### Q1: String扩展会污染全局吗？
 
-**A**: 直接字符串链式会修改 `String.prototype`，因此新代码中属于 opt-in 路径。如果不希望导入时修改全局原型，请用 `schema-dsl/pure` 并通过 `s('...')` 或 `s.xxx()` 链式调用；如果明确希望启用直接字符串链式，请在应用启动阶段导入 `schema-dsl/register-string`。`uninstallStringExtensions()` 主要用于测试清理或旧兼容回归。
+**A**: 直接字符串链式会修改 `String.prototype`，因此属于 opt-in 路径。root 与 pure 导入都不会修改原型；明确需要直接字符串链式时，在应用启动阶段导入 `schema-dsl/register-string`。`uninstallStringExtensions()` 主要用于测试清理或旧兼容回归。
 
 ### Q2: 性能如何？
 

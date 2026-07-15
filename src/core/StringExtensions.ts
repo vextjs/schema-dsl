@@ -5,11 +5,11 @@
  *   S-01/S-02: array-driven symmetric install/uninstall (v1 uninstall was missing `format` and
  *              `phoneNumber`). All method names are now maintained in the STRING_EXTENSION_METHODS
  *              array so both operations are guaranteed to be in sync.
- *   V1-BC: the root entry installs these extensions by default, but the install itself keeps
- *          prototype impact lower by using non-enumerable descriptors and conflict detection.
+ *   V3: installation is explicit through compat/register-string or installStringExtensions();
+ *       the installer uses non-enumerable descriptors and conflict detection.
  *
  * @example
- * import 'schema-dsl'
+ * import 'schema-dsl/register-string'
  * 'email!'.label('Email address').messages({ format: 'Invalid format' })
  * 'string:3-32!'.username('medium')
  */

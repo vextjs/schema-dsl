@@ -26,6 +26,7 @@ export interface TransformSchemaDslWarning {
 
 export interface TransformSchemaDslStrictOptions {
   parseError?: boolean
+  /** @deprecated The v3 root entry is side-effect-free, so this option is a no-op. */
   rootImport?: boolean
   unconfiguredExtensionMethod?: boolean
   nonDslLiteral?: boolean
@@ -219,10 +220,6 @@ export function transformSchemaDsl(source: string, options: TransformSchemaDslOp
   const reservedLocalNames = collectBindingNames(ast)
   let changed = false
 
-  for (const warning of findRootImportWarnings(ast, filename)) {
-    warn(warning)
-  }
-
   traverseAst(ast, {
     CallExpression(path: NodePath<BabelTypes.CallExpression>) {
       warnIfUnconfiguredExtensionMethod(path, methods, filename, warn)
@@ -395,86 +392,6 @@ function formatStrictErrorMessage(warning: TransformSchemaDslWarning): string {
     ? `${warning.filename ?? '<unknown>'}:${warning.loc.line}:${warning.loc.column + 1}`
     : warning.filename ?? '<unknown>'
   return `[schema-dsl] Transform strict mode failed (${warning.code}) at ${location}: ${warning.message}`
-}
-
-function findRootImportWarnings(ast: BabelTypes.File, filename: string): TransformSchemaDslWarning[] {
-  const warnings: TransformSchemaDslWarning[] = []
-
-  for (const statement of ast.program.body) {
-    const source = 'source' in statement ? statement.source : undefined
-    if (!source || source.value !== 'schema-dsl') {
-      continue
-    }
-
-    if (t.isImportDeclaration(statement) && isTypeOnlyImportDeclaration(statement)) {
-      continue
-    }
-    if (t.isExportNamedDeclaration(statement) && isTypeOnlyExportNamedDeclaration(statement)) {
-      continue
-    }
-    if (t.isExportAllDeclaration(statement) && statement.exportKind === 'type') {
-      continue
-    }
-
-    warnings.push(createWarning(
-      'root-import',
-      'Root import "schema-dsl" keeps the compatibility String.prototype side effect; use "schema-dsl/pure" with the transform output or import "schema-dsl/register-string" explicitly when the side effect is intended.',
-      filename,
-      statement.loc,
-    ))
-  }
-
-  traverseAst(ast, {
-    CallExpression(path: NodePath<BabelTypes.CallExpression>) {
-      const firstArg = path.node.arguments[0]
-      if (t.isIdentifier(path.node.callee, { name: 'require' })
-        && t.isStringLiteral(firstArg)
-        && firstArg.value === 'schema-dsl') {
-        warnings.push(createWarning(
-          'root-import',
-          'require("schema-dsl") keeps the compatibility String.prototype side effect; require "schema-dsl/pure" with the transform output or require "schema-dsl/register-string" explicitly when the side effect is intended.',
-          filename,
-          path.node.loc,
-        ))
-      }
-    },
-    Import(path: NodePath<BabelTypes.Import>) {
-      const parent = path.parentPath.node
-      if (!t.isCallExpression(parent)) {
-        return
-      }
-
-      const firstArg = parent.arguments[0]
-      if (!t.isStringLiteral(firstArg) || firstArg.value !== 'schema-dsl') {
-        return
-      }
-
-      warnings.push(createWarning(
-        'root-import',
-        'import("schema-dsl") keeps the compatibility String.prototype side effect; import "schema-dsl/pure" with the transform output or import "schema-dsl/register-string" explicitly when the side effect is intended.',
-        filename,
-        parent.loc,
-      ))
-    },
-  })
-
-  return warnings
-}
-
-function isTypeOnlyImportDeclaration(statement: BabelTypes.ImportDeclaration): boolean {
-  return statement.importKind === 'type'
-    || (
-      statement.specifiers.length > 0
-      && statement.specifiers.every(specifier => specifier.type === 'ImportSpecifier' && specifier.importKind === 'type')
-    )
-}
-
-function isTypeOnlyExportNamedDeclaration(statement: BabelTypes.ExportNamedDeclaration): boolean {
-  return statement.exportKind === 'type'
-    || (
-      statement.specifiers.length > 0
-      && statement.specifiers.every(specifier => t.isExportSpecifier(specifier) && specifier.exportKind === 'type')
-    )
 }
 
 function warnIfUnconfiguredExtensionMethod(

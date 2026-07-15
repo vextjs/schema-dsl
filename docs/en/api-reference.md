@@ -593,7 +593,7 @@ uninstallStringExtensions();
 
 ### `schema-dsl/pure`
 
-Imports the same core API without installing `String.prototype` extensions. Use this entry for ordinary application code when package import must not mutate global prototypes. It does not isolate Locale, TypeRegistry, PATTERNS or Validator state; use `schema-dsl/runtime` for runtime-state isolation.
+Stable compatibility alias for the side-effect-free root core API. Neither `schema-dsl` nor `schema-dsl/pure` installs `String.prototype` extensions. This does not isolate Locale, TypeRegistry, PATTERNS or Validator state; use `schema-dsl/runtime` for runtime-state isolation.
 
 ```javascript
 import { s, validate } from 'schema-dsl/pure';
@@ -609,7 +609,7 @@ const result = validate(schema, { email: 'user@example.com' });
 
 ### `schema-dsl/compat` and `schema-dsl/register-string`
 
-`schema-dsl/compat` keeps the v1-compatible root behavior and installs String extensions on import. `schema-dsl/register-string` is a side-effect entry for explicitly registering the String chain API during application startup.
+`schema-dsl/compat` keeps the v1/v2 direct String-chain compatibility behavior and installs String extensions on import. `schema-dsl/register-string` is the explicit side-effect entry for registering the same API during application startup. The root entry remains side-effect-free.
 
 ```javascript
 import 'schema-dsl/register-string';
@@ -667,7 +667,7 @@ console.log(result.code);
 | `additionalTypePatterns` | `readonly (RegExp \| string)[]` | `[]` | Patterns for custom DSL type literals when names are generated or follow a convention |
 | `include` | `(filename) => boolean` | - | Optional file filter |
 | `strict` | `boolean | object` | `false` | Throws `TransformSchemaDslError` for parse errors, root-entry imports, or unconfigured DSL extension methods when enabled |
-| `onWarning` | `(warning) => void` | - | Receives parse, root-import, skipped-literal, and unconfigured-extension warnings |
+| `onWarning` | `(warning) => void` | - | Receives parse, non-DSL-literal, and unconfigured-extension warnings. The legacy `root-import` code is not emitted in v3. |
 
 **Return value**:
 

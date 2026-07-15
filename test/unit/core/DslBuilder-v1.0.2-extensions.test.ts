@@ -5,7 +5,7 @@
  * - alphanum/lower/upper/json/port are no longer DSL string types ('alphanum:3-20!')
  * - Changed to DslBuilder chained methods .alphanum()/.lowercase()/.uppercase()/.json()
  * - exactLength replaces maxLength for single-value constraints (DA-03)
- * - root entry enables String extensions for compatibility
+ * - tests explicitly enable String extensions for compatibility coverage
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'

@@ -83,7 +83,7 @@ describe('schemaDslEsbuildPlugin', () => {
     const workspace = await mkdtemp(join(tmpdir(), 'schema-dsl-esbuild-strict-'))
     try {
       const entry = join(workspace, 'entry.ts')
-      await writeFile(entry, 'import "schema-dsl";\nexport const field = "email!".label("Email")', 'utf8')
+      await writeFile(entry, 'export const field = "string!".tenantId()', 'utf8')
 
       await expect(build({
         entryPoints: [entry],
@@ -93,7 +93,7 @@ describe('schemaDslEsbuildPlugin', () => {
         write: false,
         logLevel: 'silent',
         plugins: [schemaDslEsbuildPlugin({ strict: true })],
-      })).rejects.toThrow('root-import')
+      })).rejects.toThrow('unconfigured-extension-method')
     } finally {
       await rm(workspace, { recursive: true, force: true })
     }

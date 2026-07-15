@@ -20,8 +20,8 @@ describe('VERSION', () => {
     expect(pkg.version).toMatch(/^\d+\.\d+\.\d+/)
   })
 
-  it('version should start with 2.x', () => {
-    expect(pkg.version.startsWith('2.')).toBe(true)
+  it('version should start with 3.x', () => {
+    expect(pkg.version.startsWith('3.')).toBe(true)
   })
 })
 

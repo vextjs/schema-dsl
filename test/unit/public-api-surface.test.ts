@@ -21,6 +21,8 @@ describe('public API surface', () => {
         expect(schemaDsl).toHaveProperty('registerExtension')
         expect(schemaDsl).toHaveProperty('registerExtensions')
         expect(schemaDsl).toHaveProperty('defineExtension')
+        expect(schemaDsl).not.toHaveProperty('isRequired')
+        expect(schemaDsl).not.toHaveProperty('isOptional')
     })
 
     it('keeps source submodule barrels wired to runtime exports', () => {

@@ -221,8 +221,8 @@ const schema = s({
   email: 'email!'.label('email') // There may be no type hint
 });
 
-// ❌ Mixing root-entry String side effects with pure-entry examples in the same guide
-// Keep one entry style per guide, package, or codebase section.
+// ❌ Direct String chains without an explicit compat/register-string runtime opt-in
+// Root and pure imports are both side-effect-free in v3.
 ```
 
 ---
@@ -409,7 +409,7 @@ s('email!').label('mailbox')
 
 ### 5.2 Do JavaScript users need to change the way they write?
 
-Existing JavaScript users can keep root-entry compatibility code, but new documentation recommends the side-effect-free pure entry:
+Existing JavaScript users that need direct String chains must add `schema-dsl/compat` or `schema-dsl/register-string`. Root and pure imports are both side-effect-free:
 
 ```javascript
 import { s } from 'schema-dsl/pure';

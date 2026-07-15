@@ -2,7 +2,7 @@
  * v1 entry compatibility tests.
  */
 
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect } from 'vitest'
 import defaultDsl, {
   dsl,
   config,
@@ -22,6 +22,14 @@ import defaultDsl, {
 import type { DslConditionMarker } from '../../src/index.js'
 
 describe('v1 entry compatibility', () => {
+  beforeEach(() => {
+    uninstallStringExtensions()
+  })
+
+  afterEach(() => {
+    uninstallStringExtensions()
+  })
+
   it('ESM default export should point to dsl main entry', () => {
     expect(defaultDsl).toBe(dsl)
   })
@@ -36,13 +44,8 @@ describe('v1 entry compatibility', () => {
     expect(exporters).toHaveProperty('MongoDBExporter')
   })
 
-  it('root entry import should install String.prototype extensions by default', () => {
-    expect(typeof ('email!' as any).description).toBe('function')
-    expect(('email!' as any).description('Email field').toSchema()).toMatchObject({
-      type: 'string',
-      format: 'email',
-      description: 'Email field',
-    })
+  it('root entry import should not install String.prototype extensions', () => {
+    expect(typeof ('email!' as any).description).toBe('undefined')
   })
 
   it('installStringExtensions() should support being called with no arguments', () => {

@@ -114,10 +114,10 @@ describe('SchemaUtils Chaining (v2.1.0 - Core Methods)', () => {
   describe('schema export metadata', () => {
     it('should preserve both label and description in Markdown and HTML exports', () => {
       const schema = dsl({
-        email: ('email!' as any)
+        email: dsl('email!')
           .label('Email Address')
           .description('Primary login email'),
-        username: ('string:3-32!' as any)
+        username: dsl('string:3-32!')
           .label('Username')
           .description('Login handle'),
       });

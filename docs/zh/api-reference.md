@@ -565,7 +565,7 @@ uninstallStringExtensions();
 
 ### `schema-dsl/pure`
 
-导入同一套核心 API，但不会安装 `String.prototype` 扩展。普通业务代码优先使用该入口。它只控制原型副作用，不会隔离 Locale、TypeRegistry、PATTERNS 或 Validator 状态；需要运行时状态隔离时请使用 `schema-dsl/runtime`。
+无副作用 root 核心 API 的稳定兼容别名。`schema-dsl` 与 `schema-dsl/pure` 都不会安装 `String.prototype` 扩展；它们不会隔离 Locale、TypeRegistry、PATTERNS 或 Validator 状态，需要运行时状态隔离时请使用 `schema-dsl/runtime`。
 
 ```javascript
 import { s, validate } from 'schema-dsl/pure';
@@ -581,7 +581,7 @@ const result = validate(schema, { email: 'user@example.com' });
 
 ### `schema-dsl/compat` 与 `schema-dsl/register-string`
 
-`schema-dsl/compat` 保留 v1 兼容 root 行为，导入时会安装 String 扩展。`schema-dsl/register-string` 是显式副作用入口，用于在应用启动阶段主动注册 String 链式 API。
+`schema-dsl/compat` 保留 v1/v2 直接 String 链式兼容行为，导入时会安装 String 扩展。`schema-dsl/register-string` 是在应用启动阶段注册同一 API 的显式副作用入口；root 入口保持无副作用。
 
 ```javascript
 import 'schema-dsl/register-string';

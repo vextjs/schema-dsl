@@ -2,7 +2,7 @@
  * StringExtensions Complete Tests — v2 Migration
  *
  * v2 changes:
- * - root entry auto-installs; explicit install/uninstall remains available
+ * - v3 root entry is side-effect-free; explicit install/uninstall remains available
  * - 'length' and 'trim' removed from extension list (v2 bugfix)
  * - uninstallStringExtensions() can uninstall
  */

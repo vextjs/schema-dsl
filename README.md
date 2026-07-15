@@ -134,7 +134,7 @@ const schema = s({
 | **TypeScript** | ✅ | Written in native TypeScript with full type inference |
 | **Extension system** | ✅ | One business type definition for pure DSL, `s('...')`, and `s.xxx()` entries; plus formats and validators |
 | **Schema reuse** | ✅ | pick / omit / partial / extend |
-| **Side-effect-controlled entries** | ✅ | root compatibility, `schema-dsl/pure` for no `String.prototype` installation, and `schema-dsl/runtime` for isolated runtime state |
+| **Side-effect-controlled entries** | ✅ | root and `schema-dsl/pure` do not install `String.prototype`; `compat` / `register-string` are explicit opt-in entries; `runtime` isolates runtime state |
 | **Compile-time transform** | ✅ | `schema-dsl/transform` core and optional `schema-dsl/esbuild` adapter |
 | **Progressive `s` authoring** | ✅ | Use plain DSL strings, `s('email!')`, or `s.email()`; all converge to the same builder implementation |
 
@@ -184,18 +184,20 @@ The entry points below are part of the package contract and are covered by packe
 
 ## 📦 Package Entry Points
 
-`schema-dsl` keeps the root import compatible with v1-style direct string chaining, and also exposes explicit entries for projects that want tighter control over global side effects.
+Starting with v3, the root import is side-effect-free: importing or requiring `schema-dsl` does not install, replace, or remove `String.prototype` properties. Direct string chaining remains available through explicit compatibility entries.
 
 | Entry | Purpose |
 |-------|---------|
-| `schema-dsl/pure` | Recommended default entry for application code; exports the `s` / `dsl` namespace and validation helpers without installing `String.prototype` extensions. |
+| `schema-dsl` | Side-effect-free default entry; exports the `s` / `dsl` namespace and validation helpers without installing `String.prototype` extensions. |
+| `schema-dsl/pure` | Stable compatibility alias for the same side-effect-free core API. |
 | `schema-dsl/runtime` | Runtime adapter factory for per-tenant/per-app isolated Locale messages, messageProvider, TypeRegistry scope, PATTERNS, validator instances and `I18nError` creation. |
-| `schema-dsl` | Root compatibility entry; imports install the non-enumerable String chain API by default. Prefer `schema-dsl/pure` for new public examples. |
-| `schema-dsl/compat` | Explicit compatibility entry that installs String extensions on import. |
+| `schema-dsl/compat` | Explicit v1/v2 compatibility entry that installs String extensions on import. |
 | `schema-dsl/register-string` | Side-effect entry for explicitly registering String extensions during application startup. |
 | `schema-dsl/string-types` | Opt-in TypeScript declarations for String-chain authoring; no runtime prototype installation. |
 | `schema-dsl/transform` | Babel AST transform core that rewrites static string-chain calls into helper calls imported from `schema-dsl/pure`. Babel AST packages are optional peer dependencies for projects that use this entry. |
 | `schema-dsl/esbuild` | Optional esbuild plugin adapter around the transform core. `esbuild` is an optional peer dependency. |
+
+Migrating from v2? Read the [v3 migration guide](./docs/en/migration-v3.md) or [v3 中文迁移指南](./docs/zh/migration-v3.md).
 
 ```typescript
 import { s, validate } from 'schema-dsl/pure';
@@ -720,7 +722,6 @@ If this project is useful to you, please consider giving it a Star ⭐
 Made with ❤️ by the schema-dsl team
 
 </div>
-
 
 
 

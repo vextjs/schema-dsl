@@ -2,7 +2,7 @@
 
 Use `schema-dsl/runtime` when a framework, worker, plugin host or multi-tenant process needs independent schema-dsl runtime state without mutating the root API.
 
-`schema-dsl/pure` only avoids automatic `String.prototype` installation. It still uses the same global Locale, TypeRegistry, PATTERNS and default Validator state as the root API.
+The root and `schema-dsl/pure` entries both avoid automatic `String.prototype` installation. They still use the same global Locale, TypeRegistry, PATTERNS and default Validator state.
 
 `schema-dsl/runtime` does not export a top-level `s`. Create a runtime first, then use `runtime.s(...)`, `runtime.s.email()`, or `runtime.s(...)` from that isolated instance.
 
@@ -94,7 +94,7 @@ The provider covers standard validation message tables, custom keywords, conditi
 
 ## When not to use it
 
-Use `schema-dsl/pure` for the recommended public authoring path when you only need to avoid prototype mutation and do not need runtime-state isolation. Use the root `schema-dsl` entry only for compatibility code that intentionally keeps automatic String-chain installation.
+Use the root `schema-dsl` entry or the stable `schema-dsl/pure` alias when you only need to avoid prototype mutation and do not need runtime-state isolation. Use `schema-dsl/compat` or `schema-dsl/register-string` only for explicit String-chain installation.
 
 ---
 

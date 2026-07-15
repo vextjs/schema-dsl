@@ -1,7 +1,7 @@
 ﻿/**
  * Custom Features & Error Messages Tests — v2 Migration
  *
- * v2 changes: root entry enables string extensions for compatibility
+ * compatibility coverage explicitly enables string extensions
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'

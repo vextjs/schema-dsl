@@ -624,7 +624,7 @@ Runtime scope has a few important rules:
 | Goal | Recommended approach | Why |
 |------|----------------------|-----|
 | Application-wide extensions | Create and export a configured `s` during app startup | Business modules import one stable entry. |
-| Side-effect-free framework integration | Use `schema-dsl/pure` or `schema-dsl/runtime` | Avoid root-entry String extension installation. |
+| Side-effect-free framework integration | Use root, `schema-dsl/pure`, or `schema-dsl/runtime` | String installation requires explicit compat/register-string opt-in. |
 | Tenant / plugin / test isolation | Create one runtime per tenant, plugin, or test | Extension registries, locale state, and validator caches do not bleed across scopes. |
 | Test cleanup | Call `runtime.dispose()` or the current reset/cleanup API | Prevent the next test from inheriting extensions. |
 

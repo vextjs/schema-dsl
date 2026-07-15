@@ -7,6 +7,7 @@ const englishSidebar = [
     text: 'Start',
     items: [
       { text: 'Quick Start', link: '/quick-start' },
+      { text: 'Migrate to v3', link: '/migration-v3' },
       { text: 'Design Philosophy', link: '/design-philosophy' },
       { text: 'TypeScript Guide', link: '/typescript-guide' }
     ]
@@ -110,6 +111,7 @@ const chineseSidebar = [
     text: '开始',
     items: [
       { text: '快速上手', link: '/zh/quick-start' },
+      { text: '迁移到 v3', link: '/zh/migration-v3' },
       { text: '设计理念', link: '/zh/design-philosophy' },
       { text: 'TypeScript 指南', link: '/zh/typescript-guide' }
     ]

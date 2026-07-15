@@ -44,13 +44,13 @@ const schema = s({
 
 ## Side-effect-controlled entries
 
-The root `schema-dsl` entry still installs String extensions for v1 compatibility. New code should usually start from `schema-dsl/pure`; use the explicit entries below only when you intentionally want direct string-chain authoring.
+The root `schema-dsl` entry is side-effect-free in v3. Use the explicit entries below only when you intentionally want direct string-chain authoring.
 
 | Entry | Behavior | Recommended use |
 |------|------|------|
-| `schema-dsl` | v1-compatible root entry; installs String extensions on import | Existing apps that already rely on direct `'email!'.description(...)` chains |
-| `schema-dsl/pure` | Core API only; does not install String extensions | Libraries, workers, tests, SSR, or isolated runtimes |
-| `schema-dsl/compat` | Compatibility entry with the same String-extension side effect as the root entry | Code that wants to make compatibility explicit |
+| `schema-dsl` | Side-effect-free core API; does not install String extensions | Default application and library entry |
+| `schema-dsl/pure` | Stable alias for the same side-effect-free core API | Existing libraries, workers, tests, SSR, or isolated runtimes |
+| `schema-dsl/compat` | Explicit v1/v2 compatibility entry that installs String extensions | Existing direct string-chain code |
 | `schema-dsl/register-string` | Explicit side-effect entry that installs String extensions | Application startup after importing from `schema-dsl/pure` |
 | `schema-dsl/string-types` | TypeScript declarations for String-chain authoring only; no runtime installation | TS projects that use compile-time transform and want IDE hints |
 | `schema-dsl/transform` | Compile-time transform for static String-chain DSL calls | Build tools and custom adapters |
@@ -71,7 +71,7 @@ For builds that want String-chain authoring without runtime prototype mutation, 
 
 ## Available direct String methods
 
-The following methods are installed on `String.prototype` by the root entry or `schema-dsl/register-string`. This list mirrors the runtime `STRING_EXTENSION_METHODS` list. `DslBuilder.length(n)` and `DslBuilder.trim()` are intentionally not installed because JavaScript strings already have native `.length` and `.trim()` members.
+The following methods are installed on `String.prototype` by `schema-dsl/compat`, `schema-dsl/register-string`, or an explicit `installStringExtensions()` call. This list mirrors the runtime `STRING_EXTENSION_METHODS` list. `DslBuilder.length(n)` and `DslBuilder.trim()` are intentionally not installed because JavaScript strings already have native `.length` and `.trim()` members.
 
 | Category | Methods |
 |----------|---------|
@@ -396,7 +396,7 @@ const enSchema = getSchema('en-US');
 
 ### Compatibility installation
 
-The root compatibility entry and `schema-dsl/compat` install String extensions on import. New code should prefer `schema-dsl/pure` unless direct String chains are intentional.
+`schema-dsl/compat` and `schema-dsl/register-string` install String extensions on import. Root and pure imports remain side-effect-free.
 
 ```javascript
 import 'schema-dsl/compat';
@@ -409,7 +409,7 @@ const schema = s({
 
 The extension is mounted to `String.prototype` with non-enumerable attributes, and detects external methods with the same name during installation; if it is found that the method is not installed by schema-dsl itself, it will refuse to overwrite it.
 
-If your running environment has extended a method with the same name (such as `String.prototype.label`) before importing `schema-dsl`, the root entry will throw a conflict error during the import phase to avoid silently overwriting the external implementation. The solution is to first remove or rename the conflicting external extension, and then import `schema-dsl`; ordinary projects usually do not encounter this scenario.
+If your running environment has extended a method with the same name (such as `String.prototype.label`) before importing an explicit String-install entry, that entry throws a conflict error instead of silently overwriting the external implementation. The side-effect-free root entry does not trigger this conflict check.
 
 ### Disable after an explicit install
 
@@ -477,7 +477,7 @@ const schema = s({
 
 ### Q1: Will String expansion pollute the global situation?
 
-**A**: Direct String chains modify `String.prototype`, so they are opt-in for new code. For no import-time prototype mutation, import from `schema-dsl/pure` and use `s('...')` or `s.xxx()`. When you intentionally want direct string chains, import `schema-dsl/register-string` during application startup. `uninstallStringExtensions()` is mainly for test cleanup or legacy compatibility checks.
+**A**: Direct String chains modify `String.prototype`, so they are opt-in. Root and pure imports do not mutate the prototype. When you intentionally want direct string chains, import `schema-dsl/register-string` during application startup. `uninstallStringExtensions()` is mainly for test cleanup or legacy compatibility checks.
 
 ### Q2: How is the performance?
 

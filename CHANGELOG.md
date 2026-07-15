@@ -12,6 +12,23 @@ No unreleased changes.
 
 ---
 
+## [3.0.0] - 2026-07-15
+
+### Changed
+
+- Made the root ESM and CommonJS entries side-effect-free: importing `schema-dsl` no longer mutates `String.prototype`.
+- Kept direct String-chain authoring behind the explicit `schema-dsl/compat`, `schema-dsl/register-string`, and `installStringExtensions()` opt-in paths.
+- Stopped emitting obsolete transform warnings for the now-safe root entry while retaining the legacy warning code and strict option as compatibility no-ops.
+- Documented `required[]` as the object-level requiredness contract; no `isRequired()` / `isOptional()` getters were added.
+
+### Migration
+
+- Existing direct `'email!'.description(...)` code must explicitly import `schema-dsl/compat` or `schema-dsl/register-string` and, for TypeScript, opt into `schema-dsl/string-types`.
+- See the bilingual v3 migration guides under `docs/en/migration-v3.md` and `docs/zh/migration-v3.md`.
+- Full release verification is recorded in [`changelogs/v3.0.0.md`](./changelogs/v3.0.0.md).
+
+---
+
 ## [2.1.6] - 2026-07-13
 
 ### Added
@@ -461,7 +478,8 @@ No unreleased changes.
 - [Detailed Changelogs](./changelogs/)
 - [Contributing Guide](./CONTRIBUTING.md)
 
-[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v2.1.6...HEAD
+[Unreleased]: https://github.com/vextjs/schema-dsl/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/vextjs/schema-dsl/compare/v2.1.6...v3.0.0
 [2.1.6]: https://github.com/vextjs/schema-dsl/compare/v2.1.5...v2.1.6
 [2.1.5]: https://github.com/vextjs/schema-dsl/compare/v2.1.4...v2.1.5
 [2.1.4]: https://github.com/vextjs/schema-dsl/compare/v2.1.3...v2.1.4

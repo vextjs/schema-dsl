@@ -2,7 +2,7 @@
 
 当框架、worker、插件宿主或多租户进程需要独立的 schema-dsl 运行时状态时，使用 `schema-dsl/runtime`。
 
-`schema-dsl/pure` 只避免自动安装 `String.prototype` 扩展。它仍沿用 root API 的全局 Locale、TypeRegistry、PATTERNS 和默认 Validator 状态。
+root 与 `schema-dsl/pure` 入口都不会自动安装 `String.prototype` 扩展；二者仍沿用同一套全局 Locale、TypeRegistry、PATTERNS 和默认 Validator 状态。
 
 `schema-dsl/runtime` 不导出顶层 `s`。必须先创建 runtime，再使用该实例上的 `runtime.s(...)`、`runtime.s.email()` 或 `runtime.s(...)`。
 
@@ -94,7 +94,7 @@ provider 覆盖标准验证错误表、custom keyword、条件校验、异步 cu
 
 ## 什么时候不需要
 
-如果只需要推荐的公开编写路径、避免原型污染且不需要隔离运行时状态，使用 `schema-dsl/pure`。只有兼容代码明确需要自动 String 链式安装时，才使用 root `schema-dsl`。
+如果只需避免原型污染且不需要隔离运行时状态，可使用 root `schema-dsl` 或稳定别名 `schema-dsl/pure`。只有明确需要 String 链式安装时，才使用 `schema-dsl/compat` 或 `schema-dsl/register-string`。
 
 ---
 

@@ -370,7 +370,7 @@ s('string!').pattern(/test/);
 // TypeError: "string!".pattern is not a function
 ```
 
-**Cause**: The root entry will install the String extension by default; if an error is still reported, it is usually because `uninstallStringExtensions()` has been called before, or an old build/exception entry that does not include the root side effect has been imported.
+**Cause**: v3 root and pure entries do not install String extensions. Direct string chains require an explicit install entry or `installStringExtensions()` call.
 
 **Solution**:
 ```javascript
@@ -393,14 +393,14 @@ const schema = s({
 [schema-dsl] Cannot install String extension "label": String.prototype.label already exists and is not owned by schema-dsl
 ```
 
-**Reason**: To be compatible with v1.1.x, schema-dsl will install the String extension in the root entry by default. In order to avoid overwriting existing methods of the same name in the host environment, the installer will detect methods such as `String.prototype.label` / `pattern` during the import phase; if these methods are not extensions installed by schema-dsl itself, a conflict error will be thrown.
+**Reason**: An explicit install through `schema-dsl/compat`, `schema-dsl/register-string`, or `installStringExtensions()` detected an existing method that is not owned by schema-dsl. The side-effect-free root entry does not install or overwrite it.
 
 **Solution**:
 ```javascript
 // Remove or rename the external extension of the same name before importing schema-dsl.
 delete String.prototype.label;
 
-import { s } from 'schema-dsl/pure';
+import 'schema-dsl/register-string';
 ```
 
 If conflicting methods come from other libraries, give priority to preventing both libraries from extending `String.prototype` methods with the same name at the same time in the application initialization sequence or dependency configuration.
